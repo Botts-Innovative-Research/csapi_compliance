@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fallback/landing-page.json",
+  "title": "OGC API Landing Page",
+  "description": "Minimal schema for an OGC API landing page response (OGC API - Common Part 1).",
+  "type": "object",
+  "required": [
+    "title",
+    "links"
+  ],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "href"
+        ],
+        "properties": {
+          "href": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "rel": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "hreflang": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

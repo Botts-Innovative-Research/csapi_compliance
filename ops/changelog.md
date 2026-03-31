@@ -1,0 +1,119 @@
+# Changelog — CS API Compliance Assessor
+
+Rolling 2-week work log. Remove entries older than 2 weeks.
+
+## 2026-03-30
+- Scaffolded project from spec-anchor template
+- Researched OGC compliance framework (CITE, TeamEngine, ETS, conformance classes)
+- Researched OGC API - Connected Systems specification (Parts 1-5, 233 requirements, 28 conformance classes)
+- Created product-brief.md (Discovery Agent output)
+- Created project-brief.md with technology decisions (Next.js, TypeScript, Node.js, Docker)
+- Created PRD with 45 functional requirements and 15 non-functional requirements
+- Created architecture.md with 7 ADRs, component architecture, deployment topology
+- Created ux-spec.md with 6 screens, 7 key components, WCAG 2.1 AA accessibility
+- Created 7 OpenSpec capability specs (99+ requirements, 128+ scenarios total)
+- Created 7 OpenSpec capability designs with TypeScript interfaces and component diagrams
+- Created 8 epics and 32 stories with full dependency graph
+- Created traceability matrix mapping all 45 FRs and 15 NFRs
+- Updated project conventions (openspec/project.md) with TypeScript/Next.js standards
+- Updated CLAUDE.md build commands and build environment
+- Updated harness config with c8 coverage tool
+- **Scope change**: Added Part 2 (Dynamic Data) to v1.0 per user instruction
+- Added FR-46 through FR-59 to PRD (14 new FRs for Part 2 conformance classes)
+- Created `openspec/capabilities/dynamic-data-testing/` with spec.md (19 REQs) and design.md
+- Created Epic 09 with 7 stories (S09-01 through S09-07)
+- Updated traceability matrix (now 59 FRs, 39 stories across 9 epics)
+- Updated project-brief, product-brief, and NFR-03 (assessment time target: < 10 minutes)
+- **Sprint 1 complete**: Epic 04 (Test Engine Infrastructure) — all 6 stories implemented
+  - S04-01: TestRegistry class with integrity validation (`src/engine/registry/`)
+  - S04-02: Result aggregator with pass/fail/skip builders + class/assessment aggregation (`src/engine/result-aggregator.ts`)
+  - S04-03: SchemaValidator with Ajv, $ref resolution, directory loading (`src/engine/schema-validator.ts`)
+  - S04-04: DependencyResolver with Kahn's topo sort, cycle detection, cascade skip (`src/engine/dependency-resolver.ts`)
+  - S04-05: Paginate helper with loop detection, max pages, cancel support (`src/engine/pagination.ts`)
+  - S04-06: CaptureHttpClient with SSRF guard, auth injection, timeout, body truncation (`src/engine/http-client.ts`, `src/server/middleware/ssrf-guard.ts`, `src/engine/errors.ts`)
+  - Shared types (`src/lib/types.ts`) and constants (`src/lib/constants.ts`)
+  - 124 unit tests passing across 7 test files (671ms)
+- Note: requires nvm (Node 22) — system Node is v12
+- **Sprint 2 complete**: Epics 01, 05, 08 + TestRunner + API routes + Frontend UI
+  - TestRunner orchestrator wiring all Sprint 1 components (`src/engine/test-runner.ts`, `src/engine/cancel-token.ts`)
+  - DiscoveryService + ConformanceMapper (`src/engine/discovery-service.ts`, `src/engine/conformance-mapper.ts`)
+  - CredentialMasker (`src/engine/credential-masker.ts`)
+  - SSEBroadcaster (`src/engine/sse-broadcaster.ts`)
+  - SessionManager + ResultStore (`src/engine/session-manager.ts`, `src/engine/result-store.ts`)
+  - Express server + API routes (`src/server/index.ts`, `src/server/routes/assessments.ts`, `src/server/routes/health.ts`)
+  - Frontend: Landing page, Config page, URL input, Class selector, Auth/Run config, API client
+  - 259 unit tests passing across 16 files (1.11s)
+- **Sprint 3 complete**: Epics 02, 06 + frontend progress/results
+  - OGC API Common Part 1 Core tests: 6 requirements, 24 tests (`src/engine/registry/common.ts`)
+  - OGC API Features Part 1 Core tests: 8 requirements, 31 tests (`src/engine/registry/features-core.ts`)
+  - Registry updated with `registerAllModules()` (`src/engine/registry/index.ts`)
+  - Progress page with SSE, real-time progress bar, cancel support (`src/app/assess/[id]/progress/page.tsx`)
+  - SSE client wrapper (`src/services/sse-client.ts`)
+  - Results dashboard with summary stats, class panels, filter bar (`src/app/assess/[id]/results/page.tsx`)
+  - Summary dashboard component (`src/components/results/summary-dashboard.tsx`)
+  - Conformance class panel with accordion (`src/components/results/conformance-class-panel.tsx`)
+  - Test detail drawer with req/res viewer (`src/components/results/test-detail-drawer.tsx`)
+  - HTTP exchange viewer with tabs, copy, JSON formatting (`src/components/results/http-exchange-viewer.tsx`)
+  - 314 unit tests passing across 18 files (1.25s)
+- **Sprint 4 complete**: Epic 03 (CS API Part 1 Conformance Testing) — all 7 stories, 13 conformance classes
+  - CS API Core: 3 reqs, 15 tests (`src/engine/registry/csapi-core.ts`)
+  - System Features: 5 reqs, 30 tests (`src/engine/registry/system-features.ts`)
+  - Subsystems: 4 reqs, 21 tests (`src/engine/registry/subsystems.ts`)
+  - Deployment Features: 5 reqs, 26 tests (`src/engine/registry/deployments.ts`)
+  - Subdeployments: 4 reqs, 23 tests (`src/engine/registry/subdeployments.ts`)
+  - Procedure Features: 5 reqs, 24 tests (`src/engine/registry/procedures.ts`)
+  - Sampling Features: 5 reqs, 24 tests (`src/engine/registry/sampling.ts`)
+  - Property Definitions: 4 reqs, 21 tests (`src/engine/registry/properties.ts`)
+  - Advanced Filtering: 6 reqs, 28 tests (`src/engine/registry/filtering.ts`)
+  - Create/Replace/Delete: 6 reqs, 22 tests (`src/engine/registry/crud.ts`)
+  - Update: 3 reqs, 14 tests (`src/engine/registry/update.ts`)
+  - GeoJSON Format: 4 reqs, 21 tests (`src/engine/registry/geojson.ts`)
+  - SensorML Format: 3 reqs, 20 tests (`src/engine/registry/sensorml.ts`)
+  - 603 unit tests passing across 31 files (1.69s)
+
+## 2026-03-31
+- **Sprint 5 complete**: Epic 09 (CS API Part 2 Dynamic Data) — all 7 stories, 13 conformance classes
+  - Part 2 Common: 2 reqs, 18 tests (`src/engine/registry/part2-common.ts`)
+  - Part 2 JSON: 3 reqs, 29 tests (`src/engine/registry/part2-json.ts`)
+  - Datastreams: 6 reqs, 38 tests (`src/engine/registry/datastreams.ts`)
+  - Control Streams: 6 reqs, 38 tests (`src/engine/registry/controlstreams.ts`)
+  - Feasibility: 2 reqs, 17 tests (`src/engine/registry/part2-feasibility.ts`)
+  - System Events: 3 reqs, 18 tests (`src/engine/registry/part2-events.ts`)
+  - System History: 2 reqs, 17 tests (`src/engine/registry/part2-history.ts`)
+  - Part 2 Filtering: 4 reqs, 21 tests (`src/engine/registry/part2-filtering.ts`)
+  - Part 2 CRUD: 3 reqs, 18 tests (`src/engine/registry/part2-crud.ts`)
+  - Part 2 Update: 2 reqs, 16 tests (`src/engine/registry/part2-update.ts`)
+  - SWE Encodings (JSON/Text/Binary): 6 reqs, 43 tests (`src/engine/registry/part2-swe-encodings.ts`)
+  - 876 unit tests passing across 42 files (1.65s)
+- **Sprint 6 complete**: Epic 07 (Export) + Docker deployment
+  - JSON export with versioned schema, credential masking, disclaimer (`src/engine/export-engine.ts`)
+  - PDF export with PDFKit: summary page, per-class sections, failed test details (`src/engine/export-engine.ts`)
+  - Export API routes updated (format=json and format=pdf both functional)
+  - Dockerfile (multi-stage: deps → build → production), docker-compose.yml, .dockerignore
+  - tsconfig.server.json for server-side compilation
+  - 891 unit tests passing across 43 files (1.82s)
+- **All 9 epics complete. All 59 FRs implemented. All 39 stories done.**
+- **Post-sprint hardening**:
+  - OGC schema bundling: 74 JSON schemas fetched from GitHub (37 Part 1, 32 Part 2, 5 fallbacks) via `scripts/fetch-schemas.ts`
+  - Rate limiter middleware: in-memory, per-IP, 60 req/min, 429 with Retry-After (`src/server/middleware/rate-limiter.ts`)
+  - Security headers middleware: CSP, HSTS, X-Frame-Options, etc. (`src/server/middleware/security-headers.ts`)
+  - Structured logging: pino with credential redaction (`src/server/middleware/request-logger.ts`)
+  - Playwright E2E infrastructure: config, test plan (6 scenarios), 20 E2E tests (15 landing + 5 flow)
+  - Server startup wired: schema loading, middleware stack
+  - 900 unit tests passing across 44 files (2.76s)
+- **Final hardening pass**:
+  - WCAG 2.1 AA accessibility audit: skip link, aria-live regions, aria-expanded, role="progressbar", focus trap in drawer, aria-hidden on decorative icons, aria-labels on icon-only buttons across all 13 frontend files
+  - GitHub Actions CI/CD: `.github/workflows/ci.yml` (lint, typecheck, unit tests, E2E, Docker build), `.github/workflows/release.yml` (GHCR push on tag)
+  - i18n string externalization: 137 strings in `src/lib/i18n/en.json`, `t()` accessor, 3 files migrated, 7 files marked TODO
+  - Live smoke test against api.georobotix.io — PASSED: 33 conformance classes, 6 resource IDs discovered
+  - 3 real-world bugs fixed: ipaddr.js ESM import, binary content-type false positive, overly strict content-type check in discovery
+  - 906 tests passing across 45 files
+- **Final completions**:
+  - i18n migration completed for all 7 remaining files — zero hardcoded strings remaining (148 keys in en.json)
+  - Playwright multi-browser config: Chromium (default), Firefox, WebKit, Edge
+  - Performance benchmark script (`scripts/perf-benchmark.ts`) — all 4 NFRs PASS:
+    - NFR-01 Discovery: 0.85s (target <15s)
+    - NFR-02 Throughput: 58.9 tests/s (target >=10)
+    - NFR-03 Full Assessment: ~0.1 min (target <10 min)
+    - NFR-14 Export: 33ms (target <10s)
+  - **All work items complete. 15/15 NFRs addressed. Zero remaining TODOs.**

@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fallback/collection.json",
+  "title": "OGC API Collection",
+  "description": "Minimal schema for an OGC API collection resource (OGC API - Features Part 1).",
+  "type": "object",
+  "required": [
+    "id",
+    "links"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "href"
+        ],
+        "properties": {
+          "href": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "rel": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "extent": {
+      "type": "object",
+      "properties": {
+        "spatial": {
+          "type": "object",
+          "properties": {
+            "bbox": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "crs": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "temporal": {
+          "type": "object",
+          "properties": {
+            "interval": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "trs": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      }
+    },
+    "itemType": {
+      "type": "string"
+    },
+    "crs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,116 @@
+# Agentic Refactor Harness Configuration
+# See: agentic-refactor-prompt.md for full documentation
+harness:
+  max_retries_per_sprint: 3
+  max_total_iterations: 15
+  context_reset_strategy: "full"
+
+  directories:
+    handoffs: ".harness/handoffs/"
+    contracts: ".harness/contracts/"
+    evaluations: ".harness/evaluations/"
+    prompts: ".harness/prompts/"
+
+  agents:
+    discovery:
+      model: "claude-sonnet-4-6"
+      mode: "auto"
+      effort: "medium"
+      prompt: ".harness/prompts/discovery.md"
+      tools: ["Read", "Grep", "Glob", "WebSearch", "WebFetch"]
+      invocation: "conditional"
+      max_turns: 20
+      max_budget_usd: 2.00
+      reads: ["_bmad/", "openspec/", "docs/"]
+      writes: ["_bmad/product-brief.md", ".harness/handoffs/"]
+
+    planner:
+      model: "claude-sonnet-4-6"
+      mode: "auto"
+      effort: "medium"
+      prompt: ".harness/prompts/planner.md"
+      tools: ["Read", "Grep", "Glob", "Write"]
+      invocation: "always"
+      max_turns: 30
+      max_budget_usd: 5.00
+      reads: ["_bmad/", "openspec/", "epics/", ".harness/handoffs/"]
+      writes: ["epics/", "openspec/change-proposals/"]
+
+    architect:
+      model: "claude-opus-4-6"
+      mode: "auto"
+      effort: "high"
+      prompt: ".harness/prompts/architect.md"
+      tools: ["Read", "Grep", "Glob", "Write"]
+      invocation: "conditional"
+      max_turns: 25
+      max_budget_usd: 10.00
+      reads: ["_bmad/", "openspec/"]
+      writes: ["_bmad/architecture.md", "openspec/capabilities/*/design.md"]
+
+    design:
+      model: "claude-sonnet-4-6"
+      mode: "auto"
+      effort: "medium"
+      prompt: ".harness/prompts/design.md"
+      tools: ["Read", "Grep", "Glob", "Write"]
+      invocation: "conditional"
+      max_turns: 20
+      max_budget_usd: 3.00
+      reads: ["_bmad/", "openspec/", ".harness/evaluations/"]
+      writes: ["_bmad/ux-spec.md"]
+
+    generator:
+      model: "claude-opus-4-6"
+      mode: "auto"
+      effort: "high"
+      prompt: ".harness/prompts/generator.md"
+      tools: ["Read", "Edit", "Write", "Grep", "Glob", "Bash"]
+      invocation: "always"
+      max_turns: 100
+      max_budget_usd: 50.00
+      max_session_duration: "2h"
+      reads: ["openspec/", "epics/stories/", "_bmad/ux-spec.md", ".harness/contracts/", ".harness/handoffs/"]
+      writes: ["src/", "tests/", "openspec/capabilities/*/spec.md", ".harness/handoffs/"]
+
+    evaluator:
+      model: "claude-opus-4-6"
+      mode: "auto"
+      effort: "high"
+      prompt: ".harness/prompts/evaluator.md"
+      tools: ["Read", "Grep", "Glob", "Bash"]
+      invocation: "always"
+      skepticism_level: "high"
+      max_turns: 50
+      max_budget_usd: 20.00
+      reads: ["openspec/", "epics/stories/", "_bmad/ux-spec.md", ".harness/contracts/", "ops/e2e-test-plan.md"]
+      writes: [".harness/evaluations/", "ops/test-results.md"]
+
+  coverage:
+    spec_coverage:
+      req_implemented_must_be_tested: true
+      scenario_pass_rate_threshold: 0.90
+      critical_scenario_pass_rate: 1.00
+    code_coverage:
+      tool: "c8"
+      minimum_line_coverage_new_files: 0.80
+      minimum_branch_coverage_new_files: 0.70
+      no_regression: true
+      report_path: "coverage/"
+      fail_sprint_on_violation: true
+
+  evaluation_criteria:
+    - name: "Spec Fidelity"
+      weight: 0.30
+      hard_fail: "spec contradicted without rationale"
+    - name: "Functional Completeness"
+      weight: 0.30
+      hard_fail: "critical SCENARIO-* fails"
+    - name: "Integration Correctness"
+      weight: 0.20
+      hard_fail: "E2E test fails"
+    - name: "Code Quality"
+      weight: 0.10
+    - name: "Robustness"
+      weight: 0.10
+      hard_fail: "security vulnerability or data loss"

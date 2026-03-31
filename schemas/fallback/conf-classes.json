@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fallback/conf-classes.json",
+  "title": "OGC API Conformance Declaration",
+  "description": "Minimal schema for an OGC API conformance declaration (OGC API - Common Part 1).",
+  "type": "object",
+  "required": [
+    "conformsTo"
+  ],
+  "properties": {
+    "conformsTo": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
