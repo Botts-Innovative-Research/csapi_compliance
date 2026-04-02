@@ -109,6 +109,7 @@ export default function SummaryDashboard({
       {/* Class Summary Bar */}
       {summary.totalClasses > 0 && (
         <div className="mb-6">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t('dashboard.classBreakdown', { count: summary.totalClasses })}</p>
           <div
             className="mb-2 flex h-3 overflow-hidden rounded-full bg-gray-100"
             role="img"

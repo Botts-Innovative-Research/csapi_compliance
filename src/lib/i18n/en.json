@@ -128,6 +128,7 @@
   "dashboard.passed": "Passed",
   "dashboard.failed": "Failed",
   "dashboard.skipped": "Skipped",
+  "dashboard.classBreakdown": "Conformance Classes ({count} total)",
   "dashboard.classesPassed": "{count} Passed",
   "dashboard.classesFailed": "{count} Failed",
   "dashboard.classesSkipped": "{count} Skipped",
