@@ -3,9 +3,9 @@
 // REQ-ENG-012: Graceful network error handling (no cascading failures)
 
 import crypto from 'node:crypto';
-import { ENGINE_DEFAULTS } from '@/lib/constants.js';
-import { validateUrl } from '@/server/middleware/ssrf-guard.js';
-import { TimeoutError, NetworkError } from '@/engine/errors.js';
+import { ENGINE_DEFAULTS } from '@/lib/constants';
+import { validateUrl } from '@/server/middleware/ssrf-guard';
+import { TimeoutError, NetworkError } from '@/engine/errors';
 import type {
   HttpClientInterface,
   RequestOptions,
@@ -14,7 +14,7 @@ import type {
   CapturedRequest,
   CapturedResponse,
   AuthConfig,
-} from '@/lib/types.js';
+} from '@/lib/types';
 
 /** Content-Type prefixes that are positively known to be binary. */
 const BINARY_CONTENT_TYPES = [
@@ -141,7 +141,6 @@ export class CaptureHttpClient implements HttpClientInterface {
         headers: mergedHeaders,
         body: bodyPayload,
         signal: AbortSignal.timeout(timeoutMs),
-        // @ts-expect-error -- Node fetch redirect option
         redirect: 'follow',
       });
     } catch (err: unknown) {

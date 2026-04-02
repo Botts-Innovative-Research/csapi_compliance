@@ -2,8 +2,8 @@
 // REQ-ENG-009: Follow `next` links in paginated collections to retrieve all pages
 // REQ-ENG-010: Configurable max pages limit and loop detection to prevent infinite traversal
 
-import { ENGINE_DEFAULTS } from '@/lib/constants.js';
-import type { HttpClientInterface, CancelToken, LinkObject } from '@/lib/types.js';
+import { ENGINE_DEFAULTS } from '@/lib/constants';
+import type { HttpClientInterface, CancelToken, LinkObject } from '@/lib/types';
 
 export interface PaginationOptions {
   /** Maximum number of pages to traverse. Default from ENGINE_DEFAULTS. */

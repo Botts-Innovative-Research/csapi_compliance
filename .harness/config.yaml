@@ -1,5 +1,5 @@
 # Agentic Refactor Harness Configuration
-# See: agentic-refactor-prompt.md for full documentation
+# Project: OGC CS API Compliance Assessor
 harness:
   max_retries_per_sprint: 3
   max_total_iterations: 15
@@ -10,6 +10,19 @@ harness:
     contracts: ".harness/contracts/"
     evaluations: ".harness/evaluations/"
     prompts: ".harness/prompts/"
+
+  # Build environment note: System Node is v12 (too old).
+  # All npm/node commands must be prefixed with:
+  #   export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+  build:
+    nvm_prefix: 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"'
+    test: "npx vitest run"
+    lint: "npx eslint . --ext .ts,.tsx"
+    typecheck: "npx tsc --noEmit"
+    coverage: "npx vitest run --coverage"
+    e2e: "npx playwright test"
+    dev_server: "PORT=4000 CSAPI_PORT=4000 npm run dev"
+    build: "npm run build"
 
   agents:
     discovery:
@@ -83,7 +96,7 @@ harness:
       skepticism_level: "high"
       max_turns: 50
       max_budget_usd: 20.00
-      reads: ["openspec/", "epics/stories/", "_bmad/ux-spec.md", ".harness/contracts/", "ops/e2e-test-plan.md"]
+      reads: ["openspec/", "epics/stories/", "_bmad/ux-spec.md", ".harness/contracts/", "ops/e2e-test-plan.md", "src/"]
       writes: [".harness/evaluations/", "ops/test-results.md"]
 
   coverage:
@@ -101,16 +114,30 @@ harness:
 
   evaluation_criteria:
     - name: "Spec Fidelity"
-      weight: 0.30
+      weight: 0.25
       hard_fail: "spec contradicted without rationale"
     - name: "Functional Completeness"
-      weight: 0.30
+      weight: 0.25
       hard_fail: "critical SCENARIO-* fails"
     - name: "Integration Correctness"
       weight: 0.20
       hard_fail: "E2E test fails"
+    - name: "Conformance Accuracy"
+      weight: 0.10
+      hard_fail: "false positive or false negative in conformance assertions"
+      description: "Test assertions correctly identify conformant and non-conformant implementations"
     - name: "Code Quality"
       weight: 0.10
     - name: "Robustness"
       weight: 0.10
       hard_fail: "security vulnerability or data loss"
+
+  # Conformance fixture testing — specific to compliance testing tools
+  conformance_fixtures:
+    known_good_servers:
+      - name: "OGC GeoRobotix Testbed"
+        url: "https://api.georobotix.io/ogc/t18/api"
+        description: "OGC reference implementation (public testbed)"
+    known_bad_fixtures:
+      description: "To be built — parameterized mock server returning intentionally defective responses"
+      path: "tests/fixtures/"

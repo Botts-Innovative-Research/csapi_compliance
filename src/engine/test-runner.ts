@@ -93,7 +93,7 @@ export class TestRunner extends EventEmitter {
     const ctx: TestContext = {
       httpClient,
       schemaValidator,
-      baseUrl: session.endpointUrl,
+      baseUrl: session.endpointUrl.replace(/\/+$/, '') + '/',
       auth: session.auth,
       config: session.config,
       discoveryCache,

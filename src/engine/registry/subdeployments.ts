@@ -80,7 +80,7 @@ async function testCollection(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
+      `deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -138,7 +138,7 @@ async function testRecursiveParam(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
+      `deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
       ctx.baseUrl,
     );
     url.searchParams.set('recursive', 'true');
@@ -197,7 +197,7 @@ async function testRecursiveSearchDeployments(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
+      `deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
       ctx.baseUrl,
     );
     url.searchParams.set('recursive', 'true');
@@ -272,7 +272,7 @@ async function testRecursiveAssoc(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
+      `deployments/${encodeURIComponent(deploymentId)}/subdeployments`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);

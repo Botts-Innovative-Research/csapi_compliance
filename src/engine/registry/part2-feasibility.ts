@@ -61,7 +61,7 @@ async function testFeasibilityEndpoint(ctx: TestContext) {
   try {
     const controlStreamId = ctx.discoveryCache.controlStreamId;
     const url = new URL(
-      `/controlstreams/${controlStreamId}/commands`,
+      `controlstreams/${controlStreamId}/commands`,
       ctx.baseUrl,
     ).toString();
     const body = {
@@ -119,7 +119,7 @@ async function testFeasibilityResponse(ctx: TestContext) {
   try {
     const controlStreamId = ctx.discoveryCache.controlStreamId;
     const url = new URL(
-      `/controlstreams/${controlStreamId}/commands`,
+      `controlstreams/${controlStreamId}/commands`,
       ctx.baseUrl,
     ).toString();
     const body = {

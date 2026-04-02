@@ -161,7 +161,7 @@ describe('POST /api/assessments', () => {
     app = createApp(deps);
   });
 
-  it('creates a session and returns 201 with id and status', async () => {
+  it('creates a session, runs discovery, and returns 201 with id and discoveryResult', async () => {
     const mockSession = createMockSession({ status: 'discovering' });
     vi.mocked(deps.sessionManager.create).mockReturnValue(mockSession);
 
@@ -170,15 +170,22 @@ describe('POST /api/assessments', () => {
       .send({ endpointUrl: 'https://example.com/api' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({
-      id: mockSession.id,
-      status: 'discovering',
-    });
+    expect(res.body).toHaveProperty('id', mockSession.id);
+    expect(res.body).toHaveProperty('discoveryResult');
+    expect(res.body.discoveryResult).toEqual(
+      expect.objectContaining({
+        landingPage: {},
+        conformsTo: [],
+        collectionIds: [],
+        links: [],
+      }),
+    );
     expect(deps.sessionManager.create).toHaveBeenCalledWith(
       expect.objectContaining({
         endpointUrl: 'https://example.com/api',
       }),
     );
+    expect(deps.discoveryService.discover).toHaveBeenCalled();
   });
 
   it('returns 400 when endpointUrl is missing', async () => {

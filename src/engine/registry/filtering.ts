@@ -95,7 +95,7 @@ async function testIdListSchema(ctx: TestContext) {
 
   try {
     const systemId = ctx.discoveryCache.systemId;
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     url.searchParams.set('id', `${systemId},${systemId}`);
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -149,7 +149,7 @@ async function testResourceById(ctx: TestContext) {
 
   try {
     const systemId = ctx.discoveryCache.systemId;
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     url.searchParams.set('id', systemId);
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -202,7 +202,7 @@ async function testResourceByKeyword(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     url.searchParams.set('q', 'sensor');
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -256,7 +256,7 @@ async function testFeatureByGeom(ctx: TestContext) {
 
   try {
     // Use a world-spanning bbox to ensure we get results if any exist
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     url.searchParams.set('bbox', '-180,-90,180,90');
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -309,7 +309,7 @@ async function testSystemByProcedure(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     // Use a placeholder procedure URI; server just needs to accept the parameter
     const procedureId = ctx.discoveryCache.procedureId || 'urn:example:procedure:1';
     url.searchParams.set('procedure', procedureId);
@@ -365,7 +365,7 @@ async function testCombinedFilters(ctx: TestContext) {
 
   try {
     const systemId = ctx.discoveryCache.systemId;
-    const url = new URL('/systems', ctx.baseUrl);
+    const url = new URL('systems', ctx.baseUrl);
     url.searchParams.set('id', systemId);
     url.searchParams.set('q', 'sensor');
     const response = await ctx.httpClient.get(url.toString());

@@ -1,4 +1,4 @@
-import type { AuthConfig, RunConfig, AssessmentSession } from '@/lib/types.js';
+import type { AuthConfig, RunConfig, AssessmentSession } from '@/lib/types';
 
 export interface CreateAssessmentResponse {
   id: string;
@@ -118,10 +118,10 @@ export const apiClient = {
 
   /**
    * Export assessment results as JSON.
-   * GET /api/assessments/:id/export/json
+   * GET /api/assessments/:id/export?format=json
    */
   async exportJson(id: string): Promise<Blob> {
-    const response = await fetch(`/api/assessments/${id}/export/json`);
+    const response = await fetch(`/api/assessments/${id}/export?format=json`);
     if (!response.ok) {
       throw new ApiError(
         `Export failed with status ${response.status}`,

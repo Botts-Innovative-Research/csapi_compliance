@@ -104,7 +104,7 @@ async function testResources(ctx: TestContext) {
 async function testResourceCollection(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

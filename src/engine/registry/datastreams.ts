@@ -89,7 +89,7 @@ export const datastreamsClassDef: ConformanceClassDefinition = {
 async function testResourcesEndpoint(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/datastreams', ctx.baseUrl).toString();
+    const url = new URL('datastreams', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -160,7 +160,7 @@ async function testCanonicalUrl(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/datastreams/${encodeURIComponent(datastreamId)}`, ctx.baseUrl).toString();
+    const url = new URL(`datastreams/${encodeURIComponent(datastreamId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -229,7 +229,7 @@ async function testRefFromSystem(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}/datastreams`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}/datastreams`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -300,7 +300,7 @@ async function testSchemaOp(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/datastreams/${encodeURIComponent(datastreamId)}/schema`, ctx.baseUrl).toString();
+    const url = new URL(`datastreams/${encodeURIComponent(datastreamId)}/schema`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -349,7 +349,7 @@ async function testObsResourcesEndpoint(ctx: TestContext) {
 
   try {
     // Try /observations first, fall back to /datastreams/{id}/observations
-    const primaryUrl = new URL('/observations', ctx.baseUrl).toString();
+    const primaryUrl = new URL('observations', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(primaryUrl);
     const exchangeIds = [response.exchange.id];
 
@@ -360,7 +360,7 @@ async function testObsResourcesEndpoint(ctx: TestContext) {
 
     // Fall back to datastream-scoped observations
     if (datastreamId) {
-      const fallbackUrl = new URL(`/datastreams/${encodeURIComponent(datastreamId)}/observations`, ctx.baseUrl).toString();
+      const fallbackUrl = new URL(`datastreams/${encodeURIComponent(datastreamId)}/observations`, ctx.baseUrl).toString();
       const fallbackResponse = await ctx.httpClient.get(fallbackUrl);
       exchangeIds.push(fallbackResponse.exchange.id);
       const durationMs = Date.now() - start;
@@ -413,7 +413,7 @@ async function testObsCanonicalUrl(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/observations/${encodeURIComponent(observationId)}`, ctx.baseUrl).toString();
+    const url = new URL(`observations/${encodeURIComponent(observationId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

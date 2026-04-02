@@ -33,7 +33,7 @@ export default function ProgressPage() {
 
   // Connection state
   const [connectionStatus, setConnectionStatus] = useState<
-    'connecting' | 'connected' | 'reconnecting' | 'failed'
+    'connecting' | 'connected' | 'reconnecting' | 'polling' | 'failed'
   >('connecting');
 
   // Cancel state
@@ -42,6 +42,7 @@ export default function ProgressPage() {
 
   const sseRef = useRef<{ close: () => void } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
 
   // Fetch assessment metadata (endpoint URL)
@@ -62,6 +63,38 @@ export default function ProgressPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // Polling fallback when SSE connection fails
+  const startPolling = useCallback(() => {
+    if (pollRef.current) return; // already polling
+
+    const poll = async () => {
+      try {
+        const session = await apiClient.getAssessment(assessmentId);
+        if (session.status === 'completed' || session.status === 'cancelled' || session.status === 'partial') {
+          if (timerRef.current) clearInterval(timerRef.current);
+          if (pollRef.current) clearInterval(pollRef.current);
+          sseRef.current?.close();
+          router.push(`/assess/${assessmentId}/results`);
+        } else if (session.status === 'error') {
+          setConnectionStatus('failed');
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+        // If still 'running' or 'discovering', keep polling
+      } catch {
+        // 404 = session gone, show failed state
+        setConnectionStatus('failed');
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }
+    };
+
+    // Poll immediately, then every 3 seconds
+    poll();
+    pollRef.current = setInterval(poll, 3000);
+  }, [assessmentId, router]);
 
   // SSE connection
   useEffect(() => {
@@ -109,7 +142,8 @@ export default function ProgressPage() {
       },
 
       onError(_error: Event) {
-        setConnectionStatus('failed');
+        // Only mark failed if we're not already polling
+        setConnectionStatus((prev) => prev === 'polling' ? prev : 'failed');
       },
 
       onReconnecting() {
@@ -118,10 +152,17 @@ export default function ProgressPage() {
 
       onReconnected() {
         setConnectionStatus('connected');
+        // Stop polling if SSE reconnects
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
       },
 
       onReconnectFailed() {
-        setConnectionStatus('failed');
+        // Fall back to polling the assessment status API
+        setConnectionStatus('polling');
+        startPolling();
       },
     });
 
@@ -129,8 +170,12 @@ export default function ProgressPage() {
 
     return () => {
       client.close();
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
     };
-  }, [assessmentId, router]);
+  }, [assessmentId, router, startPolling]);
 
   // Cancel handler
   const handleCancel = useCallback(async () => {
@@ -168,34 +213,46 @@ export default function ProgressPage() {
       </div>
 
       {/* Connection Warning */}
-      {connectionStatus === 'reconnecting' && (
+      {(connectionStatus === 'reconnecting' || connectionStatus === 'polling') && (
         <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3" role="status">
           <div className="flex items-center gap-2">
-            <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg className="h-5 w-5 animate-spin text-amber-600" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-sm text-amber-800">{t('progress.reconnecting')}</p>
+            <p className="text-sm text-amber-800">
+              {connectionStatus === 'polling'
+                ? t('progress.polling')
+                : t('progress.reconnecting')}
+            </p>
           </div>
         </div>
       )}
 
       {connectionStatus === 'failed' && (
         <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3" role="alert">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <p className="text-sm text-red-800">
-                {t('progress.connectionLost')}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p className="text-sm text-red-800">
+              {t('progress.connectionLost')}
+            </p>
+          </div>
+          <div className="mt-3 flex gap-3">
             <button
               type="button"
               onClick={() => router.push(`/assess/${assessmentId}/results`)}
-              className="shrink-0 text-sm font-medium text-red-700 underline hover:text-red-900"
+              className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
             >
               {t('progress.viewResults')}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+            >
+              {t('progress.startNew')}
             </button>
           </div>
         </div>

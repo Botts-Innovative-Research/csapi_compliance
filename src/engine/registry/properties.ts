@@ -76,7 +76,7 @@ async function testResourcesEndpoint(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/properties', ctx.baseUrl).toString();
+    const url = new URL('properties', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -129,7 +129,7 @@ async function testCanonicalUrl(ctx: TestContext) {
 
   try {
     const propertyId = ctx.discoveryCache.propertyId;
-    const url = new URL(`/properties/${encodeURIComponent(propertyId)}`, ctx.baseUrl).toString();
+    const url = new URL(`properties/${encodeURIComponent(propertyId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -182,7 +182,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
 
   try {
     const propertyId = ctx.discoveryCache.propertyId;
-    const url = new URL(`/properties/${encodeURIComponent(propertyId)}`, ctx.baseUrl).toString();
+    const url = new URL(`properties/${encodeURIComponent(propertyId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -265,7 +265,7 @@ async function testCollections(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

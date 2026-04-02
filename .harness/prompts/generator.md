@@ -88,9 +88,26 @@ describe('SCENARIO-AUTH-LOGIN-001', () => {
 
 ### 4. Integration Verification
 After all scenarios are implemented:
+
+```bash
+# Source nvm first (system Node is too old)
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+# Run unit tests
+npx vitest run
+
+# Type check
+npx tsc --noEmit
+
+# Lint
+npx eslint . --ext .ts,.tsx
+
+# Run E2E tests (start dev server first on port 4000)
+PORT=4000 CSAPI_PORT=4000 npx playwright test
+```
+
 - Run the full test suite (not just new tests)
 - Verify no regressions in existing tests
-- Run type checks / linters per project build commands
 - If E2E tests exist, run them
 
 ### 5. Spec Reconciliation
@@ -108,11 +125,19 @@ Before writing the handoff, honestly assess:
 - Did you deviate from the design? Why?
 - What is your confidence level that the Evaluator will pass this?
 
+### 4b. Conformance Test URL Verification (CRITICAL)
+This project is a compliance testing tool. When writing or modifying conformance test modules in `src/engine/registry/`:
+- **NEVER** use absolute paths with `new URL()`: `new URL('/systems', baseUrl)` discards the base path
+- **ALWAYS** use relative paths: `new URL('systems', ctx.baseUrl)` (baseUrl has trailing slash)
+- After writing test modules, verify URL construction by checking the resolved URL includes the full base path
+- Run the test module against a server with a non-root base path (e.g., `https://host/api/v1/`) to catch path-stripping bugs
+
 ## Outputs
 
 ### Code and Tests
-- Source code in `src/` (or project-specific source directory)
-- Test files in `tests/` (or project-specific test directory)
+- Source code in `src/`
+- Test files co-located with source (`.test.ts` or `.spec.ts` files)
+- Conformance test modules in `src/engine/registry/`
 - Updated spec files in `openspec/capabilities/*/spec.md`
 
 ### Handoff File
@@ -166,10 +191,11 @@ self_assessment:
     - "{{Anything the Evaluator should know}}"
 
 commands_to_verify:
-  test: "{{command to run tests}}"
-  lint: "{{command to run linter}}"
-  build: "{{command to build}}"
-  e2e: "{{command to run E2E tests, if applicable}}"
+  test: "npx vitest run"
+  lint: "npx eslint . --ext .ts,.tsx"
+  typecheck: "npx tsc --noEmit"
+  build: "npm run build"
+  e2e: "PORT=4000 CSAPI_PORT=4000 npx playwright test"
 ```
 
 ## Quality Gates

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, type ChangeEvent } from 'react';
-import type { DeclaredConformanceClass } from '@/engine/conformance-mapper.js';
+import type { DeclaredConformanceClass } from '@/engine/conformance-mapper';
 import { t } from '@/lib/i18n';
 
 interface ConformanceClassSelectorProps {

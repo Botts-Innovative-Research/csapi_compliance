@@ -1,0 +1,107 @@
+# Retroactive Evaluation Sprint Contract
+# This contract covers the FULL v1.0 implementation for retroactive quality evaluation.
+# All 9 epics and 39 stories are in scope.
+# Purpose: First-ever evaluator invocation against the complete codebase.
+
+sprint: "retro-eval"
+type: "retroactive-evaluation"
+description: |
+  Full retroactive evaluation of the v1.0 implementation.
+  All code was written in Sprints 1-6 (March 30-31, 2026) without any evaluator
+  gate checks. This contract exists so the evaluator can independently assess
+  the entire implementation against the specs.
+
+  Known issues already found during user testing (April 2, 2026):
+  - .js import extensions broke Next.js webpack (fixed)
+  - POST /api/assessments response shape mismatch with client (fixed)
+  - registerAllModules() never called - 0 tests ran (fixed)
+  - new URL('/path', baseUrl) discarded base path - 67 calls (fixed)
+  - Results page filters operated at class level not test level (fixed)
+  - SSE reconnection gave dead-end error (fixed)
+  - Skip reasons not displayed in results (fixed)
+
+stories:
+  - "S01-01"  # Discovery Service
+  - "S01-02"  # Conformance Mapper
+  - "S02-01"  # OGC API Common Tests
+  - "S02-02"  # OGC API Features Core Tests
+  - "S03-01"  # CS API Core Tests
+  - "S03-02"  # System Features Tests
+  - "S03-03"  # Deployment Features Tests
+  - "S03-04"  # Procedure/Sampling/Property Tests
+  - "S03-05"  # Filtering Tests
+  - "S03-06"  # CRUD Tests
+  - "S03-07"  # GeoJSON/SensorML Encoding Tests
+  - "S04-01"  # Test Registry
+  - "S04-02"  # Result Aggregator
+  - "S04-03"  # Schema Validator
+  - "S04-04"  # Dependency Graph
+  - "S04-05"  # Pagination
+  - "S04-06"  # HTTP Client + SSRF Guard
+  - "S04-XX"  # TestRunner Orchestrator
+  - "S05-01"  # Request Capture + Exchange Wiring
+  - "S05-02"  # Credential Masker
+  - "S06-01"  # Progress UI + SSE
+  - "S06-02"  # Results Dashboard + Detail Drawer
+  - "S07-01"  # JSON Export
+  - "S07-02"  # PDF Export
+  - "S08-01"  # SSE Broadcaster
+  - "S08-02"  # Cancel Token + Cancellation
+  - "S08-03"  # Session Manager + Result Store
+  - "S09-01"  # Part 2 Common + JSON Tests
+  - "S09-02"  # Datastreams Tests
+  - "S09-03"  # Control Streams Tests
+  - "S09-04"  # Feasibility Tests
+  - "S09-05"  # System Events Tests
+  - "S09-06"  # System History Tests
+  - "S09-07"  # Part 2 Filtering/CRUD/Update Tests
+  - "S09-08"  # SWE Common Encoding Tests
+
+requirements:
+  # All 59 FRs from the PRD
+  - "FR-01 through FR-59"
+
+scenarios:
+  critical:
+    # Core user journey
+    - "SCENARIO-SESS-LAND-001"  # Landing page URL input
+    - "SCENARIO-SESS-LAND-002"  # Discover endpoint
+    - "SCENARIO-DISC-FLOW-001"  # Fetch landing page
+    - "SCENARIO-DISC-FLOW-002"  # Parse conformance
+    - "SCENARIO-DISC-FLOW-005"  # Map conformance classes
+    - "SCENARIO-SESS-PROG-001"  # Progress display
+    - "SCENARIO-RPT-DASH-001"   # Results summary dashboard
+    - "SCENARIO-RPT-TEST-001"   # Individual test results
+    - "SCENARIO-EXP-JSON-001"   # JSON export
+    # Engine correctness
+    - "SCENARIO-ENG-TRACE-001"  # Test-to-requirement traceability
+    - "SCENARIO-ENG-DEP-001"    # Dependency resolution
+    - "SCENARIO-ENG-RESULT-001" # Result aggregation
+    - "SCENARIO-TEST-PASS-001"  # Conformance tests produce correct results
+    - "SCENARIO-TEST-PASS-002"  # Tests detect non-conformance
+    # Security
+    - "SCENARIO-CAP-MASK-001"   # Credential masking
+  normal:
+    # All remaining 126 SCENARIO-* IDs
+    - "All non-critical SCENARIO-* from openspec/capabilities/*/spec.md"
+
+success_criteria:
+  all_critical_scenarios_pass: true
+  normal_scenario_pass_rate: 0.90
+  spec_updated: true
+  no_regression: true
+  # Additional criteria for retroactive eval
+  unit_tests_pass: true
+  typecheck_pass: true
+  lint_pass: true
+  e2e_tests_pass: true
+  conformance_accuracy_verified: true
+
+evaluation_focus:
+  - "URL construction correctness in all 27 conformance test modules"
+  - "Frontend-backend API contract consistency (CreateAssessmentResponse, StartAssessmentResponse shapes)"
+  - "Results page filtering logic (test-level, not class-level)"
+  - "SSE reconnection and polling fallback behavior"
+  - "Test assertions match OGC spec text (spot-check 5 assertions)"
+  - "All test modules actually registered and executed"
+  - "SCENARIO-* traceability in test comments (expected: present, currently: absent)"

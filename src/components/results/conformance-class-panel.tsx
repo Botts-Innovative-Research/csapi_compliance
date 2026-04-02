@@ -9,6 +9,8 @@ interface ConformanceClassPanelProps {
   defaultExpanded?: boolean;
   /** Called when a test row is clicked to open the detail drawer. */
   onTestClick: (test: TestResult, classResult: ConformanceClassResult) => void;
+  /** When set, only show tests matching this status within each class. */
+  testStatusFilter?: 'pass' | 'fail' | 'skip';
 }
 
 /** Status icon with triple redundancy: icon shape + text + color. */
@@ -52,10 +54,23 @@ export default function ConformanceClassPanel({
   classResult,
   defaultExpanded = false,
   onTestClick,
+  testStatusFilter,
 }: ConformanceClassPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const { className: name, classUri, status, tests, counts } = classResult;
+
+  // When a test filter is active, compute filtered counts and override the displayed status
+  const filteredTests = testStatusFilter
+    ? tests.filter((t) => t.status === testStatusFilter)
+    : tests;
+  const filteredCount = filteredTests.length;
+  const displayStatus = testStatusFilter || status;
+
+  // Extract a representative skip reason for the class header
+  const classSkipReason = (displayStatus === 'skip')
+    ? tests.find((t) => t.status === 'skip' && t.skipReason)?.skipReason
+    : null;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
@@ -67,16 +82,25 @@ export default function ConformanceClassPanel({
         aria-expanded={isExpanded}
         aria-controls={`class-panel-${classUri}`}
       >
-        <StatusIcon status={status} />
+        <StatusIcon status={displayStatus} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <span className="text-sm font-semibold text-gray-900">{name}</span>
-            <StatusText status={status} />
+            <StatusText status={displayStatus} />
           </div>
           <p className="truncate font-mono text-xs text-gray-400">{classUri}</p>
+          {classSkipReason && (
+            <p className="mt-0.5 truncate text-xs text-gray-500" title={classSkipReason}>
+              {classSkipReason}
+            </p>
+          )}
         </div>
         <span className="shrink-0 text-xs text-gray-500">
-          {counts.pass}/{counts.pass + counts.fail + counts.skip} passed
+          {testStatusFilter
+            ? `${filteredCount} ${testStatusFilter === 'pass' ? 'passed' : testStatusFilter === 'fail' ? 'failed' : 'skipped'}`
+            : status === 'skip'
+              ? `${counts.skip} skipped`
+              : `${counts.pass}/${counts.pass + counts.fail + counts.skip} passed`}
         </span>
         <svg
           className={`h-5 w-5 shrink-0 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -96,7 +120,7 @@ export default function ConformanceClassPanel({
           className="border-t border-gray-200"
         >
           <div className="divide-y divide-gray-100">
-            {tests.map((test) => (
+            {(testStatusFilter ? tests.filter((t) => t.status === testStatusFilter) : tests).map((test) => (
               <TestRow
                 key={test.requirementUri}
                 test={test}

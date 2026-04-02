@@ -26,6 +26,14 @@ You run **always** -- every sprint ends with evaluation. You run AFTER the Gener
 | 7 | `ops/e2e-test-plan.md` | E2E test plan | End-to-end verification procedures |
 | 8 | Source code and test files | The actual implementation | What was actually built |
 
+## Build Environment
+
+Before running any npm/node commands, source nvm:
+
+```bash
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+```
+
 ## Process
 
 ### 1. Contract Baseline
@@ -66,10 +74,11 @@ Review all code changes:
 - Input validation present where needed?
 - Authentication/authorization checks in place?
 - No secrets in code, no SQL injection, no XSS vectors?
-- Sensitive data handled per security requirements?
+- SSRF protection: verify `src/server/middleware/ssrf-guard.ts` blocks private IPs
+- Credential masking: verify `src/engine/credential-masker.ts` redacts auth in exports
 
 **UX Compliance** (if applicable):
-- Does the UI match the UX spec?
+- Does the UI match the UX spec in `_bmad/ux-spec.md`?
 - Are error messages exactly as specified?
 - Are loading/empty/error states implemented?
 - Are accessibility requirements met (ARIA, keyboard, focus management)?
@@ -78,17 +87,23 @@ Review all code changes:
 **You MUST run the tests yourself.** Do not trust the Generator's reported results.
 
 ```bash
+# Source nvm first
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
 # Run unit tests
-{{project test command}}
+npx vitest run
 
-# Run linter / type checks
-{{project lint command}}
+# Run type checks
+npx tsc --noEmit
 
-# Run E2E tests (if applicable)
-{{project e2e command}}
+# Run linter
+npx eslint . --ext .ts,.tsx
 
 # Run coverage
-{{project coverage command}}
+npx vitest run --coverage
+
+# Run E2E tests (requires running server on port 4000)
+PORT=4000 CSAPI_PORT=4000 npx playwright test
 ```
 
 Record:
@@ -119,21 +134,76 @@ UNVERIFIED is NOT a pass. If a CRITICAL scenario is UNVERIFIED, the sprint fails
 - Check coverage for new files against thresholds in `.harness/config.yaml`
 - Verify that every implemented REQ-* has at least one test
 - Identify any SCENARIO-* that has no corresponding test
+- Verify SCENARIO-* IDs appear in test file comments (traceability)
 
-### 8. E2E Verification
+### 8. Conformance Fixture Validation
+
+**This step is CRITICAL for a compliance testing tool.** Your product IS a test suite -- you must validate that the test assertions themselves are correct.
+
+#### 8a. Known-Good Fixture Test
+If a known-good mock server or reference implementation is available:
+- Run the full conformance test suite against it
+- Every test MUST pass against a known-conformant server
+- Any FAIL against a known-good fixture is a **false positive** (bug in our test assertion)
+- Document: how many assertions validated, how many false positives found
+
+#### 8b. Known-Bad Fixture Test
+For any new or modified test assertion:
+- Verify the test correctly detects non-conformance
+- If a known-bad fixture exists, run the targeted test against it -- it MUST fail
+- Any PASS against a known-bad fixture is a **false negative** (bug in our test assertion)
+
+#### 8c. Assertion-to-Spec Traceability
+- Verify every test assertion cites the specific OGC requirement it tests (REQ-* in comments)
+- Spot-check: pick 3-5 test assertions and verify the logic matches the OGC spec text
+- Flag any assertion that appears to test something different from what it claims
+
+#### 8d. Schema Correctness
+- Verify `schemas/manifest.json` exists and lists expected schema count
+- Check that fetched OGC schemas match expected versions
+- If schemas were recently updated, verify no test regressions from schema changes
+
+### 9. E2E Verification
 If the sprint contract includes user-facing changes:
+- Start the dev server: `PORT=4000 CSAPI_PORT=4000 npm run dev`
 - Follow the E2E test plan in `ops/e2e-test-plan.md`
-- Run E2E tests against the deployed/running system
-- Document results with evidence (command output, screenshots if applicable)
+- Run E2E tests: `npx playwright test`
+- Also manually verify the critical user journey:
+  1. Open http://localhost:4000
+  2. Enter a CS API endpoint URL (e.g., https://api.georobotix.io/ogc/t18/api)
+  3. Click Discover -- verify conformance classes appear on configure page
+  4. Select classes and click Start Assessment
+  5. Verify progress page shows real-time updates
+  6. Verify results page shows pass/fail/skip with correct filtering
+  7. Verify JSON export works
+- Document results with evidence (command output, HTTP status codes)
 
-### 9. Sprint Grading
+### 10. Contract Test Verification
+Verify frontend-backend API contracts are consistent:
+- Check that `src/services/api-client.ts` interfaces match the actual Express route responses
+- Specifically verify: `CreateAssessmentResponse`, `StartAssessmentResponse`, `AssessmentSession` shapes
+- Check that the frontend reads all fields the backend provides (no silent mismatches)
+
+### 11. Security Gate
+- Verify SSRF guard blocks private IP ranges: `curl -X POST http://localhost:4000/api/assessments -H "Content-Type: application/json" -d '{"endpointUrl":"http://127.0.0.1:8080"}'` should return 400
+- Verify credential masking in exports: start an assessment with auth config, export results, verify no credentials in output
+- Check for hardcoded secrets in source (grep for API keys, tokens, passwords)
+
+### 12. Accessibility Gate
+- Run axe-core scan via Playwright on key pages (landing, configure, progress, results)
+- Verify skip-to-main-content link works
+- Verify all interactive elements are keyboard accessible
+- Verify ARIA labels on dynamic content (progress bar, status updates)
+
+### 13. Sprint Grading
 Apply the evaluation criteria from `.harness/config.yaml`:
 
 | Criterion | Weight | Score (0-1) | Hard Fail? | Notes |
 |-----------|--------|-------------|------------|-------|
-| Spec Fidelity | 0.30 | | | |
-| Functional Completeness | 0.30 | | | |
+| Spec Fidelity | 0.25 | | | |
+| Functional Completeness | 0.25 | | | |
 | Integration Correctness | 0.20 | | | |
+| Conformance Accuracy | 0.10 | | | |
 | Code Quality | 0.10 | | | |
 | Robustness | 0.10 | | | |
 
@@ -169,7 +239,7 @@ scenario_results:
       notes: "{{observations}}"
 
 test_execution:
-  command_used: "{{exact command}}"
+  command_used: "npx vitest run"
   total: {{N}}
   passed: {{N}}
   failed: {{N}}
@@ -187,6 +257,39 @@ coverage:
   meets_threshold: {{true | false}}
   uncovered_requirements: ["{{REQ-* with no test}}"]
 
+conformance_fixture_validation:
+  known_good_tested: {{true | false}}
+  assertions_validated: {{N}}
+  false_positives_found: {{N}}
+  false_positive_details:
+    - test: "{{test name}}"
+      issue: "{{what went wrong}}"
+  known_bad_tested: {{true | false}}
+  false_negatives_found: {{N}}
+  assertion_spec_spot_checks:
+    - assertion: "{{test name}}"
+      spec_clause: "{{OGC requirement}}"
+      matches_spec: {{true | false}}
+      notes: "{{observations}}"
+
+contract_tests:
+  api_shapes_consistent: {{true | false}}
+  discrepancies:
+    - interface: "{{TypeScript interface name}}"
+      issue: "{{mismatch description}}"
+
+security:
+  ssrf_guard_verified: {{true | false}}
+  credential_masking_verified: {{true | false}}
+  hardcoded_secrets_found: {{N}}
+  issues: ["{{any security issues}}"]
+
+accessibility:
+  axe_violations: {{N}}
+  keyboard_nav_verified: {{true | false}}
+  aria_labels_verified: {{true | false}}
+  issues: ["{{any a11y issues}}"]
+
 criteria_scores:
   spec_fidelity:
     score: {{0.0-1.0}}
@@ -197,6 +300,10 @@ criteria_scores:
     hard_fail: {{true | false}}
     notes: "{{details}}"
   integration_correctness:
+    score: {{0.0-1.0}}
+    hard_fail: {{true | false}}
+    notes: "{{details}}"
+  conformance_accuracy:
     score: {{0.0-1.0}}
     hard_fail: {{true | false}}
     notes: "{{details}}"
@@ -239,6 +346,11 @@ Before completing, verify:
 - [ ] Every CRITICAL scenario has a definitive PASS or FAIL (not UNVERIFIED)
 - [ ] Regression check was performed against the full test suite
 - [ ] Coverage was measured for new files
+- [ ] Conformance fixture validation performed (known-good and/or known-bad)
+- [ ] Assertion-to-spec traceability spot-checked
+- [ ] API contract consistency verified (frontend/backend shapes match)
+- [ ] Security checks passed (SSRF, credential masking, no hardcoded secrets)
+- [ ] Accessibility checks passed (axe-core, keyboard nav, ARIA)
 - [ ] Each evaluation criterion has a justified score
 - [ ] Verdict is consistent with scores and hard-fail conditions
 - [ ] If RETRY, guidance is specific enough for the Generator to act on
@@ -254,3 +366,5 @@ Before completing, verify:
 - **Assuming good faith**: The Generator is not adversarial, but it makes mistakes. Verify everything that matters.
 - **Letting UNVERIFIED slide**: If you cannot verify a CRITICAL scenario, the sprint fails. Do not mark it "probably fine."
 - **Conflating code quality with correctness**: Beautiful code that does the wrong thing fails. Ugly code that passes all scenarios and meets requirements passes (with a code quality note for the next sprint).
+- **Trusting URL construction**: Verify that test modules construct URLs correctly by checking actual HTTP exchange URLs against expected base paths. The `new URL()` API with absolute paths is a known footgun.
+- **Ignoring API contract drift**: Always verify that TypeScript interfaces in the API client match what the Express routes actually return. Schema-level mismatches cause silent failures.

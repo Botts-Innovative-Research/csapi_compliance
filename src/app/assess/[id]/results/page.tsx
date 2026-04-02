@@ -118,20 +118,22 @@ export default function ResultsPage() {
     }
   }
 
-  // Filter classes
+  // Filter classes — show any class that contains tests matching the filter
   const filteredClasses = results
     ? filter === 'all'
       ? results.classes
-      : results.classes.filter((c) => c.status === (filter as ClassStatus))
+      : results.classes.filter((c) =>
+          c.tests.some((t) => t.status === filter),
+        )
     : [];
 
-  // Count classes by status for filter badges
-  const classCounts = results
+  // Count tests by status for filter badges
+  const testCounts = results
     ? {
-        all: results.classes.length,
-        pass: results.classes.filter((c) => c.status === 'pass').length,
-        fail: results.classes.filter((c) => c.status === 'fail').length,
-        skip: results.classes.filter((c) => c.status === 'skip').length,
+        all: results.summary.totalTests,
+        pass: results.summary.passed,
+        fail: results.summary.failed,
+        skip: results.summary.skipped,
       }
     : { all: 0, pass: 0, fail: 0, skip: 0 };
 
@@ -293,7 +295,7 @@ export default function ResultsPage() {
                 : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {label} ({classCounts[key]})
+            {label} ({testCounts[key]})
           </button>
         ))}
       </div>
@@ -305,8 +307,9 @@ export default function ResultsPage() {
             <ConformanceClassPanel
               key={classResult.classUri}
               classResult={classResult}
-              defaultExpanded={classResult.status === 'fail'}
+              defaultExpanded={classResult.status === 'fail' || classResult.status === 'skip'}
               onTestClick={handleTestClick}
+              testStatusFilter={filter === 'all' ? undefined : filter}
             />
           ))
         ) : (

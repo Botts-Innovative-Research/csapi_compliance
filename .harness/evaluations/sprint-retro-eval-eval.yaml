@@ -1,0 +1,299 @@
+agent: evaluator
+sprint_number: "retro-eval"
+type: "retroactive-evaluation"
+timestamp: "2026-04-02T20:54:00Z"
+
+verdict: "RETRY"
+weighted_score: 0.58
+
+scenario_results:
+  critical:
+    - id: "SCENARIO-SESS-LAND-001"
+      status: "PASS"
+      evidence: "src/app/page.tsx — Landing page renders URL input, demo link, feature list. Verified via curl http://localhost:4000 and Playwright test listing."
+      notes: "Landing page loads correctly with all expected UI elements."
+
+    - id: "SCENARIO-SESS-LAND-002"
+      status: "PASS"
+      evidence: "POST /api/assessments with endpointUrl returns 201 with discoveryResult. Verified via curl against https://api.georobotix.io/ogc/t18/api."
+      notes: "Discovery endpoint returns conformsTo, links, landingPage, resource IDs."
+
+    - id: "SCENARIO-DISC-FLOW-001"
+      status: "PASS"
+      evidence: "src/engine/discovery-service.ts:105 — fetches landing page, validates 200, parses JSON."
+      notes: "Correctly handles non-JSON content-type with warning instead of abort."
+
+    - id: "SCENARIO-DISC-FLOW-002"
+      status: "PASS"
+      evidence: "src/engine/discovery-service.ts:174 — fetches conformance endpoint, validates 200, parses conformsTo array."
+      notes: "Correctly falls back to /conformance when no conformance link found."
+
+    - id: "SCENARIO-DISC-FLOW-005"
+      status: "PASS"
+      evidence: "src/engine/conformance-mapper.ts called by discovery-service.ts:201. mapConformanceClasses maps URIs to known classes."
+      notes: "All 33 conformance classes from OGC reference server correctly mapped."
+
+    - id: "SCENARIO-SESS-PROG-001"
+      status: "PASS"
+      evidence: "src/app/assess/[id]/progress/page.tsx — progress bar, elapsed timer, test log, SSE connection with reconnection/polling fallback."
+      notes: "Progress page has ARIA labels on progressbar, aria-live on status updates."
+
+    - id: "SCENARIO-RPT-DASH-001"
+      status: "PASS"
+      evidence: "src/components/results/summary-dashboard.tsx rendered in src/app/assess/[id]/results/page.tsx:255."
+      notes: "Dashboard shows compliance %, test counts, class counts, duration."
+
+    - id: "SCENARIO-RPT-TEST-001"
+      status: "PASS"
+      evidence: "src/components/results/conformance-class-panel.tsx:114 — filters tests by status, shows failure messages (line 145-148), skip reasons (line 150-152)."
+      notes: "Test-level filtering confirmed working. Skip reasons displayed."
+
+    - id: "SCENARIO-EXP-JSON-001"
+      status: "FAIL"
+      evidence: "src/services/api-client.ts:124 calls GET /api/assessments/${id}/export/json but route is GET /api/assessments/:id/export?format=json. Verified: curl returns 404 for /export/json, 200 for /export?format=json."
+      notes: "CRITICAL: Frontend export button is broken due to URL mismatch. The API client uses path-based routing (/export/json) but the Express route uses query-param routing (/export?format=json)."
+
+    - id: "SCENARIO-ENG-TRACE-001"
+      status: "PASS"
+      evidence: "Every TestResult has requirementUri and conformanceUri fields (src/lib/types.ts:71-72). All test modules include RequirementDefinition with these URIs."
+      notes: "Test-to-requirement traceability is structurally sound."
+
+    - id: "SCENARIO-ENG-DEP-001"
+      status: "PASS"
+      evidence: "src/engine/dependency-resolver.ts — Kahn's algorithm topological sort, cycle detection, auto-inclusion of transitive deps. Verified against live run: OGC Features Core skipped when Common Core failed."
+      notes: "Dependency resolution works correctly in practice."
+
+    - id: "SCENARIO-ENG-RESULT-001"
+      status: "PASS"
+      evidence: "src/engine/result-aggregator.ts — aggregateClassResult (class passes only if ALL tests pass), aggregateAssessmentSummary (compliance % excludes skipped)."
+      notes: "Verified: 50% compliance = 8 passed / (8 passed + 8 failed) in live run."
+
+    - id: "SCENARIO-TEST-PASS-001"
+      status: "FAIL"
+      evidence: "34 URL constructions in 11 test modules use leading-slash pattern: new URL('/deployments/{id}', ctx.baseUrl). This discards the base path for non-root APIs. Verified: new URL('/deployments/16sp744ch58g', 'https://api.georobotix.io/ogc/t18/api/') produces https://api.georobotix.io/deployments/16sp744ch58g (wrong)."
+      notes: "CRITICAL: The known URL construction bug was only partially fixed. 34 instances remain in deployments.ts, subsystems.ts, subdeployments.ts, features-core.ts, part2-swe-encodings.ts, part2-crud.ts, part2-update.ts, part2-history.ts, part2-events.ts, part2-feasibility.ts, sampling.ts. These produce false positives (incorrect 404 failures) when testing APIs hosted at non-root paths."
+
+    - id: "SCENARIO-TEST-PASS-002"
+      status: "PASS"
+      evidence: "Tests that use correct relative URLs (e.g., common.ts, csapi-core.ts) correctly detect non-conformance. GeoRobotix server's missing 'self' link and 'auto' content-type were correctly flagged."
+      notes: "Test assertions themselves are correct per OGC spec; the issue is URL construction, not assertion logic."
+
+    - id: "SCENARIO-CAP-MASK-001"
+      status: "PASS"
+      evidence: "src/engine/credential-masker.ts — masks Authorization header, API key headers, URL query params, and JSON body password fields. Verified in GET /api/assessments/:id response: exchange headers show '***' instead of token values."
+      notes: "Masking covers all expected credential locations."
+
+  normal:
+    - id: "All non-critical SCENARIO-*"
+      status: "UNVERIFIED"
+      evidence: "No SCENARIO-* IDs present in any test file comments. Cannot trace individual scenarios to tests."
+      notes: "SCENARIO-* traceability is completely absent from test files. REQ-* traceability exists in some test files."
+
+test_execution:
+  command_used: "npx vitest run"
+  total: 906
+  passed: 905
+  failed: 1
+  skipped: 0
+  regressions: 1
+  regression_details:
+    - test: "POST /api/assessments > creates a session and returns 201 with id and status"
+      previous: "pass"
+      current: "fail"
+      likely_cause: "Test expects {id, status:'discovering'} but route now returns {id, discoveryResult:{...}} after the API contract was changed. Test was not updated to match the new response shape."
+
+typecheck:
+  command_used: "npx tsc --noEmit"
+  errors: 3
+  details:
+    - file: "src/engine/export-engine.ts:5"
+      error: "TS7016: Could not find a declaration file for module 'pdfkit'"
+    - file: "src/engine/http-client.ts:144"
+      error: "TS2578: Unused '@ts-expect-error' directive"
+    - file: "tests/unit/engine/pagination.test.ts:71"
+      error: "TS2304: Cannot find name 'beforeEach' (vitest globals not in tsconfig types)"
+
+e2e_tests:
+  command_used: "npx playwright test"
+  total: 92
+  passed: 0
+  failed: 80
+  skipped: 12
+  notes: "All E2E tests failed. Playwright config hardcodes baseURL: 'http://localhost:3000' and webServer port: 3000, but the server runs on port 4000. Port 3000 is occupied by another container. The 12 skipped tests are live-IUT E2E tests gated behind a condition."
+
+coverage:
+  line_coverage_new_files: 0.0
+  branch_coverage_new_files: 0.0
+  meets_threshold: false
+  uncovered_requirements:
+    - "All SCENARIO-* IDs have no traceability in test comments"
+  notes: "Coverage was not measured (--coverage run not completed). Vitest config thresholds: lines 80%, branches 70% for src/engine/."
+
+conformance_fixture_validation:
+  known_good_tested: true
+  assertions_validated: 28
+  false_positives_found: 4
+  false_positive_details:
+    - test: "Deployment Canonical URL"
+      issue: "new URL('/deployments/{id}', baseUrl) discards base path. URL resolves to https://api.georobotix.io/deployments/16sp744ch58g instead of https://api.georobotix.io/ogc/t18/api/deployments/16sp744ch58g, producing 404."
+    - test: "Deployment Canonical Endpoint"
+      issue: "Same leading-slash URL bug — 404 means JSON parse fails, false failure."
+    - test: "Deployments Referenced from System"
+      issue: "new URL('/systems/{id}/deployments', baseUrl) same leading-slash bug."
+    - test: "Deployments in Collections"
+      issue: "Not a URL bug — GeoRobotix collections endpoint returns collections but none with id='deployments'. May be a legitimate test finding or overly strict assertion."
+  known_bad_tested: false
+  false_negatives_found: 0
+  assertion_spec_spot_checks:
+    - assertion: "Landing Page Required Links (common.ts testLandingPageLinks)"
+      spec_clause: "OGC API Common Part 1, Section 7.3.2 — landing page MUST contain self, service-desc, conformance links"
+      matches_spec: true
+      notes: "Correctly checks for self, service-desc, conformance rel values."
+    - assertion: "JSON Content-Type (common.ts testJsonContentType)"
+      spec_clause: "OGC API Common Part 1 — JSON responses MUST include Content-Type: application/json"
+      matches_spec: true
+      notes: "Correctly flags GeoRobotix server returning 'auto' instead of application/json."
+    - assertion: "Resource IDs (csapi-core.ts testResourceIds)"
+      spec_clause: "CS API Part 1 Core — all resources must have an id field"
+      matches_spec: true
+      notes: "Checks items[0].id exists. Could be more thorough (check all items, check uniqueness)."
+    - assertion: "Conformance conformsTo (common.ts testConformanceConformsTo)"
+      spec_clause: "OGC API Common Part 1, Section 7.5 — conformance response must contain conformsTo array"
+      matches_spec: true
+      notes: "Correctly verifies Array.isArray(body.conformsTo)."
+    - assertion: "Compliance % calculation (result-aggregator.ts aggregateAssessmentSummary)"
+      spec_clause: "Project requirement REQ-RPT-001 — compliance % excludes skipped tests from denominator"
+      matches_spec: true
+      notes: "denominator = passed + failed. Verified: 8/(8+8) = 50% in live run."
+
+contract_tests:
+  api_shapes_consistent: false
+  discrepancies:
+    - interface: "CreateAssessmentResponse"
+      issue: "Client expects {id, discoveryResult} which matches current route. BUT the unit test (assessments.test.ts:173) still expects {id, status:'discovering'} — stale test."
+    - interface: "apiClient.exportJson()"
+      issue: "CRITICAL: Client calls GET /api/assessments/${id}/export/json (path-based) but Express route is GET /api/assessments/:id/export?format=json (query-based). Export returns 404 from client."
+
+security:
+  ssrf_guard_verified: true
+  credential_masking_verified: true
+  hardcoded_secrets_found: 0
+  issues:
+    - "SSRF guard correctly blocks: 127.0.0.1, 10.0.0.1, 192.168.1.1, localhost, ::1, ftp:// scheme."
+    - "Credential masking verified: Authorization headers masked with *** in GET /api/assessments/:id response."
+    - "No hardcoded secrets found in source code (grep for api_key, secret, password, token, credential)."
+
+accessibility:
+  axe_violations: -1
+  keyboard_nav_verified: false
+  aria_labels_verified: true
+  issues:
+    - "axe-core scan not run (Playwright E2E tests failed due to port configuration)."
+    - "ARIA labels present: progressbar role with aria-valuenow/min/max, aria-live on progress status, role=alert on errors, aria-expanded on accordion panels, aria-label on detail buttons."
+    - "Keyboard navigation not verified via automated tests."
+
+criteria_scores:
+  spec_fidelity:
+    score: 0.60
+    hard_fail: false
+    notes: "Core architecture matches spec. But 34 URL construction bugs in test modules produce incorrect test results for non-root-path APIs. The API client export path does not match the route. One unit test is stale."
+  functional_completeness:
+    score: 0.70
+    hard_fail: false
+    notes: "All 27 test modules registered. Discovery, test execution, result aggregation, dependency resolution, credential masking, SSE progress, cancel flow all work. JSON export via curl works. PDF export works. But JSON export from the UI is broken (404). 34 URLs are constructed incorrectly in test modules."
+  integration_correctness:
+    score: 0.45
+    hard_fail: false
+    notes: "Frontend-backend API contract has a mismatch (export path). Unit test for POST /api/assessments is stale. E2E tests all fail due to port configuration. Playwright config hardcodes port 3000 instead of using env var."
+  conformance_accuracy:
+    score: 0.50
+    hard_fail: false
+    notes: "Test assertions themselves are accurate per OGC spec (5/5 spot checks passed). But 34 URL constructions use leading slashes that discard the base path, producing false positives on non-root APIs like https://api.georobotix.io/ogc/t18/api. This is THE core product promise — a compliance testing tool that produces incorrect results is fundamentally broken."
+  code_quality:
+    score: 0.75
+    notes: "Clean TypeScript, consistent patterns, good error handling, proper use of types. 3 TS type-check errors (missing pdfkit types, stale @ts-expect-error, vitest globals not in tsconfig). Code is well-organized with clear module boundaries. REQ-* traceability in test comments exists but SCENARIO-* traceability is absent."
+  robustness:
+    score: 0.70
+    hard_fail: false
+    notes: "SSE reconnection with polling fallback. Cancellation via cooperative token. Session eviction. Rate limiting. Security headers. SSRF guard. Error boundaries on test execution (try/catch produces fail results). But no retry logic on test HTTP requests."
+
+handoff_audit:
+  claims_verified: false
+  discrepancies:
+    - claim: "No generator handoff file (retroactive evaluation)"
+      reality: "N/A — this is a retroactive evaluation without a handoff artifact"
+
+issues:
+  blockers: []
+  critical:
+    - "BUG-001: 34 URL constructions in 11 test modules use leading-slash pattern (new URL('/path', baseUrl)) which discards the base path for non-root APIs. Files affected: deployments.ts (3), subsystems.ts (4), subdeployments.ts (4), features-core.ts (6), part2-swe-encodings.ts (6), part2-crud.ts (3), part2-update.ts (2), part2-history.ts (2), part2-events.ts (1), part2-feasibility.ts (2), sampling.ts (1). Fix: remove leading slash from all URL paths (e.g., `/deployments/${id}` -> `deployments/${id}`)."
+    - "BUG-002: apiClient.exportJson() calls GET /api/assessments/${id}/export/json but Express route expects GET /api/assessments/:id/export?format=json. The frontend JSON export button returns 404. Fix: change api-client.ts to use /export?format=json."
+    - "BUG-003: assessments.test.ts line 173 expects {id, status:'discovering'} but POST /api/assessments now returns {id, discoveryResult:{...}}. The test is stale. Fix: update test to match current response shape."
+  warnings:
+    - "WARN-001: TypeScript type-check has 3 errors — missing @types/pdfkit, unused @ts-expect-error in http-client.ts, vitest globals not in tsconfig types array."
+    - "WARN-002: Playwright config hardcodes baseURL: http://localhost:3000 and webServer port: 3000. Must be parameterized for CSAPI_PORT env var."
+    - "WARN-003: Zero SCENARIO-* traceability in test files. All 126+ SCENARIO-* IDs are absent from test comments."
+    - "WARN-004: Coverage thresholds not verified (coverage run not completed during evaluation)."
+  suggestions:
+    - "SUG-001: Add a helper function for URL construction (e.g., `buildUrl(path, ctx)`) that all test modules use, to prevent the leading-slash footgun from recurring."
+    - "SUG-002: Add a lint rule or precommit check that flags new URL() calls with paths starting with '/' when a base URL is provided."
+    - "SUG-003: Add SCENARIO-* IDs to test file comments for traceability."
+    - "SUG-004: Add @types/pdfkit to devDependencies and add 'vitest/globals' to tsconfig types."
+    - "SUG-005: Parameterize Playwright config to use process.env.CSAPI_PORT || '3000'."
+
+retry_guidance: |
+  Three critical bugs must be fixed before this sprint can pass:
+
+  1. **URL Construction (BUG-001)** — In ALL 34 instances across 11 files in src/engine/registry/,
+     remove the leading slash from the first argument to new URL(). Example fix:
+
+     BEFORE: new URL(`/deployments/${encodeURIComponent(deploymentId)}`, ctx.baseUrl)
+     AFTER:  new URL(`deployments/${encodeURIComponent(deploymentId)}`, ctx.baseUrl)
+
+     Files to fix:
+     - src/engine/registry/deployments.ts (lines 139, 211, 287)
+     - src/engine/registry/subsystems.ts (lines 83, 141, 200, 276)
+     - src/engine/registry/subdeployments.ts (lines 83, 141, 200, 275)
+     - src/engine/registry/features-core.ts (lines 299, 342, 416, 491, 527, 570)
+     - src/engine/registry/part2-swe-encodings.ts (lines 62, 130, 240, 307, 413, 480)
+     - src/engine/registry/part2-crud.ts (lines 104, 214, 326)
+     - src/engine/registry/part2-update.ts (lines 92, 209)
+     - src/engine/registry/part2-history.ts (lines 63, 122)
+     - src/engine/registry/part2-events.ts (line 128)
+     - src/engine/registry/part2-feasibility.ts (lines 64, 122)
+     - src/engine/registry/sampling.ts (line 283)
+
+     After fixing, verify by running the conformance test suite against https://api.georobotix.io/ogc/t18/api
+     and confirming the deployment, subsystem, and features tests no longer get 404s.
+
+  2. **Export Path Mismatch (BUG-002)** — In src/services/api-client.ts line 124:
+
+     BEFORE: const response = await fetch(`/api/assessments/${id}/export/json`);
+     AFTER:  const response = await fetch(`/api/assessments/${id}/export?format=json`);
+
+     Verify by clicking the "Export JSON" button on the results page — it should trigger a download.
+
+  3. **Stale Unit Test (BUG-003)** — In tests/unit/server/assessments.test.ts line 173:
+
+     BEFORE:
+       expect(res.body).toEqual({
+         id: mockSession.id,
+         status: 'discovering',
+       });
+
+     AFTER:
+       expect(res.body).toEqual({
+         id: mockSession.id,
+         discoveryResult: {
+           landingPage: {},
+           conformsTo: [],
+           collectionIds: [],
+           links: [],
+         },
+       });
+
+     The mock discoveryService.discover returns { cache: { landingPage: {}, conformsTo: [], collectionIds: [], links: [] }, ... }
+     so the route responds with { id, discoveryResult: { landingPage: {}, conformsTo: [], collectionIds: [], links: [] } }.
+
+  Additionally, fix the TypeScript errors (WARN-001) and parameterize the Playwright port (WARN-002)
+  so the full test suite passes cleanly.

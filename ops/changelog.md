@@ -2,6 +2,33 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-02 — User Testing + Evaluator Phase
+- **Bug fixes from user testing session** (triggered by user):
+  - Fixed .js import extensions breaking Next.js webpack (12 files)
+  - Fixed POST /api/assessments not returning discoveryResult; added POST /:id/start route
+  - Fixed registerAllModules() never called — 0 tests ran at runtime
+  - Fixed `new URL('/path', baseUrl)` discarding base path — 67+34 instances across all test registry modules
+  - Fixed results page filters operating at class level instead of test level
+  - Fixed SSE "Connection lost" dead-end — added polling fallback with auto-redirect
+  - Fixed skip reasons not displayed in results; skipped classes now auto-expand
+  - Fixed JSON export path mismatch (/export/json → /export?format=json)
+  - Fixed class headers showing wrong status when filter active
+- **Process buildout** (triggered by user — methodology audit revealed all quality gates were skipped):
+  - Created `scripts/orchestrate.py` (870 lines) — BMAD pipeline driver with --start-at, gate checks, rework loops
+  - Customized `.harness/prompts/evaluator.md` — 13-step process with conformance fixture testing, contract tests, security/a11y gates
+  - Customized `.harness/prompts/generator.md` — project-specific commands, URL construction warning
+  - Updated `.harness/config.yaml` — build commands, Conformance Accuracy criterion, conformance_fixtures config
+  - Created `.harness/contracts/sprint-retro-eval.yaml` — retroactive evaluation contract
+  - **Ran first-ever evaluator** — independent subagent produced `.harness/evaluations/sprint-retro-eval-eval.yaml`. Verdict: RETRY (score 0.58). Found 3 critical bugs, 4 warnings.
+  - Fixed all evaluator findings. Stale unit test updated. @types/pdfkit installed. Playwright port parameterized.
+- **Updated spec-anchor template** at /home/nh/docker/spec-anchor/:
+  - Enhanced evaluator prompt with contract tests, security gate, accessibility gate, conformance fixture validation
+  - Added Conformance Accuracy criterion to config
+  - Copied orchestrate.py to template
+- **Research**:
+  - OGC API Connected Systems Part 3 (Pub/Sub) — too early for conformance tests (#TODO markers in spec)
+  - Testing pyramid for compliance tools — "testing the tester" problem, known-good/known-bad fixtures
+
 ## 2026-03-30
 - Scaffolded project from spec-anchor template
 - Researched OGC compliance framework (CITE, TeamEngine, ETS, conformance classes)

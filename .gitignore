@@ -32,3 +32,6 @@ tmp/
 # Logs
 *.log
 pino-pretty.log
+data/results/
+__pycache__/
+tsconfig.tsbuildinfo

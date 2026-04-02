@@ -2,16 +2,16 @@
 // conformance declaration, and probing for available resources.
 // REQ-DISC-001 through REQ-DISC-006
 
-import { CaptureHttpClient } from '@/engine/http-client.js';
-import { mapConformanceClasses, type DeclaredConformanceClass } from '@/engine/conformance-mapper.js';
-import { CS_PART1_CONF, CS_PART2_CONF } from '@/lib/constants.js';
+import { CaptureHttpClient } from '@/engine/http-client';
+import { mapConformanceClasses, type DeclaredConformanceClass } from '@/engine/conformance-mapper';
+import { CS_PART1_CONF, CS_PART2_CONF } from '@/lib/constants';
 import type {
   AuthConfig,
   RunConfig,
   DiscoveryCache,
   HttpExchange,
   LinkObject,
-} from '@/lib/types.js';
+} from '@/lib/types';
 
 /** Result returned by the discovery process. */
 export interface DiscoveryResult {

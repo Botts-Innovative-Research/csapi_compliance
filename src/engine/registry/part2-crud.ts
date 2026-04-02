@@ -101,7 +101,7 @@ async function testCrudDatastream(ctx: TestContext) {
     // Step 1: POST to create datastream
     const systemId = ctx.discoveryCache.systemId;
     const createUrl = new URL(
-      `/systems/${systemId}/datastreams`,
+      `systems/${systemId}/datastreams`,
       ctx.baseUrl,
     ).toString();
     const createResponse = await ctx.httpClient.post(
@@ -211,7 +211,7 @@ async function testCrudObservation(ctx: TestContext) {
     // Step 1: Create a datastream to host the observation
     const systemId = ctx.discoveryCache.systemId;
     const dsUrl = new URL(
-      `/systems/${systemId}/datastreams`,
+      `systems/${systemId}/datastreams`,
       ctx.baseUrl,
     ).toString();
     const dsResponse = await ctx.httpClient.post(
@@ -250,7 +250,7 @@ async function testCrudObservation(ctx: TestContext) {
       : ctx.discoveryCache.datastreamId;
     const obsUrl = createdDsLocation
       ? new URL(`${createdDsLocation}/observations`).toString()
-      : new URL(`/datastreams/${dsId}/observations`, ctx.baseUrl).toString();
+      : new URL(`datastreams/${dsId}/observations`, ctx.baseUrl).toString();
 
     // Step 2: POST observation
     const obsResponse = await ctx.httpClient.post(
@@ -323,7 +323,7 @@ async function testCrudControlStream(ctx: TestContext) {
     // Step 1: POST to create control stream
     const systemId = ctx.discoveryCache.systemId;
     const createUrl = new URL(
-      `/systems/${systemId}/controlstreams`,
+      `systems/${systemId}/controlstreams`,
       ctx.baseUrl,
     ).toString();
     const createResponse = await ctx.httpClient.post(

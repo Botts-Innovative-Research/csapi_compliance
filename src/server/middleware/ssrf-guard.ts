@@ -4,8 +4,8 @@
 // Use default import for CJS/ESM interop (ipaddr.js uses `export = Address`)
 import ipaddr from 'ipaddr.js';
 const { parse: parseIp, parseCIDR } = ipaddr;
-import { BLOCKED_CIDRS } from '@/lib/constants.js';
-import { SsrfError } from '@/engine/errors.js';
+import { BLOCKED_CIDRS } from '@/lib/constants';
+import { SsrfError } from '@/engine/errors';
 import dns from 'node:dns/promises';
 
 const ALLOWED_SCHEMES = new Set(['http:', 'https:']);

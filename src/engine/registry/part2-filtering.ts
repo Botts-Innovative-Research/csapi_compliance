@@ -79,7 +79,7 @@ async function testFilterPhenomenonTime(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/observations', ctx.baseUrl);
+    const url = new URL('observations', ctx.baseUrl);
     url.searchParams.set('phenomenonTime', '2020-01-01T00:00:00Z/2030-12-31T23:59:59Z');
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -135,7 +135,7 @@ async function testFilterResultTime(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/observations', ctx.baseUrl);
+    const url = new URL('observations', ctx.baseUrl);
     url.searchParams.set('resultTime', '2020-01-01T00:00:00Z/2030-12-31T23:59:59Z');
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -191,7 +191,7 @@ async function testFilterObservedProperty(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/datastreams', ctx.baseUrl);
+    const url = new URL('datastreams', ctx.baseUrl);
     url.searchParams.set('observedProperty', 'urn:example:property:temperature');
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
@@ -247,7 +247,7 @@ async function testFilterCombined(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/observations', ctx.baseUrl);
+    const url = new URL('observations', ctx.baseUrl);
     url.searchParams.set('phenomenonTime', '2020-01-01T00:00:00Z/2030-12-31T23:59:59Z');
     url.searchParams.set('resultTime', '2020-01-01T00:00:00Z/2030-12-31T23:59:59Z');
     const response = await ctx.httpClient.get(url.toString());

@@ -3,8 +3,8 @@
 // REQ-SESS-003: Multi-client broadcast per assessment
 
 import type { Response } from 'express';
-import type { ProgressEvent } from '@/lib/types.js';
-import { SESSION_DEFAULTS } from '@/lib/constants.js';
+import type { ProgressEvent } from '@/lib/types';
+import { SESSION_DEFAULTS } from '@/lib/constants';
 
 export interface SSEClient {
   id: string;

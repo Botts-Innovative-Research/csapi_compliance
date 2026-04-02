@@ -80,7 +80,7 @@ export const deploymentsClassDef: ConformanceClassDefinition = {
 async function testResourcesEndpoint(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/deployments', ctx.baseUrl).toString();
+    const url = new URL('deployments', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -136,7 +136,7 @@ async function testCanonicalUrl(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}`,
+      `deployments/${encodeURIComponent(deploymentId)}`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -208,7 +208,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/deployments/${encodeURIComponent(deploymentId)}`,
+      `deployments/${encodeURIComponent(deploymentId)}`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -284,7 +284,7 @@ async function testRefFromSystem(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/systems/${encodeURIComponent(systemId)}/deployments`,
+      `systems/${encodeURIComponent(systemId)}/deployments`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -333,7 +333,7 @@ async function testRefFromSystem(ctx: TestContext) {
 async function testCollections(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

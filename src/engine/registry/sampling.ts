@@ -85,7 +85,7 @@ async function testResourcesEndpoint(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/samplingFeatures', ctx.baseUrl).toString();
+    const url = new URL('samplingFeatures', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -138,7 +138,7 @@ async function testCanonicalUrl(ctx: TestContext) {
 
   try {
     const sfId = ctx.discoveryCache.samplingFeatureId;
-    const url = new URL(`/samplingFeatures/${encodeURIComponent(sfId)}`, ctx.baseUrl).toString();
+    const url = new URL(`samplingFeatures/${encodeURIComponent(sfId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -191,7 +191,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
 
   try {
     const sfId = ctx.discoveryCache.samplingFeatureId;
-    const url = new URL(`/samplingFeatures/${encodeURIComponent(sfId)}`, ctx.baseUrl).toString();
+    const url = new URL(`samplingFeatures/${encodeURIComponent(sfId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -280,7 +280,7 @@ async function testRefFromSystem(ctx: TestContext) {
   try {
     const systemId = ctx.discoveryCache.systemId;
     const url = new URL(
-      `/systems/${encodeURIComponent(systemId)}/samplingFeatures`,
+      `systems/${encodeURIComponent(systemId)}/samplingFeatures`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -334,7 +334,7 @@ async function testCollections(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

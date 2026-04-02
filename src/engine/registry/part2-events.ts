@@ -64,7 +64,7 @@ async function testSystemEventsEndpoint(ctx: TestContext) {
   const start = Date.now();
 
   try {
-    const url = new URL('/systemEvents', ctx.baseUrl).toString();
+    const url = new URL('systemEvents', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -125,7 +125,7 @@ async function testSystemEventRefFromSystem(ctx: TestContext) {
   try {
     const systemId = ctx.discoveryCache.systemId;
     const url = new URL(
-      `/systems/${systemId}/events`,
+      `systems/${systemId}/events`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -179,7 +179,7 @@ async function testSystemEventSchema(ctx: TestContext) {
   const start = Date.now();
 
   try {
-    const url = new URL('/systemEvents', ctx.baseUrl).toString();
+    const url = new URL('systemEvents', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

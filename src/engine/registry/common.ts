@@ -201,7 +201,7 @@ async function testLandingPageLinks(ctx: TestContext) {
 async function testConformanceEndpoint(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/conformance', ctx.baseUrl).toString();
+    const url = new URL('conformance', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -248,7 +248,7 @@ async function testConformanceEndpoint(ctx: TestContext) {
 async function testConformanceConformsTo(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/conformance', ctx.baseUrl).toString();
+    const url = new URL('conformance', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

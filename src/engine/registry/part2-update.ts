@@ -89,7 +89,7 @@ async function testUpdateDatastream(ctx: TestContext) {
     // Step 1: Create datastream via POST
     const systemId = ctx.discoveryCache.systemId;
     const createUrl = new URL(
-      `/systems/${systemId}/datastreams`,
+      `systems/${systemId}/datastreams`,
       ctx.baseUrl,
     ).toString();
     const createResponse = await ctx.httpClient.post(
@@ -206,7 +206,7 @@ async function testUpdateControlStream(ctx: TestContext) {
     // Step 1: Create control stream via POST
     const systemId = ctx.discoveryCache.systemId;
     const createUrl = new URL(
-      `/systems/${systemId}/controlstreams`,
+      `systems/${systemId}/controlstreams`,
       ctx.baseUrl,
     ).toString();
     const createResponse = await ctx.httpClient.post(

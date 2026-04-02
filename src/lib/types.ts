@@ -9,7 +9,7 @@ export type TestStatus = 'pass' | 'fail' | 'skip';
 export type ClassStatus = 'pass' | 'fail' | 'skip';
 
 /** Assessment lifecycle status. */
-export type AssessmentStatus = 'discovering' | 'running' | 'completed' | 'cancelled' | 'partial' | 'error';
+export type AssessmentStatus = 'discovering' | 'discovered' | 'running' | 'completed' | 'cancelled' | 'partial' | 'error';
 
 /** Authentication type for IUT requests. REQ-DISC-008. */
 export type AuthType = 'bearer' | 'apikey' | 'basic' | 'none';
@@ -327,6 +327,7 @@ export interface AssessmentSession {
   cancelToken: CancelToken;
   status: AssessmentStatus;
   results?: AssessmentResults;
+  discoveryCache?: DiscoveryCache;
   createdAt: string;
 }
 

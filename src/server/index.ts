@@ -14,6 +14,7 @@ import { DiscoveryService } from '@/engine/discovery-service';
 import { TestRunner } from '@/engine/test-runner';
 import { SSEBroadcaster } from '@/engine/sse-broadcaster';
 import { TestRegistry } from '@/engine/registry/registry';
+import { registerAllModules } from '@/engine/registry/index';
 import { ResultStore } from '@/engine/result-store';
 import { SchemaValidator } from '@/engine/schema-validator';
 
@@ -61,6 +62,8 @@ async function main() {
   const sessionManager = new SessionManager();
   const discoveryService = new DiscoveryService();
   const registry = TestRegistry.getInstance();
+  registerAllModules(registry);
+  console.log(`Registered ${registry.getAllClasses().length} conformance class test modules`);
   const testRunner = new TestRunner(registry);
   const sseBroadcaster = new SSEBroadcaster();
   const resultStore = new ResultStore(

@@ -70,7 +70,7 @@ async function testDatastreamSchema(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/datastreams/${encodeURIComponent(datastreamId)}`, ctx.baseUrl).toString();
+    const url = new URL(`datastreams/${encodeURIComponent(datastreamId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -145,7 +145,7 @@ async function testObservationSchema(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/observations/${encodeURIComponent(observationId)}`, ctx.baseUrl).toString();
+    const url = new URL(`observations/${encodeURIComponent(observationId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -220,7 +220,7 @@ async function testControlStreamSchema(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/controlstreams/${encodeURIComponent(controlStreamId)}`, ctx.baseUrl).toString();
+    const url = new URL(`controlstreams/${encodeURIComponent(controlStreamId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

@@ -59,7 +59,7 @@ async function testSweJsonMediaType(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {
@@ -127,7 +127,7 @@ async function testSweJsonSchema(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {
@@ -237,7 +237,7 @@ async function testSweTextMediaType(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {
@@ -304,7 +304,7 @@ async function testSweTextNonEmpty(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {
@@ -410,7 +410,7 @@ async function testSweBinaryMediaType(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {
@@ -477,7 +477,7 @@ async function testSweBinaryNonEmpty(ctx: TestContext) {
   try {
     const datastreamId = ctx.discoveryCache.datastreamId;
     const url = new URL(
-      `/datastreams/${datastreamId}/observations`,
+      `datastreams/${datastreamId}/observations`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url, {

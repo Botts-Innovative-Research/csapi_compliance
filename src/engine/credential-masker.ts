@@ -1,7 +1,7 @@
 // REQ-CAP-006: Credential masking in captured HTTP exchanges
 // REQ-CAP-007: Sensitive data protection for stored exchanges
 
-import type { HttpExchange, AuthConfig } from '@/lib/types.js';
+import type { HttpExchange, AuthConfig } from '@/lib/types';
 
 /** Well-known headers that may carry credentials. */
 const SENSITIVE_HEADERS = new Set([

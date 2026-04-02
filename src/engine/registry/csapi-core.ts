@@ -67,7 +67,7 @@ async function testResourceIds(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/systems?limit=1', ctx.baseUrl).toString();
+    const url = new URL('systems?limit=1', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -139,7 +139,7 @@ async function testResourceUids(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/systems?limit=1', ctx.baseUrl).toString();
+    const url = new URL('systems?limit=1', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -206,7 +206,7 @@ async function testDatetimeFilter(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/systems?datetime=2020-01-01T00:00:00Z/..', ctx.baseUrl).toString();
+    const url = new URL('systems?datetime=2020-01-01T00:00:00Z/..', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

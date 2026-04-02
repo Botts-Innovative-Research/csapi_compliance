@@ -2,7 +2,7 @@
 // REQ-DISC-005: Map conformance URIs to requirements
 // REQ-DISC-006: Display conformance classes with testability indicators
 
-import { CS_PART1_CONF, CS_PART2_CONF, PARENT_CONF } from '@/lib/constants.js';
+import { CS_PART1_CONF, CS_PART2_CONF, PARENT_CONF } from '@/lib/constants';
 
 /** A declared conformance class discovered from the IUT. */
 export interface DeclaredConformanceClass {

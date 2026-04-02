@@ -60,7 +60,7 @@ async function testSystemHistoryEndpoint(ctx: TestContext) {
   try {
     const systemId = ctx.discoveryCache.systemId;
     const url = new URL(
-      `/systems/${systemId}/history`,
+      `systems/${systemId}/history`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -119,7 +119,7 @@ async function testSystemHistoryRevision(ctx: TestContext) {
   try {
     const systemId = ctx.discoveryCache.systemId;
     const url = new URL(
-      `/systems/${systemId}/history`,
+      `systems/${systemId}/history`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);

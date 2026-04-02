@@ -116,7 +116,7 @@ function getFirstCollectionId(ctx: TestContext): string | null {
 async function testCollections(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -163,7 +163,7 @@ async function testCollections(ctx: TestContext) {
 async function testCollectionsArray(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -221,7 +221,7 @@ async function testSingleCollection(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/collections/${encodeURIComponent(collectionId)}`, ctx.baseUrl).toString();
+    const url = new URL(`collections/${encodeURIComponent(collectionId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -296,7 +296,7 @@ async function testItems(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items`,
+      `collections/${encodeURIComponent(collectionId)}/items`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -339,7 +339,7 @@ async function testItemsGeoJson(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items`,
+      `collections/${encodeURIComponent(collectionId)}/items`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);
@@ -413,7 +413,7 @@ async function testItemsLimit(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items`,
+      `collections/${encodeURIComponent(collectionId)}/items`,
       ctx.baseUrl,
     );
     url.searchParams.set('limit', '2');
@@ -488,7 +488,7 @@ async function testSingleFeature(ctx: TestContext) {
   try {
     // First get items to find a feature ID
     const itemsUrl = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items`,
+      `collections/${encodeURIComponent(collectionId)}/items`,
       ctx.baseUrl,
     );
     itemsUrl.searchParams.set('limit', '1');
@@ -524,7 +524,7 @@ async function testSingleFeature(ctx: TestContext) {
     }
 
     const featureUrl = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(String(featureId))}`,
+      `collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(String(featureId))}`,
       ctx.baseUrl,
     ).toString();
     const featureResponse = await ctx.httpClient.get(featureUrl);
@@ -567,7 +567,7 @@ async function testItemsLinks(ctx: TestContext) {
 
   try {
     const url = new URL(
-      `/collections/${encodeURIComponent(collectionId)}/items`,
+      `collections/${encodeURIComponent(collectionId)}/items`,
       ctx.baseUrl,
     ).toString();
     const response = await ctx.httpClient.get(url);

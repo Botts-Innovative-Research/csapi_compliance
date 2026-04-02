@@ -3,13 +3,13 @@
 // S07-02: PDF export with summary, per-class breakdowns, and failed test details
 
 import PDFDocument from 'pdfkit';
-import { CredentialMasker } from '@/engine/credential-masker.js';
+import { CredentialMasker } from '@/engine/credential-masker';
 import type {
   AssessmentResults,
   AuthConfig,
   ConformanceClassResult,
   HttpExchange,
-} from '@/lib/types.js';
+} from '@/lib/types';
 
 /** Disclaimer included in all exports. REQ-EXP-007. */
 const DISCLAIMER =

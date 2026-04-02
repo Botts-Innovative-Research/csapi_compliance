@@ -85,7 +85,7 @@ async function testResourcesEndpoint(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/procedures', ctx.baseUrl).toString();
+    const url = new URL('procedures', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -138,7 +138,7 @@ async function testCanonicalUrl(ctx: TestContext) {
 
   try {
     const procedureId = ctx.discoveryCache.procedureId;
-    const url = new URL(`/procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
+    const url = new URL(`procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -191,7 +191,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
 
   try {
     const procedureId = ctx.discoveryCache.procedureId;
-    const url = new URL(`/procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
+    const url = new URL(`procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -274,7 +274,7 @@ async function testCollections(ctx: TestContext) {
   }
 
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -343,7 +343,7 @@ async function testLocation(ctx: TestContext) {
 
   try {
     const procedureId = ctx.discoveryCache.procedureId;
-    const url = new URL(`/procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
+    const url = new URL(`procedures/${encodeURIComponent(procedureId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

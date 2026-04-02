@@ -1,7 +1,7 @@
 'use client';
 
 import { type ChangeEvent } from 'react';
-import type { AuthConfig, AuthType } from '@/lib/types.js';
+import type { AuthConfig, AuthType } from '@/lib/types';
 import { t } from '@/lib/i18n';
 
 interface AuthConfigFormProps {

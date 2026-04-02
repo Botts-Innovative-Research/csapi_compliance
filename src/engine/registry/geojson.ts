@@ -85,7 +85,7 @@ async function testMediaTypeRead(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/geo+json',
     });
@@ -141,7 +141,7 @@ async function testFeatureAttributeMapping(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/geo+json',
     });
@@ -229,7 +229,7 @@ async function testSystemSchema(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/geo+json',
     });
@@ -317,7 +317,7 @@ async function testSystemMappings(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/geo+json',
     });

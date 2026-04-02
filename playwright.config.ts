@@ -1,15 +1,17 @@
 import { defineConfig } from '@playwright/test';
 
+const port = parseInt(process.env.CSAPI_PORT || process.env.PORT || '3000', 10);
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: `http://localhost:${port}`,
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev',
-    port: 3000,
+    command: `PORT=${port} CSAPI_PORT=${port} npm run dev`,
+    port,
     reuseExistingServer: true,
     timeout: 120000,
   },

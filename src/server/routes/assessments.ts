@@ -87,13 +87,13 @@ export function assessmentRoutes(deps: AssessmentDeps): Router {
   const router = Router();
 
   // ---------------------------------------------------------------
-  // POST /api/assessments  --  Create and start an assessment
+  // POST /api/assessments  --  Create session and run discovery
+  // Returns discovery results so the client can display the configure page.
   // ---------------------------------------------------------------
   router.post('/', async (req: Request, res: Response) => {
     try {
-      const { endpointUrl, conformanceClasses, auth, config } = req.body as {
+      const { endpointUrl, auth, config } = req.body as {
         endpointUrl?: string;
-        conformanceClasses?: string[];
         auth?: Partial<AuthConfig>;
         config?: Partial<RunConfig>;
       };
@@ -134,7 +134,7 @@ export function assessmentRoutes(deps: AssessmentDeps): Router {
       try {
         session = sessionManager.create({
           endpointUrl,
-          selectedClasses: conformanceClasses ?? [],
+          selectedClasses: [],
           auth: resolvedAuth,
           config: resolvedConfig,
         });
@@ -144,64 +144,124 @@ export function assessmentRoutes(deps: AssessmentDeps): Router {
         return;
       }
 
-      // Return the session ID immediately; discovery + test run proceed async
+      // --- Run discovery synchronously so we can return results ---
+      const discoveryResult = await discoveryService.discover(
+        endpointUrl,
+        resolvedAuth,
+        resolvedConfig,
+      );
+
+      // Store the discovery cache on the session for later use by /start
+      session.discoveryCache = discoveryResult.cache;
+      sessionManager.updateStatus(session.id, 'discovered');
+
+      // Return discovery data to the client
       res.status(201).json({
         id: session.id,
-        status: session.status,
+        discoveryResult: {
+          landingPage: discoveryResult.cache.landingPage,
+          conformsTo: discoveryResult.cache.conformsTo,
+          collectionIds: discoveryResult.cache.collectionIds,
+          links: discoveryResult.cache.links,
+          apiDefinitionUrl: discoveryResult.cache.apiDefinitionUrl,
+          systemId: discoveryResult.cache.systemId,
+          deploymentId: discoveryResult.cache.deploymentId,
+          procedureId: discoveryResult.cache.procedureId,
+          samplingFeatureId: discoveryResult.cache.samplingFeatureId,
+          propertyId: discoveryResult.cache.propertyId,
+          datastreamId: discoveryResult.cache.datastreamId,
+          observationId: discoveryResult.cache.observationId,
+          controlStreamId: discoveryResult.cache.controlStreamId,
+          commandId: discoveryResult.cache.commandId,
+        },
       });
-
-      // --- Async: run discovery + test execution in the background ---
-      (async () => {
-        const unwireEvents = wireEvents(testRunner, sseBroadcaster, session.id);
-
-        try {
-          // Phase 1: Discovery (if no conformance classes were pre-selected)
-          let selectedClasses = conformanceClasses ?? [];
-          let discoveryCache;
-
-          if (selectedClasses.length === 0) {
-            const discoveryResult = await discoveryService.discover(
-              endpointUrl,
-              resolvedAuth,
-              resolvedConfig,
-            );
-            discoveryCache = discoveryResult.cache;
-            selectedClasses = discoveryResult.declaredClasses.map((dc) => dc.uri);
-
-            // Update session with discovered classes
-            session.selectedClasses = selectedClasses;
-          } else {
-            // Minimal discovery to populate the cache even when classes are pre-selected
-            const discoveryResult = await discoveryService.discover(
-              endpointUrl,
-              resolvedAuth,
-              resolvedConfig,
-            );
-            discoveryCache = discoveryResult.cache;
-          }
-
-          // Phase 2: Run tests
-          sessionManager.updateStatus(session.id, 'running');
-
-          const results = await testRunner.run(session, discoveryCache);
-
-          // Store results
-          sessionManager.storeResults(session.id, results);
-          sessionManager.updateStatus(session.id, results.status);
-
-          // Persist to disk
-          await resultStore.dump(results);
-        } catch (err: unknown) {
-          // Mark session as error
-          sessionManager.updateStatus(session.id, 'error');
-        } finally {
-          unwireEvents();
-        }
-      })();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Internal server error';
       res.status(500).json({ error: message });
     }
+  });
+
+  // ---------------------------------------------------------------
+  // POST /api/assessments/:id/start  --  Start test execution
+  // ---------------------------------------------------------------
+  router.post('/:id/start', async (req: Request, res: Response) => {
+    const session = sessionManager.get(req.params.id);
+    if (!session) {
+      res.status(404).json({ error: 'Assessment not found' });
+      return;
+    }
+
+    if (session.status !== 'discovered' && session.status !== 'discovering') {
+      res.status(409).json({
+        error: `Cannot start assessment in "${session.status}" state`,
+        id: session.id,
+        status: session.status,
+      });
+      return;
+    }
+
+    const { conformanceClasses, auth, config } = req.body as {
+      conformanceClasses?: string[];
+      auth?: Partial<AuthConfig>;
+      config?: Partial<RunConfig>;
+    };
+
+    // Update session with user selections
+    if (conformanceClasses) {
+      session.selectedClasses = conformanceClasses;
+    }
+    if (auth) {
+      session.auth = {
+        type: auth.type ?? session.auth.type,
+        token: auth.token ?? session.auth.token,
+        headerName: auth.headerName ?? session.auth.headerName,
+        headerValue: auth.headerValue ?? session.auth.headerValue,
+        username: auth.username ?? session.auth.username,
+        password: auth.password ?? session.auth.password,
+      };
+    }
+    if (config) {
+      session.config = {
+        timeoutMs: config.timeoutMs ?? session.config.timeoutMs,
+        concurrency: config.concurrency ?? session.config.concurrency,
+      };
+    }
+
+    // Return immediately, run tests in background
+    res.json({ id: session.id, status: 'running' });
+
+    // --- Async: run tests in the background ---
+    (async () => {
+      const unwireEvents = wireEvents(testRunner, sseBroadcaster, session.id);
+
+      try {
+        sessionManager.updateStatus(session.id, 'running');
+
+        // Use cached discovery or re-discover
+        let discoveryCache = session.discoveryCache;
+        if (!discoveryCache) {
+          const discoveryResult = await discoveryService.discover(
+            session.endpointUrl,
+            session.auth,
+            session.config,
+          );
+          discoveryCache = discoveryResult.cache;
+        }
+
+        const results = await testRunner.run(session, discoveryCache);
+
+        // Store results
+        sessionManager.storeResults(session.id, results);
+        sessionManager.updateStatus(session.id, results.status);
+
+        // Persist to disk
+        await resultStore.dump(results);
+      } catch (err: unknown) {
+        sessionManager.updateStatus(session.id, 'error');
+      } finally {
+        unwireEvents();
+      }
+    })();
   });
 
   // ---------------------------------------------------------------

@@ -76,7 +76,7 @@ async function testSensormlMediaTypeRead(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/sml+json',
     });
@@ -140,7 +140,7 @@ async function testSensormlResourceId(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/sml+json',
     });
@@ -221,7 +221,7 @@ async function testSensormlSystemSchema(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url, {
       'Accept': 'application/sml+json',
     });

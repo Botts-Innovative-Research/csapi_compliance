@@ -80,7 +80,7 @@ export const systemFeaturesClassDef: ConformanceClassDefinition = {
 async function testResourcesEndpoint(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/systems', ctx.baseUrl).toString();
+    const url = new URL('systems', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -151,7 +151,7 @@ async function testCanonicalUrl(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -220,7 +220,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -285,7 +285,7 @@ async function testCanonicalEndpoint(ctx: TestContext) {
 async function testCollections(ctx: TestContext) {
   const start = Date.now();
   try {
-    const url = new URL('/collections', ctx.baseUrl).toString();
+    const url = new URL('collections', ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];
@@ -376,7 +376,7 @@ async function testLocationTime(ctx: TestContext) {
   }
 
   try {
-    const url = new URL(`/systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
+    const url = new URL(`systems/${encodeURIComponent(systemId)}`, ctx.baseUrl).toString();
     const response = await ctx.httpClient.get(url);
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

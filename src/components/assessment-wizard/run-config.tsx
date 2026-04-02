@@ -1,7 +1,7 @@
 'use client';
 
-import type { RunConfig } from '@/lib/types.js';
-import { ENGINE_DEFAULTS } from '@/lib/constants.js';
+import type { RunConfig } from '@/lib/types';
+import { ENGINE_DEFAULTS } from '@/lib/constants';
 
 interface RunConfigFormProps {
   config: RunConfig;

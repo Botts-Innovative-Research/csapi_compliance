@@ -236,7 +236,7 @@ async function testCrudSystemDeleteCascade(ctx: TestContext) {
 
   try {
     // Create a system
-    const createUrl = new URL('/systems', ctx.baseUrl).toString();
+    const createUrl = new URL('systems', ctx.baseUrl).toString();
     const createResponse = await ctx.httpClient.post(
       createUrl,
       MINIMAL_GEOJSON_BODY,

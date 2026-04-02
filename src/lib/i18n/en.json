@@ -77,8 +77,10 @@
 
   "progress.heading": "Assessment in Progress",
   "progress.reconnecting": "Connection interrupted. Reconnecting...",
-  "progress.connectionLost": "Connection lost. The assessment may still be running.",
-  "progress.viewResults": "View Results",
+  "progress.polling": "Live connection lost. Checking assessment status...",
+  "progress.connectionLost": "Connection to the server was lost. This may happen if the server restarted or the session expired.",
+  "progress.viewResults": "Check Results",
+  "progress.startNew": "Start New Assessment",
   "progress.connecting": "Connecting...",
   "progress.testing": "Testing:",
   "progress.elapsed": "Elapsed: {time}",
