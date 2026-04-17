@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-ENG-PAGE-001..003 (next-link traversal, termination, cycle guard)
+
 // Tests for pagination traversal — src/engine/pagination.ts
 // REQ-ENG-009: Follow `next` links in paginated collections to retrieve all pages
 // REQ-ENG-010: Configurable max pages limit and loop detection to prevent infinite traversal

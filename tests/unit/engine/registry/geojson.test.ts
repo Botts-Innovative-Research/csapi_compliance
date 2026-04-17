@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-GEOJSON-001 (GeoJSON format conformance + content negotiation)
+
 // Unit tests for GeoJSON Format conformance class test module (S03-07).
 
 import { describe, it, expect, vi } from 'vitest';

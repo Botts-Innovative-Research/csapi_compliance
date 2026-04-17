@@ -40,10 +40,11 @@ _(No active issues against the test engine. All 5 CS Part 1 testCollections func
 - **Impact (resolved)**: No lint gate had run since the ESLint 9 upgrade. Prior "lint clean" claims were false — the command could not execute.
 - **Resolution**: Bumped `eslint-config-next` 14 → 16 (flat-config-native), added `@eslint/eslintrc`, wrote `eslint.config.js` layering `@eslint/js` + `typescript-eslint` + `next/core-web-vitals`, fixed `lint` script to drop `--ext`. Also fixed 2 real errors the newly-functional gate surfaced: `module` shadow rename in `test-runner.ts:114` and `Date.now()`-during-render fix in `progress/page.tsx:48`. Current state: 0 errors, 18 non-blocking warnings (unused test imports).
 
-### SCENARIO-* Test Traceability Absent
-- **Symptom**: Zero test files reference SCENARIO-* IDs in comments. Specs define 126+ SCENARIO-* IDs across 7 capabilities; none traced back from tests.
-- **Impact**: Cannot verify behavior coverage by scenario. Evaluator (Quinn) and Adversarial Reviewer (Raze) both flagged this.
-- **Workaround**: Add incrementally — start with the 15 critical scenarios in `sprint-retro-eval.yaml`. Quinn's WARN-003 originated 2026-04-02; still open.
+### ~~SCENARIO-\* Test Traceability Absent~~ — RESOLVED 2026-04-17T19:40Z (sprint `scenario-traceability-sweep`)
+- **Symptom (resolved)**: Zero test files reference SCENARIO-* IDs. Specs define 157 scenario IDs across 8 capabilities; only 31 IDs referenced across 24 test files (15 critical scenarios).
+- **Resolution**: File-level traceability block prepended to every test file, listing the SCENARIO IDs that file covers + a compact description. 30 previously-untagged test files now carry top-of-file SCENARIO blocks; 3 "already tagged" files kept as-is (they reference scenarios inline in test descriptions, which is stronger). i18n.test.ts carries an explicit "no direct SCENARIO coverage" note so a reviewer greping gets zero false positives. Post-sprint: **54/54 test files reference SCENARIO-\* IDs** (up from 24/54 ≈ 44%). Distinct IDs referenced: 64 (up from 31).
+- **Scope decision (20% effort for 80% value)**: file-level tags rather than per-test tags. Quinn's WARN-003 bar was "tests reference scenarios" (not "every scenario has a test"); file-level closes that. Per-test tagging for all 157 scenarios would take ~2-4h more and have diminishing returns — deferred unless Raze or a future reviewer flags a specific scenario as still untraced.
+- **Source**: Quinn's WARN-003 originated 2026-04-02. Closed 2026-04-17T19:40Z.
 
 ### `.github/workflows/` — DROPPED 2026-04-16
 - **Decision**: CI is explicitly out of scope for v1.0. The untracked `ci.yml` and `release.yml` scaffolding (dated 2026-03-31, never committed) was removed 2026-04-16 rather than revived. Rationale: by the time we want CI, the repo state has evolved enough that scaffolding fresh is cleaner than dusting off 3-week-old workflows. No functional impact on v1.0 which is scoped as user-testable app + manual verification gates.

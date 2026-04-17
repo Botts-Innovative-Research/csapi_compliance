@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-FILTER-001 (datetime, bbox, keyword filter parameters)
+
 // Unit tests for Advanced Filtering conformance class test module (S03-05).
 
 import { describe, it, expect, vi } from 'vitest';

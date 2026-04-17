@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-PASS-001..002 (pass/fail verdicts for Features Core)
+//   SCENARIO-FEATURES-LINKS-001..002 (items response self-link audit-trail;
+//     deeper coverage in features-core-links-normative.test.ts)
+
 // Unit tests for OGC API Features Part 1 Core conformance class test module (S02-02).
 
 import { describe, it, expect, vi } from 'vitest';

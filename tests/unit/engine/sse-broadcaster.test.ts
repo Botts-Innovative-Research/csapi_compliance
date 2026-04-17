@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-SESS-PROG-001..004 (progress-event broadcast: connect, event sequence,
+//     disconnect cleanup, back-pressure)
+
 // Tests for SSEBroadcaster — src/engine/sse-broadcaster.ts
 // REQ-SESS-001: SSE progress event streaming
 // REQ-SESS-002: Event replay via Last-Event-ID

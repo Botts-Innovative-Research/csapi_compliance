@@ -1,3 +1,9 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-PASS-001, SCENARIO-DYN-PASS-003 (DataStream read-path + history)
+//   SCENARIO-DYN-OPTIN-001..002 (write-op opt-in gating)
+//   SCENARIO-DYN-SKIP-001 (class-not-declared skip)
+//   SCENARIO-DYN-EMPTY-001 (empty-collection handling)
+
 // Unit tests for Connected Systems Part 2 — Datastreams & Observations conformance class test module (S09-03).
 
 import { describe, it, expect, vi } from 'vitest';

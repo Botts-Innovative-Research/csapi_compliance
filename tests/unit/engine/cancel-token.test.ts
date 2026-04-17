@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-SESS-CANCEL-001, SCENARIO-SESS-CANCEL-002 (cancel-token semantics drive session-cancel flows)
+
 import { describe, it, expect, vi } from 'vitest';
 import { CancelTokenImpl, createCancelToken } from '@/engine/cancel-token';
 

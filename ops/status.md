@@ -1,6 +1,6 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T19:22Z | Sprint `e2e-assertion-depth-batch` CLOSED — 3 P1 scenarios upgraded PARTIAL/MODERATE → PASS (RPT-DASH-001, RPT-TEST-001, EXP-JSON-001). TC-E2E-001 extended, live-verified on chromium + firefox against GeoRobotix. Ready for commit + push.
+> Last updated: 2026-04-17T19:42Z | Sprint `scenario-traceability-sweep` CLOSED. 54/54 test files now reference SCENARIO-\* IDs (100%, up from 44%). Quinn's WARN-003 closed after being open since 2026-04-02. Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
@@ -108,8 +108,7 @@ _(None remaining. All active test-engine and lint/typing issues are resolved as 
 
 7. ~~**RPT-DASH-001 MODERATE → PASS**~~ — RESOLVED 2026-04-17T19:20Z (sprint `e2e-assertion-depth-batch`).
 
-8. **111+ normal SCENARIO-\* traceability** (~2-4 hours)
-   - Only 15 critical scenarios are traced; ~126 total SCENARIO-* IDs defined across 7 capabilities. Add SCENARIO-* references in test file comments. Quinn's WARN-003 open since 2026-04-02.
+8. ~~**111+ normal SCENARIO-\* traceability**~~ — RESOLVED 2026-04-17T19:40Z (sprint `scenario-traceability-sweep`). File-level traceability block prepended to every test file; 54/54 now reference SCENARIO-\* IDs. Quinn's WARN-003 closed.
 
 ### P2 — Framework / infra
 

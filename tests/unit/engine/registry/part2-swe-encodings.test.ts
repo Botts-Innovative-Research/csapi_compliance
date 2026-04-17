@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-ENCODING-001 (SWE Common text/JSON/binary encodings)
+
 // Unit tests for Part 2 SWE Common Encodings conformance class test modules (S09-07).
 
 import { describe, it, expect, vi } from 'vitest';

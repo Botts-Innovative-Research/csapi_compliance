@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-PASS-002 (ControlStream read-path conformance)
+//   SCENARIO-DYN-OPTIN-001..002 (write-op opt-in gating; ControlStream CRUD)
+//   SCENARIO-DYN-SKIP-001 (class-not-declared skip)
+
 // Unit tests for Connected Systems Part 2 — Control Streams & Commands conformance class test module (S09-03).
 
 import { describe, it, expect, vi } from 'vitest';

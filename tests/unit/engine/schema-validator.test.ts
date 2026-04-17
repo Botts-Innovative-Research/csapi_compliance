@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-ENG-SCHEMA-001..003 (Ajv draft-2020-12 validator: compile, validate, error shape)
+//   SCENARIO-SCHEMA-REF-001 (bundled $refs resolve)
+
 // REQ-ENG-005: Response body validation against JSON schemas using Ajv
 // REQ-ENG-006: Schema loading from OGC OpenAPI definitions with $ref resolution
 //

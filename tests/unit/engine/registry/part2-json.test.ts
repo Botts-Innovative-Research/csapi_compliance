@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-ENCODING-001 (JSON encoding for dynamic-data resources)
+
 // Unit tests for Connected Systems Part 2 — JSON Encoding conformance class test module (S09-02).
 
 import { describe, it, expect, vi } from 'vitest';

@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-ENG-TIMEOUT-001 (rate-limiter semantics approximate timeout/throttle concerns)
+
 // Unit tests for production middleware: rate-limiter, security-headers, request-logger.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

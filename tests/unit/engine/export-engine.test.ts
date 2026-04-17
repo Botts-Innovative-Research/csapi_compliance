@@ -1,3 +1,9 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-EXP-JSON-001..008 (JSON export shape, masking, completeness)
+//   SCENARIO-EXP-PDF-001..006 (PDF export rendering, layout, partial runs)
+//   SCENARIO-EXP-PARTIAL-001..002 (partial-assessment export handling)
+//   SCENARIO-CAP-MASK-001..005 (credential masking applied at export time)
+
 // Tests for ExportEngine — src/engine/export-engine.ts
 // S07-01: JSON export with versioned schema and credential masking
 // S07-02: PDF export with summary and per-class breakdowns

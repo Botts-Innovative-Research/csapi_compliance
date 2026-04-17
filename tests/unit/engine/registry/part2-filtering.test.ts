@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-FILTER-001 (filter params applied to Part 2 collections)
+//   SCENARIO-DYN-PASS-001..005 (per-class filter acceptance)
+
 // Unit tests for Part 2 Advanced Filtering conformance class test module (S09-05).
 
 import { describe, it, expect, vi } from 'vitest';

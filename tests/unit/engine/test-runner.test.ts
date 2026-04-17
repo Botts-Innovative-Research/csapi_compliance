@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-ENG-TRACE-001..002 (dependency-ordered execution + failure cascade)
+//   SCENARIO-ENG-RESULT-001..003 (pass/fail/skip verdict production)
+//   SCENARIO-ENG-AGG-001..003 (class-level + assessment-level aggregation)
+
 // Tests for the TestRunner orchestrator — the main integration point.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

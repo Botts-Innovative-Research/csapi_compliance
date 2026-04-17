@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-PASS-001..002 (pass/fail verdicts for Subsystems class)
+//   SCENARIO-FEATURES-LINKS-002 (audit-trail for parent-link assertion; see
+//     registry-links-normative.test.ts for the consolidated suite)
+
 // Unit tests for Connected Systems Part 1 — Subsystems conformance class test module (S03-02).
 
 import { describe, it, expect, vi } from 'vitest';

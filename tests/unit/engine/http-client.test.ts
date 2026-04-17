@@ -1,3 +1,11 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-CAP-BASIC-001..003 (request/response capture)
+//   SCENARIO-CAP-POST-004 (POST body capture)
+//   SCENARIO-CAP-LARGE-001..002, SCENARIO-CAP-BINARY-001 (body-size + binary handling)
+//   SCENARIO-CAP-TIMING-001, SCENARIO-CAP-ERROR-001..002 (timing + network errors)
+//   SCENARIO-ENG-TIMEOUT-001..002 (HTTP timeout semantics)
+//   SCENARIO-SSRF-LOCAL-001..002 (private-network opt-in; see also ssrf-guard.test.ts)
+
 // Tests for CaptureHttpClient — src/engine/http-client.ts
 // REQ-ENG-011: Request timeout enforcement
 // REQ-ENG-012: Graceful network error handling (no cascading failures)

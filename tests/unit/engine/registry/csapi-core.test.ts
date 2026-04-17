@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-PASS-001..002 (pass/fail verdicts for CS API Core class)
+//   SCENARIO-TEST-DEPGRAPH-001 (core-class prereq for downstream classes)
+
 // REQ-TEST-003: Unit tests for CS API Core conformance class test module (S03-01).
 
 import { describe, it, expect, vi } from 'vitest';

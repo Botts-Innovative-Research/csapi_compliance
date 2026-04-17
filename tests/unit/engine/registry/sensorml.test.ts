@@ -1,3 +1,6 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-SENSORML-001..002 (SensorML JSON encoding + 406 graceful skip)
+
 // Unit tests for SensorML Format conformance class test module (S03-07).
 
 import { describe, it, expect, vi } from 'vitest';

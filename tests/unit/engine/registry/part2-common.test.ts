@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-PASS-001 (Part 2 API Common dependencies)
+//   SCENARIO-DYN-DEP-001 (cs-core prereq for dynamic-data classes)
+
 // Unit tests for Connected Systems Part 2 — API Common conformance class test module (S09-01).
 
 import { describe, it, expect, vi } from 'vitest';

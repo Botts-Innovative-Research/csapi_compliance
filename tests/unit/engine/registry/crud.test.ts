@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-TEST-CRUD-001 (full Create-Replace-Delete lifecycle)
+//   SCENARIO-TEST-WARN-001..002 (write-op opt-in warning + enforcement)
+
 // Unit tests for Create/Replace/Delete conformance class test module (S03-06).
 
 import { describe, it, expect, vi } from 'vitest';

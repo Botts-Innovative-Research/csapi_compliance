@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-SESS-CONC-001 (concurrent-sessions cap)
+//   SCENARIO-SESS-PERSIST-001..004 (create, lookup, TTL eviction, capacity)
+//   SCENARIO-SESS-EDGE-001..002 (edge cases)
+
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { SessionManager } from '@/engine/session-manager';
 import { SESSION_DEFAULTS } from '@/lib/constants';

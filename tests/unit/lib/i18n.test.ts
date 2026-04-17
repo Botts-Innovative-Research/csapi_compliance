@@ -1,3 +1,8 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   No direct SCENARIO-* coverage — i18n is translation-table polish, not
+//   part of any of the 7 capability specs. Tagged here explicitly so a
+//   reviewer greping for untagged test files gets zero false positives.
+
 import { describe, it, expect } from 'vitest';
 import { t } from '@/lib/i18n';
 

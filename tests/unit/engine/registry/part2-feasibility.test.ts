@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-PASS-005 (command feasibility endpoint)
+//   SCENARIO-DYN-SKIP-001 (class-not-declared skip)
+
 // Unit tests for Part 2 Command Feasibility conformance class test module (S09-04).
 
 import { describe, it, expect, vi } from 'vitest';

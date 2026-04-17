@@ -1,3 +1,7 @@
+// SCENARIO coverage (WARN-003 traceability sweep 2026-04-17T19:35Z):
+//   SCENARIO-DYN-OPTIN-001..002 (write-op opt-in gating; update endpoints)
+//   SCENARIO-TEST-CRUD-001 (update operations in the CRUD lifecycle)
+
 // Unit tests for Part 2 Update conformance class test module (S09-06).
 
 import { describe, it, expect, vi } from 'vitest';
