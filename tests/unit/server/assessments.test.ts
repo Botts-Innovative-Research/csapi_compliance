@@ -1,13 +1,13 @@
 // Integration-style tests for assessment API routes.
 // Tests the Express routes directly using supertest — no Next.js required.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { type Express } from 'express';
 import request from 'supertest';
 import crypto from 'node:crypto';
 import { assessmentRoutes, type AssessmentDeps } from '@/server/routes/assessments';
 import { healthRoutes } from '@/server/routes/health';
-import type { AssessmentSession, AssessmentResults, ProgressEvent, HttpExchange } from '@/lib/types';
+import type { AssessmentSession, AssessmentResults, HttpExchange } from '@/lib/types';
 
 // --- Mock factories ---
 

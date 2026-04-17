@@ -1,6 +1,6 @@
 // Unit tests for production middleware: rate-limiter, security-headers, request-logger.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { type Express } from 'express';
 import request from 'supertest';
 import { createRateLimiter } from '@/server/middleware/rate-limiter';

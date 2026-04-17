@@ -1,6 +1,6 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T17:57Z | Sprint `procedures-properties-sampling-collections-missing-check` CLOSED (Raze GAPS_FOUND 0.83 → 3 ops-doc gaps addressed same-turn). All 5 CS Part 1 testCollections functions enforce OGC 23-001 markers. Ready for commit + push.
+> Last updated: 2026-04-17T18:02Z | Sprint `lint-warnings-cleanup` CLOSED — 18 pre-existing lint warnings → 0 (12 unused imports deleted, 6 unused vars handled case-by-case). Adjacent-finding documented: exportPdf had a dead `maskedExchanges` computation; PDF renderer omits exchange data entirely so REQ-EXP-003 holds vacuously. Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
@@ -8,7 +8,7 @@ Read this file first. It is the single authoritative "where are we" doc. Everyth
 
 ## Current State (2026-04-17T17:45Z)
 
-- **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 18 warnings** (all pre-existing unused-imports in test files, non-blocking).
+- **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 0 warnings** (18 pre-existing warnings cleaned in sprint `lint-warnings-cleanup` 2026-04-17T18:02Z).
 - **v1.0 scope**: all 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
 - **Commit state**: last pushed commit is `561f39e` on `main` (sprint deployments-collections-heuristic). Working tree carries the `procedures-properties-sampling-collections-missing-check` sprint — **uncommitted**. See "Uncommitted Work" below.
 - **All 4 BMAD gates operational**: Three Raze APPROVEs on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback 0.92, deployments-collections-heuristic 0.93). Raze pending for this sprint.
@@ -27,7 +27,16 @@ Raze's review scope:
 5. Gate 1 honesty: 1002/1002.
 6. Confirm the Active section of `ops/known-issues.md` is truly empty for the test engine (no Active entries, only polish/roadmap items belong elsewhere).
 
-## Uncommitted Work (sprint `procedures-properties-sampling-collections-missing-check`)
+## Uncommitted Work (sprint `lint-warnings-cleanup`)
+
+Working tree contains:
+- 12 unused imports deleted across `src/app/assess/[id]/results/page.tsx`, `src/engine/registry/{common,crud,part2-common,update}.ts`, `src/engine/result-aggregator.ts`, `src/engine/test-runner.ts`, `tests/unit/engine/test-runner.test.ts`, `tests/unit/server/{assessments,middleware}.test.ts`.
+- 6 unused-var fixes: `scripts/smoke-test.ts` (`_id` destructuring), `src/engine/export-engine.ts` (delete dead `maskedExchanges` + rename param `_auth` + add NOTE explaining REQ-EXP-003 vacuously holds for PDF), `src/server/routes/assessments.ts` (ES2019 optional catch), `tests/unit/engine/dependency-resolver.test.ts` (delete unused `classD`), `tests/unit/engine/discovery-service.test.ts` (delete dead `callCount` instrumentation), `tests/unit/engine/session-manager.test.ts` (`_s1` — load-bearing for count).
+- `ops/status.md`, `ops/changelog.md`, `ops/metrics.md` — sprint narrative + refreshed gate numbers.
+
+**Note**: no Raze review — see changelog for justification.
+
+## Prior Uncommitted Work (sprint `procedures-properties-sampling-collections-missing-check`) — committed as `bd17419`
 
 Working tree contains:
 
@@ -73,7 +82,7 @@ See `ops/known-issues.md` for full detail. Active summary:
 - **SWE Common Binary deep parsing not implemented** — surface-level check only. Low impact per design spec.
 - **WebKit + Edge Playwright blocked** in WSL2 (missing system libs + no `microsoft-edge-stable`). Chromium + Firefox cover dominant share.
 - **NFR-09 uptime monitoring deferred** — hosted deployment prerequisite.
-- **18 pre-existing lint warnings** — unused test imports. Non-blocking; prefix with `_` or delete.
+- ~~**18 pre-existing lint warnings**~~ — RESOLVED 2026-04-17T18:02Z (sprint `lint-warnings-cleanup`).
 
 ## Remaining Work
 
@@ -81,8 +90,7 @@ Prioritized list of open work. All items below are *post-v1.0*; the v1.0 scope (
 
 ### P0 — Active issues with identified fixes
 
-1. **18 pre-existing lint warnings** (~15 min cleanup)
-   - Unused test imports in test-runner.ts, assessments.test.ts, middleware.test.ts, discovery-service.test.ts, session-manager.test.ts, dependency-resolver.test.ts, test-runner.test.ts, i18n utilities, routes/assessments.ts. All are either delete or `_`-prefix.
+_(None remaining. All active test-engine and lint/typing issues are resolved as of 2026-04-17T18:02Z.)_
 
 ### P1 — Scenario assertion-depth upgrades (traceability gaps)
 

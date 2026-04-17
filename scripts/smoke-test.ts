@@ -33,7 +33,7 @@ async function main() {
     console.log(`\nHTTP exchanges: ${result.exchanges.size}`);
 
     // Show exchange details
-    for (const [id, exchange] of result.exchanges) {
+    for (const [_id, exchange] of result.exchanges) {
       console.log(`  ${exchange.request.method} ${exchange.request.url} -> ${exchange.response.statusCode} (${exchange.response.responseTimeMs}ms)`);
     }
 

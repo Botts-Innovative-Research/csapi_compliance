@@ -592,9 +592,7 @@ describe('DiscoveryService', () => {
     });
 
     it('handles network error during resource probing gracefully', async () => {
-      let callCount = 0;
       mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
-        callCount++;
         const url = typeof input === 'string' ? input : input.toString();
         if (url.includes('/csapi') && !url.includes('/conformance') && !url.includes('/systems')) {
           return mockResponse({ body: landingPageJson() });

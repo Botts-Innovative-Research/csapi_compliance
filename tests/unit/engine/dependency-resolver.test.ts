@@ -41,7 +41,6 @@ function makeRegistry(classes: ConformanceClassDefinition[]): TestRegistryInterf
 const classA = makeClassDef({ classUri: 'http://example.org/conf/a', name: 'A', dependencies: [] });
 const classB = makeClassDef({ classUri: 'http://example.org/conf/b', name: 'B', dependencies: ['http://example.org/conf/a'] });
 const classC = makeClassDef({ classUri: 'http://example.org/conf/c', name: 'C', dependencies: ['http://example.org/conf/b'] });
-const classD = makeClassDef({ classUri: 'http://example.org/conf/d', name: 'D', dependencies: ['http://example.org/conf/b', 'http://example.org/conf/c'] });
 
 // --- Tests ---
 

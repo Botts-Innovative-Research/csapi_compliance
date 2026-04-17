@@ -12,7 +12,6 @@ import type {
 import {
   passResult,
   failResult,
-  skipResult,
   assertionFailure,
 } from '@/engine/result-aggregator';
 

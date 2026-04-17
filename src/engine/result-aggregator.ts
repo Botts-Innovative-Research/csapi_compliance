@@ -6,7 +6,6 @@
 import type {
   RequirementDefinition,
   TestResult,
-  TestStatus,
   ConformanceClassResult,
   ClassStatus,
   AssessmentSummary,

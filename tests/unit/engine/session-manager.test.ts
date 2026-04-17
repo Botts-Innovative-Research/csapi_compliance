@@ -175,7 +175,7 @@ describe('SessionManager', () => {
     it('counts only discovering and running sessions', () => {
       manager = new SessionManager();
 
-      const s1 = manager.create(makeParams()); // discovering
+      const _s1 = manager.create(makeParams()); // discovering — contributes to getRunningCount
       const s2 = manager.create(makeParams()); // discovering
       const s3 = manager.create(makeParams()); // will become completed
 

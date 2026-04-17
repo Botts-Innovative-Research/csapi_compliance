@@ -1,6 +1,6 @@
 // Tests for the TestRunner orchestrator — the main integration point.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestRunner } from '@/engine/test-runner';
 import { TestRegistry } from '@/engine/registry/registry';
 import { CancelTokenImpl } from '@/engine/cancel-token';

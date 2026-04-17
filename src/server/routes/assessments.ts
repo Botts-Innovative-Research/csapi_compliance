@@ -274,7 +274,7 @@ export function assessmentRoutes(deps: AssessmentDeps): Router {
 
         // Persist to disk
         await resultStore.dump(results);
-      } catch (err: unknown) {
+      } catch {
         sessionManager.updateStatus(session.id, 'error');
       } finally {
         unwireEvents();

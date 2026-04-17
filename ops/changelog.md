@@ -2,6 +2,24 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-17T18:00Z — Sprint lint-warnings-cleanup: 18 pre-existing lint warnings → 0 (plus one latent-bug adjacent finding documented)
+
+- **Trigger**: User instruction "do the next item on the polish list" (turn 46). Target was P0 #1: 18 pre-existing lint warnings in `ops/status.md` § Remaining Work. All 18 were `@typescript-eslint/no-unused-vars` — 12 unused imports + 6 unused local variables.
+- **Per-site decisions**:
+  - 12 unused imports: deleted (`ClassStatus` from results page, `skipResult` from common/crud/part2-common/update, `TestStatus` from result-aggregator, `CancelToken`+`HttpExchange` from test-runner, `vi` from test-runner.test, `afterEach`+`ProgressEvent` from assessments.test, `afterEach` from middleware.test).
+  - 6 unused variables handled case-by-case (delete vs `_`-prefix vs ES2019 optional catch):
+    - `scripts/smoke-test.ts`: destructuring key → `_id` prefix (load-bearing iterator position).
+    - `src/engine/export-engine.ts` `exportPdf`: `maskedExchanges` was computed but **never used** — PDF renderer does not include exchange data at all. Deleted the line with a clear NOTE comment explaining REQ-EXP-003 is satisfied vacuously for PDF (no exchange data → no credential exposure), and documenting how a future iteration that adds exchange rendering should re-add the masking. `auth` param kept for API symmetry; renamed `_auth`.
+    - `src/server/routes/assessments.ts`: `catch (err: unknown)` → `catch {` (ES2019 optional catch binding; err was never consulted).
+    - `tests/unit/engine/dependency-resolver.test.ts`: `classD` at module scope was never referenced in any test → deleted.
+    - `tests/unit/engine/discovery-service.test.ts`: `callCount` was incremented but never asserted — pure dead instrumentation from a prior debugging session → deleted both the declaration and the `callCount++` call.
+    - `tests/unit/engine/session-manager.test.ts`: `s1` is **load-bearing for the test assertion** (contributes to `getRunningCount() === 2` by being a discovering session) but isn't referenced by name → `_s1` prefix with a comment noting the load-bearing role.
+- **Adjacent finding documented (not a sprint-scope fix)**: while evaluating `maskedExchanges` in `exportPdf`, confirmed the PDF renderer omits HTTP exchange bodies entirely (line ~113-281 of export-engine.ts — no `exchange`, `request.url`, or `response.body` references in the PDF-rendering section). The computed-but-unused masking call was dead code, not a latent credential leak. REQ-EXP-003 ("credentials masked in all exports") holds vacuously for PDF. A future iteration that adds exchange rendering MUST apply the masking; documented in the inline NOTE comment.
+- **Gates**: vitest 1003/1003 PASS (unchanged — no test behavior affected), tsc 0 errors, eslint **0 errors / 0 warnings** (was 0 errors / 18 pre-existing warnings).
+- **Scope**: 9 files touched (1 script, 6 src, 5 test, 1 route — wait, let me recount: `scripts/smoke-test.ts`, `src/app/assess/[id]/results/page.tsx`, `src/engine/export-engine.ts`, `src/engine/registry/common.ts`, `src/engine/registry/crud.ts`, `src/engine/registry/part2-common.ts`, `src/engine/registry/update.ts`, `src/engine/result-aggregator.ts`, `src/engine/test-runner.ts`, `src/server/routes/assessments.ts`, `tests/unit/engine/dependency-resolver.test.ts`, `tests/unit/engine/discovery-service.test.ts`, `tests/unit/engine/session-manager.test.ts`, `tests/unit/engine/test-runner.test.ts`, `tests/unit/server/assessments.test.ts`, `tests/unit/server/middleware.test.ts` = 16 source files). All edits are non-behavioral (no code path change).
+- **No Raze review**: per CLAUDE.md "Spawn an adversarial sub-agent to review non-trivial changes before reporting completion". 18 purely-mechanical lint fixes with zero test-behavior delta is trivial — Raze would add token cost without catching a meaningful error class. If the `exportPdf` export-engine edit had involved code-path changes (adding masking into the renderer) a review would be warranted, but deleting dead code with a NOTE comment is a doc-style change.
+- **Next suggested action**: per `ops/status.md` § Remaining Work, P1 #1 (SESS-PROG-001 PARTIAL → PASS, ~1-2h) or P1 #5 (111+ SCENARIO-* traceability, ~2-4h).
+
 ## 2026-04-17T17:35Z — Sprint procedures-properties-sampling-collections-missing-check: complete the 5-feature-type testCollections audit
 
 - **Trigger**: User instruction "Update your docs, then address the next item on the list" (turn 45) — acting on the new Active issue surfaced by Raze on the preceding `deployments-collections-heuristic` sprint.

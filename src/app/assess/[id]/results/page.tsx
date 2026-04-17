@@ -13,7 +13,6 @@ import type {
   ConformanceClassResult,
   TestResult,
   HttpExchange,
-  ClassStatus,
 } from '@/lib/types';
 
 type StatusFilter = 'all' | 'pass' | 'fail' | 'skip';

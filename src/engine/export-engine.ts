@@ -112,10 +112,15 @@ export class ExportEngine {
    */
   async exportPdf(
     results: AssessmentResults,
-    auth: AuthConfig,
+    _auth: AuthConfig,
   ): Promise<Buffer> {
-    // Mask credentials before rendering
-    const maskedExchanges = CredentialMasker.maskAll(results.exchanges, auth);
+    // NOTE: The PDF renderer does not include HTTP exchange bodies, so
+    // credential masking (REQ-EXP-003) is satisfied vacuously here — there is
+    // no exchange data in the output that could leak a credential. The auth
+    // param is kept for API symmetry with exportJson. If a future iteration
+    // adds exchange rendering to the PDF, apply
+    // `CredentialMasker.maskAll(results.exchanges, auth)` to the data set
+    // feeding the renderer.
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const doc = new (PDFDocument as any)({
