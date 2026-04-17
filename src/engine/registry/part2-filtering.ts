@@ -19,32 +19,32 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_FILTER_PHENOMENON_TIME: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/phenomenonTime',
-  conformanceUri: '/conf/advanced-filtering/phenomenonTime',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/phenomenonTime',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/phenomenonTime',
   name: 'Filter by Phenomenon Time',
   priority: 'MUST',
   description: 'GET /observations?phenomenonTime=... returns HTTP 200.',
 };
 
 const REQ_FILTER_RESULT_TIME: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/resultTime',
-  conformanceUri: '/conf/advanced-filtering/resultTime',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resultTime',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/resultTime',
   name: 'Filter by Result Time',
   priority: 'MUST',
   description: 'GET /observations?resultTime=... returns HTTP 200.',
 };
 
 const REQ_FILTER_OBSERVED_PROPERTY: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/observedProperty',
-  conformanceUri: '/conf/advanced-filtering/observedProperty',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/observedProperty',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/observedProperty',
   name: 'Filter by Observed Property',
   priority: 'MUST',
   description: 'GET /datastreams?observedProperty=... returns HTTP 200.',
 };
 
 const REQ_FILTER_COMBINED: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/combined',
-  conformanceUri: '/conf/advanced-filtering/combined',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/combined',
   name: 'Combined Part 2 Filters',
   priority: 'MUST',
   description: 'Multiple Part 2 filters can be combined.',

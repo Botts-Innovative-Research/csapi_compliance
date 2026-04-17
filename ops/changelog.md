@@ -2,6 +2,23 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-17T20:30Z — Sprint uri-canonicalization: close Raze's 2026-04-16 finding
+
+- **Trigger**: User instruction "OK, do URI canonicalization, then we'll reset" (turn 49). Raze's 2026-04-16 Gate 4 live run flagged that test modules cited requirements as local paths like `/req/ogcapi-common/landing-page` rather than the canonical OGC form `http://www.opengis.net/spec/...`.
+- **Scope approach**: prefix-only canonicalization. Each of the 110 RequirementDefinition blocks' `requirementUri` and `conformanceUri` fields got the full OGC spec base URI prepended. Path segments preserved (CS Part 1 and Part 2 local paths already match upstream `.adoc` identifiers). Full path-segment remap for OGC 19-072 and 17-069 deferred as a follow-up Active issue (would need per-URI OGC spec lookup).
+- **Mapping**:
+  - OGC 19-072 Common Part 1: `/req/ogcapi-common/...` → `http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/...`
+  - OGC 17-069 Features Part 1: `/req/ogcapi-features/...` → `http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/...`
+  - OGC 23-001 CS Part 1: `/req/{system,deployment,procedure,sf,property,subsystem,subdeployment,api-common,advanced-filtering,create-replace-delete,update,geojson,sensorml}/...` → `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/...`
+  - OGC 23-002 CS Part 2: `/req/{datastream,controlstream,json,feasibility,swecommon-binary,swecommon-json,swecommon-text,system-event,system-history}/...` → `http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/...`
+- **Mechanical sweep**: bash `sed -i` per-prefix per-file across `src/engine/registry/` AND `tests/`. Both `requirementUri:`/`conformanceUri:` field values and test assertions (`expect(result.requirementUri).toBe('/req/...')`) updated in the same pass. 114 test assertions rewritten mechanically.
+- **Post-sed cleanup**: 12 sites in narrative description/skipReason strings had `/req/system/canonical-url` etc. baked into prose (e.g. "…because OGC 23-001 /req/system/canonical-url only requires rel=canonical…"). The first sed pass over-replaced these to the full URI, making the narrative verbose. A targeted second sed pass restored the short form in narrative context (pattern: URI followed by `" only requires"`, `" is about"`, `" does not mandate"`) — the full URI still appears adjacent in the `requirementUri` field so no info is lost.
+- **Exit criterion verification**: `grep -rhE "(requirement|conformance)Uri:\s*'/req/" src/engine/registry/` = 0 matches. All 4 OGC spec bases present (`ogcapi-common-1`, `ogcapi-features-1`, `ogcapi-connectedsystems-1`, `ogcapi-connectedsystems-2`).
+- **New Active issue logged**: path-segment remap for OGC 19-072 + OGC 17-069. Current local slugs like `/req/ogcapi-common/landing-page` don't match OGC's canonical path `/req/landing-page/root-success`. Would need per-URI .adoc lookup to remap. ~2-3 hours. Low impact — prefix canonicalization already enables cross-tool resolution; remap only matters for direct CITE TestResult dereferencing.
+- **Gates**: vitest 1003/1003 unchanged (sed was URL-only, no test-behavior delta), tsc 0 errors, eslint 0 errors / 0 warnings (unchanged).
+- **Scope**: 20+ registry files + 20+ test files touched via bash sed loop. Each file gained URI prefix across its RequirementDefinition blocks and test assertions.
+- **No Raze review**: mechanical string-prefix sweep with zero test-behavior delta and 1003/1003 tests passing as the safety check. Same rationale as the preceding lint / e2e-depth / traceability sprints. Given the blast radius (40+ files) but mechanical nature, I audited the sed output manually by spot-checking 3 spec bases + verifying the exit-criterion grep returns 0.
+
 ## 2026-04-17T19:40Z — Sprint scenario-traceability-sweep: close Quinn's WARN-003 (2026-04-02)
 
 - **Trigger**: User instruction "Do p1 #2" (turn 48) — P1 #5 from `ops/status.md` § Remaining Work ("111+ SCENARIO-\* traceability, ~2-4h"). Quinn's WARN-003 ("Zero test files reference SCENARIO-\* IDs") has been open since 2026-04-02.

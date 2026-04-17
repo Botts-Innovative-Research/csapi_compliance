@@ -19,32 +19,32 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_GEOJSON_MEDIATYPE_READ: RequirementDefinition = {
-  requirementUri: '/req/geojson/mediatype-read',
-  conformanceUri: '/conf/geojson/mediatype-read',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/mediatype-read',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/geojson/mediatype-read',
   name: 'GeoJSON Media Type Read',
   priority: 'MUST',
   description: 'Accept: application/geo+json returns Content-Type application/geo+json.',
 };
 
 const REQ_GEOJSON_FEATURE_MAPPING: RequirementDefinition = {
-  requirementUri: '/req/geojson/feature-attribute-mapping',
-  conformanceUri: '/conf/geojson/feature-attribute-mapping',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/feature-attribute-mapping',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/geojson/feature-attribute-mapping',
   name: 'GeoJSON Feature Attribute Mapping',
   priority: 'MUST',
   description: 'Response body has standard GeoJSON members: type, id, geometry, properties.',
 };
 
 const REQ_GEOJSON_SYSTEM_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/geojson/system-schema',
-  conformanceUri: '/conf/geojson/system-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/geojson/system-schema',
   name: 'GeoJSON System Schema',
   priority: 'MUST',
   description: 'System GeoJSON has required system-specific properties.',
 };
 
 const REQ_GEOJSON_SYSTEM_MAPPINGS: RequirementDefinition = {
-  requirementUri: '/req/geojson/system-mappings',
-  conformanceUri: '/conf/geojson/system-mappings',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-mappings',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/geojson/system-mappings',
   name: 'GeoJSON System Mappings',
   priority: 'MUST',
   description: 'System properties map to OGC concepts.',

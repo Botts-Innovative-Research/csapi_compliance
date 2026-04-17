@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/property/resources-endpoint',
-  conformanceUri: '/conf/property/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/property/resources-endpoint',
   name: 'Properties Resources Endpoint',
   priority: 'MUST',
   description: 'GET /properties returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/property/canonical-url',
-  conformanceUri: '/conf/property/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/property/canonical-url',
   name: 'Property Canonical URL',
   priority: 'MUST',
   description: 'GET /properties/{id} returns HTTP 200 with the property definition resource.',
@@ -44,8 +44,8 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
 // from FAIL to SKIP-with-reason below.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 14, /req/property/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/property/canonical-endpoint',
-  conformanceUri: '/conf/property/canonical-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/property/canonical-endpoint',
   name: 'Property Canonical Endpoint Self Link',
   priority: 'MUST',
   description:
@@ -56,8 +56,8 @@ const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/property/collections',
-  conformanceUri: '/conf/property/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/property/collections',
   name: 'Property in Collections',
   priority: 'MUST',
   description: 'Properties appear in /collections.',

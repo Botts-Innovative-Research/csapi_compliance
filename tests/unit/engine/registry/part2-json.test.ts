@@ -150,7 +150,7 @@ describe('Connected Systems Part 2 - JSON Encoding conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/json/datastream-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/datastream-schema');
     });
 
     it('fails when id is missing', async () => {
@@ -255,7 +255,7 @@ describe('Connected Systems Part 2 - JSON Encoding conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/json/observation-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/observation-schema');
     });
 
     it('fails when result is missing', async () => {
@@ -335,7 +335,7 @@ describe('Connected Systems Part 2 - JSON Encoding conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/json/controlstream-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/controlstream-schema');
     });
 
     it('fails when id is missing', async () => {
@@ -432,9 +432,9 @@ describe('Connected Systems Part 2 - JSON Encoding conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/json/datastream-schema',
-        '/req/json/observation-schema',
-        '/req/json/controlstream-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/datastream-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/observation-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/controlstream-schema',
       ];
 
       const getMock = vi.fn();

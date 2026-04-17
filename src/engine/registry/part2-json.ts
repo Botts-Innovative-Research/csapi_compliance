@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_DATASTREAM_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/json/datastream-schema',
-  conformanceUri: '/conf/json/datastream-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/datastream-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/json/datastream-schema',
   name: 'Datastream JSON Schema',
   priority: 'MUST',
   description: 'Datastream JSON has required structure (id, name, type).',
 };
 
 const REQ_OBSERVATION_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/json/observation-schema',
-  conformanceUri: '/conf/json/observation-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/observation-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/json/observation-schema',
   name: 'Observation JSON Schema',
   priority: 'MUST',
   description: 'Observation JSON has required structure (id, result, phenomenonTime).',
 };
 
 const REQ_CONTROLSTREAM_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/json/controlstream-schema',
-  conformanceUri: '/conf/json/controlstream-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/json/controlstream-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/json/controlstream-schema',
   name: 'Control Stream JSON Schema',
   priority: 'MUST',
   description: 'Control stream JSON has required structure (id, name, type).',

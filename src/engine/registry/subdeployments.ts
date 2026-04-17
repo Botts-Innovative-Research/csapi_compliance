@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_COLLECTION: RequirementDefinition = {
-  requirementUri: '/req/subdeployment/collection',
-  conformanceUri: '/conf/subdeployment/collection',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/collection',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subdeployment/collection',
   name: 'Subdeployments Collection',
   priority: 'MUST',
   description: 'GET /deployments/{id}/subdeployments returns HTTP 200.',
 };
 
 const REQ_RECURSIVE_PARAM: RequirementDefinition = {
-  requirementUri: '/req/subdeployment/recursive-param',
-  conformanceUri: '/conf/subdeployment/recursive-param',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-param',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subdeployment/recursive-param',
   name: 'Subdeployments Recursive Parameter',
   priority: 'MUST',
   description: 'Subdeployments endpoint supports recursive=true query parameter.',
 };
 
 const REQ_RECURSIVE_SEARCH_DEPLOYMENTS: RequirementDefinition = {
-  requirementUri: '/req/subdeployment/recursive-search-deployments',
-  conformanceUri: '/conf/subdeployment/recursive-search-deployments',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-search-deployments',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subdeployment/recursive-search-deployments',
   name: 'Subdeployments Recursive Search',
   priority: 'MUST',
   description: 'Recursive search returns nested subdeployment results.',
@@ -65,8 +65,8 @@ const REQ_RECURSIVE_SEARCH_DEPLOYMENTS: RequirementDefinition = {
 // HTML section rather than a requirement-file URL.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 11, /req/subdeployment/recursive-assoc).
 const REQ_RECURSIVE_ASSOC: RequirementDefinition = {
-  requirementUri: '/req/subdeployment/recursive-assoc',
-  conformanceUri: '/conf/subdeployment/recursive-assoc',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-assoc',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subdeployment/recursive-assoc',
   name: 'Subdeployment Parent Association',
   priority: 'MUST',
   description:

@@ -119,7 +119,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/id-list-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/id-list-schema');
     });
 
     it('fails when GET /systems?id=... returns non-200', async () => {
@@ -167,7 +167,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/resource-by-id');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-id');
     });
 
     it('fails when GET /systems?id={id} returns non-200', async () => {
@@ -202,7 +202,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/resource-by-keyword');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-keyword');
     });
 
     it('fails when GET /systems?q=keyword returns non-200', async () => {
@@ -237,7 +237,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/feature-by-geom');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/feature-by-geom');
     });
 
     it('fails when GET /systems?bbox=... returns non-200', async () => {
@@ -272,7 +272,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/system-by-procedure');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/system-by-procedure');
     });
 
     it('fails when GET /systems?procedure={id} returns non-200', async () => {
@@ -318,7 +318,7 @@ describe('Advanced Filtering conformance tests', () => {
       const result = await tests[5].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/combined-filters');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined-filters');
     });
 
     it('fails when combined filters return non-200', async () => {
@@ -357,12 +357,12 @@ describe('Advanced Filtering conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/advanced-filtering/id-list-schema',
-        '/req/advanced-filtering/resource-by-id',
-        '/req/advanced-filtering/resource-by-keyword',
-        '/req/advanced-filtering/feature-by-geom',
-        '/req/advanced-filtering/system-by-procedure',
-        '/req/advanced-filtering/combined-filters',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/id-list-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-id',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-keyword',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/feature-by-geom',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/system-by-procedure',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined-filters',
       ];
 
       const getMock = vi.fn();

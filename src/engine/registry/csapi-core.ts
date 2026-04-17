@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCE_IDS: RequirementDefinition = {
-  requirementUri: '/req/api-common/resource-ids',
-  conformanceUri: '/conf/api-common/resource-ids',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-ids',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/resource-ids',
   name: 'Resource IDs',
   priority: 'MUST',
   description: 'All CS API resources have unique id fields.',
 };
 
 const REQ_RESOURCE_UIDS: RequirementDefinition = {
-  requirementUri: '/req/api-common/resource-uids',
-  conformanceUri: '/conf/api-common/resource-uids',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-uids',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/resource-uids',
   name: 'Resource UIDs',
   priority: 'SHOULD',
   description: 'Resources may have a uid (unique identifier) field.',
 };
 
 const REQ_DATETIME: RequirementDefinition = {
-  requirementUri: '/req/api-common/datetime',
-  conformanceUri: '/conf/api-common/datetime',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/datetime',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/datetime',
   name: 'DateTime Filter',
   priority: 'MUST',
   description: 'Server supports datetime query parameter on collection endpoints.',

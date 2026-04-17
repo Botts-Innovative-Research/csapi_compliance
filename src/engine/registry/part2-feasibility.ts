@@ -19,8 +19,8 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_FEASIBILITY_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/feasibility/endpoint',
-  conformanceUri: '/conf/feasibility/endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/feasibility/endpoint',
   name: 'Feasibility Endpoint',
   priority: 'MUST',
   description:
@@ -28,8 +28,8 @@ const REQ_FEASIBILITY_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_FEASIBILITY_RESPONSE: RequirementDefinition = {
-  requirementUri: '/req/feasibility/response',
-  conformanceUri: '/conf/feasibility/response',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/response',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/feasibility/response',
   name: 'Feasibility Response',
   priority: 'MUST',
   description: 'Response includes feasibility status.',

@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/system/resources-endpoint',
-  conformanceUri: '/conf/system/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/resources-endpoint',
   name: 'Systems Resources Endpoint',
   priority: 'MUST',
   description: 'GET /systems returns HTTP 200 with a JSON response body containing an items array.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/system/canonical-url',
-  conformanceUri: '/conf/system/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/canonical-url',
   name: 'System Canonical URL',
   priority: 'MUST',
   description: 'GET /systems/{systemId} returns HTTP 200 with the correct system id.',
@@ -44,8 +44,8 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
 // from FAIL to SKIP-with-reason below.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 8, /req/system/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/system/canonical-endpoint',
-  conformanceUri: '/conf/system/canonical-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/canonical-endpoint',
   name: 'System Canonical Endpoint',
   priority: 'MUST',
   description:
@@ -56,16 +56,16 @@ const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/system/collections',
-  conformanceUri: '/conf/system/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/collections',
   name: 'Systems in Collections',
   priority: 'MUST',
   description: 'Systems appear in /collections.',
 };
 
 const REQ_LOCATION_TIME: RequirementDefinition = {
-  requirementUri: '/req/system/location-time',
-  conformanceUri: '/conf/system/location-time',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/location-time',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/location-time',
   name: 'System Location and Time',
   priority: 'MAY',
   description: 'System features may have geometry and validTime properties.',

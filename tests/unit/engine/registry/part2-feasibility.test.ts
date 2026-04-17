@@ -121,7 +121,7 @@ describe('Part 2 Command Feasibility conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/feasibility/endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/endpoint');
     });
 
     it('skips when no controlStreamId in discovery cache', async () => {
@@ -170,7 +170,7 @@ describe('Part 2 Command Feasibility conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/feasibility/response');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/response');
     });
 
     it('passes when response includes status field', async () => {
@@ -233,8 +233,8 @@ describe('Part 2 Command Feasibility conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/feasibility/endpoint',
-        '/req/feasibility/response',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/feasibility/response',
       ];
 
       const ctx = makeTestContext();

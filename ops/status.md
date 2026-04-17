@@ -1,6 +1,6 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T19:42Z | Sprint `scenario-traceability-sweep` CLOSED. 54/54 test files now reference SCENARIO-\* IDs (100%, up from 44%). Quinn's WARN-003 closed after being open since 2026-04-02. Ready for commit + push.
+> Last updated: 2026-04-17T20:30Z | Sprint `uri-canonicalization` CLOSED. All 110 RequirementDefinition URIs + 114 test assertions now use full `http://www.opengis.net/spec/...` OGC-canonical form. Raze's 2026-04-16 finding closed. Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
@@ -82,7 +82,7 @@ Full changelog at `ops/changelog.md`. Traceability with per-scenario PASS/PARTIA
 See `ops/known-issues.md` for full detail. Active summary:
 
 - _(No active test-engine issues as of 2026-04-17T17:45Z — all 5 CS Part 1 testCollections functions enforce OGC 23-001 markers.)_
-- **Requirement URIs use local paths** (`/req/ogcapi-features/items-links`), not canonical OGC (`/req/core/fc-links`). Low impact; polish item tracked under P2 below. Raze 2026-04-16 finding.
+- **Requirement URI path-segment remap (OGC 19-072 + 17-069 only)** — prefix canonicalization shipped 2026-04-17; local path slugs like `/req/ogcapi-common/landing-page` still don't match OGC canonical paths like `/req/landing-page/root-success`. Would need per-URI .adoc lookup. ~2-3h. Low impact.
 - **SWE Common Binary deep parsing not implemented** — surface-level check only. Low impact per design spec.
 - **WebKit + Edge Playwright blocked** in WSL2 (missing system libs + no `microsoft-edge-stable`). Chromium + Firefox cover dominant share.
 - **NFR-09 uptime monitoring deferred** — hosted deployment prerequisite.
@@ -118,8 +118,7 @@ _(None remaining. All active test-engine and lint/typing issues are resolved as 
 10. **Known-good/known-bad conformance fixture mock server** (1-2 days)
     - Currently, Raze's Section 6.3 "does the code correctly flag a non-conformant server?" check relies on manual GeoRobotix runs. A fixture server that serves intentionally-broken responses (missing required fields, wrong status codes, malformed GeoJSON) would let Raze's accuracy check be mechanical. High ROI for the BMAD framework.
 
-11. **Requirement URI canonicalization** (~2-4 hours)
-    - Current URIs use local paths like `/req/ogcapi-features/items-links`. Canonical OGC form is `http://www.opengis.net/spec/ogcapi-features-1/1.0/req/core/fc-links`. Batch-rewrite for cross-tool interop + OGC CITE TestResult alignment. Raze 2026-04-16 finding.
+11. ~~**Requirement URI canonicalization**~~ — RESOLVED 2026-04-17T20:30Z (sprint `uri-canonicalization`). Prefix canonicalization shipped across 110 URIs + 114 test assertions. Path-segment remap for OGC 19-072/17-069 deferred as a smaller follow-up Active issue (see § Known Issues).
 
 ### P3 — Longer-term
 

@@ -143,7 +143,7 @@ describe('Connected Systems - Subsystems conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subsystem/collection');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/collection');
     });
 
     it('fails when status is not 200', async () => {
@@ -195,7 +195,7 @@ describe('Connected Systems - Subsystems conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subsystem/recursive-param');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-param');
     });
 
     it('fails when recursive request returns non-200', async () => {
@@ -233,7 +233,7 @@ describe('Connected Systems - Subsystems conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subsystem/recursive-search-systems');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-search-systems');
     });
 
     it('fails when items array is missing from recursive response', async () => {
@@ -272,7 +272,7 @@ describe('Connected Systems - Subsystems conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subsystem/recursive-assoc');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-assoc');
     });
 
     it('SKIPs when subsystem has no parent link (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
@@ -344,10 +344,10 @@ describe('Connected Systems - Subsystems conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/subsystem/collection',
-        '/req/subsystem/recursive-param',
-        '/req/subsystem/recursive-search-systems',
-        '/req/subsystem/recursive-assoc',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/collection',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-param',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-search-systems',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-assoc',
       ];
 
       const getMock = vi.fn();

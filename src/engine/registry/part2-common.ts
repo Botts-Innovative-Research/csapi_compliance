@@ -18,16 +18,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES: RequirementDefinition = {
-  requirementUri: '/req/api-common/resources',
-  conformanceUri: '/conf/api-common/resources',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resources',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/resources',
   name: 'Part 2 Resource Endpoints',
   priority: 'MUST',
   description: 'Part 2 resource endpoints (datastreams, observations, controlstreams, commands) are accessible.',
 };
 
 const REQ_RESOURCE_COLLECTION: RequirementDefinition = {
-  requirementUri: '/req/api-common/resource-collection',
-  conformanceUri: '/conf/api-common/resource-collection',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-collection',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/resource-collection',
   name: 'Part 2 Resource Collections',
   priority: 'MUST',
   description: 'Part 2 resources appear in collections.',

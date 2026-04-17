@@ -19,48 +19,48 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/datastream/resources-endpoint',
-  conformanceUri: '/conf/datastream/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/resources-endpoint',
   name: 'Datastreams Resources Endpoint',
   priority: 'MUST',
   description: 'GET /datastreams returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/datastream/canonical-url',
-  conformanceUri: '/conf/datastream/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/canonical-url',
   name: 'Datastream Canonical URL',
   priority: 'MUST',
   description: 'GET /datastreams/{id} returns HTTP 200 with the correct datastream.',
 };
 
 const REQ_REF_FROM_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/datastream/ref-from-system',
-  conformanceUri: '/conf/datastream/ref-from-system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/ref-from-system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/ref-from-system',
   name: 'Datastreams Referenced from System',
   priority: 'MUST',
   description: 'GET /systems/{id}/datastreams returns HTTP 200.',
 };
 
 const REQ_SCHEMA_OP: RequirementDefinition = {
-  requirementUri: '/req/datastream/schema-op',
-  conformanceUri: '/conf/datastream/schema-op',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/schema-op',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/schema-op',
   name: 'Datastream Schema Operation',
   priority: 'MUST',
   description: 'GET /datastreams/{id}/schema returns HTTP 200.',
 };
 
 const REQ_OBS_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/datastream/obs-resources-endpoint',
-  conformanceUri: '/conf/datastream/obs-resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/obs-resources-endpoint',
   name: 'Observations Resources Endpoint',
   priority: 'MUST',
   description: 'GET /observations or /datastreams/{id}/observations returns HTTP 200.',
 };
 
 const REQ_OBS_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/datastream/obs-canonical-url',
-  conformanceUri: '/conf/datastream/obs-canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/datastream/obs-canonical-url',
   name: 'Observation Canonical URL',
   priority: 'MUST',
   description: 'GET /observations/{id} returns HTTP 200.',

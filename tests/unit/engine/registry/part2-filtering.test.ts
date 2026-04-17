@@ -119,7 +119,7 @@ describe('Part 2 Advanced Filtering conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/phenomenonTime');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/phenomenonTime');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -165,7 +165,7 @@ describe('Part 2 Advanced Filtering conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/resultTime');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resultTime');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -199,7 +199,7 @@ describe('Part 2 Advanced Filtering conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/observedProperty');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/observedProperty');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -233,7 +233,7 @@ describe('Part 2 Advanced Filtering conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/advanced-filtering/combined');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -271,10 +271,10 @@ describe('Part 2 Advanced Filtering conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/advanced-filtering/phenomenonTime',
-        '/req/advanced-filtering/resultTime',
-        '/req/advanced-filtering/observedProperty',
-        '/req/advanced-filtering/combined',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/phenomenonTime',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resultTime',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/observedProperty',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined',
       ];
 
       const getMock = vi.fn();

@@ -116,7 +116,7 @@ describe('Property Definitions conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/property/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/resources-endpoint');
     });
 
     it('fails when GET /properties returns non-200', async () => {
@@ -164,7 +164,7 @@ describe('Property Definitions conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/property/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-url');
     });
 
     it('fails when GET /properties/{id} returns non-200', async () => {
@@ -202,7 +202,7 @@ describe('Property Definitions conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/property/canonical-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-endpoint');
     });
 
     it('SKIPs when self link is missing (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
@@ -260,7 +260,7 @@ describe('Property Definitions conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/property/collections');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/collections');
     });
 
     it('passes with non-canonical collection id when itemType is correct (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
@@ -354,10 +354,10 @@ describe('Property Definitions conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/property/resources-endpoint',
-        '/req/property/canonical-url',
-        '/req/property/canonical-endpoint',
-        '/req/property/collections',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/collections',
       ];
 
       const getMock = vi.fn();

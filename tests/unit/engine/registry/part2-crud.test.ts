@@ -130,7 +130,7 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/datastream');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/datastream');
       expect(result.exchangeIds).toHaveLength(3);
     });
 
@@ -282,7 +282,7 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/observation');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/observation');
     });
 
     it('skips when no systemId in discovery cache', async () => {
@@ -436,7 +436,7 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/controlstream');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/controlstream');
       expect(result.exchangeIds).toHaveLength(3);
     });
 
@@ -464,9 +464,9 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/create-replace-delete/datastream',
-        '/req/create-replace-delete/observation',
-        '/req/create-replace-delete/controlstream',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/datastream',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/observation',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/controlstream',
       ];
 
       const ctx = makeTestContext();

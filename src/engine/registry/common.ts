@@ -18,16 +18,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_LANDING_PAGE: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/landing-page',
-  conformanceUri: '/conf/ogcapi-common/landing-page',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/landing-page',
   name: 'Landing Page Response',
   priority: 'MUST',
   description: 'Landing page (GET /) returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_LANDING_PAGE_LINKS: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/landing-page-links',
-  conformanceUri: '/conf/ogcapi-common/landing-page-links',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page-links',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/landing-page-links',
   name: 'Landing Page Required Links',
   priority: 'MUST',
   // Per OGC API - Common Part 1 (19-072) /req/landing-page/root-success: the landing page SHALL include
@@ -39,16 +39,16 @@ const REQ_LANDING_PAGE_LINKS: RequirementDefinition = {
 };
 
 const REQ_CONFORMANCE_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/conformance',
-  conformanceUri: '/conf/ogcapi-common/conformance',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/conformance',
   name: 'Conformance Endpoint',
   priority: 'MUST',
   description: 'Conformance endpoint (GET /conformance) returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CONFORMANCE_CONFORMS_TO: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/conformance-conformsTo',
-  conformanceUri: '/conf/ogcapi-common/conformance-conformsTo',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance-conformsTo',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/conformance-conformsTo',
   name: 'Conformance conformsTo Array',
   priority: 'MUST',
   description: 'Conformance response body contains a conformsTo array.',
@@ -68,8 +68,8 @@ const REQ_CONFORMANCE_CONFORMS_TO: RequirementDefinition = {
 // is deliberately lax (HTTP 200 + non-empty body) rather than probing an
 // `openapi` field — the latter would regress false-positive on service-doc.
 const REQ_API_DEFINITION: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/api-definition',
-  conformanceUri: '/conf/ogcapi-common/api-definition',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/api-definition',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/api-definition',
   name: 'API Definition Link',
   priority: 'MUST',
   description:
@@ -80,8 +80,8 @@ const REQ_API_DEFINITION: RequirementDefinition = {
 };
 
 const REQ_JSON_CONTENT_TYPE: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-common/json-content-type',
-  conformanceUri: '/conf/ogcapi-common/json-content-type',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/json-content-type',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/json-content-type',
   name: 'JSON Content-Type Header',
   priority: 'MUST',
   description: 'JSON responses include a Content-Type header of application/json.',

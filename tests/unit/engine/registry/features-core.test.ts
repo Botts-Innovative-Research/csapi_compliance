@@ -159,7 +159,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await collectionsTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/collections');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections');
     });
 
     it('fails when status is not 200', async () => {
@@ -187,7 +187,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/collections-array');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections-array');
     });
 
     it('fails when collections array is missing', async () => {
@@ -230,7 +230,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/single-collection');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-collection');
     });
 
     it('fails when required fields are missing', async () => {
@@ -271,7 +271,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/items');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items');
     });
 
     it('skips when no collections available', async () => {
@@ -296,7 +296,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/items-geojson');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-geojson');
     });
 
     it('fails when type is not FeatureCollection', async () => {
@@ -357,7 +357,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[5].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/items-limit');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-limit');
     });
 
     it('fails when limit is not respected', async () => {
@@ -415,7 +415,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[6].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/single-feature');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-feature');
       expect(result.exchangeIds).toHaveLength(2);
     });
 
@@ -475,7 +475,7 @@ describe('OGC API Features - Core conformance tests', () => {
       const result = await tests[7].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-features/items-links');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links');
     });
 
     it('fails when links array is missing', async () => {
@@ -527,14 +527,14 @@ describe('OGC API Features - Core conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/ogcapi-features/collections',
-        '/req/ogcapi-features/collections-array',
-        '/req/ogcapi-features/single-collection',
-        '/req/ogcapi-features/items',
-        '/req/ogcapi-features/items-geojson',
-        '/req/ogcapi-features/items-limit',
-        '/req/ogcapi-features/single-feature',
-        '/req/ogcapi-features/items-links',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections-array',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-collection',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-geojson',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-limit',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-feature',
+        'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links',
       ];
 
       const getMock = vi.fn();

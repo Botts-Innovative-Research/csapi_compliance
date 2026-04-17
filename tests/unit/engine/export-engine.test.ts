@@ -101,16 +101,16 @@ function createResults(overrides?: Partial<AssessmentResults>): AssessmentResult
         status: 'fail',
         tests: [
           {
-            requirementUri: '/req/system/canonical-url',
-            conformanceUri: '/conf/system/canonical-url',
+            requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-url',
+            conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/canonical-url',
             testName: 'System Canonical URL',
             status: 'pass',
             exchangeIds: ['ex-1'],
             durationMs: 30,
           },
           {
-            requirementUri: '/req/system/collection',
-            conformanceUri: '/conf/system/collection',
+            requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/collection',
+            conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/collection',
             testName: 'System Collection',
             status: 'fail',
             failureMessage: 'Expected status 200 but got 404',

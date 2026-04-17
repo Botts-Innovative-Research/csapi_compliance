@@ -150,7 +150,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/deployment/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/resources-endpoint');
     });
 
     it('fails when status is not 200', async () => {
@@ -202,7 +202,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/deployment/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -256,7 +256,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/deployment/canonical-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-endpoint');
     });
 
     it('SKIPs when self link is absent (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
@@ -317,7 +317,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/deployment/ref-from-system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/ref-from-system');
     });
 
     it('fails when status is not 200', async () => {
@@ -356,7 +356,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/deployment/collections');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/collections');
     });
 
     it('passes when a collection has non-canonical id but declares featureType="sosa:Deployment" (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
@@ -494,11 +494,11 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/deployment/resources-endpoint',
-        '/req/deployment/canonical-url',
-        '/req/deployment/canonical-endpoint',
-        '/req/deployment/ref-from-system',
-        '/req/deployment/collections',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/ref-from-system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/collections',
       ];
 
       const getMock = vi.fn();

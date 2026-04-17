@@ -120,7 +120,7 @@ const selfLinkCases: SelfLinkCase[] = [
   {
     label: 'procedures.ts REQ_CANONICAL_ENDPOINT',
     module: proceduresTestModule,
-    requirementUri: '/req/procedure/canonical-endpoint',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-endpoint',
     resourceIdField: 'procedureId',
     resourceId: 'proc-1',
     citation: /23-001|canonical-url|non-canonical/i,
@@ -128,7 +128,7 @@ const selfLinkCases: SelfLinkCase[] = [
   {
     label: 'properties.ts REQ_CANONICAL_ENDPOINT',
     module: propertiesTestModule,
-    requirementUri: '/req/property/canonical-endpoint',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/property/canonical-endpoint',
     resourceIdField: 'propertyId',
     resourceId: 'prop-1',
     citation: /23-001|canonical-url|non-canonical/i,
@@ -136,7 +136,7 @@ const selfLinkCases: SelfLinkCase[] = [
   {
     label: 'sampling.ts REQ_CANONICAL_ENDPOINT',
     module: samplingTestModule,
-    requirementUri: '/req/sf/canonical-endpoint',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/canonical-endpoint',
     resourceIdField: 'samplingFeatureId',
     resourceId: 'sf-1',
     citation: /23-001|canonical-url|non-canonical/i,
@@ -144,7 +144,7 @@ const selfLinkCases: SelfLinkCase[] = [
   {
     label: 'deployments.ts REQ_CANONICAL_ENDPOINT',
     module: deploymentsTestModule,
-    requirementUri: '/req/deployment/canonical-endpoint',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-endpoint',
     resourceIdField: 'deploymentId',
     resourceId: 'dep-1',
     citation: /23-001|canonical-url|non-canonical/i,
@@ -152,7 +152,7 @@ const selfLinkCases: SelfLinkCase[] = [
   {
     label: 'system-features.ts REQ_CANONICAL_ENDPOINT',
     module: systemFeaturesTestModule,
-    requirementUri: '/req/system/canonical-endpoint',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-endpoint',
     resourceIdField: 'systemId',
     resourceId: 'sys-1',
     citation: /23-001|canonical-url|non-canonical/i,
@@ -220,7 +220,7 @@ const parentLinkCases: ParentLinkCase[] = [
   {
     label: 'subsystems.ts REQ_RECURSIVE_ASSOC',
     module: subsystemsTestModule,
-    requirementUri: '/req/subsystem/recursive-assoc',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-assoc',
     parentIdField: 'systemId',
     parentId: 'sys-1',
     childId: 'sub-1',
@@ -229,7 +229,7 @@ const parentLinkCases: ParentLinkCase[] = [
   {
     label: 'subdeployments.ts REQ_RECURSIVE_ASSOC',
     module: subdeploymentsTestModule,
-    requirementUri: '/req/subdeployment/recursive-assoc',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-assoc',
     parentIdField: 'deploymentId',
     parentId: 'dep-1',
     childId: 'subdep-1',

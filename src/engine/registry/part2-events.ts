@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_SYSTEM_EVENT_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/system-event/resources-endpoint',
-  conformanceUri: '/conf/system-event/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/system-event/resources-endpoint',
   name: 'System Events Resources Endpoint',
   priority: 'MUST',
   description: 'GET /systemEvents returns HTTP 200.',
 };
 
 const REQ_SYSTEM_EVENT_REF_FROM_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/system-event/ref-from-system',
-  conformanceUri: '/conf/system-event/ref-from-system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/ref-from-system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/system-event/ref-from-system',
   name: 'System Events Reference from System',
   priority: 'MUST',
   description: 'GET /systems/{id}/events returns HTTP 200.',
 };
 
 const REQ_SYSTEM_EVENT_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/system-event/event-schema',
-  conformanceUri: '/conf/system-event/event-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/event-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/system-event/event-schema',
   name: 'System Event Schema',
   priority: 'MUST',
   description:

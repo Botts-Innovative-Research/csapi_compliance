@@ -163,8 +163,8 @@ describe('CS API Core conformance tests', () => {
       const result = await resourceIdsTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/api-common/resource-ids');
-      expect(result.conformanceUri).toBe('/conf/api-common/resource-ids');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-ids');
+      expect(result.conformanceUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/api-common/resource-ids');
     });
 
     it('fails when id is missing from items', async () => {
@@ -206,7 +206,7 @@ describe('CS API Core conformance tests', () => {
       const result = await resourceUidsTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/api-common/resource-uids');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-uids');
     });
 
     it('passes when uid is missing (SHOULD requirement)', async () => {
@@ -249,7 +249,7 @@ describe('CS API Core conformance tests', () => {
       const result = await datetimeTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/api-common/datetime');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/datetime');
     });
 
     it('fails with 400 response', async () => {
@@ -283,9 +283,9 @@ describe('CS API Core conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/api-common/resource-ids',
-        '/req/api-common/resource-uids',
-        '/req/api-common/datetime',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-ids',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-uids',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/datetime',
       ];
 
       const getMock = vi.fn();

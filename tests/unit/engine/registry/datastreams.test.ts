@@ -163,7 +163,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/resources-endpoint');
     });
 
     it('fails when status is not 200', async () => {
@@ -230,7 +230,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -297,7 +297,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/ref-from-system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/ref-from-system');
     });
 
     it('fails when status is not 200', async () => {
@@ -363,7 +363,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/schema-op');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/schema-op');
     });
 
     it('fails when status is not 200', async () => {
@@ -426,7 +426,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/obs-resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-resources-endpoint');
     });
 
     it('falls back to /datastreams/{id}/observations when /observations fails', async () => {
@@ -495,7 +495,7 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
       const result = await tests[5].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/datastream/obs-canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -565,12 +565,12 @@ describe('Connected Systems Part 2 - Datastreams & Observations conformance test
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/datastream/resources-endpoint',
-        '/req/datastream/canonical-url',
-        '/req/datastream/ref-from-system',
-        '/req/datastream/schema-op',
-        '/req/datastream/obs-resources-endpoint',
-        '/req/datastream/obs-canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/ref-from-system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/schema-op',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/datastream/obs-canonical-url',
       ];
 
       const getMock = vi.fn();

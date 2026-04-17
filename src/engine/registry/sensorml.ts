@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_SENSORML_MEDIATYPE_READ: RequirementDefinition = {
-  requirementUri: '/req/sensorml/mediatype-read',
-  conformanceUri: '/conf/sensorml/mediatype-read',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/mediatype-read',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sensorml/mediatype-read',
   name: 'SensorML Media Type Read',
   priority: 'MUST',
   description: 'Accept: application/sml+json returns Content-Type application/sml+json.',
 };
 
 const REQ_SENSORML_RESOURCE_ID: RequirementDefinition = {
-  requirementUri: '/req/sensorml/resource-id',
-  conformanceUri: '/conf/sensorml/resource-id',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/resource-id',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sensorml/resource-id',
   name: 'SensorML Resource ID',
   priority: 'MUST',
   description: 'SensorML response includes the resource id.',
 };
 
 const REQ_SENSORML_SYSTEM_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/sensorml/system-schema',
-  conformanceUri: '/conf/sensorml/system-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/system-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sensorml/system-schema',
   name: 'SensorML System Schema',
   priority: 'MUST',
   description: 'SensorML JSON response has a valid structure.',

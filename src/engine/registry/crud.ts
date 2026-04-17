@@ -26,48 +26,48 @@ const MINIMAL_GEOJSON_BODY = {
 // --- Requirement Definitions ---
 
 const REQ_CRUD_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/system',
-  conformanceUri: '/conf/create-replace-delete/system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/system',
   name: 'Create and Delete System',
   priority: 'MUST',
   description: 'POST /systems creates a system (201 + Location header), DELETE removes it (204).',
 };
 
 const REQ_CRUD_SYSTEM_DELETE_CASCADE: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/system-delete-cascade',
-  conformanceUri: '/conf/create-replace-delete/system-delete-cascade',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system-delete-cascade',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/system-delete-cascade',
   name: 'Delete System Cascade',
   priority: 'MUST',
   description: 'DELETE /systems/{id} removes the system and returns 204.',
 };
 
 const REQ_CRUD_DEPLOYMENT: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/deployment',
-  conformanceUri: '/conf/create-replace-delete/deployment',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/deployment',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/deployment',
   name: 'Create and Delete Deployment',
   priority: 'MUST',
   description: 'POST /deployments creates a deployment (201 + Location header).',
 };
 
 const REQ_CRUD_PROCEDURE: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/procedure',
-  conformanceUri: '/conf/create-replace-delete/procedure',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/procedure',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/procedure',
   name: 'Create and Delete Procedure',
   priority: 'MUST',
   description: 'POST /procedures creates a procedure (201 + Location header).',
 };
 
 const REQ_CRUD_SAMPLING_FEATURE: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/sampling-feature',
-  conformanceUri: '/conf/create-replace-delete/sampling-feature',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/sampling-feature',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/sampling-feature',
   name: 'Create and Delete Sampling Feature',
   priority: 'MUST',
   description: 'POST /samplingFeatures creates a sampling feature (201 + Location header).',
 };
 
 const REQ_CRUD_PROPERTY: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/property',
-  conformanceUri: '/conf/create-replace-delete/property',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/property',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/property',
   name: 'Create and Delete Property',
   priority: 'MUST',
   description: 'POST /properties creates a property (201 + Location header).',

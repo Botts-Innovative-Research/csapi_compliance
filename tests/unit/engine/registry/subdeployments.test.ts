@@ -147,7 +147,7 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subdeployment/collection');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/collection');
     });
 
     it('fails when status is not 200', async () => {
@@ -199,7 +199,7 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subdeployment/recursive-param');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-param');
     });
 
     it('fails when recursive request returns non-200', async () => {
@@ -237,7 +237,7 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subdeployment/recursive-search-deployments');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-search-deployments');
     });
 
     it('fails when items array is missing from recursive response', async () => {
@@ -289,7 +289,7 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/subdeployment/recursive-assoc');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-assoc');
     });
 
     it('SKIPs when subdeployment has no parent link (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
@@ -361,10 +361,10 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/subdeployment/collection',
-        '/req/subdeployment/recursive-param',
-        '/req/subdeployment/recursive-search-deployments',
-        '/req/subdeployment/recursive-assoc',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/collection',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-param',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-search-deployments',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subdeployment/recursive-assoc',
       ];
 
       const getMock = vi.fn();

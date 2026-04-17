@@ -119,7 +119,7 @@ describe('Part 2 System Events conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system-event/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/resources-endpoint');
     });
 
     it('fails when GET /systemEvents returns non-200', async () => {
@@ -157,7 +157,7 @@ describe('Part 2 System Events conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system-event/ref-from-system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/ref-from-system');
     });
 
     it('skips when no systemId in discovery cache', async () => {
@@ -194,7 +194,7 @@ describe('Part 2 System Events conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system-event/event-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/event-schema');
     });
 
     it('passes when items array is empty', async () => {
@@ -249,9 +249,9 @@ describe('Part 2 System Events conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/system-event/resources-endpoint',
-        '/req/system-event/ref-from-system',
-        '/req/system-event/event-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/ref-from-system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-event/event-schema',
       ];
 
       const getMock = vi.fn();

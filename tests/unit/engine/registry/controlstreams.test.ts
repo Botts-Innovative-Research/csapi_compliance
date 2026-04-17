@@ -162,7 +162,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/resources-endpoint');
     });
 
     it('fails when status is not 200', async () => {
@@ -229,7 +229,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -296,7 +296,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/ref-from-system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/ref-from-system');
     });
 
     it('fails when status is not 200', async () => {
@@ -362,7 +362,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/schema-op');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/schema-op');
     });
 
     it('fails when status is not 200', async () => {
@@ -425,7 +425,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/cmd-resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-resources-endpoint');
     });
 
     it('falls back to /controlstreams/{id}/commands when /commands fails', async () => {
@@ -494,7 +494,7 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
       const result = await tests[5].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/controlstream/cmd-canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -564,12 +564,12 @@ describe('Connected Systems Part 2 - Control Streams & Commands conformance test
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/controlstream/resources-endpoint',
-        '/req/controlstream/canonical-url',
-        '/req/controlstream/ref-from-system',
-        '/req/controlstream/schema-op',
-        '/req/controlstream/cmd-resources-endpoint',
-        '/req/controlstream/cmd-canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/ref-from-system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/schema-op',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-canonical-url',
       ];
 
       const getMock = vi.fn();

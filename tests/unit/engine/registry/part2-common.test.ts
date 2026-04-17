@@ -125,7 +125,7 @@ describe('Connected Systems Part 2 - API Common conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/api-common/resources');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resources');
     });
 
     it('fails when no Part 2 endpoints return 200', async () => {
@@ -186,7 +186,7 @@ describe('Connected Systems Part 2 - API Common conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/api-common/resource-collection');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-collection');
     });
 
     it('fails when no Part 2 collections exist', async () => {
@@ -280,8 +280,8 @@ describe('Connected Systems Part 2 - API Common conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/api-common/resources',
-        '/req/api-common/resource-collection',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resources',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/api-common/resource-collection',
       ];
 
       const getMock = vi.fn();

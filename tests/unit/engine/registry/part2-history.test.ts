@@ -119,7 +119,7 @@ describe('Part 2 System History conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system-history/endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/endpoint');
     });
 
     it('skips when no systemId in discovery cache', async () => {
@@ -169,7 +169,7 @@ describe('Part 2 System History conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system-history/revision');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/revision');
     });
 
     it('passes when history items have validTime metadata', async () => {
@@ -232,8 +232,8 @@ describe('Part 2 System History conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/system-history/endpoint',
-        '/req/system-history/revision',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/revision',
       ];
 
       const getMock = vi.fn();

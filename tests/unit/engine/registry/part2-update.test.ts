@@ -137,7 +137,7 @@ describe('Part 2 Update conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/update/datastream');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/datastream');
       expect(result.exchangeIds).toHaveLength(4);
     });
 
@@ -239,7 +239,7 @@ describe('Part 2 Update conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/update/controlstream');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/controlstream');
     });
 
     it('skips when no systemId in discovery cache', async () => {
@@ -291,8 +291,8 @@ describe('Part 2 Update conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/update/datastream',
-        '/req/update/controlstream',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/datastream',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/controlstream',
       ];
 
       const ctx = makeTestContext();

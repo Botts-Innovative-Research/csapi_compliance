@@ -19,48 +19,48 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/controlstream/resources-endpoint',
-  conformanceUri: '/conf/controlstream/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/resources-endpoint',
   name: 'Control Streams Resources Endpoint',
   priority: 'MUST',
   description: 'GET /controlstreams returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/controlstream/canonical-url',
-  conformanceUri: '/conf/controlstream/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/canonical-url',
   name: 'Control Stream Canonical URL',
   priority: 'MUST',
   description: 'GET /controlstreams/{id} returns HTTP 200 with the correct control stream.',
 };
 
 const REQ_REF_FROM_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/controlstream/ref-from-system',
-  conformanceUri: '/conf/controlstream/ref-from-system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/ref-from-system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/ref-from-system',
   name: 'Control Streams Referenced from System',
   priority: 'MUST',
   description: 'GET /systems/{id}/controlstreams returns HTTP 200.',
 };
 
 const REQ_SCHEMA_OP: RequirementDefinition = {
-  requirementUri: '/req/controlstream/schema-op',
-  conformanceUri: '/conf/controlstream/schema-op',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/schema-op',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/schema-op',
   name: 'Control Stream Schema Operation',
   priority: 'MUST',
   description: 'GET /controlstreams/{id}/schema returns HTTP 200.',
 };
 
 const REQ_CMD_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/controlstream/cmd-resources-endpoint',
-  conformanceUri: '/conf/controlstream/cmd-resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/cmd-resources-endpoint',
   name: 'Commands Resources Endpoint',
   priority: 'MUST',
   description: 'GET /commands or /controlstreams/{id}/commands returns HTTP 200.',
 };
 
 const REQ_CMD_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/controlstream/cmd-canonical-url',
-  conformanceUri: '/conf/controlstream/cmd-canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/controlstream/cmd-canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/controlstream/cmd-canonical-url',
   name: 'Command Canonical URL',
   priority: 'MUST',
   description: 'GET /commands/{id} returns HTTP 200.',

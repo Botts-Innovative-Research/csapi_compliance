@@ -100,7 +100,7 @@ describe('REQ_LANDING_PAGE_LINKS — normative OGC API Common Part 1 /req/core/r
     const result = await getLinksTest(ctx).execute(ctx);
 
     expect(result.status).toBe('pass');
-    expect(result.requirementUri).toBe('/req/ogcapi-common/landing-page-links');
+    expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page-links');
   });
 
   // --- SCENARIO-LINKS-NORMATIVE-002 ---
@@ -117,7 +117,7 @@ describe('REQ_LANDING_PAGE_LINKS — normative OGC API Common Part 1 /req/core/r
     const result = await getLinksTest(ctx).execute(ctx);
 
     expect(result.status).toBe('pass');
-    expect(result.requirementUri).toBe('/req/ogcapi-common/landing-page-links');
+    expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page-links');
   });
 
   // --- SCENARIO-LINKS-NORMATIVE-003 ---

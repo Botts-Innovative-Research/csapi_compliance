@@ -19,24 +19,24 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_COLLECTION: RequirementDefinition = {
-  requirementUri: '/req/subsystem/collection',
-  conformanceUri: '/conf/subsystem/collection',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/collection',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subsystem/collection',
   name: 'Subsystems Collection',
   priority: 'MUST',
   description: 'GET /systems/{systemId}/subsystems returns HTTP 200.',
 };
 
 const REQ_RECURSIVE_PARAM: RequirementDefinition = {
-  requirementUri: '/req/subsystem/recursive-param',
-  conformanceUri: '/conf/subsystem/recursive-param',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-param',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subsystem/recursive-param',
   name: 'Subsystems Recursive Parameter',
   priority: 'MUST',
   description: 'Subsystems endpoint supports recursive=true query parameter.',
 };
 
 const REQ_RECURSIVE_SEARCH_SYSTEMS: RequirementDefinition = {
-  requirementUri: '/req/subsystem/recursive-search-systems',
-  conformanceUri: '/conf/subsystem/recursive-search-systems',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-search-systems',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subsystem/recursive-search-systems',
   name: 'Subsystems Recursive Search',
   priority: 'MUST',
   description: 'Recursive search returns nested subsystem results.',
@@ -63,8 +63,8 @@ const REQ_RECURSIVE_SEARCH_SYSTEMS: RequirementDefinition = {
 // HTML section rather than a requirement-file URL.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 9, /req/subsystem/recursive-assoc).
 const REQ_RECURSIVE_ASSOC: RequirementDefinition = {
-  requirementUri: '/req/subsystem/recursive-assoc',
-  conformanceUri: '/conf/subsystem/recursive-assoc',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/subsystem/recursive-assoc',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/subsystem/recursive-assoc',
   name: 'Subsystem Parent Association',
   priority: 'MUST',
   description:

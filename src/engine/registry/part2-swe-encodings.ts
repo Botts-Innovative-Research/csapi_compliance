@@ -21,8 +21,8 @@ import {
 // ============================================================
 
 const REQ_SWE_JSON_MEDIATYPE: RequirementDefinition = {
-  requirementUri: '/req/swecommon-json/mediatype',
-  conformanceUri: '/conf/swecommon-json/mediatype',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/mediatype',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-json/mediatype',
   name: 'SWE Common JSON Media Type',
   priority: 'MUST',
   description:
@@ -30,8 +30,8 @@ const REQ_SWE_JSON_MEDIATYPE: RequirementDefinition = {
 };
 
 const REQ_SWE_JSON_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/swecommon-json/schema',
-  conformanceUri: '/conf/swecommon-json/schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-json/schema',
   name: 'SWE Common JSON Schema',
   priority: 'MUST',
   description: 'Response has valid SWE Common JSON structure.',
@@ -199,8 +199,8 @@ export const sweJsonTestModule: ConformanceClassTest = {
 // ============================================================
 
 const REQ_SWE_TEXT_MEDIATYPE: RequirementDefinition = {
-  requirementUri: '/req/swecommon-text/mediatype',
-  conformanceUri: '/conf/swecommon-text/mediatype',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/mediatype',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-text/mediatype',
   name: 'SWE Common Text Media Type',
   priority: 'MUST',
   description:
@@ -208,8 +208,8 @@ const REQ_SWE_TEXT_MEDIATYPE: RequirementDefinition = {
 };
 
 const REQ_SWE_TEXT_NON_EMPTY: RequirementDefinition = {
-  requirementUri: '/req/swecommon-text/non-empty',
-  conformanceUri: '/conf/swecommon-text/non-empty',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/non-empty',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-text/non-empty',
   name: 'SWE Common Text Non-Empty',
   priority: 'MUST',
   description: 'Response body is non-empty.',
@@ -372,8 +372,8 @@ export const sweTextTestModule: ConformanceClassTest = {
 // ============================================================
 
 const REQ_SWE_BINARY_MEDIATYPE: RequirementDefinition = {
-  requirementUri: '/req/swecommon-binary/mediatype',
-  conformanceUri: '/conf/swecommon-binary/mediatype',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/mediatype',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-binary/mediatype',
   name: 'SWE Common Binary Media Type',
   priority: 'MUST',
   description:
@@ -381,8 +381,8 @@ const REQ_SWE_BINARY_MEDIATYPE: RequirementDefinition = {
 };
 
 const REQ_SWE_BINARY_NON_EMPTY: RequirementDefinition = {
-  requirementUri: '/req/swecommon-binary/non-empty',
-  conformanceUri: '/conf/swecommon-binary/non-empty',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/non-empty',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/swecommon-binary/non-empty',
   name: 'SWE Common Binary Non-Empty',
   priority: 'MUST',
   description: 'Response body is non-empty.',

@@ -19,56 +19,56 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/collections',
-  conformanceUri: '/conf/ogcapi-features/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/collections',
   name: 'Collections Endpoint',
   priority: 'MUST',
   description: 'Collections endpoint (GET /collections) returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_COLLECTIONS_ARRAY: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/collections-array',
-  conformanceUri: '/conf/ogcapi-features/collections-array',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/collections-array',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/collections-array',
   name: 'Collections Array',
   priority: 'MUST',
   description: 'Collections response body contains a collections array.',
 };
 
 const REQ_SINGLE_COLLECTION: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/single-collection',
-  conformanceUri: '/conf/ogcapi-features/single-collection',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-collection',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/single-collection',
   name: 'Single Collection',
   priority: 'MUST',
   description: 'Single collection (GET /collections/{id}) returns HTTP 200 with required fields (id, links).',
 };
 
 const REQ_ITEMS: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/items',
-  conformanceUri: '/conf/ogcapi-features/items',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/items',
   name: 'Items Endpoint',
   priority: 'MUST',
   description: 'Items endpoint (GET /collections/{id}/items) returns HTTP 200.',
 };
 
 const REQ_ITEMS_GEOJSON: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/items-geojson',
-  conformanceUri: '/conf/ogcapi-features/items-geojson',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-geojson',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/items-geojson',
   name: 'Items GeoJSON FeatureCollection',
   priority: 'MUST',
   description: 'Items response is a valid GeoJSON FeatureCollection with type and features fields.',
 };
 
 const REQ_ITEMS_LIMIT: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/items-limit',
-  conformanceUri: '/conf/ogcapi-features/items-limit',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-limit',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/items-limit',
   name: 'Items Limit Parameter',
   priority: 'MUST',
   description: 'Items endpoint supports the limit query parameter.',
 };
 
 const REQ_SINGLE_FEATURE: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/single-feature',
-  conformanceUri: '/conf/ogcapi-features/single-feature',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/single-feature',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/single-feature',
   name: 'Single Feature',
   priority: 'MUST',
   description: 'Single feature (GET /collections/{id}/items/{featureId}) returns HTTP 200.',
@@ -89,8 +89,8 @@ const REQ_SINGLE_FEATURE: RequirementDefinition = {
 // confirmed `self` is normative here (items response), not in Common
 // (landing page). Source-citation added per REQ-TEST-CITE-002.
 const REQ_ITEMS_LINKS: RequirementDefinition = {
-  requirementUri: '/req/ogcapi-features/items-links',
-  conformanceUri: '/conf/ogcapi-features/items-links',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/ogcapi-features/items-links',
   name: 'Items Response Links',
   priority: 'MUST',
   description:

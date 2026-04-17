@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/sf/resources-endpoint',
-  conformanceUri: '/conf/sf/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf/resources-endpoint',
   name: 'Sampling Features Resources Endpoint',
   priority: 'MUST',
   description: 'GET /samplingFeatures returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/sf/canonical-url',
-  conformanceUri: '/conf/sf/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf/canonical-url',
   name: 'Sampling Feature Canonical URL',
   priority: 'MUST',
   description: 'GET /samplingFeatures/{id} returns HTTP 200 with the sampling feature resource.',
@@ -44,8 +44,8 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
 // from FAIL to SKIP-with-reason below.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 13, /req/sf/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/sf/canonical-endpoint',
-  conformanceUri: '/conf/sf/canonical-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/canonical-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf/canonical-endpoint',
   name: 'Sampling Feature Canonical Endpoint Self Link',
   priority: 'MUST',
   description:
@@ -56,16 +56,16 @@ const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_REF_FROM_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/sf/ref-from-system',
-  conformanceUri: '/conf/sf/ref-from-system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/ref-from-system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf/ref-from-system',
   name: 'Sampling Feature Reference from System',
   priority: 'MUST',
   description: 'GET /systems/{id}/samplingFeatures returns HTTP 200.',
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/sf/collections',
-  conformanceUri: '/conf/sf/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sf/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf/collections',
   name: 'Sampling Feature in Collections',
   priority: 'MUST',
   description: 'Sampling features appear in /collections.',

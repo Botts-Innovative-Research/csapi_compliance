@@ -116,7 +116,7 @@ describe('Procedure Features conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/procedure/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/resources-endpoint');
     });
 
     it('fails when GET /procedures returns non-200', async () => {
@@ -164,7 +164,7 @@ describe('Procedure Features conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/procedure/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-url');
     });
 
     it('fails when GET /procedures/{id} returns non-200', async () => {
@@ -202,7 +202,7 @@ describe('Procedure Features conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/procedure/canonical-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-endpoint');
     });
 
     it('SKIPs when self link is missing (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
@@ -260,7 +260,7 @@ describe('Procedure Features conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/procedure/collections');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/collections');
     });
 
     it('passes with non-canonical collection id when featureType is correct (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
@@ -356,7 +356,7 @@ describe('Procedure Features conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/procedure/location');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/location');
     });
 
     it('passes when procedure has no geometry (MAY requirement)', async () => {
@@ -399,11 +399,11 @@ describe('Procedure Features conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/procedure/resources-endpoint',
-        '/req/procedure/canonical-url',
-        '/req/procedure/canonical-endpoint',
-        '/req/procedure/collections',
-        '/req/procedure/location',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/collections',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/location',
       ];
 
       const getMock = vi.fn();

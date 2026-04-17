@@ -127,8 +127,8 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await landingPageTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/landing-page');
-      expect(result.conformanceUri).toBe('/conf/ogcapi-common/landing-page');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page');
+      expect(result.conformanceUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/ogcapi-common/landing-page');
     });
 
     it('fails when response status is not 200', async () => {
@@ -180,7 +180,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await linksTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/landing-page-links');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page-links');
     });
 
     it('fails when links are missing', async () => {
@@ -232,7 +232,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await confTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/conformance');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance');
     });
 
     it('fails when conformance returns non-200', async () => {
@@ -266,7 +266,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await conformsToTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/conformance-conformsTo');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance-conformsTo');
     });
 
     it('fails when conformsTo is missing', async () => {
@@ -322,7 +322,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await apiDefTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/api-definition');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/api-definition');
       expect(result.exchangeIds).toHaveLength(2);
     });
 
@@ -376,7 +376,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await apiDefTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/api-definition');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/api-definition');
       expect(result.exchangeIds).toHaveLength(2);
       // Sanity: the second GET was against the service-doc URL, not service-desc.
       expect(getMock.mock.calls[1][0]).toContain('/api/docs.html');
@@ -475,7 +475,7 @@ describe('OGC API Common - Core conformance tests', () => {
       const result = await contentTypeTest.execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/ogcapi-common/json-content-type');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/json-content-type');
     });
 
     it('passes when Content-Type includes charset parameter', async () => {
@@ -533,12 +533,12 @@ describe('OGC API Common - Core conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test produces correct requirement URI in result', async () => {
       const expectedUris = [
-        '/req/ogcapi-common/landing-page',
-        '/req/ogcapi-common/landing-page-links',
-        '/req/ogcapi-common/conformance',
-        '/req/ogcapi-common/conformance-conformsTo',
-        '/req/ogcapi-common/api-definition',
-        '/req/ogcapi-common/json-content-type',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/landing-page-links',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/conformance-conformsTo',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/api-definition',
+        'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/ogcapi-common/json-content-type',
       ];
 
       // Use a valid landing page with service-desc so all tests can run

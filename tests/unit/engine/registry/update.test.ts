@@ -141,7 +141,7 @@ describe('Update conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/update/system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/system');
       expect(result.exchangeIds).toHaveLength(4);
     });
 
@@ -264,7 +264,7 @@ describe('Update conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/update/deployment');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/deployment');
     });
   });
 
@@ -298,7 +298,7 @@ describe('Update conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/update/procedure');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/procedure');
     });
   });
 
@@ -318,9 +318,9 @@ describe('Update conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/update/system',
-        '/req/update/deployment',
-        '/req/update/procedure',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/deployment',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/procedure',
       ];
 
       const ctx = makeTestContext();

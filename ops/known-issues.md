@@ -77,11 +77,28 @@ _(No active issues against the test engine. All 5 CS Part 1 testCollections func
 - **Impact**: Only relevant for production-hosted deployments.
 - **Workaround**: Docker health check provides container-level liveness.
 
-### Requirement URIs Use Local Paths, Not Canonical OGC URIs
-- **Symptom**: Test modules cite requirements as `/req/ogcapi-common/landing-page` (local) rather than the canonical `http://www.opengis.net/spec/ogcapi-common-1/1.0/req/core/…`.
-- **Impact**: Low — internal traceability still works, but reduces cross-tool interop and alignment with OGC CITE TestResult reports.
-- **Workaround**: Batch-rewrite requirement URIs to canonical OGC form when convenient; not blocking v1.0.
+### ~~Requirement URIs Use Local Paths, Not Canonical OGC URIs~~ — RESOLVED 2026-04-17T20:30Z (sprint `uri-canonicalization`)
+- **Symptom (resolved)**: Test modules cited requirements as `/req/ogcapi-common/landing-page` (local) rather than the canonical `http://www.opengis.net/spec/...`.
+- **Resolution**: Prefix-based canonicalization across all 110 `RequirementDefinition` blocks. Each URI now carries the full OGC spec base:
+  - OGC 19-072 Common Part 1: `http://www.opengis.net/spec/ogcapi-common-1/1.0/req/...`
+  - OGC 17-069 Features Part 1: `http://www.opengis.net/spec/ogcapi-features-1/1.0/req/...`
+  - OGC 23-001 CS Part 1: `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/...`
+  - OGC 23-002 CS Part 2: `http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/...`
+- **Scope**: 110 requirementUri + 110 conformanceUri fields across 20+ registry files, plus 114 test assertions in 20+ test files. Applied via bash sed loop.
+- **Path segments preserved**: for CS Part 1 and CS Part 2, the local path segments (`/req/system/canonical-url` etc.) already match the upstream `.adoc` identifier, so only the prefix was added. For OGC Common Part 1 (`/req/ogcapi-common/...`) and Features Part 1 (`/req/ogcapi-features/...`), the local paths are project-specific slugs that don't exactly match OGC's canonical paths (e.g. 19-072 uses `/req/landing-page/root-success`, 17-069 uses `/req/core/fc-links`). A full path-segment remap would require per-URI OGC-spec lookup and is logged as a follow-up below.
+- **In-description occurrences reverted to short form**: 12 sites in narrative description/skipReason strings where the spec URI appears mid-sentence (e.g. "…because OGC 23-001 /req/system/canonical-url only requires rel=canonical…") were restored to the short form for readability — the full canonical URI lives in the adjacent `requirementUri` field.
+- **Gates**: vitest 1003/1003 unchanged, tsc 0, eslint 0/0. 114 test URI assertions updated via the same sed pass.
 - **Source**: Raze 2026-04-16 Gate 4 live run.
+
+### Requirement URI path-segment remap for OGC 19-072 + OGC 17-069 (NEW 2026-04-17, follow-up to uri-canonicalization)
+- **Symptom**: CS Part 1 and Part 2 URIs carry correct OGC-canonical paths (e.g. `.../req/system/canonical-url` matches upstream). OGC 19-072 Common Part 1 and OGC 17-069 Features Part 1 paths use project slugs:
+  - `/req/ogcapi-common/landing-page` → OGC-canonical is `/req/landing-page/root` (class+req)
+  - `/req/ogcapi-common/api-definition` → likely `/req/oas30/...` or similar
+  - `/req/ogcapi-features/items-links` → OGC-canonical is `/req/core/fc-links`
+  - `/req/ogcapi-features/single-feature` → OGC-canonical is `/req/core/f-op`
+- **Impact**: Low — the prefix canonicalization already enables cross-tool resolution. Path-segment fidelity matters only for direct CITE TestResult interop. Without a remap, a CITE tool would get 404 when dereferencing these URIs.
+- **Workaround / fix**: fetch OGC 19-072 and 17-069 requirement `.adoc` files (like the rubric-6-1-sweep did for CS Part 1), build a path-segment mapping table, apply a second sed pass. ~2-3 hours + per-URI spec read.
+- **Source**: Deferred from `uri-canonicalization` sprint 2026-04-17T20:30Z for scope discipline.
 
 ## Resolved Issues
 

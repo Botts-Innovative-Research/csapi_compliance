@@ -16,8 +16,8 @@ import {
 /** Shared fixture for a sample requirement definition. */
 function makeRequirement(overrides?: Partial<RequirementDefinition>): RequirementDefinition {
   return {
-    requirementUri: '/req/system/canonical-url',
-    conformanceUri: '/conf/system/canonical-url',
+    requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-url',
+    conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system/canonical-url',
     name: 'Canonical URL',
     priority: 'MUST',
     description: 'Verify the system returns a canonical URL',

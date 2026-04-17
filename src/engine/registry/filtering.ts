@@ -19,48 +19,48 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_ID_LIST_SCHEMA: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/id-list-schema',
-  conformanceUri: '/conf/advanced-filtering/id-list-schema',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/id-list-schema',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/id-list-schema',
   name: 'ID List Filter Schema',
   priority: 'MUST',
   description: 'GET /systems?id={id1},{id2} returns filtered results.',
 };
 
 const REQ_RESOURCE_BY_ID: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/resource-by-id',
-  conformanceUri: '/conf/advanced-filtering/resource-by-id',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-id',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/resource-by-id',
   name: 'Filter Resource by ID',
   priority: 'MUST',
   description: 'Filtering by id returns matching resource.',
 };
 
 const REQ_RESOURCE_BY_KEYWORD: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/resource-by-keyword',
-  conformanceUri: '/conf/advanced-filtering/resource-by-keyword',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/resource-by-keyword',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/resource-by-keyword',
   name: 'Filter Resource by Keyword',
   priority: 'MUST',
   description: 'GET /systems?q=keyword returns results.',
 };
 
 const REQ_FEATURE_BY_GEOM: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/feature-by-geom',
-  conformanceUri: '/conf/advanced-filtering/feature-by-geom',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/feature-by-geom',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/feature-by-geom',
   name: 'Filter Feature by Geometry',
   priority: 'MUST',
   description: 'GET /systems?bbox=... returns spatial results.',
 };
 
 const REQ_SYSTEM_BY_PROCEDURE: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/system-by-procedure',
-  conformanceUri: '/conf/advanced-filtering/system-by-procedure',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/system-by-procedure',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/system-by-procedure',
   name: 'Filter System by Procedure',
   priority: 'MUST',
   description: 'GET /systems?procedure={id} works.',
 };
 
 const REQ_COMBINED_FILTERS: RequirementDefinition = {
-  requirementUri: '/req/advanced-filtering/combined-filters',
-  conformanceUri: '/conf/advanced-filtering/combined-filters',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/advanced-filtering/combined-filters',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/advanced-filtering/combined-filters',
   name: 'Combined Filters',
   priority: 'MUST',
   description: 'Multiple filters can be combined.',

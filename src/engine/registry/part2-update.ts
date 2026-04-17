@@ -41,16 +41,16 @@ const PATCH_CONTROLSTREAM_BODY = {
 // --- Requirement Definitions ---
 
 const REQ_UPDATE_DATASTREAM: RequirementDefinition = {
-  requirementUri: '/req/update/datastream',
-  conformanceUri: '/conf/update/datastream',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/datastream',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/update/datastream',
   name: 'Update Datastream',
   priority: 'MUST',
   description: 'PATCH /datastreams/{id} returns 200/204.',
 };
 
 const REQ_UPDATE_CONTROLSTREAM: RequirementDefinition = {
-  requirementUri: '/req/update/controlstream',
-  conformanceUri: '/conf/update/controlstream',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/controlstream',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/update/controlstream',
   name: 'Update Control Stream',
   priority: 'MUST',
   description: 'PATCH /controlstreams/{id} returns 200/204.',

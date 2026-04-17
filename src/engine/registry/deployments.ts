@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/deployment/resources-endpoint',
-  conformanceUri: '/conf/deployment/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/deployment/resources-endpoint',
   name: 'Deployments Resources Endpoint',
   priority: 'MUST',
   description: 'GET /deployments returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/deployment/canonical-url',
-  conformanceUri: '/conf/deployment/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/deployment/canonical-url',
   name: 'Deployment Canonical URL',
   priority: 'MUST',
   description: 'GET /deployments/{id} returns HTTP 200 with the correct deployment id.',
@@ -45,8 +45,8 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
 // from FAIL to SKIP-with-reason below.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 10, /req/deployment/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/deployment/canonical-endpoint',
-  conformanceUri: '/conf/deployment/canonical-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/canonical-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/deployment/canonical-endpoint',
   name: 'Deployment Canonical Endpoint',
   priority: 'MUST',
   description:
@@ -57,16 +57,16 @@ const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_REF_FROM_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/deployment/ref-from-system',
-  conformanceUri: '/conf/deployment/ref-from-system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/ref-from-system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/deployment/ref-from-system',
   name: 'Deployments Referenced from System',
   priority: 'MUST',
   description: 'GET /systems/{id}/deployments returns HTTP 200.',
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/deployment/collections',
-  conformanceUri: '/conf/deployment/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/deployment/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/deployment/collections',
   name: 'Deployments in Collections',
   priority: 'MUST',
   description: 'Deployments appear in /collections.',

@@ -136,7 +136,7 @@ describe('GeoJSON Format conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/geojson/mediatype-read');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/mediatype-read');
     });
 
     it('fails when Content-Type is not application/geo+json', async () => {
@@ -190,7 +190,7 @@ describe('GeoJSON Format conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/geojson/feature-attribute-mapping');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/feature-attribute-mapping');
     });
 
     it('fails when required GeoJSON members are missing', async () => {
@@ -253,7 +253,7 @@ describe('GeoJSON Format conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/geojson/system-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-schema');
     });
 
     it('fails when properties is missing', async () => {
@@ -311,7 +311,7 @@ describe('GeoJSON Format conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/geojson/system-mappings');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-mappings');
     });
 
     it('fails when no OGC concept mapping properties found', async () => {
@@ -361,10 +361,10 @@ describe('GeoJSON Format conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/geojson/mediatype-read',
-        '/req/geojson/feature-attribute-mapping',
-        '/req/geojson/system-schema',
-        '/req/geojson/system-mappings',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/mediatype-read',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/feature-attribute-mapping',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/geojson/system-mappings',
       ];
 
       const getMock = vi.fn();

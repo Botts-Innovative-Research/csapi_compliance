@@ -30,24 +30,24 @@ const PATCH_BODY = {
 // --- Requirement Definitions ---
 
 const REQ_UPDATE_SYSTEM: RequirementDefinition = {
-  requirementUri: '/req/update/system',
-  conformanceUri: '/conf/update/system',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/system',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/update/system',
   name: 'Update System',
   priority: 'MUST',
   description: 'PATCH /systems/{id} updates a system (200 or 204).',
 };
 
 const REQ_UPDATE_DEPLOYMENT: RequirementDefinition = {
-  requirementUri: '/req/update/deployment',
-  conformanceUri: '/conf/update/deployment',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/deployment',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/update/deployment',
   name: 'Update Deployment',
   priority: 'MUST',
   description: 'PATCH /deployments/{id} updates a deployment (200 or 204).',
 };
 
 const REQ_UPDATE_PROCEDURE: RequirementDefinition = {
-  requirementUri: '/req/update/procedure',
-  conformanceUri: '/conf/update/procedure',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/update/procedure',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/update/procedure',
   name: 'Update Procedure',
   priority: 'MUST',
   description: 'PATCH /procedures/{id} updates a procedure (200 or 204).',

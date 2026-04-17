@@ -125,7 +125,7 @@ describe('SWE Common JSON conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-json/mediatype');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/mediatype');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -193,7 +193,7 @@ describe('SWE Common JSON conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-json/schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/schema');
     });
 
     it('skips when server returns 406', async () => {
@@ -289,7 +289,7 @@ describe('SWE Common Text conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-text/mediatype');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/mediatype');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -344,7 +344,7 @@ describe('SWE Common Text conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-text/non-empty');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/non-empty');
     });
 
     it('skips when server returns 406', async () => {
@@ -440,7 +440,7 @@ describe('SWE Common Binary conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-binary/mediatype');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/mediatype');
     });
 
     it('skips when no datastreamId in discovery cache', async () => {
@@ -495,7 +495,7 @@ describe('SWE Common Binary conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/swecommon-binary/non-empty');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/non-empty');
     });
 
     it('skips when server returns 406', async () => {
@@ -529,8 +529,8 @@ describe('SWE Common Binary conformance tests', () => {
   describe('requirement URIs', () => {
     it('SWE JSON tests map to correct requirement URIs', () => {
       const expectedUris = [
-        '/req/swecommon-json/mediatype',
-        '/req/swecommon-json/schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/mediatype',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-json/schema',
       ];
       const getMock = vi.fn();
       const ctx = makeTestContext(getMock);
@@ -542,8 +542,8 @@ describe('SWE Common Binary conformance tests', () => {
 
     it('SWE Text tests map to correct requirement URIs', () => {
       const expectedUris = [
-        '/req/swecommon-text/mediatype',
-        '/req/swecommon-text/non-empty',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/mediatype',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-text/non-empty',
       ];
       const getMock = vi.fn();
       const ctx = makeTestContext(getMock);
@@ -555,8 +555,8 @@ describe('SWE Common Binary conformance tests', () => {
 
     it('SWE Binary tests map to correct requirement URIs', () => {
       const expectedUris = [
-        '/req/swecommon-binary/mediatype',
-        '/req/swecommon-binary/non-empty',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/mediatype',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/swecommon-binary/non-empty',
       ];
       const getMock = vi.fn();
       const ctx = makeTestContext(getMock);

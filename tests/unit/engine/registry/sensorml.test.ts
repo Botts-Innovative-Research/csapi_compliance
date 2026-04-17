@@ -134,7 +134,7 @@ describe('SensorML Format conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/sensorml/mediatype-read');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/mediatype-read');
     });
 
     it('skips when server returns 406 Not Acceptable', async () => {
@@ -193,7 +193,7 @@ describe('SensorML Format conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/sensorml/resource-id');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/resource-id');
     });
 
     it('skips when server returns 406', async () => {
@@ -253,7 +253,7 @@ describe('SensorML Format conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/sensorml/system-schema');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/system-schema');
     });
 
     it('skips when server returns 406', async () => {
@@ -331,9 +331,9 @@ describe('SensorML Format conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/sensorml/mediatype-read',
-        '/req/sensorml/resource-id',
-        '/req/sensorml/system-schema',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/mediatype-read',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/resource-id',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/sensorml/system-schema',
       ];
 
       const getMock = vi.fn();

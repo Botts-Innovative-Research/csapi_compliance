@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_SYSTEM_HISTORY_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/system-history/endpoint',
-  conformanceUri: '/conf/system-history/endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/system-history/endpoint',
   name: 'System History Endpoint',
   priority: 'MUST',
   description: 'GET /systems/{id}/history returns HTTP 200.',
 };
 
 const REQ_SYSTEM_HISTORY_REVISION: RequirementDefinition = {
-  requirementUri: '/req/system-history/revision',
-  conformanceUri: '/conf/system-history/revision',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/req/system-history/revision',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/system-history/revision',
   name: 'System History Revision Metadata',
   priority: 'MUST',
   description: 'History items have revision metadata.',

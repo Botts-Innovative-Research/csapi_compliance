@@ -165,8 +165,8 @@ const MINIMAL_CONTROLSTREAM_BODY = CONTROLSTREAM_CREATE_BODY;
 // --- Requirement Definitions ---
 
 const REQ_CRUD_DATASTREAM: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/datastream',
-  conformanceUri: '/conf/create-replace-delete/datastream',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/datastream',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/datastream',
   name: 'Create and Delete Datastream',
   priority: 'MUST',
   description:
@@ -174,16 +174,16 @@ const REQ_CRUD_DATASTREAM: RequirementDefinition = {
 };
 
 const REQ_CRUD_OBSERVATION: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/observation',
-  conformanceUri: '/conf/create-replace-delete/observation',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/observation',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/observation',
   name: 'Create Observation',
   priority: 'MUST',
   description: 'POST to create observation (201).',
 };
 
 const REQ_CRUD_CONTROLSTREAM: RequirementDefinition = {
-  requirementUri: '/req/create-replace-delete/controlstream',
-  conformanceUri: '/conf/create-replace-delete/controlstream',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/controlstream',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete/controlstream',
   name: 'Create and Delete Control Stream',
   priority: 'MUST',
   description:

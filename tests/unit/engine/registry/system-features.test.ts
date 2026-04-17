@@ -151,7 +151,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system/resources-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/resources-endpoint');
     });
 
     it('fails when status is not 200', async () => {
@@ -218,7 +218,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system/canonical-url');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-url');
     });
 
     it('fails when status is not 200', async () => {
@@ -272,7 +272,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system/canonical-endpoint');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-endpoint');
     });
 
     it('fails when links array is missing', async () => {
@@ -332,7 +332,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system/collections');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/collections');
     });
 
     it('passes when a collection has non-canonical id but declares featureType="sosa:System" (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
@@ -472,7 +472,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/system/location-time');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/location-time');
     });
 
     it('passes when geometry and validTime are null', async () => {
@@ -554,11 +554,11 @@ describe('Connected Systems - System Features conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/system/resources-endpoint',
-        '/req/system/canonical-url',
-        '/req/system/canonical-endpoint',
-        '/req/system/collections',
-        '/req/system/location-time',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/resources-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-url',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/canonical-endpoint',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/collections',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/location-time',
       ];
 
       const getMock = vi.fn();

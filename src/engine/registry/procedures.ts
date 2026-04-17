@@ -19,16 +19,16 @@ import {
 // --- Requirement Definitions ---
 
 const REQ_RESOURCES_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/procedure/resources-endpoint',
-  conformanceUri: '/conf/procedure/resources-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/resources-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/procedure/resources-endpoint',
   name: 'Procedures Resources Endpoint',
   priority: 'MUST',
   description: 'GET /procedures returns HTTP 200 with a JSON response body.',
 };
 
 const REQ_CANONICAL_URL: RequirementDefinition = {
-  requirementUri: '/req/procedure/canonical-url',
-  conformanceUri: '/conf/procedure/canonical-url',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-url',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/procedure/canonical-url',
   name: 'Procedure Canonical URL',
   priority: 'MUST',
   description: 'GET /procedures/{id} returns HTTP 200 with the procedure resource.',
@@ -54,8 +54,8 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
 // SKIPs-with-reason when the self link is absent instead of flagging FAIL.
 // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 12, /req/procedure/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
-  requirementUri: '/req/procedure/canonical-endpoint',
-  conformanceUri: '/conf/procedure/canonical-endpoint',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/canonical-endpoint',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/procedure/canonical-endpoint',
   name: 'Procedure Canonical Endpoint Self Link',
   priority: 'MUST',
   description:
@@ -66,16 +66,16 @@ const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
-  requirementUri: '/req/procedure/collections',
-  conformanceUri: '/conf/procedure/collections',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/collections',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/procedure/collections',
   name: 'Procedure in Collections',
   priority: 'MUST',
   description: 'Procedures appear in /collections.',
 };
 
 const REQ_LOCATION: RequirementDefinition = {
-  requirementUri: '/req/procedure/location',
-  conformanceUri: '/conf/procedure/location',
+  requirementUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/procedure/location',
+  conformanceUri: 'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/procedure/location',
   name: 'Procedure Location',
   priority: 'MAY',
   description: 'Procedure may have a geometry (location).',

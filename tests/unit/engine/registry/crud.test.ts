@@ -131,7 +131,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[0].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/system');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system');
       expect(result.exchangeIds).toHaveLength(4);
     });
 
@@ -274,7 +274,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[1].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/system-delete-cascade');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system-delete-cascade');
     });
 
     it('fails when POST does not return 201', async () => {
@@ -311,7 +311,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[2].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/deployment');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/deployment');
     });
 
     it('fails when POST returns wrong status', async () => {
@@ -347,7 +347,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/procedure');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/procedure');
     });
   });
 
@@ -371,7 +371,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/sampling-feature');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/sampling-feature');
     });
   });
 
@@ -395,7 +395,7 @@ describe('Create/Replace/Delete conformance tests', () => {
       const result = await tests[5].execute(ctx);
 
       expect(result.status).toBe('pass');
-      expect(result.requirementUri).toBe('/req/create-replace-delete/property');
+      expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/property');
     });
 
     it('fails when POST returns wrong status', async () => {
@@ -429,12 +429,12 @@ describe('Create/Replace/Delete conformance tests', () => {
   describe('requirement URIs', () => {
     it('each test maps to its correct requirement URI', () => {
       const expectedUris = [
-        '/req/create-replace-delete/system',
-        '/req/create-replace-delete/system-delete-cascade',
-        '/req/create-replace-delete/deployment',
-        '/req/create-replace-delete/procedure',
-        '/req/create-replace-delete/sampling-feature',
-        '/req/create-replace-delete/property',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/system-delete-cascade',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/deployment',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/procedure',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/sampling-feature',
+        'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/create-replace-delete/property',
       ];
 
       const ctx = makeTestContext();

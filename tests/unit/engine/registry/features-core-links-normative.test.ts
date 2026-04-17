@@ -88,7 +88,7 @@ function makeTestContext(getMock: ReturnType<typeof vi.fn>): TestContext {
 function getItemsLinksTest(ctx: TestContext) {
   const tests = featuresCoreTestModule.createTests(ctx);
   return tests.find(
-    (t) => t.requirement.requirementUri === '/req/ogcapi-features/items-links',
+    (t) => t.requirement.requirementUri === 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links',
   )!;
 }
 
@@ -110,7 +110,7 @@ describe('REQ_ITEMS_LINKS — OGC 17-069r4 §7.15 Requirement 28 A (self is norm
     const result = await getItemsLinksTest(ctx).execute(ctx);
 
     expect(result.status).toBe('pass');
-    expect(result.requirementUri).toBe('/req/ogcapi-features/items-links');
+    expect(result.requirementUri).toBe('http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links');
   });
 
   it('FAILS when items response omits rel=self, with a message citing the OGC 17-069 source', async () => {
@@ -171,7 +171,7 @@ describe('REQ_ITEMS_LINKS — OGC 17-069r4 §7.15 Requirement 28 A (self is norm
     const ctx = makeTestContext(vi.fn());
     const tests = featuresCoreTestModule.createTests(ctx);
     const linksTest = tests.find(
-      (t) => t.requirement.requirementUri === '/req/ogcapi-features/items-links',
+      (t) => t.requirement.requirementUri === 'http://www.opengis.net/spec/ogcapi-features-1/1.0/req/ogcapi-features/items-links',
     )!;
 
     // REQ-TEST-CITE-002: source-citation mandate — the REQ definition must
