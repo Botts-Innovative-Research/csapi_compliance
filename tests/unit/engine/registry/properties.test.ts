@@ -247,8 +247,12 @@ describe('Property Definitions conformance tests', () => {
   });
 
   describe('Collections test', () => {
-    it('passes when collections returns valid response', async () => {
-      const body = JSON.stringify({ collections: [{ id: 'properties' }] });
+    it('passes when a collection declares itemType="sosa:Property" (OGC 23-001 /req/property/collections — note: ASYMMETRIC pattern; uses itemType, NOT featureType)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'properties', itemType: 'sosa:Property' },
+        ],
+      });
       const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
       const ctx = makeTestContext(getMock, { propertyId: 'prop-1' });
       const tests = propertiesTestModule.createTests(ctx);
@@ -257,6 +261,59 @@ describe('Property Definitions conformance tests', () => {
 
       expect(result.status).toBe('pass');
       expect(result.requirementUri).toBe('/req/property/collections');
+    });
+
+    it('passes with non-canonical collection id when itemType is correct (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'observable_properties', itemType: 'sosa:Property' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { propertyId: 'prop-1' });
+      const tests = propertiesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('pass');
+    });
+
+    it('FAILS when collections array is present but no collection has itemType="sosa:Property" (closes missing-check loophole)', async () => {
+      // Pre-sprint, this would have silently PASSed.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'properties', title: 'Properties' },
+          { id: 'systems', itemType: 'feature', featureType: 'sosa:System' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { propertyId: 'prop-1' });
+      const tests = propertiesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Property');
+      expect(result.failureMessage).toMatch(/23-001|\/req\/property\/collections/);
+    });
+
+    it('FAILS when a collection has featureType="sosa:Property" instead of itemType="sosa:Property" (closes the asymmetric-pattern trap)', async () => {
+      // Property collections use itemType directly, NOT featureType. A server
+      // that wrongly copies the System/Deployment pattern (itemType="feature"
+      // + featureType="sosa:Property") is non-conformant per OGC 23-001.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'properties', itemType: 'feature', featureType: 'sosa:Property' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { propertyId: 'prop-1' });
+      const tests = propertiesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('itemType="sosa:Property"');
     });
 
     it('fails when collections array is missing', async () => {

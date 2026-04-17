@@ -397,6 +397,35 @@ async function testCollections(ctx: TestContext) {
       );
     }
 
+    // OGC 23-001 /req/sf/collections (clause 13):
+    //   "The server SHALL identify all Feature collections containing
+    //   Sampling Feature resources by setting the `itemType` attribute to
+    //   `feature` and the `featureType` attribute to `sosa:Sample` in the
+    //   Collection metadata."
+    // CRITICAL: the spec uses `sosa:Sample` (NOT `sosa:SamplingFeature`). The
+    // shorter form is normative. Collection `id` is NOT constrained. Prior to
+    // sprint `procedures-properties-sampling-collections-missing-check`
+    // (2026-04-17) this test only verified the `collections` array existed —
+    // silent false-positive PASS on servers missing the normative marker.
+    // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 13).
+    const collections = body.collections as Record<string, unknown>[];
+    const hasSamplingCollection = collections.some(
+      (c) => c.featureType === 'sosa:Sample',
+    );
+
+    if (!hasSamplingCollection) {
+      return failResult(
+        REQ_COLLECTIONS,
+        assertionFailure(
+          'At least one collection must declare featureType="sosa:Sample" (OGC 23-001 /req/sf/collections — note: the spec uses "sosa:Sample", not "sosa:SamplingFeature")',
+          'collection with featureType="sosa:Sample"',
+          'no collection with featureType="sosa:Sample" found',
+        ),
+        exchangeIds,
+        durationMs,
+      );
+    }
+
     return passResult(REQ_COLLECTIONS, exchangeIds, durationMs);
   } catch (error) {
     return failResult(

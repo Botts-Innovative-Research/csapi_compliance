@@ -91,8 +91,8 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Priority**: MUST
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the Procedure Features conformance class (`/req/procedure`):
-  1. **Procedure collection availability** -- `GET /collections/procedures` (or the procedure collection endpoint) returns HTTP 200.
-  2. **Procedure items listing** -- `GET /collections/procedures/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array.
+  1. **Procedure collection availability** -- `GET /collections` returns HTTP 200 with a `collections` array containing at least one entry whose `featureType` attribute equals `"sosa:Procedure"`. Per OGC 23-001 `/req/procedure/collections`, the server SHALL identify Feature collections containing Procedure resources by setting `itemType="feature"` and `featureType="sosa:Procedure"` in the Collection metadata. The `id` is NOT normatively constrained. See SCENARIO-FEATURECOLLECTION-TYPE-001.
+  2. **Procedure items listing** -- `GET /collections/{procedureCollectionId}/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array, where `{procedureCollectionId}` is the id of any collection with `featureType="sosa:Procedure"`.
   3. **Canonical procedure URL** -- For at least one procedure, `GET /procedures/{procedureId}` returns HTTP 200 with the procedure resource representation.
   4. **Procedure schema validation** -- The procedure resource body validates against the CS API procedure JSON schema (required fields: `id`, `type`, `properties`).
   5. **Procedure links** -- The procedure resource contains a `links` array with at minimum `self` and `alternate` link relations.
@@ -102,8 +102,8 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Priority**: MUST
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the Sampling Features conformance class (`/req/sampling`):
-  1. **Sampling feature collection availability** -- `GET /collections/samplingFeatures` (or the sampling feature collection endpoint) returns HTTP 200.
-  2. **Sampling feature items listing** -- `GET /collections/samplingFeatures/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array.
+  1. **Sampling feature collection availability** -- `GET /collections` returns HTTP 200 with a `collections` array containing at least one entry whose `featureType` attribute equals `"sosa:Sample"` (NOT `"sosa:SamplingFeature"` — the spec uses the shorter form). Per OGC 23-001 `/req/sf/collections`, the server SHALL identify Feature collections containing Sampling Feature resources by setting `itemType="feature"` and `featureType="sosa:Sample"` in the Collection metadata. See SCENARIO-FEATURECOLLECTION-TYPE-001.
+  2. **Sampling feature items listing** -- `GET /collections/{sfCollectionId}/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array, where `{sfCollectionId}` is the id of any collection with `featureType="sosa:Sample"`.
   3. **Canonical sampling feature URL** -- For at least one sampling feature, `GET /samplingFeatures/{featureId}` returns HTTP 200 with the resource representation.
   4. **Sampling feature schema validation** -- The sampling feature resource body validates against the CS API sampling feature JSON schema (required fields: `id`, `type`, `geometry`, `properties`).
   5. **Parent system association** -- The sampling feature resource contains a `links` entry with `rel` indicating the parent system, or the `properties` object contains a `system` reference (URI or inline).
@@ -113,8 +113,8 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Priority**: MUST
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the Property Definitions conformance class (`/req/property`):
-  1. **Property collection availability** -- `GET /collections/properties` (or the property collection endpoint) returns HTTP 200.
-  2. **Property items listing** -- `GET /collections/properties/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array.
+  1. **Property collection availability** -- `GET /collections` returns HTTP 200 with a `collections` array containing at least one entry whose `itemType` attribute equals `"sosa:Property"`. NOTE the asymmetry: per OGC 23-001 `/req/property/collections`, Property collections use `itemType="sosa:Property"` (NOT `itemType="feature"` + a separate `featureType` attribute as with System/Deployment/Procedure/SamplingFeature collections). Property resources are not Feature resources per OGC GeoJSON semantics — they carry their SOSA type in `itemType` directly. See SCENARIO-FEATURECOLLECTION-TYPE-001.
+  2. **Property items listing** -- `GET /collections/{propertyCollectionId}/items` returns HTTP 200 with a response appropriate to the property-collection encoding, where `{propertyCollectionId}` is the id of any collection with `itemType="sosa:Property"`.
   3. **Canonical property URL** -- For at least one property definition, `GET /properties/{propertyId}` returns HTTP 200 with the property resource representation.
   4. **Property schema validation** -- The property resource body validates against the CS API property JSON schema (required fields: `id`, `type`, `properties` containing `definition` or `label`).
 - **Rationale**: Property definitions provide semantic identifiers for observed or controllable quantities.
@@ -250,14 +250,24 @@ This capability defines the conformance test execution engine for the CS API Com
 **When** the test engine executes the System Features conformance class tests
 **Then** the "System schema validation" test produces a FAIL verdict with reason containing "missing required field 'name' in properties" and all OGC API Common Part 1 and Features Part 1 Core tests produce PASS verdicts
 
-### SCENARIO-FEATURECOLLECTION-TYPE-001: Feature Collections Identified By featureType Per OGC 23-001 §collections
+### SCENARIO-FEATURECOLLECTION-TYPE-001: Feature Collections Identified By featureType/itemType Per OGC 23-001 §collections
 - **Priority**: CRITICAL
-- **References**: REQ-TEST-004 (item 1), REQ-TEST-006 (item 1)
-- **Preconditions**: The IUT exposes at least one Feature collection containing System or Deployment resources per OGC 23-001 `/req/system/collections` and `/req/deployment/collections`. Those requirements normatively mandate `itemType="feature"` and `featureType="sosa:System"` (or `sosa:Deployment`) in the Collection metadata. Collection `id` is NOT normatively constrained — the spec gives examples like `saildrone_missions` and `sof_missions` for deployment collections.
+- **References**: REQ-TEST-004 (item 1), REQ-TEST-006 (item 1), REQ-TEST-008 (item 1), REQ-TEST-009 (item 1), REQ-TEST-010 (item 1)
+- **Preconditions**: The IUT exposes at least one collection for each declared feature/resource type per OGC 23-001. The 5 `/req/<X>/collections` requirements normatively mandate a specific marker per resource type:
+
+| Resource type | Spec requirement | Required marker |
+|---|---|---|
+| System | `/req/system/collections` | `itemType="feature"` + `featureType="sosa:System"` |
+| Deployment | `/req/deployment/collections` | `itemType="feature"` + `featureType="sosa:Deployment"` |
+| Procedure | `/req/procedure/collections` | `itemType="feature"` + `featureType="sosa:Procedure"` |
+| Sampling Feature | `/req/sf/collections` | `itemType="feature"` + `featureType="sosa:Sample"` (NOT `"sosa:SamplingFeature"` — spec uses the shorter form) |
+| Property | `/req/property/collections` | `itemType="sosa:Property"` (ASYMMETRIC — no `featureType`; properties are NOT Feature resources) |
+
+Collection `id` is NOT normatively constrained for any resource type — the deployments spec gives examples like `saildrone_missions` and `sof_missions`.
 
 **Given** a landing-page `/collections` response that includes `{ id: "saildrone_missions", itemType: "feature", featureType: "sosa:Deployment" }` — a spec-conformant collection with a non-canonical id
 **When** the test engine executes the "Deployment collection availability" test (REQ-TEST-006 item 1)
-**Then** the test produces PASS because the normative `featureType="sosa:Deployment"` marker is present; AND a collection with `id: "deployments"` but NO `featureType` (legacy/non-conformant server) produces FAIL with a message citing OGC 23-001 `/req/deployment/collections` and naming the required `featureType="sosa:Deployment"`; AND the same logic applies symmetrically to `/req/system/collections` and `featureType="sosa:System"`.
+**Then** the test produces PASS because the normative `featureType="sosa:Deployment"` marker is present; AND a collection with `id: "deployments"` but NO `featureType` (legacy/non-conformant server) produces FAIL with a message citing OGC 23-001 `/req/deployment/collections` and naming the required `featureType="sosa:Deployment"`; AND the same logic applies across all 5 `/req/<X>/collections` requirements with their specific marker — including the asymmetric Property case where the marker lives in `itemType` rather than `featureType`; AND for each resource type, when NO collection in the response carries the required marker, the test produces FAIL with a message naming the required marker and citing the specific `/req/<X>/collections` requirement id.
 
 ### SCENARIO-API-DEF-FALLBACK-001: API Definition Link Accepts Either service-desc Or service-doc
 - **Priority**: CRITICAL

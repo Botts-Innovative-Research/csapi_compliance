@@ -347,6 +347,35 @@ async function testCollections(ctx: TestContext) {
       );
     }
 
+    // OGC 23-001 /req/procedure/collections (clause 12):
+    //   "The server SHALL identify all Feature collections containing
+    //   Procedure resources by setting the `itemType` attribute to `feature`
+    //   and the `featureType` attribute to `sosa:Procedure` in the Collection
+    //   metadata."
+    // Collection `id` is NOT normatively constrained. The authoritative marker
+    // is `featureType="sosa:Procedure"`. Prior to sprint
+    // `procedures-properties-sampling-collections-missing-check` (2026-04-17)
+    // this test only verified the `collections` array existed — silent false-
+    // positive PASS on servers missing the normative marker.
+    // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 12).
+    const collections = body.collections as Record<string, unknown>[];
+    const hasProcedureCollection = collections.some(
+      (c) => c.featureType === 'sosa:Procedure',
+    );
+
+    if (!hasProcedureCollection) {
+      return failResult(
+        REQ_COLLECTIONS,
+        assertionFailure(
+          'At least one collection must declare featureType="sosa:Procedure" (OGC 23-001 /req/procedure/collections)',
+          'collection with featureType="sosa:Procedure"',
+          'no collection with featureType="sosa:Procedure" found',
+        ),
+        exchangeIds,
+        durationMs,
+      );
+    }
+
     return passResult(REQ_COLLECTIONS, exchangeIds, durationMs);
   } catch (error) {
     return failResult(

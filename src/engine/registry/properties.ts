@@ -328,6 +328,38 @@ async function testCollections(ctx: TestContext) {
       );
     }
 
+    // OGC 23-001 /req/property/collections (clause 14):
+    //   "The server SHALL identify all resource collections containing
+    //   Property resources by setting the `itemType` attribute to
+    //   `sosa:Property` in the Collection metadata."
+    // ASYMMETRIC PATTERN: unlike System/Deployment/Procedure/SamplingFeature
+    // collections (which use itemType="feature" + featureType="sosa:<X>"),
+    // Property collections use itemType="sosa:Property" directly and do NOT
+    // carry a featureType attribute. Property resources are not Feature
+    // resources per OGC GeoJSON semantics — they carry their SOSA type in
+    // itemType. Collection `id` is NOT normatively constrained. Prior to
+    // sprint `procedures-properties-sampling-collections-missing-check`
+    // (2026-04-17) this test only verified the `collections` array existed —
+    // silent false-positive PASS on servers missing the normative marker.
+    // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 14).
+    const collections = body.collections as Record<string, unknown>[];
+    const hasPropertyCollection = collections.some(
+      (c) => c.itemType === 'sosa:Property',
+    );
+
+    if (!hasPropertyCollection) {
+      return failResult(
+        REQ_COLLECTIONS,
+        assertionFailure(
+          'At least one collection must declare itemType="sosa:Property" (OGC 23-001 /req/property/collections — note: Property uses itemType directly, NOT featureType)',
+          'collection with itemType="sosa:Property"',
+          'no collection with itemType="sosa:Property" found',
+        ),
+        exchangeIds,
+        durationMs,
+      );
+    }
+
     return passResult(REQ_COLLECTIONS, exchangeIds, durationMs);
   } catch (error) {
     return failResult(

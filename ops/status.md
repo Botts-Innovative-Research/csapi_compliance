@@ -1,38 +1,44 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T16:35Z | Sprint `deployments-collections-heuristic` CLOSED (Raze APPROVE 0.93, GAP-2 addressed same-turn). Ready for commit + push.
+> Last updated: 2026-04-17T17:57Z | Sprint `procedures-properties-sampling-collections-missing-check` CLOSED (Raze GAPS_FOUND 0.83 → 3 ops-doc gaps addressed same-turn). All 5 CS Part 1 testCollections functions enforce OGC 23-001 markers. Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
 Read this file first. It is the single authoritative "where are we" doc. Everything below is enough to pick up work without reading other files. The trails you'll need are in `_bmad/`, `openspec/capabilities/`, and `.harness/evaluations/`.
 
-## Current State (2026-04-17T16:35Z)
+## Current State (2026-04-17T17:45Z)
 
-- **Gates**: `npx vitest run` → **994/994** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 18 warnings** (all pre-existing unused-imports in test files, non-blocking).
+- **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 18 warnings** (all pre-existing unused-imports in test files, non-blocking).
 - **v1.0 scope**: all 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
-- **Commit state**: last pushed commit is `cad24b7` on `main` (sprint api-definition-service-doc-fallback). Working tree carries the `deployments-collections-heuristic` sprint — **uncommitted**. See "Uncommitted Work" below.
-- **All 4 BMAD gates operational**: Three Raze APPROVEs on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback 0.92, deployments-collections-heuristic 0.93).
-- **Collection-type identification**: `deployments.ts` + `system-features.ts` now use `featureType="sosa:Deployment"` / `"sosa:System"` per OGC 23-001 — id-convention + wrong-itemType loopholes closed. Procedures/properties/sampling have a related (but different) missing-check gap logged as new Active.
-- **Known issues against the test engine**: 1 (missing-check gap in procedures/properties/sampling `testCollections`).
+- **Commit state**: last pushed commit is `561f39e` on `main` (sprint deployments-collections-heuristic). Working tree carries the `procedures-properties-sampling-collections-missing-check` sprint — **uncommitted**. See "Uncommitted Work" below.
+- **All 4 BMAD gates operational**: Three Raze APPROVEs on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback 0.92, deployments-collections-heuristic 0.93). Raze pending for this sprint.
+- **Collection-type identification (ALL 5 CS Part 1 feature types)**: systems → `featureType="sosa:System"`, deployments → `featureType="sosa:Deployment"`, procedures → `featureType="sosa:Procedure"`, sampling features → `featureType="sosa:Sample"` (shorter form, spec-trap guarded), properties → `itemType="sosa:Property"` (asymmetric, trap-guarded). All per OGC 23-001 `/req/<X>/collections`.
+- **Known issues against the test engine**: none. Active section of `ops/known-issues.md` is empty.
 
-## Suggested Next Action — Commit + push
+## Suggested Next Action — Spawn Raze on sprint `procedures-properties-sampling-collections-missing-check`
 
-Sprint `deployments-collections-heuristic` CLOSED 2026-04-17T16:35Z with Raze APPROVE 0.93. Raze independently re-fetched 4 upstream `req_collections.adoc` files and confirmed all spec claims (including asymmetric property pattern for the deferred sibling issue). Loophole regression tests verified to contain no `featureType` — closures are real. GAP-2 (half-conformant `itemType="feature"` without featureType) addressed same-turn with +2 tests. Gate 1 post-fix: **994/994 vitest, 0 tsc, 18 eslint (unchanged)**.
+Sprint completed 2026-04-17T17:45Z. Per CLAUDE.md Anthropic augmentation, spawn Raze. Expected artifact: `.harness/evaluations/sprint-procedures-properties-sampling-collections-missing-check-adversarial.yaml`.
 
-Suggested commit message: `Sprint deployments-collections-heuristic: featureType="sosa:X" per OGC 23-001 (Raze APPROVE 0.93)`.
+Raze's review scope:
+1. Re-verify spec accuracy against upstream adoc for `/req/procedure/collections`, `/req/sf/collections`, `/req/property/collections` — particularly the `sosa:Sample` vs `sosa:SamplingFeature` form and the property asymmetric pattern (`itemType="sosa:Property"` with no featureType).
+2. Verify the spec-trap regression tests actually guard: sampling's wrong-capitalization case (`sosa:SamplingFeature`) must produce FAIL; property's asymmetric-inversion case (`featureType="sosa:Property"` with `itemType="feature"`) must produce FAIL.
+3. Verify the loophole-closure tests don't silently admit the old behavior.
+4. Cross-check that the SCENARIO-FEATURECOLLECTION-TYPE-001 5-row table in the spec matches the actual code.
+5. Gate 1 honesty: 1002/1002.
+6. Confirm the Active section of `ops/known-issues.md` is truly empty for the test engine (no Active entries, only polish/roadmap items belong elsewhere).
 
-After commit, next sprint is new P0 #1: `procedures-properties-sampling-collections-missing-check` (~90 min, 3 files).
-
-## Uncommitted Work (sprint `deployments-collections-heuristic`)
+## Uncommitted Work (sprint `procedures-properties-sampling-collections-missing-check`)
 
 Working tree contains:
 
-- `src/engine/registry/deployments.ts` — heuristic rewritten from `(id === "deployments" || id === "deployment" || itemType.includes("deployment"))` to `featureType === "sosa:Deployment"` per OGC 23-001 `/req/deployment/collections`. Inline citation comment + failure message naming required marker.
-- `src/engine/registry/system-features.ts` — same fix for `featureType === "sosa:System"` per `/req/system/collections`.
-- `tests/unit/engine/registry/deployments.test.ts` — 3 new + 1 updated in "Deployments in Collections test" block. `validCollectionsWithDeployments()` fixture updated to include normative `itemType`/`featureType`.
-- `tests/unit/engine/registry/system-features.test.ts` — 3 new + 1 updated in "Systems in Collections test" block. `validCollectionsWithSystems()` fixture updated.
-- `openspec/capabilities/conformance-testing/spec.md` — REQ-TEST-004 item 1 (systems) + REQ-TEST-006 item 1 (deployments) rewritten; new SCENARIO-FEATURECOLLECTION-TYPE-001.
-- `ops/status.md`, `ops/changelog.md`, `ops/known-issues.md`, `ops/metrics.md` — doc reconciliation (old issues Active → Resolved; new Active `procedures-properties-sampling-collections-missing-check` logged; turn 44 added).
+- `src/engine/registry/procedures.ts` — added `featureType === "sosa:Procedure"` check per OGC 23-001 `/req/procedure/collections` with inline citation.
+- `src/engine/registry/sampling.ts` — added `featureType === "sosa:Sample"` check (spec uses shorter form, NOT `"sosa:SamplingFeature"`) per `/req/sf/collections` with inline citation + spec-trap note in failure message.
+- `src/engine/registry/properties.ts` — added `itemType === "sosa:Property"` check (ASYMMETRIC pattern — no featureType) per `/req/property/collections` with inline citation + asymmetric-pattern note.
+- `tests/unit/engine/registry/procedures.test.ts` — 3 new + 1 updated.
+- `tests/unit/engine/registry/sampling.test.ts` — 4 new + 1 updated (extra test guards against the `sosa:SamplingFeature` wrong-capitalization trap).
+- `tests/unit/engine/registry/properties.test.ts` — 4 new + 1 updated (extra test guards against the asymmetric-pattern inversion: `featureType="sosa:Property"` + `itemType="feature"`).
+- `openspec/capabilities/conformance-testing/spec.md` — REQ-TEST-008/009/010 item 1 rewritten; SCENARIO-FEATURECOLLECTION-TYPE-001 extended to a 5-row marker table.
+- `ops/status.md`, `ops/changelog.md`, `ops/known-issues.md`, `ops/metrics.md` — doc reconciliation (Active section now empty for test engine; turn 45 added).
 
 **Decision pending**: spawn Raze first, then commit + push.
 
@@ -40,6 +46,7 @@ Working tree contains:
 
 | Sprint | Close date | Raze verdict | Artifact |
 |--------|------------|--------------|----------|
+| `procedures-properties-sampling-collections-missing-check` | 2026-04-17T17:57Z | **GAPS_FOUND 0.83** — 3 ops-doc gaps (stale Active entries, wrong count, missing procedures trap-guard parity) all addressed same-turn; code APPROVE-grade | `.harness/evaluations/sprint-procedures-properties-sampling-collections-missing-check-adversarial.yaml` |
 | `deployments-collections-heuristic` | 2026-04-17T16:35Z | **APPROVE 0.93** — GAP-2 (half-conformant itemType/no featureType) addressed same-turn | `.harness/evaluations/sprint-deployments-collections-heuristic-adversarial.yaml` |
 | `api-definition-service-doc-fallback` | 2026-04-17T15:52Z | **APPROVE 0.92** — GAP-2 (structural-check prose) addressed same-turn; GAP-1 (no live E2E) defensible | `.harness/evaluations/sprint-api-def-fallback-adversarial.yaml` |
 | `rubric-6-1-sweep` | 2026-04-17T03:20Z | **APPROVE 0.88** — 7 registry files cited; 2 gaps + 1 caveat addressed same-turn | `.harness/evaluations/sprint-rubric-6-1-sweep-adversarial.yaml` |
@@ -61,7 +68,7 @@ Full changelog at `ops/changelog.md`. Traceability with per-scenario PASS/PARTIA
 
 See `ops/known-issues.md` for full detail. Active summary:
 
-- **`procedures-properties-sampling-collections-missing-check`** (NEW 2026-04-17) — `procedures.ts`, `properties.ts`, `sampling.ts` all have a `testCollections` that verifies the `/collections` endpoint returns an array but never checks that a collection with the normative `featureType` marker is present. Silent false-positive PASS on non-conformant servers. Same class as the just-fixed deployments/systems heuristic but presents differently (missing check vs wrong check). See `ops/known-issues.md`.
+- _(No active test-engine issues as of 2026-04-17T17:45Z — all 5 CS Part 1 testCollections functions enforce OGC 23-001 markers.)_
 - **Requirement URIs use local paths** (`/req/ogcapi-features/items-links`), not canonical OGC (`/req/core/fc-links`). Low impact; polish item tracked under P2 below. Raze 2026-04-16 finding.
 - **SWE Common Binary deep parsing not implemented** — surface-level check only. Low impact per design spec.
 - **WebKit + Edge Playwright blocked** in WSL2 (missing system libs + no `microsoft-edge-stable`). Chromium + Firefox cover dominant share.
@@ -74,12 +81,7 @@ Prioritized list of open work. All items below are *post-v1.0*; the v1.0 scope (
 
 ### P0 — Active issues with identified fixes
 
-1. **`procedures-properties-sampling-collections-missing-check`** (~90 min total: ~30 min/file + tests)
-   - `procedures.ts`, `properties.ts`, `sampling.ts` `testCollections` functions verify `body.collections` is a JSON array but never check that a collection with the normative `featureType`/`itemType` marker exists. Silent false-positive PASS on non-conformant servers.
-   - Per OGC 23-001: procedure → `featureType="sosa:Procedure"`; sf → `featureType="sosa:Sample"` (note: "Sample", not "SamplingFeature"); property → `itemType="sosa:Property"` (different pattern — property uses `itemType` not `featureType`).
-   - Add `collections.some((c) => c.featureType === "sosa:<X>")` (or `c.itemType === "sosa:Property"`) with OGC citation. Update existing passing fixtures. Add legacy-id-loophole regression per-file.
-
-2. **18 pre-existing lint warnings** (~15 min cleanup)
+1. **18 pre-existing lint warnings** (~15 min cleanup)
    - Unused test imports in test-runner.ts, assessments.test.ts, middleware.test.ts, discovery-service.test.ts, session-manager.test.ts, dependency-resolver.test.ts, test-runner.test.ts, i18n utilities, routes/assessments.ts. All are either delete or `_`-prefix.
 
 ### P1 — Scenario assertion-depth upgrades (traceability gaps)

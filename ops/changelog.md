@@ -2,6 +2,24 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-17T17:35Z — Sprint procedures-properties-sampling-collections-missing-check: complete the 5-feature-type testCollections audit
+
+- **Trigger**: User instruction "Update your docs, then address the next item on the list" (turn 45) — acting on the new Active issue surfaced by Raze on the preceding `deployments-collections-heuristic` sprint.
+- **Scope**: 3 files (`procedures.ts`, `sampling.ts`, `properties.ts`) whose `testCollections` functions verified `body.collections` was a JSON array but never checked for a collection with the normative OGC 23-001 marker. Different class of bug from the just-fixed deployments/systems (wrong check) — this was a missing check.
+- **Spec read** (via earlier cached raw adoc from `opengeospatial/ogcapi-connected-systems`):
+  - `/req/procedure/collections`: `itemType="feature"` + `featureType="sosa:Procedure"`
+  - `/req/sf/collections`: `itemType="feature"` + `featureType="sosa:Sample"` (SHORTER FORM — spec uses "Sample", not "SamplingFeature"; this is a spec-trap worth guarding against)
+  - `/req/property/collections`: `itemType="sosa:Property"` (ASYMMETRIC — no `featureType`; property resources aren't Feature resources per OGC GeoJSON, so they carry the SOSA type in `itemType` directly)
+- **Fix**: each test now does `collections.some((c) => c.featureType === "sosa:<X>")` — except property, which uses `c.itemType === "sosa:Property"` — with inline OGC citation comment. Failure messages name the required marker, call out the two spec traps (Sample-not-SamplingFeature; Property uses itemType-not-featureType), and cite the specific `/req/<X>/collections` requirement id.
+- **Tests** (per-file breakdown, accurate post-Raze correction): procedures +3 net-new (PASS canonical-id, PASS non-canonical-id `algorithms`, missing-marker FAIL, id-convention-loophole FAIL); sampling +3 net-new (PASS canonical-id, PASS non-canonical-id `river_samples`, missing-marker FAIL, wrong-capitalization `sosa:SamplingFeature` FAIL); properties +3 net-new (PASS canonical-id, PASS non-canonical-id `observable_properties`, missing-marker FAIL, asymmetric-inversion `featureType="sosa:Property"` FAIL). **+9 net-new total** (one existing "passes when collections returns valid response" test was updated per file — those are not counted as net-new). Existing fixtures updated to include the normative marker.
+- **Spec**: REQ-TEST-008 (Procedures), REQ-TEST-009 (Sampling Features), REQ-TEST-010 (Properties) item 1 in `openspec/capabilities/conformance-testing/spec.md` rewritten. SCENARIO-FEATURECOLLECTION-TYPE-001 extended from 2-rel coverage to a 5-row table covering all CS Part 1 feature/resource collection markers.
+- **Cumulative state**: all 5 CS Part 1 `testCollections` functions (systems, deployments, procedures, sampling, properties) now enforce OGC 23-001 normative markers. Known-issues Active section empty for the test engine.
+- **Gates**: vitest **1003/1003** PASS (was 994; +9 net-new, crossed the 1000 mark), tsc 0 errors, eslint 0 errors / 18 pre-existing warnings (unchanged).
+- **Ops updates**: `ops/known-issues.md` moved Active → Resolved (Active now truly empty — Raze GAP-1 flagged 2 stale Active entries still lingering; fixed same-turn); `ops/status.md`; `_bmad/traceability.md`; this changelog; `ops/metrics.md` turn 45.
+- **Raze Gate 4 verdict** (2026-04-17T17:50Z): **GAPS_FOUND 0.83** at `.harness/evaluations/sprint-procedures-properties-sampling-collections-missing-check-adversarial.yaml`. Code: APPROVE-grade (all 3 files enforce normative markers, spec-trap guards are real and load-bearing verified via diff-read). GAPS were ops-docs only: GAP-1 known-issues.md still had 2 stale Active entries despite claim of empty; GAP-2 per-file count was wrong (stated "4 new + 1 updated per file / 11 net-new" but actual is +9 net-new with uneven distribution); GAP-3 procedures had no id-convention trap-guard (parity gap vs deployments/systems regressions).
+- **All 3 gaps addressed same-turn 2026-04-17T17:55Z**: deleted duplicated Active entry + old "Deployments in Collections" Quinn-2026-04-02 entry (now Active truly empty); corrected per-file count to +9; added procedures id-convention trap-guard regression test (`FAILS when id="procedures" is present but featureType is absent`). Post-fix gates: vitest 1003/1003, tsc 0, eslint 0/18.
+- **Sprint closed** 2026-04-17T17:55Z.
+
 ## 2026-04-17T16:20Z — Sprint deployments-collections-heuristic: close the id-convention + wrong-itemType loophole in testCollections (deployments + systems)
 
 - **Trigger**: User instruction "Do it" (turn 44) targeting P0 #1 from `ops/status.md` § Remaining Work. Quinn originally flagged `deployments.ts:385-389` heuristic on 2026-04-02 as undocumented and potentially a false-positive source; never adjudicated until this sprint.

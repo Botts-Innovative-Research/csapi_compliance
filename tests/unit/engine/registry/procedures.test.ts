@@ -247,8 +247,12 @@ describe('Procedure Features conformance tests', () => {
   });
 
   describe('Collections test', () => {
-    it('passes when collections returns valid response', async () => {
-      const body = JSON.stringify({ collections: [{ id: 'procedures' }] });
+    it('passes when a collection declares featureType="sosa:Procedure" (OGC 23-001 /req/procedure/collections)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'procedures', itemType: 'feature', featureType: 'sosa:Procedure' },
+        ],
+      });
       const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
       const ctx = makeTestContext(getMock, { procedureId: 'proc-1' });
       const tests = proceduresTestModule.createTests(ctx);
@@ -257,6 +261,63 @@ describe('Procedure Features conformance tests', () => {
 
       expect(result.status).toBe('pass');
       expect(result.requirementUri).toBe('/req/procedure/collections');
+    });
+
+    it('passes with non-canonical collection id when featureType is correct (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
+      // Collection id is NOT normatively constrained — featureType is the signal.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'algorithms', itemType: 'feature', featureType: 'sosa:Procedure' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { procedureId: 'proc-1' });
+      const tests = proceduresTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('pass');
+    });
+
+    it('FAILS when collections array is present but no collection has featureType="sosa:Procedure" (closes missing-check loophole)', async () => {
+      // Pre-sprint, this test would have silently PASSed because the old code
+      // only checked `Array.isArray(body.collections)`. Post-sprint, FAIL with
+      // a message naming the required featureType and citing OGC 23-001.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'procedures', title: 'Procedures' },
+          { id: 'systems', itemType: 'feature', featureType: 'sosa:System' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { procedureId: 'proc-1' });
+      const tests = proceduresTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Procedure');
+      expect(result.failureMessage).toMatch(/23-001|\/req\/procedure\/collections/);
+    });
+
+    it('FAILS when id="procedures" is present but featureType is absent (closes id-convention loophole — parity with deployments/systems tests; addresses Raze GAP-3 2026-04-17T17:50Z)', async () => {
+      // Parallels the "id-convention alone is not enough" regression in
+      // deployments.test.ts + system-features.test.ts. A server that names
+      // its collection "procedures" without setting featureType is non-
+      // conformant per OGC 23-001; id convention alone MUST NOT admit it.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'procedures', title: 'Procedures', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { procedureId: 'proc-1' });
+      const tests = proceduresTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Procedure');
     });
 
     it('fails when collections array is missing', async () => {

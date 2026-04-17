@@ -294,8 +294,12 @@ describe('Sampling Features conformance tests', () => {
   });
 
   describe('Collections test', () => {
-    it('passes when collections returns valid response', async () => {
-      const body = JSON.stringify({ collections: [{ id: 'sampling-features' }] });
+    it('passes when a collection declares featureType="sosa:Sample" (OGC 23-001 /req/sf/collections — note: "Sample", not "SamplingFeature")', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'sampling-features', itemType: 'feature', featureType: 'sosa:Sample' },
+        ],
+      });
       const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
       const ctx = makeTestContext(getMock, { samplingFeatureId: 'sf-1' });
       const tests = samplingTestModule.createTests(ctx);
@@ -304,6 +308,58 @@ describe('Sampling Features conformance tests', () => {
 
       expect(result.status).toBe('pass');
       expect(result.requirementUri).toBe('/req/sf/collections');
+    });
+
+    it('passes with non-canonical collection id when featureType is correct (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'river_samples', itemType: 'feature', featureType: 'sosa:Sample' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { samplingFeatureId: 'sf-1' });
+      const tests = samplingTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('pass');
+    });
+
+    it('FAILS when collections array is present but no collection has featureType="sosa:Sample" (closes missing-check loophole)', async () => {
+      // Pre-sprint, this would have silently PASSed. Post-sprint, FAIL with
+      // a message naming the required featureType and citing OGC 23-001.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'sampling-features' },
+          { id: 'systems', itemType: 'feature', featureType: 'sosa:System' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { samplingFeatureId: 'sf-1' });
+      const tests = samplingTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Sample');
+      expect(result.failureMessage).toMatch(/23-001|\/req\/sf\/collections/);
+    });
+
+    it('FAILS when a collection has the wrong featureType="sosa:SamplingFeature" (note: spec uses "sosa:Sample")', async () => {
+      // Guards against the obvious-looking-but-wrong capitalization.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'sampling-features', itemType: 'feature', featureType: 'sosa:SamplingFeature' },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock, { samplingFeatureId: 'sf-1' });
+      const tests = samplingTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Sample');
     });
 
     it('fails when collections array is missing', async () => {

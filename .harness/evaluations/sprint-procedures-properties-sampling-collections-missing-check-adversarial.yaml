@@ -1,0 +1,318 @@
+sprint_id: "procedures-properties-sampling-collections-missing-check"
+story: "(sprint-level; closes the new Active issue surfaced by Raze on the preceding deployments-collections-heuristic sprint — missing marker-check in testCollections for procedures/properties/sampling)"
+reviewer: "raze"
+reviewed_at: "2026-04-17T17:55Z"
+user_request: "Update your docs, then address the next item on the list (turn 45)."
+verdict: "GAPS_FOUND"
+confidence: 0.83
+overrides_evaluator: false  # Gate 1 self-check only for this sprint
+
+# --------------------------------------------------------------------------
+# Request fulfillment
+# --------------------------------------------------------------------------
+request_fulfillment:
+  fully_delivered:
+    - "Core fix in all 3 files: procedures.ts:361-377, sampling.ts:411-427, properties.ts:345-361 each now contain the normative marker check. Procedures and sampling use `collections.some((c) => c.featureType === 'sosa:<X>')`; properties correctly uses `c.itemType === 'sosa:Property'` (asymmetric, matching the spec)."
+    - "Sampling spec-trap (wrong-capitalization) guard is real and load-bearing: fixture at tests/unit/engine/registry/sampling.test.ts uses literally `featureType: 'sosa:SamplingFeature'` (the incorrect longer form) and asserts FAIL + message containing `sosa:Sample`. Confirmed by direct diff read — the fixture contains the trap value, not just the prose around it."
+    - "Property asymmetric-inversion guard is real and load-bearing: fixture at tests/unit/engine/registry/properties.test.ts uses `itemType: 'feature', featureType: 'sosa:Property'` (the symmetrical-copy trap a naive future fix might introduce) and asserts FAIL + message containing `itemType=\"sosa:Property\"`. The failure message in properties.ts:354 embeds exactly that substring, so the assertion is tight, not loose."
+    - "Failure messages are operator-friendly and trap-aware: sampling names `sosa:Sample` + notes 'not sosa:SamplingFeature'; property names `itemType=\"sosa:Property\"` + notes 'uses itemType directly, NOT featureType'; procedures names `sosa:Procedure`. All three cite their specific `/req/<X>/collections` URI."
+    - "Cumulative-claim verified: grep `src/engine/registry/*.ts` for `featureType === 'sosa:` returns 4 hits (deployments, procedures, sampling, system-features) and for `itemType === 'sosa:` returns 1 hit (properties). Exactly matches the claim 'all 5 CS Part 1 testCollections functions now enforce OGC 23-001 markers'."
+    - "SCENARIO-FEATURECOLLECTION-TYPE-001 5-row table accuracy: the spec at openspec/capabilities/conformance-testing/spec.md:253-267 now carries a 5-row markdown table. Row-by-row cross-check against code: (System→featureType='sosa:System' ✓ matches system-features.ts:365), (Deployment→featureType='sosa:Deployment' ✓ matches deployments.ts:416), (Procedure→featureType='sosa:Procedure' ✓ matches procedures.ts:363), (Sampling Feature→featureType='sosa:Sample' ✓ matches sampling.ts:413), (Property→itemType='sosa:Property' ✓ matches properties.ts:347). All 5 rows match verbatim."
+    - "Spec updates: REQ-TEST-008 (Procedures), REQ-TEST-009 (Sampling), REQ-TEST-010 (Properties) item 1 rewritten to cite the specific `/req/<X>/collections` URI, name the normative marker verbatim, and reference SCENARIO-FEATURECOLLECTION-TYPE-001. SCENARIO header updated to 'featureType/itemType' (was 'featureType' only) to accommodate the asymmetric Property pattern. References list extended from REQ-TEST-004/006 to REQ-TEST-004/006/008/009/010."
+    - "Gate 1 honesty: Raze re-ran all three gates. vitest: **1002/1002** PASS (52 files, 2.39s) — matches Generator's claim exactly, crosses the 1000 mark. tsc: 0 errors. eslint: 0 errors / 18 warnings (all pre-existing unused-imports in test-runner.ts, assessments.ts, dependency-resolver.test.ts, discovery-service.test.ts, session-manager.test.ts, test-runner.test.ts, assessments.test.ts, middleware.test.ts). Delta 994→1002 = +8 net-new tests, matches the per-file delta (procedures +2, sampling +3, properties +3)."
+    - "Scope discipline: git diff --stat shows 12 files — 3 source + 3 tests + 1 spec + 5 ops/bmad (expected). No drive-by unrelated changes. Per-file grep (`ls changes`) confirms only the 3 declared source files were touched."
+    - "Test-index pointers correct: all new/updated collections-test it() blocks dispatch to `tests[3]` (procedures), `tests[4]` (sampling), `tests[3]` (properties) — matching the module's createTests() ordering. No off-by-one risk in the assertions."
+
+  gaps:
+    - "[GAP-1] ops/known-issues.md Active section is NOT empty for the test engine as the Generator explicitly claimed in the changelog and status.md. Two stale entries remain in the ## Active Issues section:
+        (a) Line 7: `procedures-properties-sampling-collections-missing-check (NEW 2026-04-17, surfaced by deployments-collections-heuristic)` — this is THIS sprint's issue. The Generator added a correct Resolved entry at line 102 but FORGOT to delete the Active entry. So the file now lists the issue in BOTH Active and Resolved sections simultaneously — a self-contradicting state.
+        (b) Line 95-98: `\"Deployments in Collections\" Heuristic Matching Undocumented` — this is the old P0 #1 resolved by the PREVIOUS sprint (deployments-collections-heuristic). The previous-sprint Raze YAML explicitly claimed 'old P0 #1 entry is deleted, not duplicated', but in fact that entry was never removed — it has been stale in Active since at least 2026-04-17T16:20Z.
+       Impact: anyone reading ops/known-issues.md today gets a false picture (two issues listed as 'Active' that are actually closed). Directly contradicts the Generator's claim in ops/changelog.md line 18 ('Known-issues Active section empty for the test engine.') and status.md line 10 ('Known issues against the test engine: none. Active section of ops/known-issues.md is empty.'). This is exactly the class of buried/overstated completeness claim Raze is looking for."
+    - "[GAP-2] Counting inaccuracy in ops/known-issues.md line 109 and the CLAUDE.md-style traceability claim: 'Tests: 4 new + 1 updated per file (11 net-new across 3 files)'. Actual counts per diff:
+        - procedures.test.ts: 2 new + 1 updated (not 4)
+        - sampling.test.ts: 3 new + 1 updated (not 4)
+        - properties.test.ts: 3 new + 1 updated (not 4)
+       Total net-new: 2 + 3 + 3 = 8 (matches the vitest delta 994→1002). The '11 net-new' claim in known-issues.md line 109 is wrong; 8 is the correct count. The changelog line 18 ('4 new + 1 updated per file (8 net-new)') also has the per-file count wrong but the total right. Procedures got only 2 new tests (no wrong-capitalization trap is applicable for procedures — the spec has no easy-trap form for 'sosa:Procedure'), which is a legitimate scope decision but the count still matters for accuracy. NOT a blocker for the sprint's substance — the 8 tests that exist are the right tests — but it's a documentation accuracy gap that would mislead future auditors."
+    - "[GAP-3] No procedures-side spec-trap regression test. Deployments/systems got legacy-id-loophole + wrong-itemType-loophole tests (2 spec-trap guards each); sampling got a missing-check + wrong-capitalization guard; property got a missing-check + asymmetric-inversion guard. Procedures got only (a) happy-path-canonical-id, (b) happy-path-non-canonical-id, (c) missing-check-FAIL — NO trap guard beyond the missing-check. A naive future refactor that accidentally loosened the check to `c.featureType?.includes('procedure')` or `c.featureType?.toLowerCase() === 'sosa:procedure'` (wrong case) would still pass all 3 procedures tests. The 'sosa:Procedure' form doesn't have an obvious-looking wrong variant (unlike sampling's Sample-vs-SamplingFeature and property's itemType-vs-featureType), but a capitalization guard would still be worth ~5 lines. Minor, not a blocker."
+    - "[GAP-4] No E2E/live-IUT verification. Per CLAUDE.md Step 5, every change derived from user instruction must be verified E2E. The sprint touches pure test-engine assertion logic (no UI/server/route change). Same WEAK treatment as prior sprints (deployments-collections-heuristic, rubric-6-1-sweep, api-def-fallback). NOT a blocker for pure registry-layer scope, consistent with prior Raze rulings."
+
+  scope_creep: []  # scope clean — 3 source files declared, 3 source files modified, no drive-by changes
+
+  buried_caveats:
+    - "[BURIED-1] status.md line 10 and changelog.md line 18 both claim 'Known issues against the test engine: none. Active section of ops/known-issues.md is empty.' — this claim is FALSE as written. The Active section retains two entries (this sprint's own issue plus the old deployments-heuristic entry that was never deleted). The Generator asserted the empty-Active state as fact without auditing the file. A reader trusting the status.md or changelog entry gets a false impression — which is precisely the kind of over-stated completeness Raze is designed to catch."
+
+# --------------------------------------------------------------------------
+# CLAUDE.md compliance
+# --------------------------------------------------------------------------
+claude_md_compliance:
+  step_1_spec_first: "OK"       # REQ-TEST-008/009/010 item 1 + SCENARIO-FEATURECOLLECTION-TYPE-001 extension all in the same uncommitted-work set as code
+  step_2_write_tests: "OK"      # tests reference SCENARIO-FEATURECOLLECTION-TYPE-001 in it() titles; the trap-guard tests (sampling wrong-capitalization + property asymmetric-inversion) use genuinely spec-violating fixtures
+  step_3_implement: "OK"        # procedures.ts:361-377 + sampling.ts:411-427 + properties.ts:345-361 satisfy the rewritten REQ-TEST-008/009/010 item 1; failure messages and spec-trap warnings are verbatim-correct
+  step_4_verify: "OK"           # Raze re-ran all three: vitest 1002/1002 (52 files, 2.39s), tsc 0, eslint 0/18 — matches Generator's claim exactly
+  step_5_e2e_verify: "WEAK"     # no live-IUT run — defensible for pure registry-layer assertion logic (no UI/server/route change); consistent WEAK rating with prior sprints
+  step_6_reconcile_specs: "OK"  # REQ-TEST-008/009/010 item 1 rewritten; SCENARIO-FEATURECOLLECTION-TYPE-001 header + references + table extended; row-by-row table verified against code
+  step_7_update_ops: "GAPS"     # changelog entry is substantive AND accurate except for the empty-Active claim; status.md refreshed with new Uncommitted Work block; metrics.md turn 45 added; known-issues.md HAS the Resolved entry added correctly BUT failed to delete the Active duplicate — see GAP-1
+  step_8_update_bmad: "OK"      # traceability.md gate rows added; SCENARIO-FEATURECOLLECTION-TYPE-001 row updated from 2-file coverage to 5-file coverage with per-file trap-guard annotations
+  notes: |
+    Step 7 (update ops) is the ONLY gap-bearing step. The known-issues.md
+    Active-section cleanup was skipped: two stale entries remain (this
+    sprint's own issue duplicated into Active+Resolved, plus the prior
+    sprint's deployments-heuristic Active entry that should have been
+    removed on 2026-04-17T16:20Z). Because status.md and changelog.md
+    both explicitly CLAIM the Active section is empty, this crosses from
+    forgivable-staleness into overstated-completeness — the exact class
+    of issue that downgrades a verdict from APPROVE to GAPS_FOUND.
+
+    Step 5 (E2E) gets the same WEAK treatment as prior registry-layer
+    sprints; not a blocker.
+
+# --------------------------------------------------------------------------
+# Spec gaps
+# --------------------------------------------------------------------------
+spec_gaps:
+  - id: "REQ-TEST-008 item 1 (procedures)"
+    issue: "OK — rewritten to cite `/req/procedure/collections` and name `featureType='sosa:Procedure'` verbatim. Points forward to SCENARIO-FEATURECOLLECTION-TYPE-001."
+  - id: "REQ-TEST-009 item 1 (sampling features)"
+    issue: "OK — rewritten to cite `/req/sf/collections`, name `featureType='sosa:Sample'` verbatim, and explicitly call out the Sample-vs-SamplingFeature trap (NOT 'sosa:SamplingFeature' — the spec uses the shorter form)."
+  - id: "REQ-TEST-010 item 1 (properties)"
+    issue: "OK — rewritten to cite `/req/property/collections`, name `itemType='sosa:Property'` verbatim, and explicitly call out the asymmetric-pattern trap (uses itemType directly; is NOT a Feature resource per OGC GeoJSON semantics)."
+  - id: "SCENARIO-FEATURECOLLECTION-TYPE-001"
+    issue: "OK — header renamed 'featureType/itemType' to reflect the asymmetric Property pattern; references extended from 2 REQs to 5; 5-row marker table added; Then-clause updated to cover all 5 resource types including the asymmetric Property case. Table row-by-row verified against code."
+
+# --------------------------------------------------------------------------
+# Cross-agent blind spots
+# --------------------------------------------------------------------------
+cross_agent_blind_spots:
+  - "URL construction: no change. Existing `new URL('collections', ctx.baseUrl).toString()` pattern preserved in all 3 files."
+  - "SSRF/security: no new outbound URL pattern. Only post-fetch body inspection logic changed."
+  - "Frontend/backend contract: failure-message content changed (now names featureType/itemType marker + cites /req/<X>/collections). UI renders failureMessage as a string; no schema change."
+  - "Discovery cache: `ctx.discoveryCache.procedureId` / `samplingFeatureId` / `propertyId` gating preserved — SKIP when no resources of that type are found remains in place, so servers without procedures/etc don't FAIL spuriously."
+  - "Spec-trap failure-message embedding: the property failure message literally embeds `itemType=\"sosa:Property\"` (with quotes and equals sign). The regression test asserts `toContain('itemType=\"sosa:Property\"')` with the same form. Verified the substring is present — not a mirage."
+  - "The 3 files changed are the ONLY 5 CS Part 1 testCollections functions that previously had a missing-check — verified by grep: deployments.ts and system-features.ts were fixed in the preceding sprint. No 6th file was silently left out."
+
+# --------------------------------------------------------------------------
+# Conformance correctness (product-specific)
+# --------------------------------------------------------------------------
+conformance_correctness:
+  false_positives_found: []  # closed: all 5 CS Part 1 testCollections functions now enforce the normative marker
+  false_negatives_found: []  # the spec-conformant forms (sosa:Procedure/sosa:Sample/sosa:Property-as-itemType) are precisely what the code accepts
+  url_construction_bugs: []
+  dynamic_schema_violations: []
+  assertion_spec_drift: []
+  spec_source_mismatches: []
+
+  spec_source_accuracy_check:
+    - module: "src/engine/registry/procedures.ts"
+      claim: "OGC 23-001 /req/procedure/collections mandates itemType='feature' + featureType='sosa:Procedure'"
+      verified_against: "Previously-fetched adoc (Raze independent fetch on deployments-collections-heuristic sprint, cached)"
+      verdict: "ACCURATE — the fix matches the normative form verbatim."
+    - module: "src/engine/registry/sampling.ts"
+      claim: "OGC 23-001 /req/sf/collections mandates featureType='sosa:Sample' (NOT 'sosa:SamplingFeature')"
+      verified_against: "Previously-fetched adoc .../sf/req_collections.adoc; Raze confirmed the shorter form in the prior sprint's source_verification block"
+      verdict: "ACCURATE — and the wrong-capitalization regression test proves the distinction is enforced, not just documented."
+    - module: "src/engine/registry/properties.ts"
+      claim: "OGC 23-001 /req/property/collections mandates itemType='sosa:Property' (NO featureType; asymmetric pattern)"
+      verified_against: "Previously-fetched adoc .../property/req_collections.adoc; Raze confirmed the itemType-direct form in the prior sprint's source_verification block"
+      verdict: "ACCURATE — and the asymmetric-inversion regression test (which uses the SYMMETRIC pattern `itemType='feature' + featureType='sosa:Property'`) proves the distinction is enforced."
+
+  spec_trap_guard_verification:
+    - trap: "Sampling wrong-capitalization — a naive fix using 'sosa:SamplingFeature' (the longer, obvious-looking form) would be spec-non-conformant"
+      regression_test: "tests/unit/engine/registry/sampling.test.ts (within 'Collections test' describe): fixture `{ id: 'sampling-features', itemType: 'feature', featureType: 'sosa:SamplingFeature' }` — FAIL + message contains 'sosa:Sample'."
+      verdict: "LOAD-BEARING — the fixture literally contains the trap value; test would PASS if the code accepted 'sosa:SamplingFeature', which it does not."
+    - trap: "Property asymmetric-inversion — a naive symmetric-copy fix using `featureType='sosa:Property'` + `itemType='feature'` would match the System/Deployment pattern but be spec-non-conformant per OGC 23-001 /req/property/collections"
+      regression_test: "tests/unit/engine/registry/properties.test.ts (within 'Collections test' describe): fixture `{ id: 'properties', itemType: 'feature', featureType: 'sosa:Property' }` — FAIL + message contains `itemType=\"sosa:Property\"`."
+      verdict: "LOAD-BEARING — the fixture uses the exact symmetric-copy anti-pattern; the test proves the code does NOT admit it."
+    - trap: "Procedures — NONE added. Spec form 'sosa:Procedure' has no obvious-looking wrong variant."
+      regression_test: "No wrong-form guard. Missing-check (no marker present anywhere) is guarded, but not a wrong-marker variant."
+      verdict: "GAP — see GAP-3 above. Not a blocker because 'sosa:Procedure' is not a trap-prone form."
+
+  cumulative_claim_verification:
+    claim: "all 5 CS Part 1 testCollections functions (systems, deployments, procedures, sampling, properties) now enforce OGC 23-001 markers"
+    method: |
+      grep 'featureType === .sosa:' src/engine/registry/*.ts → 4 hits:
+        - deployments.ts:416 (featureType === 'sosa:Deployment')
+        - procedures.ts:363 (featureType === 'sosa:Procedure')
+        - sampling.ts:413 (featureType === 'sosa:Sample')
+        - system-features.ts:365 (featureType === 'sosa:System')
+      grep 'itemType === .sosa:' src/engine/registry/*.ts → 1 hit:
+        - properties.ts:347 (itemType === 'sosa:Property')
+      Total: 5 matches, one per CS Part 1 feature/resource collection type.
+    verdict: "ACCURATE — cumulative claim holds exactly."
+
+  scenario_table_row_verification:
+    method: |
+      Row-by-row grep of openspec/capabilities/conformance-testing/spec.md:258-262 against source code:
+        Row 1 System: featureType='sosa:System' → system-features.ts:365 ✓
+        Row 2 Deployment: featureType='sosa:Deployment' → deployments.ts:416 ✓
+        Row 3 Procedure: featureType='sosa:Procedure' → procedures.ts:363 ✓
+        Row 4 Sampling Feature: featureType='sosa:Sample' → sampling.ts:413 ✓
+        Row 5 Property: itemType='sosa:Property' → properties.ts:347 ✓
+    verdict: "ACCURATE — all 5 rows match the code verbatim; no drift between spec table and implementation."
+
+# --------------------------------------------------------------------------
+# Recommendations (ordered)
+# --------------------------------------------------------------------------
+recommendations:
+  - "BLOCKING-BEFORE-COMMIT — Fix GAP-1: delete the stale `procedures-properties-sampling-collections-missing-check` Active entry (lines 7-16 of ops/known-issues.md) — it is now in the Resolved section and must not remain duplicated. Also delete the stale `\"Deployments in Collections\" Heuristic Matching Undocumented` Active entry (lines 95-98) — it was resolved by the previous sprint and was never actually deleted despite the prior Raze YAML claim. After these two deletions, the Active section's test-engine content will match the status.md/changelog.md claim of 'none'. Estimated effort: ~2 minutes."
+  - "BLOCKING-BEFORE-COMMIT — Fix GAP-2: correct the test-count claim in ops/known-issues.md line 109 from '4 new + 1 updated per file (11 net-new across 3 files)' to '8 net-new (procedures +2, sampling +3, properties +3) with 1 updated per file'. Also align the changelog line 18 per-file count. The total-count (matching the vitest delta) and the status.md gates line are correct; only the per-file subtotals are wrong."
+  - "Optional (NON-BLOCKING) — Address GAP-3: add a capitalization-sensitivity test for procedures. Suggested fixture: `{ id: 'procedures', itemType: 'feature', featureType: 'sosa:procedure' }` (lowercase `p`) → FAIL. Closes the last spec-trap hole by symmetry. ~5 min."
+  - "Non-blocking — Address GAP-4 (E2E): consistent treatment with prior sprints. A hosted run against GeoRobotix after commit would confirm a known-good server continues to PASS all 5 now-stricter testCollections."
+  - "After GAP-1 + GAP-2 fixes: re-run Gate 1 (expect unchanged 1002/1002/0/18), then commit + push. Raze will promote verdict from GAPS_FOUND to APPROVE once the two ops-docs cleanups land. No source code changes required."
+
+# --------------------------------------------------------------------------
+# Severity summary
+# --------------------------------------------------------------------------
+severity_summary:
+  blockers: 0
+  gaps: 4         # GAP-1 (stale Active entries contradict empty-claim), GAP-2 (per-file count wrong), GAP-3 (no procedures trap test), GAP-4 (no live E2E — defensible)
+  concerns: 1     # overstated-completeness pattern in status.md + changelog.md (both assert the Active section is empty when it isn't)
+  scope_expansions: 0
+
+# --------------------------------------------------------------------------
+# Per-story verdict
+# --------------------------------------------------------------------------
+story_verdicts:
+  procedures-properties-sampling-collections-missing-check:
+    verdict: "GAPS_FOUND"
+    confidence: 0.83
+    notes: |
+      The substantive engineering is correct and high-quality: the spec-trap
+      guards for sampling (wrong-capitalization) and property (asymmetric-
+      inversion) are real, load-bearing, and use fixtures that literally
+      contain the trap values — not just prose around them. The cumulative
+      5-out-of-5 enforcement claim holds exactly (grep confirms 4
+      featureType-based checks + 1 itemType-based check, one per CS Part 1
+      feature/resource collection type). The SCENARIO table matches code
+      row-by-row. Gate 1 is honest (1002/1002 verified by Raze re-run).
+
+      The gap-bearing aspect is purely in ops-docs hygiene. Two stale
+      Active entries in known-issues.md contradict the Generator's explicit
+      claim in status.md and changelog.md that the Active section is empty
+      for the test engine. One is THIS sprint's own issue (duplicated into
+      Active+Resolved); the other is the deployments-heuristic entry from
+      the prior sprint that was supposed to have been deleted but wasn't.
+
+      This is exactly the overstated-completeness class Raze is built to
+      catch — Gate 2/3 checked the spec/test quality (high) and didn't
+      audit the doc-hygiene claim. The two edits to fix are ~2 minutes of
+      work. Once they land, Raze will promote to APPROVE. No code changes
+      required.
+
+      Confidence 0.83 (down from the previous sprint's 0.93) reflects the
+      doc-hygiene gap is narrow but explicit-contradictory. The regression
+      test quality is otherwise on par with the prior sprint — the
+      sampling wrong-capitalization and property asymmetric-inversion
+      fixtures are the tightest spec-trap guards in the project so far.
+
+# --------------------------------------------------------------------------
+# Gate evidence (Raze-rerun, not self-reported)
+# --------------------------------------------------------------------------
+gate_reruns:
+  vitest:
+    claimed: "1002/1002"
+    raze_reran: "1002/1002 (52 files, 2.39s)"
+    match: true
+    duration: "2.39s"
+  tsc:
+    claimed: "0 errors"
+    raze_reran: "tsc exit=0 (no output)"
+    match: true
+  eslint:
+    claimed: "0 errors / 18 warnings"
+    raze_reran: "0 errors / 18 warnings (all pre-existing unused-imports in test-runner.ts, assessments.ts:277, dependency-resolver.test.ts:44, discovery-service.test.ts:595, session-manager.test.ts:178, test-runner.test.ts:3, assessments.test.ts:4+10, middleware.test.ts:3)"
+    match: true
+  e2e:
+    claimed: "not run (pure registry-layer sprint, no UI/server/route change)"
+    raze_reran: "not run"
+    note: "defensible for pure assertion-logic scope; same treatment as deployments-collections-heuristic, rubric-6-1-sweep, and api-def-fallback sprints. WEAK rather than SKIPPED to acknowledge the unconditional CLAUDE.md rule."
+
+# --------------------------------------------------------------------------
+# Cumulative-state verification (Raze-direct)
+# --------------------------------------------------------------------------
+cumulative_state:
+  all_5_cs_part1_testCollections_enforced:
+    method: "grep `featureType === .sosa:` + grep `itemType === .sosa:` across src/engine/registry/*.ts"
+    hits:
+      - "src/engine/registry/deployments.ts:416 — featureType === 'sosa:Deployment'"
+      - "src/engine/registry/procedures.ts:363 — featureType === 'sosa:Procedure'"
+      - "src/engine/registry/sampling.ts:413 — featureType === 'sosa:Sample'"
+      - "src/engine/registry/system-features.ts:365 — featureType === 'sosa:System'"
+      - "src/engine/registry/properties.ts:347 — itemType === 'sosa:Property'"
+    total: 5
+    expected: 5
+    verdict: "ACCURATE — all 5 CS Part 1 testCollections functions enforce the OGC 23-001 normative marker."
+
+  scenario_table_vs_code:
+    method: "Row-by-row compare openspec/capabilities/conformance-testing/spec.md:258-262 against grep-hits above"
+    result: "All 5 rows match the code verbatim."
+    verdict: "CONSISTENT."
+
+  known_issues_active_test_engine:
+    method: "Direct read of ops/known-issues.md lines 5-99 (Active Issues section)"
+    claimed_by_generator: "empty for the test engine"
+    actual: |
+      Two entries remain in Active Issues that pertain to the test engine:
+        1. procedures-properties-sampling-collections-missing-check (this sprint's issue — now ALSO in Resolved; duplicated)
+        2. "Deployments in Collections" Heuristic Matching Undocumented (resolved by the previous sprint; never deleted)
+    verdict: "INCONSISTENT — Generator's claim is FALSE as written. See GAP-1."
+
+# --------------------------------------------------------------------------
+# Summary
+# --------------------------------------------------------------------------
+summary: |
+  GAPS_FOUND 0.83. Sprint
+  `procedures-properties-sampling-collections-missing-check` correctly
+  closes the missing-marker-check bug in the 3 remaining CS Part 1
+  testCollections functions. The core engineering is strong: the spec-trap
+  guards are real and load-bearing — sampling's fixture literally uses
+  `sosa:SamplingFeature` (the wrong-capitalization trap) and expects FAIL;
+  property's fixture uses the exact symmetric-copy anti-pattern
+  `itemType='feature' + featureType='sosa:Property'` and expects FAIL.
+  Both guards would catch a naive future refactor.
+
+  The cumulative-enforcement claim holds exactly: grep confirms 4
+  featureType-based checks + 1 itemType-based check across the 5
+  CS Part 1 feature/resource collection types. The SCENARIO-
+  FEATURECOLLECTION-TYPE-001 5-row table matches the code verbatim.
+
+  Gate 1 is honest: Raze re-ran vitest (1002/1002), tsc (0), eslint
+  (0/18) — all match the Generator's claims.
+
+  GAPS are concentrated in ops-docs hygiene, not code:
+    - GAP-1 (primary): ops/known-issues.md Active section is NOT empty
+      for the test engine — it still carries (a) this sprint's own issue
+      duplicated into both Active+Resolved, and (b) the prior sprint's
+      deployments-heuristic entry that was supposed to have been deleted.
+      This directly contradicts the explicit empty-Active claim in
+      status.md and changelog.md. This is the over-stated-completeness
+      pattern Raze is built to catch.
+    - GAP-2: per-file test-count in ops/known-issues.md line 109 and
+      changelog line 18 is wrong ('4 new + 1 updated per file' should be
+      '2 new (procedures) / 3 new (sampling) / 3 new (properties) + 1
+      updated per file'). Total count of 8 net-new matches the vitest
+      delta.
+    - GAP-3 (minor): procedures test file has no trap-guard beyond the
+      missing-check. A lowercase-variant test would close the symmetry.
+    - GAP-4: no E2E live-IUT verification. Defensible for pure registry-
+      layer assertion logic, consistent with prior sprints.
+
+  Fix effort: GAP-1 + GAP-2 together are ~2-5 minutes of ops-docs
+  cleanup. No source code changes. After they land, verdict promotes to
+  APPROVE without re-running gates (since no code changes).
+
+final_conclusion: |
+  The sprint's engineering substance is APPROVE-quality — the trap guards
+  are the tightest Raze has seen in the project (fixtures contain the
+  actual spec-violating values, not just documentation around them). But
+  the documentation-hygiene gap is explicit: status.md and changelog.md
+  both assert the Active section is empty, and it isn't. A reader
+  trusting those files gets a false picture. That is precisely the
+  overstated-completeness class that Gate 4 downgrades. Fixing the two
+  stale Active entries (one this-sprint duplicate, one prior-sprint
+  leftover) is ~2 minutes of editing. Once that lands, the sprint is
+  APPROVE and ready to commit.
+
+  Recommendation: Generator performs the ops/known-issues.md cleanup +
+  corrects the per-file count in known-issues.md line 109 + changelog
+  line 18, then commits. Raze promotes to APPROVE via a short addendum
+  note (no gate re-run needed since source unchanged).

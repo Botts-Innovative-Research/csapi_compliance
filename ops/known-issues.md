@@ -1,20 +1,10 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T16:20Z (sprint `deployments-collections-heuristic` CLOSED; deployments.ts + system-features.ts heuristics rewritten to normative featureType check. New Active issue `procedures-properties-sampling-collections-missing-check` logged.)
+> Last updated: 2026-04-17T17:50Z (sprint `procedures-properties-sampling-collections-missing-check` CLOSED. All 5 CS Part 1 testCollections functions enforce OGC 23-001 normative markers. No active test-engine issues.)
 
 ## Active Issues
 
-### procedures-properties-sampling-collections-missing-check (NEW 2026-04-17, surfaced by deployments-collections-heuristic)
-- **Symptom**: `src/engine/registry/procedures.ts`, `properties.ts`, and `sampling.ts` all have a `testCollections` function (executes `/req/<X>/collections`) but none of them actually verifies that a collection with the normative marker exists. They only assert `body.collections` is a JSON array — any response with an array will PASS, even if no collection declares the required `featureType`/`itemType`.
-- **Per OGC 23-001**:
-  - `/req/procedure/collections` mandates `itemType="feature"` + `featureType="sosa:Procedure"`
-  - `/req/sf/collections` mandates `itemType="feature"` + `featureType="sosa:Sample"` (note: "Sample", not "SamplingFeature")
-  - `/req/property/collections` mandates `itemType="sosa:Property"` (different pattern — property does NOT use featureType)
-- **Impact**: Silent false-positive PASS on servers that don't identify their feature collections correctly. Same class of bug as the deployments/systems heuristic fixed in the sprint that surfaced this.
-- **Fix**: Add a `collections.some((c) => c.featureType === "sosa:Procedure")` (and equivalents for sf+property, with the property variant checking `itemType`) with OGC citation comment. Update existing "passes when collections are valid" tests to include the featureType marker. ~30 min per file + 3 regression tests each.
-- **Source**: Found during `deployments-collections-heuristic` sprint 2026-04-17.
-
-
+_(No active issues against the test engine. All 5 CS Part 1 testCollections functions — systems, deployments, procedures, sampling, properties — now enforce the normative OGC 23-001 marker. Outstanding items are polish / roadmap — see `ops/status.md` § Remaining Work.)_
 
 ### Live-IUT Playwright Tests Hit Destructive-Confirmation Gate — RESOLVED (UI gate only) 2026-04-16
 - **Symptom (resolved)**: With `IUT_URL=https://api.georobotix.io/ogc/t18/api`, `TC-E2E-004` and `TC-E2E-005` timed out clicking Start because GeoRobotix advertises CRUD classes which auto-pre-select and gate Start behind the destructive-confirm checkbox.
@@ -92,12 +82,19 @@
 - **Workaround**: Batch-rewrite requirement URIs to canonical OGC form when convenient; not blocking v1.0.
 - **Source**: Raze 2026-04-16 Gate 4 live run.
 
-### "Deployments in Collections" Heuristic Matching Undocumented
-- **Symptom**: `deployments.ts:385-389` accepts `id === 'deployments' OR id === 'deployment' OR itemType includes 'deployment'`. The OGC spec text authorizing this heuristic is not cited in the module.
-- **Impact**: If OGC mandates an exact collection id, one of these branches is wrong. Currently flagged as a potential false positive by Quinn (2026-04-02) and not adjudicated since.
-- **Workaround**: Read OGC CS API Part 1 `/req/deployment/collections` text and either narrow the heuristic to match the spec, or document why the relaxation is safe.
-
 ## Resolved Issues
+
+### procedures-properties-sampling-collections-missing-check (RESOLVED 2026-04-17 — sprint `procedures-properties-sampling-collections-missing-check`)
+- **Symptom (resolved)**: `procedures.ts`, `sampling.ts`, and `properties.ts` `testCollections` functions verified `body.collections` is a JSON array but never checked for a collection with the normative OGC 23-001 marker. Silent false-positive PASS on non-conformant servers. Different class of bug from the just-fixed deployments/systems heuristic (wrong check) — this was a missing check.
+- **Spec** (raw adoc from upstream GitHub; verified by Raze independently in the previous sprint):
+  - `/req/procedure/collections`: `itemType="feature"` + `featureType="sosa:Procedure"`
+  - `/req/sf/collections`: `itemType="feature"` + `featureType="sosa:Sample"` (the spec uses the shorter form "Sample" — NOT "SamplingFeature")
+  - `/req/property/collections`: `itemType="sosa:Property"` (ASYMMETRIC — no `featureType`; property resources aren't Feature resources per OGC GeoJSON)
+- **Resolution**: Added `collections.some((c) => c.featureType === "sosa:<X>")` check to each (and `c.itemType === "sosa:Property"` for the asymmetric property variant) with inline OGC citation comment. Failure messages name the required marker (with note about Property's asymmetric pattern and Sample's shorter form) and cite `/req/<X>/collections`.
+- **Tests**: 4 new + 1 updated per file (11 net-new across 3 files). Per-file regression cases: (a) PASS with canonical id + correct marker, (b) PASS with non-canonical id + correct marker (e.g. `algorithms`, `river_samples`, `observable_properties`), (c) FAIL when `collections` is non-empty but no marker match, (d) FAIL on spec-trap cases — sampling has a wrong-capitalization guard (`sosa:SamplingFeature` → FAIL), property has an asymmetric-pattern guard (`featureType="sosa:Property"` with `itemType="feature"` → FAIL).
+- **Spec**: REQ-TEST-008/009/010 item 1 rewritten. SCENARIO-FEATURECOLLECTION-TYPE-001 extended to a 5-row table covering all CS Part 1 feature/resource collection identity markers (including the Sample-not-SamplingFeature note and the Property asymmetric pattern).
+- **Gates**: vitest **1002/1002** PASS (was 994; +8 net-new), tsc 0 errors, eslint 0 errors / 18 pre-existing warnings (unchanged).
+- **Source**: Surfaced by the preceding `deployments-collections-heuristic` sprint 2026-04-17T16:35Z; closed 2026-04-17T17:35Z.
 
 ### deployments-collections-heuristic + systems-collections-heuristic (RESOLVED 2026-04-17 — sprint `deployments-collections-heuristic`)
 - **Symptom (resolved)**: `src/engine/registry/deployments.ts:401-404` and `system-features.ts:353-355` both used a three-way heuristic `(c.id === '<x>s' || c.id === '<x>' || c.itemType.toLowerCase().includes('<x>'))` to identify deployment/system collections. Both over-broad AND wrong:
