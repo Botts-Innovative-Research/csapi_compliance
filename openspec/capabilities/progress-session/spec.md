@@ -178,7 +178,7 @@ The system SHALL support multiple concurrent assessments from different users wi
 **WHEN** the user clicks "Cancel"
 **THEN** the system waits for the final test to complete and shows complete results (not marked as partial, since all tests completed).
 
-## Implementation Status (2026-03-31)
+## Implementation Status (2026-04-17)
 
 <!-- MANDATORY: Update this section after implementation. -->
 
@@ -189,9 +189,11 @@ The system SHALL support multiple concurrent assessments from different users wi
 - REQ-SESS-004 to REQ-SESS-007: CancelToken + cancel API endpoint (`src/engine/cancel-token.ts`, `src/server/routes/assessments.ts`)
 - REQ-SESS-008 to REQ-SESS-011: SessionManager with 24h TTL + ResultStore with file-backed persistence (`src/engine/session-manager.ts`, `src/engine/result-store.ts`, 27 tests)
 - REQ-SESS-012 to REQ-SESS-015: Landing page with URL input, no login required (`src/app/page.tsx`)
+- Frontend progress view page at `src/app/assess/[id]/progress/page.tsx` — consumes SSE via `createSSEClient`, renders progress bar, counter, current class/test, test log, cancel dialog.
 
 ### Deviations from Spec
 - None
 
-### Deferred
-- Frontend progress view page (S-03) — backend SSE infrastructure done, UI in Sprint 3
+### Scenario Verification
+- SCENARIO-SESS-PROG-001 ("within 1s, counter + bar + class + test name update"): **PASS** 2026-04-17. Covered by hermetic `tests/e2e/assessment-flow.spec.ts` TC-E2E-007 which installs a FakeEventSource, drives staged events, and asserts counter/percent/aria-valuenow/class-name/test-name with a `<1000ms` emit→visible latency budget. Chromium 674ms / firefox 1.6s. See `_bmad/traceability.md`.
+- SCENARIO-SESS-PROG-004 (class transition) covered incidentally by the same test.

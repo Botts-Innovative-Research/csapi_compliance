@@ -387,4 +387,139 @@ test.describe('Assessment Flow', () => {
     await expect(confirmCheckbox).toBeHidden();
     await expect(startButton).toBeEnabled();
   });
+
+  // TC-E2E-007 upgrades SCENARIO-SESS-PROG-001 from PARTIAL → PASS by driving
+  // the progress page with staged SSE events and asserting the full spec:
+  // counter ("12 / 58"), percentage (21%), progressbar aria-valuenow=21,
+  // current conformance class name, current test name, and ≤1s update latency.
+  // Prior TC-E2E-001 live-IUT coverage only asserted the page heading rendered
+  // — the 1.3s GeoRobotix run SKIPs most tests so the progress UI barely
+  // updates before redirect. This test is hermetic (no live IUT) and uses an
+  // injected FakeEventSource so timing is deterministic.
+  test('TC-E2E-007: SESS-PROG-001 — progress display updates within 1s (counter, bar, class, test)', async ({
+    page,
+  }) => {
+    const sessionId = 'test-session-007';
+
+    // Install a FakeEventSource on window BEFORE the Next.js scripts run so
+    // createSSEClient() picks it up. The fake records every instance on
+    // window.__sseEmitters so the test can emit events via page.evaluate.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __sseEmitters: unknown[] };
+      w.__sseEmitters = [];
+      class FakeEventSource {
+        url: string;
+        onopen: ((e: Event) => void) | null = null;
+        onerror: ((e: Event) => void) | null = null;
+        readyState = 0;
+        _listeners: Record<string, Array<(e: MessageEvent) => void>> = {};
+        constructor(url: string) {
+          this.url = url;
+          (window as unknown as { __sseEmitters: unknown[] }).__sseEmitters.push(this);
+          setTimeout(() => {
+            this.readyState = 1;
+            this.onopen?.(new Event('open'));
+          }, 0);
+        }
+        addEventListener(type: string, cb: (e: MessageEvent) => void) {
+          (this._listeners[type] ||= []).push(cb);
+        }
+        removeEventListener(type: string, cb: (e: MessageEvent) => void) {
+          this._listeners[type] = (this._listeners[type] || []).filter((f) => f !== cb);
+        }
+        close() {
+          this.readyState = 2;
+        }
+        _emit(type: string, data: unknown) {
+          const evt = new MessageEvent(type, { data: JSON.stringify(data) });
+          for (const cb of this._listeners[type] || []) cb(evt);
+        }
+      }
+      (window as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
+    });
+
+    // The progress page calls apiClient.getAssessment on mount to populate
+    // the endpoint URL chip. Any GET to /api/assessments/:id must return a
+    // valid SessionState shape or the promise rejects and the chip stays empty
+    // (harmless, but mocking keeps the test deterministic).
+    await page.route(`**/api/assessments/${sessionId}`, async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: sessionId,
+            endpointUrl: 'https://example.com/api',
+            status: 'running',
+            createdAt: new Date().toISOString(),
+          }),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
+    await page.goto(`/assess/${sessionId}/progress`);
+
+    // Wait until the page has mounted and createSSEClient has instantiated
+    // the FakeEventSource (otherwise _emit has no subscribers yet).
+    await expect(page.getByRole('heading', { name: /Assessment in Progress/i })).toBeVisible();
+    await page.waitForFunction(() => {
+      const w = window as unknown as { __sseEmitters: Array<{ _listeners: Record<string, unknown[]> }> };
+      const es = w.__sseEmitters[0];
+      return es && Array.isArray(es._listeners['test-completed']) && es._listeners['test-completed'].length > 0;
+    });
+
+    const emit = async (type: string, data: unknown) => {
+      await page.evaluate(
+        ([t, d]) => {
+          const w = window as unknown as { __sseEmitters: Array<{ _emit: (type: string, data: unknown) => void }> };
+          w.__sseEmitters[0]._emit(t as string, d);
+        },
+        [type, data] as const,
+      );
+    };
+
+    // Spec preamble: assessment-started establishes totalTests; class-started
+    // sets the current class name; test-started sets the current test name.
+    await emit('assessment-started', { totalTests: 58 });
+    await emit('class-started', { className: 'Core' });
+    await emit('test-started', { testName: 'testLandingPage' });
+
+    // SCENARIO-SESS-PROG-001 ASSERTION: "the 12th test completes" → display
+    // updates within 1 second with counter, %, bar, and current class/test.
+    const t0 = Date.now();
+    await emit('test-completed', {
+      status: 'pass',
+      completedTests: 12,
+      totalTests: 58,
+      testName: 'testLandingPage',
+    });
+
+    // Counter "12 / 58" (the rendered markup is `{completedTests} / {totalTests}`).
+    await expect(page.getByText(/^12\s*\/\s*58$/)).toBeVisible({ timeout: 1000 });
+    const updateDeltaMs = Date.now() - t0;
+    expect(updateDeltaMs).toBeLessThan(1000);
+
+    // Percentage text: Math.round(12/58*100) = 21.
+    await expect(page.getByText(/^21%$/)).toBeVisible();
+
+    // role="progressbar" aria-valuenow reflects the percentage.
+    const progressbar = page.getByRole('progressbar');
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '21');
+    await expect(progressbar).toHaveAttribute('aria-valuemax', '100');
+    await expect(progressbar).toHaveAttribute('aria-label', /Assessment progress: 21% complete, 12 of 58 tests/);
+
+    // Current conformance class name is visible.
+    await expect(page.getByText(/Core/)).toBeVisible();
+    // Current test name (set by test-started, mono-font caption under class).
+    await expect(page.getByText('testLandingPage')).toBeVisible();
+
+    // SCENARIO-SESS-PROG-004 covered incidentally: class transition updates
+    // the displayed class name on the next tick.
+    await emit('class-started', { className: 'GeoJSON' });
+    await emit('test-started', { testName: 'testGeoJsonGeometry' });
+    await expect(page.getByText(/GeoJSON/)).toBeVisible({ timeout: 1000 });
+    await expect(page.getByText('testGeoJsonGeometry')).toBeVisible();
+  });
 });

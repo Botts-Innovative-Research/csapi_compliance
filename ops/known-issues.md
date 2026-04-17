@@ -1,6 +1,6 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T17:50Z (sprint `procedures-properties-sampling-collections-missing-check` CLOSED. All 5 CS Part 1 testCollections functions enforce OGC 23-001 normative markers. No active test-engine issues.)
+> Last updated: 2026-04-17T20:56Z (sprint `uri-canonicalization` CLOSED 2026-04-17T20:30Z and pushed as `d5e2124`. Working tree clean. No active test-engine issues. Outstanding polish items listed in `ops/status.md` § Remaining Work.)
 
 ## Active Issues
 
@@ -12,14 +12,12 @@ _(No active issues against the test engine. All 5 CS Part 1 testCollections func
 - **Backend layer still UNRESOLVED**: see "Backend Destructive-Confirm Enforcement Missing" above.
 - **Lesson**: Race condition surfaced — `deselectCrudClasses` originally raced the configure-page sessionStorage useEffect; fixed by waiting on the `Conformance Classes` heading first.
 
-### Critical Scenario Verdicts Were Overstated by Main Session (NEW 2026-04-16, Raze Gate-4 finding)
-- **Symptom**: After Task 1 closed, the main session declared all 6 critical scenarios "PASS". Raze (Gate 4 review of option 4) found 3 of those 6 are actually PARTIAL or MODERATE:
-  - **SESS-PROG-001 PARTIAL**: TC-E2E-001 only asserts `Assessment in Progress` text appears — the spec demands counter ("12/58") + bar % + class/test names + 1s update latency. Backend assessment completes in ~1.3s with 53/81 tests SKIPPED, so the progress page barely renders before redirect to results. To upgrade: component test with mocked SSE events, or longer-running fixture.
-  - **RPT-TEST-001 PARTIAL**: TC-E2E-001 reaches results page but never clicks a filter button. No unit test for the filter component (`tests/unit/components/` does not exist). To upgrade: click Failed/Passed/Skipped filter, assert visibility changes.
-  - **EXP-JSON-001 PARTIAL**: TC-E2E-001 only asserts the Export JSON button is visible. Doesn't click, doesn't verify download content. To upgrade at E2E: click and assert download event fires (or content); already covered at unit/integration level via api-client + route alignment.
-  - **RPT-DASH-001 MODERATE**: asserts `Assessment Results` heading + `%` text but not the actual percentage value or per-class counts.
-- **Impact**: Sprint-level "all 6 PASS" claim in test-results.md, status.md, traceability.md was overstated. Updated 2026-04-16T19:30Z with honest PARTIAL/MODERATE verdicts.
-- **Workaround**: see per-scenario "to upgrade" notes above. Treat as Task 1 follow-on work.
+### ~~Critical Scenario Verdicts Were Overstated by Main Session~~ — FULLY RESOLVED 2026-04-17T21:05Z (originated 2026-04-16, Raze Gate-4 finding)
+- **Symptom (resolved)**: After Task 1 closed, the main session declared all 6 critical scenarios PASS. Raze (Gate 4 review of option 4) found 4 were actually PARTIAL or MODERATE.
+- **Resolution path**:
+  - **RPT-TEST-001 → PASS**, **EXP-JSON-001 → PASS**, **RPT-DASH-001 → PASS** 2026-04-17T19:20Z (sprint `e2e-assertion-depth-batch`; TC-E2E-001 extended with click-and-assert on filter buttons, Export JSON download event, numeric compliance % + class aria-label).
+  - **SESS-PROG-001 → PASS** 2026-04-17T21:05Z (sprint `sess-prog-001-assertion-depth`). New hermetic TC-E2E-007 installs `FakeEventSource` on `window` via `page.addInitScript` BEFORE Next.js scripts run, navigates to `/assess/test-session-007/progress`, drives staged `assessment-started`/`class-started`/`test-started`/`test-completed` events, and asserts counter `12 / 58` + percent `21%` + `role="progressbar"` `aria-valuenow="21"` + `aria-label` match + current class (`Core`) + current test (`testLandingPage`) + `<1000ms` emit→visible latency. Covers SCENARIO-SESS-PROG-004 (class transition `Core → GeoJSON`) incidentally. Chromium 674ms / firefox 1.6s.
+- **Lesson**: "All PASS" claims that lean on E2E against a fast-SKIP live IUT are brittle. The FakeEventSource `addInitScript` pattern is hermetic and re-usable for any SSE-dependent scenario without needing a new component-test toolchain.
 
 ### Live-IUT Playwright TC-E2E-001 Strict-Mode Locator (FIXED 2026-04-16)
 - **Symptom (fixed)**: `getByText(/conformance class/i)` in `tests/e2e/assessment-flow.spec.ts:134` resolved to 10 elements (per-class spans + headings + summary text) — strict-mode violation.
