@@ -3,6 +3,7 @@
   "type": "array",
   "items": {
     "title": "Property Resource",
-    "$ref": "./property.json"
-  }
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/property.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/propertyArray.json"
 }

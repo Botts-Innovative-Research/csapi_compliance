@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "allOf": [
     {
-      "$ref": "feature.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/feature.json"
     },
     {
       "properties": {
@@ -12,26 +12,27 @@
           ],
           "properties": {
             "featureType": {
-              "$ref": "../common/uris.json#/$defs/DeploymentTypeUris"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/uris.json#/$defs/DeploymentTypeUris"
             },
             "validTime": {
               "description": "Time period during which the systems are deployed.",
-              "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/TimePeriod"
             },
             "platform@link": {
               "description": "Link to the platform on which the systems are deployed.",
-              "$ref": "../common/commonDefs.json#/$defs/Link"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/Link"
             },
             "deployedSystems@link": {
               "type": "array",
               "items": {
                 "description": "Link to the system being deployed. Either a URN if the system is stored locally, or a URL if the system is hosted externally",
-                "$ref": "../common/commonDefs.json#/$defs/Link"
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/Link"
               }
             }
           }
         }
       }
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/deployment.json"
 }

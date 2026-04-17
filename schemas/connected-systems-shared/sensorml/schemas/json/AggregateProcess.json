@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/AbstractProcess.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "AggregateProcess"
+        },
+        "components": {
+          "description": "The list of sub-processes",
+          "$ref": "#/$defs/ComponentList"
+        },
+        "connections": {
+          "description": "The explicit definition of data links between outputs, inputs, and parameters of the components within an aggregate process.",
+          "$ref": "#/$defs/ConnectionList"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ComponentList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/SoftNamedProperty"
+          },
+          {
+            "oneOf": [
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/SimpleProcess.json"
+              },
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/AggregateProcess.json"
+              },
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/PhysicalComponent.json"
+              },
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/PhysicalSystem.json"
+              },
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/XLink",
+                "properties": {
+                  "type": {
+                    "const": "Link"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "ConnectionList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          },
+          "destination": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          }
+        },
+        "required": [
+          "source",
+          "destination"
+        ]
+      }
+    }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/AggregateProcess.json"
+}

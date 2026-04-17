@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AnyComponent": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AnySimpleComponent"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataRecord.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Vector.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataArray.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Matrix.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataChoice.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Geometry.json"
+        }
+      ]
+    },
+    "AnySimpleComponent": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AnyScalarComponent"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/CountRange.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/QuantityRange.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/TimeRange.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/CategoryRange.json"
+        }
+      ]
+    },
+    "AnyScalarComponent": {
+      "oneOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Boolean.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Count.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Quantity.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Time.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Category.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Text.json"
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/AnyComponent"
+    },
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataStream.json"
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json"
+}

@@ -3,14 +3,15 @@
   "type": "object",
   "properties": {
     "items": {
-      "$ref": "procedureArray.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/procedureArray.json"
     },
     "links": {
       "description": "Links to related resources (including paging)",
-      "$ref": "../common/links.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/links.json"
     }
   },
   "required": [
     "items"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/procedureCollection.json"
 }

@@ -1,6 +1,6 @@
 # Test Engine Infrastructure -- Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
 
 ## Purpose
 
@@ -81,6 +81,22 @@ Covers PRD functional requirements FR-24 through FR-29.
 - **Status**: SPECIFIED
 - **Description**: If an individual test encounters a network error (connection refused, DNS resolution failure, TLS error), the test SHALL produce a `"fail"` result with a descriptive error message rather than terminating the assessment run. The error message SHALL include the error type and the request URL. The assessment SHALL continue executing remaining tests.
 - **Rationale**: A single unreachable endpoint must not crash the entire assessment. (PRD NFR-10)
+
+### REQ-SSRF-002: Opt-In Private-Network Allowlist
+- **Priority**: MUST
+- **Status**: Implemented 2026-04-16
+- **Description**: The SSRF guard SHALL reject URLs targeting localhost (hostname `localhost`, `::1`, `[::1]`) and private/reserved IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 0.0.0.0/8, 169.254.0.0/16, fc00::/7, fe80::/10, ::1/128) by default. The operator MAY opt into accepting private-network IUTs by setting the environment variable `ALLOW_PRIVATE_NETWORKS=true` at server startup. When the opt-in is active: (a) the server log SHALL emit a prominent warning, (b) `GET /api/health` SHALL return `{allowPrivateNetworks: true}`, (c) the landing page SHALL display a "Local-dev mode" banner, (d) the client-side URL validator SHALL accept private addresses, (e) the server-side SSRF guard SHALL still block non-HTTP(S) schemes (file://, ftp://, data:, etc.). The default (unset or any value other than the literal string `true`) SHALL preserve the production-safe blocking behaviour.
+- **Rationale**: Developers iterating on their own CS API implementations need to assess `http://localhost:4000` — the compliance tool is unusable for this primary workflow without an escape hatch. Gate 2 "Developer-testing-local-server" persona (github-issues-audit item 4). The env-var gate keeps production deployments safe: an unconfigured hosted instance cannot be tricked into fetching internal resources.
+
+### SCENARIO-SSRF-LOCAL-001: Private-Network Opt-In Accepts Localhost
+**GIVEN** the server was started with `ALLOW_PRIVATE_NETWORKS=true` in the environment
+**WHEN** a user submits `http://localhost:8080/ogcapi` on the landing page
+**THEN** the client-side validator accepts the URL (no "Private and reserved IP addresses are not allowed" message), the server-side SSRF guard accepts the URL, the discovery request is made, and the workflow proceeds normally; the landing page displays a "Local-dev mode" banner explaining the relaxation; non-HTTP(S) schemes (e.g., `ftp://localhost/`) are still rejected.
+
+### SCENARIO-SSRF-LOCAL-002: Default Mode Still Blocks Private Networks
+**GIVEN** the server was started without `ALLOW_PRIVATE_NETWORKS` (or with the flag set to any value other than `true`)
+**WHEN** a user submits `http://192.168.1.50/api` on the landing page
+**THEN** the client-side validator rejects it with the "Private and reserved IP addresses are not allowed" message; if bypassed (e.g., via curl to `POST /api/assessments`), the server-side SSRF guard returns HTTP 400 with an SsrfError message and no request is made to the target; the landing page does NOT display a "Local-dev mode" banner.
 
 ### REQ-ENG-013: Test Result Data Structure
 - **Priority**: MUST

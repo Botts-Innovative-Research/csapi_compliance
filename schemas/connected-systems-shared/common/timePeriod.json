@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Time Period",
+  "type": "array",
+  "minItems": 2,
+  "maxItems": 2,
+  "items": {
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstantOrNow.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timePeriod.json"
+}

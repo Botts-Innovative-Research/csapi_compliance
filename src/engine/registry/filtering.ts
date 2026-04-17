@@ -308,11 +308,16 @@ async function testSystemByProcedure(ctx: TestContext) {
     return skipResult(REQ_SYSTEM_BY_PROCEDURE, 'No systems available on the server');
   }
 
+  if (!ctx.discoveryCache.procedureId) {
+    return skipResult(
+      REQ_SYSTEM_BY_PROCEDURE,
+      'No procedure available on the server; cannot construct a valid procedure filter',
+    );
+  }
+
   try {
     const url = new URL('systems', ctx.baseUrl);
-    // Use a placeholder procedure URI; server just needs to accept the parameter
-    const procedureId = ctx.discoveryCache.procedureId || 'urn:example:procedure:1';
-    url.searchParams.set('procedure', procedureId);
+    url.searchParams.set('procedure', ctx.discoveryCache.procedureId);
     const response = await ctx.httpClient.get(url.toString());
     const durationMs = Date.now() - start;
     const exchangeIds = [response.exchange.id];

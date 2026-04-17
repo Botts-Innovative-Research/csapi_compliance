@@ -3,6 +3,7 @@
   "type": "array",
   "items": {
     "title": "System Feature",
-    "$ref": "./system.json"
-  }
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/system.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/systemArray.json"
 }

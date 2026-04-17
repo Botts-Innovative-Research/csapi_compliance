@@ -1,4 +1,38 @@
-import { test, expect } from '@playwright/test';
+// E2E tests for the full assessment flow — progress UI, results dashboard, export.
+// SCENARIO-SESS-PROG-001: Progress display shows real-time test execution updates (CRITICAL)
+// SCENARIO-RPT-DASH-001: Results summary dashboard renders compliance percentages and counts (CRITICAL)
+// SCENARIO-RPT-TEST-001: Individual test results visible with pass/fail/skip filtering (CRITICAL)
+// SCENARIO-EXP-JSON-001: JSON export downloads complete assessment report (CRITICAL)
+
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * Uncheck every selected CRUD/Update class on the configure page so the
+ * happy-path live-IUT tests don't trigger destructive operations against a
+ * shared testbed. The destructive-confirm gate is exercised separately by
+ * TC-E2E-006.
+ *
+ * Waits for the class list to render first to avoid racing the sessionStorage
+ * useEffect that hydrates the configure page after redirect.
+ */
+async function deselectCrudClasses(page: Page): Promise<void> {
+  await page
+    .getByRole('heading', { name: /Conformance Classes/i })
+    .waitFor({ state: 'visible', timeout: 10000 });
+  // Per-class labels include the URI in a fingerprint span; filter by the
+  // canonical /conf/create-replace-delete or /conf/update URI substring so
+  // we hit Part 1 and Part 2 mutating classes without false matches.
+  const mutating = page.locator('label').filter({
+    hasText: /\/conf\/(create-replace-delete|update)/,
+  });
+  const count = await mutating.count();
+  for (let i = 0; i < count; i++) {
+    const checkbox = mutating.nth(i).getByRole('checkbox');
+    if ((await checkbox.isEnabled()) && (await checkbox.isChecked())) {
+      await checkbox.uncheck();
+    }
+  }
+}
 
 test.describe('Assessment Flow', () => {
   test('health endpoint returns ok', async ({ request }) => {
@@ -103,10 +137,11 @@ test.describe('Assessment Flow', () => {
   });
 
   // ----- Full flow tests below require a live IUT -----
-  // These are skipped by default. To run them, set the IUT_URL environment
-  // variable to a reachable CS API endpoint and remove the .skip() calls.
+  // Run with: IUT_URL=https://api.georobotix.io/ogc/t18/api npx playwright test
+  // (Default-skip preserves CI behavior on isolated runners.)
+  const liveIutTest = process.env.IUT_URL ? test : test.skip;
 
-  test.skip('TC-E2E-001: full happy path with live IUT', async ({ page }) => {
+  liveIutTest('TC-E2E-001: full happy path with live IUT', async ({ page }) => {
     // Requires: a running IUT (e.g., https://api.georobotix.io/ogc/t18/api)
     // This test exercises the complete flow:
     //   landing -> discover -> configure -> start -> progress -> results
@@ -123,10 +158,17 @@ test.describe('Assessment Flow', () => {
     // Wait for redirect to configure page
     await page.waitForURL(/\/assess\/configure/, { timeout: 30000 });
 
-    // Verify conformance classes are displayed
-    await expect(page.getByText(/conformance class/i)).toBeVisible();
+    // Verify conformance classes are displayed (use heading to avoid
+    // strict-mode collision with the per-class label spans)
+    await expect(
+      page.getByRole('heading', { name: /Conformance Classes/i }),
+    ).toBeVisible();
 
-    // Click Start Assessment
+    // Deselect CRUD/Update classes before Start so the happy-path test
+    // doesn't run destructive operations against the shared IUT. The
+    // destructive-confirm UX is covered by TC-E2E-006.
+    await deselectCrudClasses(page);
+
     await page.getByRole('button', { name: /Start Assessment/ }).click();
 
     // Wait for redirect to progress page
@@ -149,7 +191,7 @@ test.describe('Assessment Flow', () => {
     await expect(exportBtn).toBeVisible();
   });
 
-  test.skip('TC-E2E-004: cancel assessment', async ({ page }) => {
+  liveIutTest('TC-E2E-004: cancel assessment', async ({ page }) => {
     // Requires: a running IUT
     // This test starts an assessment and cancels it mid-run.
 
@@ -161,6 +203,7 @@ test.describe('Assessment Flow', () => {
     await page.getByRole('button', { name: /Discover Endpoint/ }).click();
     await page.waitForURL(/\/assess\/configure/, { timeout: 30000 });
 
+    await deselectCrudClasses(page);
     await page.getByRole('button', { name: /Start Assessment/ }).click();
     await page.waitForURL(/\/assess\/[^/]+\/progress/, { timeout: 15000 });
 
@@ -177,14 +220,16 @@ test.describe('Assessment Flow', () => {
     // Should redirect to results page
     await page.waitForURL(/\/assess\/[^/]+\/results/, { timeout: 15000 });
 
-    // Verify partial/cancelled status
-    await expect(page.getByText(/Partial|Cancelled/i)).toBeVisible();
+    // Verify partial/cancelled status — badge first, then descriptive text.
+    // Both render after cancel; scope the badge match to the rounded-full
+    // status pill to avoid strict-mode collision with the description prose.
+    await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
     await expect(
       page.getByText(/assessment was cancelled/i),
     ).toBeVisible();
   });
 
-  test.skip('TC-E2E-005: results persistence via URL', async ({ page }) => {
+  liveIutTest('TC-E2E-005: results persistence via URL', async ({ page }) => {
     // Requires: a completed assessment (run TC-E2E-001 first)
     // This test navigates away and back to verify results persist.
 
@@ -196,6 +241,7 @@ test.describe('Assessment Flow', () => {
     await page.locator('#endpoint-url').fill(iutUrl);
     await page.getByRole('button', { name: /Discover Endpoint/ }).click();
     await page.waitForURL(/\/assess\/configure/, { timeout: 30000 });
+    await deselectCrudClasses(page);
     await page.getByRole('button', { name: /Start Assessment/ }).click();
     await page.waitForURL(/\/assess\/[^/]+\/results/, { timeout: 300000 });
 
@@ -212,5 +258,78 @@ test.describe('Assessment Flow', () => {
     await page.goto(resultsUrl);
     await expect(page.getByText(/Assessment Results/i)).toBeVisible();
     await expect(page.getByText(/%/)).toBeVisible();
+  });
+
+  // TC-E2E-006 explicitly exercises the destructive-confirm UX gate using a
+  // mocked discovery response, so it always runs and never hits a real IUT.
+  // This is the test that owns the "Start disabled when CRUD selected without
+  // destructive-confirm checkbox" behavior, separating it from the happy-path
+  // tests TC-E2E-001/004/005 which deselect CRUD up-front.
+  test('TC-E2E-006: destructive-confirm gates Start when CRUD class is selected', async ({
+    page,
+  }) => {
+    const sessionId = 'test-session-006';
+    const crudClassUri =
+      'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete';
+
+    // Mock discovery so we get a deterministic CRUD-bearing conformsTo
+    await page.route('**/api/assessments', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: sessionId,
+          endpointUrl: 'https://example.com/api',
+          status: 'discovered',
+          discoveryResult: {
+            landingPage: { title: 'Test API' },
+            conformsTo: [
+              'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/core',
+              crudClassUri,
+            ],
+            collectionIds: [],
+            links: [],
+          },
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await page.locator('#endpoint-url').fill('https://example.com/api');
+    await page.getByRole('button', { name: /Discover Endpoint/ }).click();
+    await page.waitForURL(/\/assess\/configure/, { timeout: 30000 });
+
+    // The CRUD class is auto-selected (it is supported), so its destructive
+    // warning + the destructive-confirmation checkbox should both be visible.
+    const crudCheckbox = page
+      .locator('label')
+      .filter({ hasText: crudClassUri })
+      .getByRole('checkbox');
+    await expect(crudCheckbox).toBeChecked();
+
+    const startButton = page.getByRole('button', { name: /Start Assessment/ });
+
+    // Without the destructive-confirm checkbox checked, Start MUST be disabled.
+    await expect(startButton).toBeDisabled();
+
+    const confirmCheckbox = page.getByLabel(
+      /I understand these tests will mutate data/,
+    );
+    await expect(confirmCheckbox).not.toBeChecked();
+    await confirmCheckbox.check();
+    await expect(confirmCheckbox).toBeChecked();
+
+    // Now Start should be enabled.
+    await expect(startButton).toBeEnabled();
+
+    // Unchecking again should re-disable Start (idempotency check).
+    await confirmCheckbox.uncheck();
+    await expect(startButton).toBeDisabled();
+
+    // Deselecting the CRUD class should hide the confirm checkbox entirely
+    // (the gate only applies while a mutating class is selected).
+    await crudCheckbox.uncheck();
+    await expect(confirmCheckbox).toBeHidden();
+    await expect(startButton).toBeEnabled();
   });
 });

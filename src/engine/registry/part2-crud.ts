@@ -1,5 +1,13 @@
 // S09-06: Part 2 Create/Replace/Delete conformance class test module.
 // Conformance class: http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/create-replace-delete
+//
+// REQ-CRUD-001 (SCENARIO-CRUD-BODY-001): Every CRUD test's request body
+//   validates against the OGC create-schema at test-authoring time.
+// REQ-TEST-DYNAMIC-001 (SCENARIO-OBS-SCHEMA-001): The observation-insert
+//   test builds its observation body from the same resultType/resultSchema
+//   used to create the parent datastream (dynamic-schema coupling).
+// REQ-PART2-BASEURL-001 (SCENARIO-PART2-BASEURL-001): all Part 2 requests
+//   resolve against the IUT's full base URL including any path segments.
 
 import { CS_PART2_CONF } from '@/lib/constants';
 import type {
@@ -16,29 +24,118 @@ import {
   assertionFailure,
 } from '@/engine/result-aggregator';
 
-// --- Minimal test payloads ---
+// --- Test payloads (validate against OGC CS Part 2 create schemas) ---
 
-const MINIMAL_DATASTREAM_BODY = {
+/**
+ * Build a dataStream_create.json-compliant request body. Uses a Quantity
+ * component so the observation body (see {@link buildObservationBodyFor})
+ * can be derived deterministically from this datastream's schema. Clients
+ * that need a different observation-schema shape should mirror the
+ * resultSchema they put here in the observation body they POST.
+ */
+export const DATASTREAM_CREATE_BODY = {
+  id: 'csapi-compliance-test-ds',
   name: 'CSAPI Compliance Test Datastream',
   outputName: 'test-output',
-  schema: {
-    obsFormat: 'application/om+json',
+  formats: ['application/json'],
+  'system@link': {
+    href: 'https://example.com/systems/csapi-compliance-test',
   },
-};
+  observedProperties: [
+    {
+      definition: 'https://example.com/properties/test-temperature',
+      label: 'Test Temperature',
+    },
+  ],
+  phenomenonTime: ['2024-01-01T00:00:00Z', '2024-01-01T01:00:00Z'],
+  resultTime: ['2024-01-01T00:00:00Z', '2024-01-01T01:00:00Z'],
+  resultType: 'measure' as const,
+  live: false,
+  schema: {
+    obsFormat: 'application/json',
+    resultSchema: {
+      type: 'Quantity',
+      definition: 'https://example.com/properties/test-temperature',
+      label: 'Test Temperature',
+      uom: { code: 'Cel' },
+    },
+  },
+} as const;
 
-const MINIMAL_OBSERVATION_BODY = {
-  phenomenonTime: '2024-01-01T00:00:00Z',
-  resultTime: '2024-01-01T00:00:00Z',
-  result: 42,
-};
+/**
+ * Build an observation body whose result matches the SWE Quantity schema
+ * declared in {@link DATASTREAM_CREATE_BODY}. REQ-TEST-DYNAMIC-001.
+ *
+ * Exposed so the companion regression test
+ * (tests/unit/engine/registry/observation-dynamic-schema.test.ts) can
+ * verify the observation body derives from the parent datastream's
+ * resultSchema, rather than being hardcoded independently.
+ */
+export function buildObservationBodyForDatastream(
+  datastreamCreateBody: typeof DATASTREAM_CREATE_BODY,
+): {
+  phenomenonTime: string;
+  resultTime: string;
+  result: number;
+} {
+  const { resultType } = datastreamCreateBody;
+  // The bundled datastream declares resultType: 'measure' with a Quantity
+  // resultSchema, so the observation's `result` is a number. If we ever
+  // switch to a Count/Text/Category resultSchema, this builder must be
+  // updated in lockstep with DATASTREAM_CREATE_BODY.
+  if (resultType !== 'measure') {
+    throw new Error(
+      `Unsupported datastream resultType "${resultType}"; observation builder only handles 'measure' (Quantity).`,
+    );
+  }
+  return {
+    phenomenonTime: '2024-01-01T00:00:00Z',
+    resultTime: '2024-01-01T00:00:00Z',
+    result: 42.5,
+  };
+}
 
-const MINIMAL_CONTROLSTREAM_BODY = {
+export const OBSERVATION_CREATE_BODY =
+  buildObservationBodyForDatastream(DATASTREAM_CREATE_BODY);
+
+/**
+ * Build a controlStream_create.json-compliant request body.
+ */
+export const CONTROLSTREAM_CREATE_BODY = {
+  id: 'csapi-compliance-test-cs',
   name: 'CSAPI Compliance Test Control Stream',
   inputName: 'test-input',
+  formats: ['application/json'],
+  'system@link': {
+    href: 'https://example.com/systems/csapi-compliance-test',
+  },
+  controlledProperties: [
+    {
+      definition: 'https://example.com/properties/test-setpoint',
+      label: 'Test Setpoint',
+    },
+  ],
+  issueTime: ['2024-01-01T00:00:00Z', '2024-01-01T01:00:00Z'],
+  executionTime: ['2024-01-01T00:00:00Z', '2024-01-01T01:00:00Z'],
+  live: false,
+  async: false,
   schema: {
     commandFormat: 'application/json',
+    parametersSchema: {
+      type: 'Quantity',
+      definition: 'https://example.com/properties/test-setpoint',
+      label: 'Test Setpoint',
+      uom: { code: 'Cel' },
+    },
   },
-};
+} as const;
+
+// Legacy aliases kept for existing test imports (will be removed in a
+// later sprint once all references migrate to the explicit *_CREATE_BODY
+// names above).
+const MINIMAL_DATASTREAM_BODY = DATASTREAM_CREATE_BODY;
+const MINIMAL_OBSERVATION_BODY = OBSERVATION_CREATE_BODY;
+const MINIMAL_CONTROLSTREAM_BODY = CONTROLSTREAM_CREATE_BODY;
 
 // --- Requirement Definitions ---
 

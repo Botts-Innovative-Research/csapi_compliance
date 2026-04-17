@@ -1,6 +1,6 @@
 # Request/Response Capture — Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
 
 ## Purpose
 

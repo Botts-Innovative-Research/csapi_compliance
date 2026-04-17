@@ -1,0 +1,101 @@
+sprint: "retro-eval"
+story: "(all v1.0 stories — 39 across 9 epics)"
+reviewer: "Raze"
+timestamp: "2026-04-16T17:07:00Z"
+user_request: "Retroactively evaluate the v1.0 implementation for silent gaps — is the codebase actually complete and correct for shipping, or were BMAD quality gates skipped in a way that left real defects in place?"
+
+verdict: "GAPS_FOUND"
+confidence: 0.78
+overrides_evaluator: true  # Quinn's RETRY applied to pre-fix state (2026-04-02). Fixes landed in 168c032 and 0cb78ff. Current state = GAPS_FOUND, not RETRY: the three critical BUGs are verifiably fixed, but methodology/ops gaps remain and no follow-up evaluator run exists to confirm the post-fix state.
+
+request_fulfillment:
+  fully_delivered:
+    - "BUG-001 URL construction fix verified: grep 'new URL\\(\\s*[`\\''\"]/' across src/engine/registry returns zero matches; spot-checks in deployments.ts:138-141, subsystems.ts:82-85, part2-swe-encodings.ts:60-64, part2-update.ts:91-94, features-core.ts:298-301 all show relative paths with explicit trailing-slash baseUrl expected."
+    - "BUG-002 export path fix verified: src/services/api-client.ts:124 uses `/api/assessments/${id}/export?format=json` and src/server/routes/assessments.ts:372+384 accepts `format=json` query param."
+    - "BUG-003 stale unit test fix verified: tests/unit/server/assessments.test.ts:164-189 now asserts {id, discoveryResult:{landingPage, conformsTo, collectionIds, links}} matching current route shape."
+    - "WARN-001 type errors: @types/pdfkit:^0.17.5 added to package.json; 'vitest/globals' added to tsconfig.json:16 types array."
+    - "WARN-002 Playwright port: playwright.config.ts:3,9,12-14 parameterized via CSAPI_PORT || PORT || '3000'."
+    - "Gate 4 harness (Raze) imported from spec-anchor template on 2026-04-16 — _bmad/agents/adversarial-reviewer.md, .harness/prompts/adversarial.md, config.yaml agents.adversarial block, scripts/orchestrate.py Gate 4 integration. This is a secondary deliverable layered on top of retro-eval; user request triggered it."
+  gaps:
+    - "SCENARIO-* traceability still absent in test files (Quinn's WARN-003 — never addressed). grep for SCENARIO- in tests/ returns 0 files with any match. Spec contains 126+ SCENARIO-* IDs across capabilities; none referenced in tests."
+    - "No follow-up evaluator (Quinn) run was produced after the 168c032 + 0cb78ff fix commits. The only evaluator artifact is .harness/evaluations/sprint-retro-eval-eval.yaml dated 2026-04-02T20:54:00Z — pre-fix. The 'fixes landed, tests pass' claim in changelog.md is self-reported; no Gate 2 verification artifact confirms it."
+    - "ops/test-results.md is stale: still dated '2026-04-02 (Evaluator retroactive assessment)', still shows 'Verdict: RETRY', 'Weighted score: 0.58', '905/906 tests (1 failed)', '3 TS errors', 'BUG-001/002/003'. After fix commits 168c032 + 0cb78ff, this file was not regenerated. CLAUDE.md Step 5 + Step 7 violation."
+    - "ops/known-issues.md last updated 2026-03-31 — predates all user-testing findings and the evaluator run. No entry for SCENARIO-* traceability gap, filtering test fallback URN, etc."
+    - "ops/metrics.md turn log stops at Turn 30 (2026-04-02T23:00:33Z). All work performed on 2026-04-16 (Gate 4 harness import, adversarial reviewer integration — documented in changelog.md) has NO corresponding turn-log entries. CLAUDE.md 'User Input Tracking (MANDATORY)' and 'Session Metrics (MANDATORY)' violations."
+    - "openspec/capabilities/*/spec.md all still show 'Status: Draft | Last updated: 2026-03-31'. Zero reconciliation of Implementation Status after v1.0 delivery. REQ-TEST-001 still reads 'Status: SPECIFIED' despite 906 passing tests across 27 modules. CLAUDE.md Step 6 violation across all 7 capability specs."
+    - "_bmad/architecture.md 'Last Reconciled' not verified — CLAUDE.md architecture-freshness-check directive says flag user if >30 days. Not flagged; not verified by me either — concern, not confirmed finding."
+    - ".github/workflows/{ci.yml,release.yml} are UNTRACKED (git status confirms). They have been present since 2026-03-31 per the directory timestamp. Committing them is listed in ops/status.md 'What's Next' step 2 but has never been done. Effectively zero CI/CD on the repo today despite claims in changelog."
+  scope_creep:
+    - "The retro-eval sprint also triggered a substantial Gate 4 (Raze) harness buildout landed in 168c032 (scripts/orchestrate.py 870 LOC, prompts/adversarial.md, agents.adversarial config). This was scope-appropriate given the user's methodology-audit framing, but it is NOT part of 'evaluate v1.0' — it's 'build the thing that evaluates v1.0 next time'. Worth explicit note because it inflates the diff size against which any Gate 4 assessment runs."
+  buried_caveats:
+    - "src/engine/registry/filtering.ts:313-314 — `Use a placeholder procedure URI` with fallback to 'urn:example:procedure:1' when discovery didn't find a procedureId. If the server has zero procedures, this test hits /systems?procedure=urn:example:procedure:1 and interprets whatever comes back as the canonical GET. High risk of false positive OR false negative depending on how the server handles unknown procedure URIs (404 would FAIL test, empty 200 would PASS spuriously). Should SKIP when procedureId is missing, not fabricate."
+    - "src/engine/registry/deployments.ts:385-389 — 'Deployments in Collections' accepts id='deployments' OR id='deployment' OR itemType substring match. The OGC spec text for /req/deployment/collections is not in scope here, but the heuristic matching is load-bearing and undocumented. If OGC spec mandates a specific collection id, this logic is wrong in either direction."
+    - "Quinn's fourth false-positive finding ('Deployments in Collections — may be a legitimate test finding or overly strict assertion') was never adjudicated — no commit or doc entry addresses it. Still unresolved."
+
+claude_md_compliance:
+  step_1_spec_first: "N/A"  # retro-eval has no pre-specced change; the v1.0 code was written before the harness existed. Per prompt, steps 1-3 for pre-harness code are out of scope.
+  step_2_write_tests: "WEAK"  # Tests exist (906 passing) and some reference REQ-*, but SCENARIO-* traceability is 0/126+ across the entire test suite.
+  step_3_implement: "N/A"
+  step_4_verify: "OK"  # Quinn ran vitest, tsc, eslint per her report. Current code claims 906/906 passing 0 TS errors per ops/status.md; not independently rerun by me per prompt instructions (trust Quinn; no reason to doubt for unit tests).
+  step_5_e2e_verify: "SKIPPED"  # Playwright config was fixed (WARN-002) but no evidence it has actually been re-run and passed since. ops/test-results.md E2E section still reads '0 passed, 80 failed'. No axe-core scan run. ops/e2e-test-plan.md execution evidence missing for post-fix state.
+  step_6_reconcile_specs: "SKIPPED"  # All 7 capability spec.md files still 'Status: Draft | Last updated: 2026-03-31' despite v1.0 shipped and retro-evaluated. REQ-TEST-001 still 'SPECIFIED'. No Implementation Status column reconciled. _bmad/traceability.md Gate 4 rows added but body Impl Status of retro-eval fix work not updated.
+  step_7_update_ops: "WEAK"  # ops/status.md was updated 2026-04-16. ops/changelog.md has current entries. BUT ops/test-results.md stale 2026-04-02 with RETRY verdict and pre-fix counts; ops/known-issues.md stale 2026-03-31; ops/metrics.md turn log ends 2026-04-02 missing all 2026-04-16 turns.
+  step_8_update_bmad: "WEAK"  # _bmad/traceability.md gained Gate 4 / Adversarial Review verification row and workflow bumped to v2.1. But the broader BMAD reconciliation (architecture Last Reconciled date, traceability Impl Status column for Post-retro work) was not verified in this review and appears incomplete.
+  notes: |
+    Core gap: the retro-eval sprint was declared 'fixed' in changelog but the evidence trail (test-results.md, known-issues.md, metrics.md turn log, capability spec statuses) was not refreshed. This is exactly the methodology-skip pattern that triggered the sprint in the first place. A second evaluator pass (Gate 2) against the post-fix HEAD is the canonical missing artifact.
+
+spec_gaps:
+  - id: "SCENARIO-* (all 126+)"
+    issue: "Zero traceability from any SCENARIO-* to any test comment. Quinn flagged this as WARN-003; not addressed in any commit since. Spec authors cannot verify behavior coverage by scenario."
+  - id: "REQ-TEST-001 (and all REQs in all 7 capabilities)"
+    issue: "Spec Status field still 'SPECIFIED' or capability Status still 'Draft'. Should be 'IMPLEMENTED' per retro-eval verification. CLAUDE.md Step 6 explicitly requires this."
+  - id: "filtering.ts REQ_SYSTEM_BY_PROCEDURE"
+    issue: "Test fabricates 'urn:example:procedure:1' when discoveryCache.procedureId is missing. Should SKIP, not invent. Spec for CS API filtering-by-procedure does not authorize using synthetic IDs."
+
+cross_agent_blind_spots:
+  - "Generator vs Evaluator: Quinn ran against 2026-04-02 HEAD. Fixes landed in 168c032/0cb78ff but no re-evaluation. 'Gate 2 on post-fix code' is the missing artifact. Raze overrides RETRY to GAPS_FOUND but cannot issue APPROVE without that artifact."
+  - "Docs vs Reality: ops/test-results.md claims E2E FAIL and RETRY; ops/status.md claims E2E is 'being worked on' (port fix landed); reality is indeterminate because no evidence of a post-fix playwright run exists."
+  - "Security gate: SSRF guard confirmed invoked (src/engine/http-client.ts:7 validateUrl import; routes/assessments.ts:18 import + :109 call). Credential masker confirmed invoked in export-engine.ts:80,118. No new endpoints in the fix commits, so no new security surface. OK."
+  - "Frontend-Backend Contract: apiClient shapes at src/services/api-client.ts:3-31 now match src/server/routes/assessments.ts route responses (verified :159-177, :231, :372-398). No drift detected in current HEAD."
+  - ".github/workflows/ untracked: CI pipeline exists in working tree but not in repo. If the next agent assumes CI is gating, they're wrong. The repo runs no automated gates today."
+
+conformance_correctness:
+  false_positives_found:
+    - test: "REQ_SYSTEM_BY_PROCEDURE (filtering.ts:302-)"
+      issue: "Placeholder URN fallback may produce false positive if server returns empty 200 for unknown procedure filter. Severity: MEDIUM."
+  false_negatives_found: []
+  url_construction_bugs:
+    - file: "(none in current HEAD)"
+      issue: "All 67+34 leading-slash calls flagged by Quinn verified fixed. Multiline regex `new URL\\(\\s*[`\\''\"]/` returns 0 matches across src/engine/registry/."
+  assertion_spec_drift:
+    - assertion: "Requirement URIs use local paths like '/req/ogcapi-common/landing-page' instead of canonical OGC URIs like 'http://www.opengis.net/spec/ogcapi-common-1/1.0/req/core/...'"
+      detail: "common.ts:22, deployments.ts:54, etc. Not a conformance bug (internal traceability), but degrades cross-tool interop and OGC CITE alignment. Documented here for Quinn's next pass."
+    - assertion: "Deployments in Collections heuristic (deployments.ts:386-389)"
+      detail: "id === 'deployments' || id === 'deployment' || itemType includes 'deployment'. Spec text not cited in the module. If OGC spec mandates exact string, one of these branches is wrong; if spec is silent, test is guessing."
+
+recommendations:
+  - "BLOCKER: Re-run Gate 2 (Evaluator) against current HEAD. Produce .harness/evaluations/sprint-retro-eval-eval-v2.yaml. Without this artifact, 'RETRY was resolved' is self-report. Until then, retro-eval verdict cannot be APPROVE from any gate."
+  - "Regenerate ops/test-results.md against current HEAD: vitest, tsc, eslint, playwright, conformance fixture validation against api.georobotix.io. Update verdict + counts + bug list. Delete BUG-001/002/003 sections (resolved) or move to 'Previously Resolved'."
+  - "Update ops/known-issues.md (last touched 2026-03-31): add SCENARIO-* traceability gap, filtering-procedure URN fallback, untracked .github/workflows/, stale test-results.md; move '.js import extensions broke Next.js webpack' and 'POST /api/assessments response shape mismatch' to Resolved."
+  - "Backfill ops/metrics.md turn log for all 2026-04-16 work (Gate 4 harness import, adversarial reviewer wiring, this review). Current log ends Turn 30 on 2026-04-02. CLAUDE.md User Input Tracking violation."
+  - "Reconcile all 7 openspec/capabilities/*/spec.md: flip Status to 'Implemented', bump 'Last updated', populate Implementation Status table per REQ (which module, which tests, pass count). Without this, Gate 6 (Spec Reconcile) has never happened for v1.0."
+  - "Commit .github/workflows/ci.yml and release.yml. Or explicitly decide to drop CI, update ops/status.md accordingly. Current state (untracked for 16+ days) is a silent gap."
+  - "Fix filtering.ts:313 — skipResult when procedureId is missing, do not invent 'urn:example:procedure:1'. Open spec clarification for /req/system-by-procedure precondition: 'test SKIPs if no procedure available on the IUT'."
+  - "Add SCENARIO-* IDs to test comments incrementally: start with the 15 critical scenarios listed in sprint-retro-eval.yaml. Target: 100% critical-scenario traceability, then normal."
+  - "Spot-verify _bmad/architecture.md Last Reconciled date; if >30 days old (>= 2026-03-16) flag per CLAUDE.md directive before starting next capability."
+
+severity_summary:
+  blockers: 1   # missing follow-up Gate 2 evaluator artifact against post-fix HEAD
+  gaps: 7       # stale test-results.md, stale known-issues.md, incomplete metrics.md turn log, unreconciled capability specs, untracked .github/workflows, filtering-procedure URN fallback, absent SCENARIO-* traceability
+  concerns: 3   # requirement URI non-canonical, Deployments-in-Collections heuristic undocumented, architecture freshness not verified
+
+schema_friction_notes: |
+  Feedback on the Gate 4 schema (first live run):
+
+  1. `step_1_spec_first`/`step_3_implement` not meaningful for a retro-eval where code predates the harness. I used "N/A" with a comment; schema should explicitly allow N/A (prompt said it does, good).
+  2. `overrides_evaluator: true` is ambiguous when Quinn's verdict (RETRY) was for a different HEAD than what Raze is reviewing. My verdict (GAPS_FOUND) is technically less severe than RETRY, but it applies to post-fix code and cites different gaps. Recommend adding a field like `evaluator_snapshot_commit: "<sha>"` and `adversarial_snapshot_commit: "<sha>"` so the delta is explicit.
+  3. `request_fulfillment.fully_delivered` as a flat list gets unwieldy when the sprint has 39 stories; would benefit from grouping by story or by original-eval-finding-ID. Not a blocker, a nice-to-have.
+  4. No explicit slot for "missing follow-up artifacts" (e.g., missing Gate 2 re-run, missing ops/test-results.md regeneration). I folded these under `gaps` and `recommendations`, but the pattern is distinct enough to deserve its own field: `missing_artifacts: [{path, reason_needed}]`.
+  5. The binary `overrides_evaluator` doesn't capture the "Quinn was right about the pre-fix state, I'm judging the post-fix state" nuance. Consider three values: "agrees", "overrides-upward" (Raze stricter), "overrides-downward" (Raze less strict given new evidence).
+  6. `confidence` is fine as a 0-1 float but would benefit from a note field explaining what drives it down from 1.0 (here: inability to independently re-run E2E + no post-fix Gate 2 artifact).
+  7. Overall: schema is workable for a first run. Friction points above are refinements, not redesigns.

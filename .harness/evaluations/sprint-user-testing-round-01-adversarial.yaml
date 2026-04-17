@@ -1,0 +1,107 @@
+sprint: "user-testing-round-01"
+story: "S10-01..S10-07"
+reviewer: "Raze"
+timestamp: "2026-04-17T01:45Z"
+user_request: "Close the 7 GitHub issues filed by earocorn on 2026-04-16 first-run AND land the 5 framework improvements (2 Gate-1 invariants + 3 Raze rubric extensions) from _bmad/github-issues-audit.md so the same class of gap does not recur."
+verdict: "APPROVE"
+confidence: 0.88
+overrides_evaluator: false
+
+request_fulfillment:
+  fully_delivered:
+    - "Issue #1 (localhost blocked) — ALLOW_PRIVATE_NETWORKS opt-in with startup warning, /api/health flag, landing-page banner, client-side validator relaxation; 8 new ssrf-guard tests; REQ-SSRF-002 + SCENARIO-SSRF-LOCAL-001/002."
+    - "Issue #2 (auth before discovery) — Inline AuthConfigForm on 401/403, retry button, sessionStorage persistence under auth:{sessionId}, pre-loaded on configure page; REQ-AUTH-002 + SCENARIO-AUTH-PROTECTED-001 with Then-level fidelity."
+    - "Issue #3 (Links false positive) — common.ts requires (service-desc|service-doc) AND conformance; self no longer asserted; 5 dedicated regression tests in common-links-normative.test.ts with clear PASS/FAIL cases."
+    - "Issue #4 (recursive $ref bundling) — fetch-schemas.ts rewritten to walk closure; manifest grew to 121 schemas (close to claimed 126); ajv switched to /dist/2020.js; schema-bundle-integrity.test.ts walks every $ref (not a sample)."
+    - "Issue #5 (Part 2 base path) — part2-common.ts endpoints array rewritten to relative paths; part2-update.ts now imports the full-schema bodies; 0 matches for new URL('/ across src/engine/registry/; 13-module mechanical URL test with non-root base URL."
+    - "Issue #6 (Datastream/ControlStream CRUD body) — DATASTREAM_CREATE_BODY / CONTROLSTREAM_CREATE_BODY carry every required property; crud-body-schemas.test.ts validates both against dataStream_create.json / controlStream_create.json with Ajv; part2-update.ts imports rather than duplicating."
+    - "Issue #7 (Observation dynamic schema) — buildObservationBodyForDatastream reads resultType, throws on unsupported types; OBSERVATION_CREATE_BODY derived from DATASTREAM_CREATE_BODY at module load; 4 regression tests."
+    - "Gate 1 invariant 1 (schema-bundle-integrity) — mechanical walk of every $ref in 121 bundled files; not a sample."
+    - "Gate 1 invariant 2 (crud-body-schemas) — validates every authored CRUD body against target OGC schema at test-authoring time."
+    - "Raze 6.1/6.2/6.3 — added to both .harness/prompts/adversarial.md and _bmad/agents/adversarial-reviewer.md with concrete (a)/(b)/(c)/(d) step recipes, not prose; YAML verdict schema extended with url_construction_bugs, dynamic_schema_violations, spec_source_mismatches lists."
+  gaps:
+    - id: "#7 dynamic coupling — compile-time only"
+      issue: "buildObservationBodyForDatastream is called at module load against the HARDCODED DATASTREAM_CREATE_BODY, not against the runtime response body returned by the IUT after POSTing a datastream. The mechanical regression test is therefore 'hardcoded against hardcoded' and only guards the test-authoring coupling, not the runtime coupling that #7 actually describes. For the GitHub issue #7 workflow (insert datastream → receive server body → build observation from server body), the observation POST still uses the static OBSERVATION_CREATE_BODY. The sprint contract's REQ-TEST-DYNAMIC-001 permits this reading, and the immediate bug is closed, but the invariant is weaker than the rubric text implies."
+    - id: "traceability.md — new REQs not indexed"
+      issue: "Four new SCENARIO-* rows were added to the Verified Scenarios table (SCHEMA-REF-001, CRUD-BODY-001, PART2-BASEURL-001, OBS-SCHEMA-001) but REQ-SSRF-002, SCENARIO-SSRF-LOCAL-001/002, REQ-AUTH-002, SCENARIO-AUTH-PROTECTED-001, SCENARIO-LINKS-NORMATIVE-001, and REQ-TEST-CITE-001 are not cross-referenced. Step 8 (Update _bmad) is WEAK."
+    - id: "status.md issue-file mapping"
+      issue: "The Issues table in ops/status.md lists 'datastreams.ts, controlstreams.ts' as the key files for #6 and 'datastreams.ts' for #7. The actual edits live in part2-crud.ts. Readers following the doc to the code will land in the wrong place."
+    - id: "test-results.md miscount"
+      issue: "Claims '+34 tests across 4 new files' — there are 5 new test files (common-links-normative.test.ts is omitted) and 26 tests across them (13+5+4+3+1 = 26), not 34. The test *count* is correct at totals (946); the per-sprint attribution is off."
+    - id: "ops/known-issues.md not reconciled"
+      issue: "The file's Last-updated stamp is 2026-04-16T22:30Z and it lacks any entry closing GitHub #1-#7. Step 7 (Update Ops) is WEAK on that file."
+  scope_creep: []
+  buried_caveats:
+    - "Dev server on :4000 still returns {\"status\":\"ok\"} without allowPrivateNetworks, confirming it was not restarted after the server-side sprint changes — unit tests are authoritative per preamble, so not a blocker, but the live-verification channel is stale."
+
+claude_md_compliance:
+  step_1_spec_first: "OK"
+  step_2_write_tests: "OK"
+  step_3_implement: "OK"
+  step_4_verify: "OK"
+  step_5_e2e_verify: "WEAK"
+  step_6_reconcile_specs: "OK"
+  step_7_update_ops: "WEAK"
+  step_8_update_bmad: "WEAK"
+  notes: |
+    Step 2: New tests cite REQ-*/SCENARIO-* in header comments and describe/it
+    strings (confirmed in common-links-normative, schema-bundle-integrity,
+    crud-body-schemas, part2-url-construction, observation-dynamic-schema).
+    Step 4 (Raze re-ran): vitest 946/946, tsc exit=0, eslint exit=0 (18
+    pre-existing warnings).
+    Step 5: No new Playwright run recorded for this sprint. UI changes to
+    landing-page (auth-required panel, local-dev banner) are unit-tested only.
+    Given the preamble's explicit note that unit + curl suffice and the scope
+    is primarily backend/test-logic, this is acceptable but not ideal.
+    Step 7: ops/status.md updated well; ops/changelog.md updated well;
+    ops/known-issues.md not updated — sprint-level closures for #1-#7 not logged
+    and timestamp is stale.
+    Step 8: New SCENARIO-*s appear in Verified Scenarios table; Recent Gate
+    Runs table does not yet show the Gate-4 verdict for this sprint; REQ-SSRF-002,
+    REQ-AUTH-002, SCENARIO-AUTH-PROTECTED-001, SCENARIO-LINKS-NORMATIVE-001 not
+    indexed in traceability.md.
+
+spec_gaps: []
+
+cross_agent_blind_spots:
+  - id: "Dev server not restarted post server-side changes"
+    issue: "Curl of /api/health shows pre-change response shape (no allowPrivateNetworks). Any in-session end-to-end claim against :4000 reflects pre-sprint server code. Not load-bearing here (Evaluator/Raze relies on unit tests) but must restart before sign-off."
+  - id: "ops/status.md file→issue map inaccurate"
+    issue: "Rows for #6 and #7 cite datastreams.ts/controlstreams.ts; actual source is part2-crud.ts. A reader resolving the fix would miss it."
+
+conformance_correctness:
+  false_positives_found: []
+  false_negatives_found: []
+  url_construction_bugs: []
+  dynamic_schema_violations:
+    - file: "src/engine/registry/part2-crud.ts"
+      parent_type: "DATASTREAM_CREATE_BODY resultType=measure (hardcoded fixture)"
+      child_type: "OBSERVATION_CREATE_BODY.result: number (derived at module load from the hardcoded fixture)"
+      note: "The static-site coupling is correct. The RUNTIME coupling (derive from the datastream returned by the IUT) is not exercised — the test POSTs our hardcoded observation regardless of what the server returned. For GeoRobotix (which advertises a specific resultType), this is benign; for any IUT whose returned datastream differs from our fixture, the observation POST could still mismatch. Flagging as a partial violation of rubric 6.3's runtime intent; not a blocker because the sprint contract reads the coupling at authoring time."
+  assertion_spec_drift:
+    - requirement: "/req/ogcapi-features/items-links"
+      file: "src/engine/registry/features-core.ts:78-82"
+      issue: "Description asserts Items response contains rel=self (and rel=next if paginated). Per rubric 6.1 (just added) and the issue-#3 finding that self is example-only in OGC API Common Part 1 (19-072), the same concern could apply to OGC API Features Part 1 (17-069) /req/core/fc-links. Out of the sprint's literal scope (Features, not Common) — flagging as a future 6.1 target so the pattern does not recur in features-core."
+  spec_source_mismatches: []
+
+framework_improvements:
+  gate_1_schema_bundle_integrity: "OK — walks every $ref in every file, no sampling"
+  gate_1_crud_body_schemas: "OK — validates DS + CS bodies against real OGC schemas"
+  raze_6_1_spec_citation: "OK — concrete (a/b/c/d) steps, matches audit item 6, YAML schema extended with spec_source_mismatches list"
+  raze_6_2_url_construction: "OK — concrete steps; unit-level counterpart lives in part2-url-construction.test.ts"
+  raze_6_3_dynamic_schema: "OK — concrete steps; unit-level counterpart lives in observation-dynamic-schema.test.ts"
+
+recommendations:
+  - "Fix ops/status.md issue-to-file table (#6, #7 → part2-crud.ts, not datastreams.ts/controlstreams.ts)."
+  - "Fix ops/test-results.md test-file count ('+26 tests across 5 new files', list common-links-normative.test.ts alongside the 4 others)."
+  - "Update ops/known-issues.md to note GH #1-#7 closed and refresh timestamp to 2026-04-17."
+  - "Add REQ-SSRF-002, REQ-AUTH-002, SCENARIO-SSRF-LOCAL-001/002, SCENARIO-AUTH-PROTECTED-001, SCENARIO-LINKS-NORMATIVE-001 rows to _bmad/traceability.md Verified Scenarios and/or a new PRD-REQ mapping."
+  - "Add a row to traceability.md Recent Gate Runs table for sprint user-testing-round-01 Gate 4 APPROVE."
+  - "Consider a runtime-coupling extension of #7: in the CRUD observation-insert test, read the datastream body returned by the IUT (or our own POST echo) and re-derive the observation result from the server's resultType before POSTing. This closes the remaining interpretation of rubric 6.3."
+  - "Audit other assertions that cite rel=self (e.g. features-core.ts /req/ogcapi-features/items-links) per the newly-active rubric 6.1 — same class of false-positive risk that issue #3 exposed."
+  - "Restart the dev server (PORT=4000 CSAPI_PORT=4000 npm run dev) so /api/health reflects the new allowPrivateNetworks field and any future live-curl checks remain valid."
+
+severity_summary:
+  blockers: 0
+  gaps: 5
+  concerns: 3

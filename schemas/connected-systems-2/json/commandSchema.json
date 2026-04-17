@@ -3,22 +3,23 @@
   "oneOf": [
     {
       "title": "JSON",
-      "$ref": "commandSchemaJson.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaJson.json"
     },
     {
       "title": "SWE Common",
-      "$ref": "commandSchemaSwe.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaSwe.json"
     },
     {
       "title": "Protobuf",
-      "$ref": "commandSchemaProtobuf.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaProtobuf.json"
     },
     {
       "title": "Other format",
-      "$ref": "commandSchemaAnyOther.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaAnyOther.json"
     }
   ],
   "required": [
     "commandFormat"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchema.json"
 }

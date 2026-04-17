@@ -1,4 +1,8 @@
 // Unit tests for OGC API Common Part 1 Core conformance class test module (S02-01).
+// SCENARIO-TEST-PASS-001: Conformance tests produce correct PASS verdicts for conformant responses (CRITICAL)
+// SCENARIO-TEST-PASS-002: Conformance tests produce correct FAIL verdicts for non-conformant responses (CRITICAL)
+// Note: these two scenarios are exercised by every module in tests/unit/engine/registry/;
+// this file is the canonical reference for both.
 
 import { describe, it, expect, vi } from 'vitest';
 import { commonTestModule } from '@/engine/registry/common';

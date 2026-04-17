@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A time tagged event with description and relevant property values.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/AbstractSWEIdentifiable"
+    },
+    {
+      "properties": {
+        "definition": {
+          "description": "Type of event (semantic link)",
+          "type": "string",
+          "format": "uri"
+        },
+        "identifiers": {
+          "description": "Additional identifiers for the event, useful for discovery.",
+          "type": "array",
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/Term"
+          }
+        },
+        "classifiers": {
+          "description": "Additional classifiers for the event, useful for discovery.",
+          "type": "array",
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/Term"
+          }
+        },
+        "contacts": {
+          "description": "The list of contacts relevant to this event",
+          "type": "array",
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/ResponsibleParty.json"
+          }
+        },
+        "documentation": {
+          "description": "Additional documentation relevant to this event",
+          "type": "array",
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Document.json"
+          }
+        },
+        "time": {
+          "description": "Time of the event",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/TimeInstantOrPeriod"
+        },
+        "properties": {
+          "description": "A list of additional properties of interest to the event (e.g., calibration values, condition category, error codes, etc).",
+          "type": "array",
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/AnyProperty"
+          }
+        },
+        "configuration": {
+          "description": "Configuration settings adjusted during the event.",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Settings.json"
+        }
+      },
+      "required": [
+        "label",
+        "time"
+      ]
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Event.json"
+}

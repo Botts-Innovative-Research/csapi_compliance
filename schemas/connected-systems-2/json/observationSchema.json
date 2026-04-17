@@ -3,22 +3,23 @@
   "oneOf": [
     {
       "title": "JSON",
-      "$ref": "observationSchemaJson.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchemaJson.json"
     },
     {
       "title": "SWE Common",
-      "$ref": "observationSchemaSwe.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchemaSwe.json"
     },
     {
       "title": "Protobuf",
-      "$ref": "observationSchemaProtobuf.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchemaProtobuf.json"
     },
     {
       "title": "Other format",
-      "$ref": "observationSchemaAnyOther.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchemaAnyOther.json"
     }
   ],
   "required": [
     "obsFormat"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchema.json"
 }

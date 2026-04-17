@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://geojson.org/schema/FeatureCollection.json",
+  "title": "GeoJSON FeatureCollection (stub)",
+  "description": "Permissive stub for GeoJSON FeatureCollection, bundled so OGC CS schemas with $ref to https://geojson.org/schema/FeatureCollection.json can be compiled offline.",
+  "type": "object"
+}

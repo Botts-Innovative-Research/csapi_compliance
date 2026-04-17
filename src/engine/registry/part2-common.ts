@@ -53,8 +53,11 @@ export const part2CommonClassDef: ConformanceClassDefinition = {
 async function testResources(ctx: TestContext) {
   const start = Date.now();
   try {
-    // Test that at least one Part 2 resource endpoint is accessible
-    const endpoints = ['/datastreams', '/observations', '/controlstreams', '/commands'];
+    // Test that at least one Part 2 resource endpoint is accessible.
+    // REQ-PART2-BASEURL-001 (SCENARIO-PART2-BASEURL-001): paths are
+    // relative (no leading slash) so `new URL(endpoint, ctx.baseUrl)`
+    // preserves every segment of the IUT base path (e.g. /sensorhub/api/).
+    const endpoints = ['datastreams', 'observations', 'controlstreams', 'commands'];
     const exchangeIds: string[] = [];
     let anyAccessible = false;
     const results: string[] = [];

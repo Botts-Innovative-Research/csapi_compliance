@@ -1,449 +1,731 @@
 {
-  "generatedAt": "2026-04-02T17:46:03.299Z",
+  "generatedAt": "2026-04-17T01:18:41.614Z",
   "schemas": [
     {
       "schemaId": "connected-systems-1/common/batch_delete.json",
       "file": "connected-systems-1/common/batch_delete.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:47.437Z"
+      "fetchedAt": "2026-04-17T01:18:38.767Z"
     },
     {
       "schemaId": "connected-systems-1/common/batch_response.json",
       "file": "connected-systems-1/common/batch_response.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:47.600Z"
+      "fetchedAt": "2026-04-17T01:18:38.767Z"
     },
     {
       "schemaId": "connected-systems-1/common/commonDefs.json",
       "file": "connected-systems-1/common/commonDefs.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:47.800Z"
+      "fetchedAt": "2026-04-17T01:18:38.768Z"
     },
     {
       "schemaId": "connected-systems-1/common/links.json",
       "file": "connected-systems-1/common/links.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:48.305Z"
+      "fetchedAt": "2026-04-17T01:18:38.769Z"
     },
     {
       "schemaId": "connected-systems-1/common/uris.json",
       "file": "connected-systems-1/common/uris.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:48.579Z"
+      "fetchedAt": "2026-04-17T01:18:38.770Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deployedSystem.json",
       "file": "connected-systems-1/geojson/deployedSystem.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:48.704Z"
+      "fetchedAt": "2026-04-17T01:18:38.771Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deployedSystemArray.json",
       "file": "connected-systems-1/geojson/deployedSystemArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:49.347Z"
+      "fetchedAt": "2026-04-17T01:18:38.771Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deployedSystemCollection.json",
       "file": "connected-systems-1/geojson/deployedSystemCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:49.494Z"
+      "fetchedAt": "2026-04-17T01:18:38.772Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deployment.json",
       "file": "connected-systems-1/geojson/deployment.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:49.627Z"
+      "fetchedAt": "2026-04-17T01:18:38.773Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deploymentArray.json",
       "file": "connected-systems-1/geojson/deploymentArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:49.780Z"
+      "fetchedAt": "2026-04-17T01:18:38.773Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/deploymentCollection.json",
       "file": "connected-systems-1/geojson/deploymentCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:49.932Z"
+      "fetchedAt": "2026-04-17T01:18:38.774Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/feature.json",
       "file": "connected-systems-1/geojson/feature.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:50.139Z"
+      "fetchedAt": "2026-04-17T01:18:38.775Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/procedure.json",
       "file": "connected-systems-1/geojson/procedure.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:50.281Z"
+      "fetchedAt": "2026-04-17T01:18:38.775Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/procedureArray.json",
       "file": "connected-systems-1/geojson/procedureArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:50.446Z"
+      "fetchedAt": "2026-04-17T01:18:38.776Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/procedureCollection.json",
       "file": "connected-systems-1/geojson/procedureCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:50.698Z"
+      "fetchedAt": "2026-04-17T01:18:38.776Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/samplingFeature.json",
       "file": "connected-systems-1/geojson/samplingFeature.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:50.947Z"
+      "fetchedAt": "2026-04-17T01:18:38.777Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/samplingFeatureArray.json",
       "file": "connected-systems-1/geojson/samplingFeatureArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:51.110Z"
+      "fetchedAt": "2026-04-17T01:18:38.777Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/samplingFeatureCollection.json",
       "file": "connected-systems-1/geojson/samplingFeatureCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:51.261Z"
+      "fetchedAt": "2026-04-17T01:18:38.778Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/system.json",
       "file": "connected-systems-1/geojson/system.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:51.488Z"
+      "fetchedAt": "2026-04-17T01:18:38.779Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/systemArray.json",
       "file": "connected-systems-1/geojson/systemArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:51.713Z"
+      "fetchedAt": "2026-04-17T01:18:38.780Z"
     },
     {
       "schemaId": "connected-systems-1/geojson/systemCollection.json",
       "file": "connected-systems-1/geojson/systemCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:51.844Z"
+      "fetchedAt": "2026-04-17T01:18:38.780Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deployedSystem.json",
       "file": "connected-systems-1/sensorml/deployedSystem.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.012Z"
+      "fetchedAt": "2026-04-17T01:18:38.781Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deployedSystemArray.json",
       "file": "connected-systems-1/sensorml/deployedSystemArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.246Z"
+      "fetchedAt": "2026-04-17T01:18:38.781Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deployedSystemCollection.json",
       "file": "connected-systems-1/sensorml/deployedSystemCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.411Z"
+      "fetchedAt": "2026-04-17T01:18:38.782Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deployment.json",
       "file": "connected-systems-1/sensorml/deployment.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.555Z"
+      "fetchedAt": "2026-04-17T01:18:38.783Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deploymentArray.json",
       "file": "connected-systems-1/sensorml/deploymentArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.726Z"
+      "fetchedAt": "2026-04-17T01:18:38.783Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/deploymentCollection.json",
       "file": "connected-systems-1/sensorml/deploymentCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.850Z"
+      "fetchedAt": "2026-04-17T01:18:38.785Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/procedure.json",
       "file": "connected-systems-1/sensorml/procedure.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:52.982Z"
+      "fetchedAt": "2026-04-17T01:18:38.785Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/procedureArray.json",
       "file": "connected-systems-1/sensorml/procedureArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.105Z"
+      "fetchedAt": "2026-04-17T01:18:38.787Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/procedureCollection.json",
       "file": "connected-systems-1/sensorml/procedureCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.214Z"
+      "fetchedAt": "2026-04-17T01:18:38.787Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/property.json",
       "file": "connected-systems-1/sensorml/property.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.366Z"
+      "fetchedAt": "2026-04-17T01:18:38.788Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/propertyArray.json",
       "file": "connected-systems-1/sensorml/propertyArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.551Z"
+      "fetchedAt": "2026-04-17T01:18:38.789Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/propertyCollection.json",
       "file": "connected-systems-1/sensorml/propertyCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.666Z"
+      "fetchedAt": "2026-04-17T01:18:38.790Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/sensormlDefs.json",
       "file": "connected-systems-1/sensorml/sensormlDefs.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.798Z"
+      "fetchedAt": "2026-04-17T01:18:38.791Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/system.json",
       "file": "connected-systems-1/sensorml/system.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:53.920Z"
+      "fetchedAt": "2026-04-17T01:18:38.791Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/systemArray.json",
       "file": "connected-systems-1/sensorml/systemArray.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:54.067Z"
+      "fetchedAt": "2026-04-17T01:18:38.792Z"
     },
     {
       "schemaId": "connected-systems-1/sensorml/systemCollection.json",
       "file": "connected-systems-1/sensorml/systemCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:54.599Z"
+      "fetchedAt": "2026-04-17T01:18:38.793Z"
     },
     {
       "schemaId": "connected-systems-2/common/commonDefs.json",
       "file": "connected-systems-2/common/commonDefs.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:54.805Z"
+      "fetchedAt": "2026-04-17T01:18:38.793Z"
     },
     {
       "schemaId": "connected-systems-2/common/sensormlDefs.json",
       "file": "connected-systems-2/common/sensormlDefs.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:54.963Z"
+      "fetchedAt": "2026-04-17T01:18:38.794Z"
     },
     {
       "schemaId": "connected-systems-2/common/sweCommonDefs.json",
       "file": "connected-systems-2/common/sweCommonDefs.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:55.116Z"
+      "fetchedAt": "2026-04-17T01:18:38.794Z"
     },
     {
       "schemaId": "connected-systems-2/json/baseStream.json",
       "file": "connected-systems-2/json/baseStream.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:55.278Z"
+      "fetchedAt": "2026-04-17T01:18:38.795Z"
     },
     {
       "schemaId": "connected-systems-2/json/command.json",
       "file": "connected-systems-2/json/command.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:55.448Z"
+      "fetchedAt": "2026-04-17T01:18:38.795Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandCollection.json",
       "file": "connected-systems-2/json/commandCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:55.673Z"
+      "fetchedAt": "2026-04-17T01:18:38.796Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandResult.json",
       "file": "connected-systems-2/json/commandResult.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.035Z"
+      "fetchedAt": "2026-04-17T01:18:38.796Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandResultCollection.json",
       "file": "connected-systems-2/json/commandResultCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.176Z"
+      "fetchedAt": "2026-04-17T01:18:38.797Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandSchema.json",
       "file": "connected-systems-2/json/commandSchema.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.421Z"
+      "fetchedAt": "2026-04-17T01:18:38.798Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandSchemaAnyOther.json",
       "file": "connected-systems-2/json/commandSchemaAnyOther.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.573Z"
+      "fetchedAt": "2026-04-17T01:18:38.799Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandSchemaJson.json",
       "file": "connected-systems-2/json/commandSchemaJson.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.721Z"
+      "fetchedAt": "2026-04-17T01:18:38.799Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandSchemaProtobuf.json",
       "file": "connected-systems-2/json/commandSchemaProtobuf.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.862Z"
+      "fetchedAt": "2026-04-17T01:18:38.800Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandSchemaSwe.json",
       "file": "connected-systems-2/json/commandSchemaSwe.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:56.985Z"
+      "fetchedAt": "2026-04-17T01:18:38.800Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandStatus.json",
       "file": "connected-systems-2/json/commandStatus.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:57.160Z"
+      "fetchedAt": "2026-04-17T01:18:38.801Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandStatusCode.json",
       "file": "connected-systems-2/json/commandStatusCode.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:57.659Z"
+      "fetchedAt": "2026-04-17T01:18:38.802Z"
     },
     {
       "schemaId": "connected-systems-2/json/commandStatusCollection.json",
       "file": "connected-systems-2/json/commandStatusCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:57.770Z"
+      "fetchedAt": "2026-04-17T01:18:38.803Z"
     },
     {
       "schemaId": "connected-systems-2/json/controlStream.json",
       "file": "connected-systems-2/json/controlStream.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:57.900Z"
+      "fetchedAt": "2026-04-17T01:18:38.803Z"
     },
     {
       "schemaId": "connected-systems-2/json/controlStreamCollection.json",
       "file": "connected-systems-2/json/controlStreamCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.012Z"
+      "fetchedAt": "2026-04-17T01:18:38.805Z"
     },
     {
       "schemaId": "connected-systems-2/json/controlStream_create.json",
       "file": "connected-systems-2/json/controlStream_create.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.236Z"
+      "fetchedAt": "2026-04-17T01:18:38.806Z"
     },
     {
       "schemaId": "connected-systems-2/json/dataStream.json",
       "file": "connected-systems-2/json/dataStream.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.373Z"
+      "fetchedAt": "2026-04-17T01:18:38.808Z"
     },
     {
       "schemaId": "connected-systems-2/json/dataStreamCollection.json",
       "file": "connected-systems-2/json/dataStreamCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.615Z"
+      "fetchedAt": "2026-04-17T01:18:38.808Z"
     },
     {
       "schemaId": "connected-systems-2/json/dataStreamSchemaDef.json",
       "file": "connected-systems-2/json/dataStreamSchemaDef.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.742Z"
+      "fetchedAt": "2026-04-17T01:18:38.809Z"
     },
     {
       "schemaId": "connected-systems-2/json/dataStream_create.json",
       "file": "connected-systems-2/json/dataStream_create.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.857Z"
+      "fetchedAt": "2026-04-17T01:18:38.809Z"
     },
     {
       "schemaId": "connected-systems-2/json/observation.json",
       "file": "connected-systems-2/json/observation.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:58.979Z"
+      "fetchedAt": "2026-04-17T01:18:38.810Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationCollection.json",
       "file": "connected-systems-2/json/observationCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.122Z"
+      "fetchedAt": "2026-04-17T01:18:38.811Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationSchema.json",
       "file": "connected-systems-2/json/observationSchema.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.296Z"
+      "fetchedAt": "2026-04-17T01:18:38.811Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationSchemaAnyOther.json",
       "file": "connected-systems-2/json/observationSchemaAnyOther.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.430Z"
+      "fetchedAt": "2026-04-17T01:18:38.812Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationSchemaJson.json",
       "file": "connected-systems-2/json/observationSchemaJson.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.634Z"
+      "fetchedAt": "2026-04-17T01:18:38.813Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationSchemaProtobuf.json",
       "file": "connected-systems-2/json/observationSchemaProtobuf.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.784Z"
+      "fetchedAt": "2026-04-17T01:18:38.814Z"
     },
     {
       "schemaId": "connected-systems-2/json/observationSchemaSwe.json",
       "file": "connected-systems-2/json/observationSchemaSwe.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:45:59.898Z"
+      "fetchedAt": "2026-04-17T01:18:38.814Z"
     },
     {
       "schemaId": "connected-systems-2/json/systemEvent.json",
       "file": "connected-systems-2/json/systemEvent.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:46:00.008Z"
+      "fetchedAt": "2026-04-17T01:18:38.815Z"
     },
     {
       "schemaId": "connected-systems-2/json/systemEventCollection.json",
       "file": "connected-systems-2/json/systemEventCollection.json",
       "source": "github-repo",
-      "fetchedAt": "2026-04-02T17:46:00.134Z"
+      "fetchedAt": "2026-04-17T01:18:38.815Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/common/timeInstant.json",
+      "file": "connected-systems-shared/common/timeInstant.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.816Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/common/timePeriod.json",
+      "file": "connected-systems-shared/common/timePeriod.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.817Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/common/link.json",
+      "file": "connected-systems-shared/common/link.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.818Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/DescribedObject.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/DescribedObject.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.819Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/AbstractProcess.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/AbstractProcess.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.819Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/PhysicalComponent.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/PhysicalComponent.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.820Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/PhysicalSystem.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/PhysicalSystem.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.821Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/SimpleProcess.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/SimpleProcess.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.822Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/AggregateProcess.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/AggregateProcess.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.823Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Deployment.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Deployment.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.823Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/DeployedSystem.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/DeployedSystem.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.824Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/DerivedProperty.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/DerivedProperty.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.824Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Pose.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Pose.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.825Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Event.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Event.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.826Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/sweCommon.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/sweCommon.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.826Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/DataRecord.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/DataRecord.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.827Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Time.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Time.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.828Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Category.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Category.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.828Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/encodings.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/encodings.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.829Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/common/timeInstantOrNow.json",
+      "file": "connected-systems-shared/common/timeInstantOrNow.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.830Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/commonDefs.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/commonDefs.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.831Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/LegalConstraint.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/LegalConstraint.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.831Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/ResponsibleParty.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/ResponsibleParty.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.832Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/ContactLink.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/ContactLink.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.832Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Document.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Document.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.833Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.833Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Settings.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Settings.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.834Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/Mode.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/Mode.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.835Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/sensorml/schemas/json/AbstractPhysicalProcess.json",
+      "file": "connected-systems-shared/sensorml/schemas/json/AbstractPhysicalProcess.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.836Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Vector.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Vector.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.836Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/DataArray.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/DataArray.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.837Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Matrix.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Matrix.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.837Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/DataChoice.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/DataChoice.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.838Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Geometry.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Geometry.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.839Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/CountRange.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/CountRange.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.840Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/QuantityRange.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/QuantityRange.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.840Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/TimeRange.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/TimeRange.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.841Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/CategoryRange.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/CategoryRange.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.841Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Boolean.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Boolean.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.842Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Count.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Count.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.843Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Quantity.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Quantity.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.843Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/Text.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/Text.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.844Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/DataStream.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/DataStream.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.845Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/AbstractDataComponent.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/AbstractDataComponent.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.846Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/basicTypes.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/basicTypes.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.846Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/AbstractSimpleComponent.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/AbstractSimpleComponent.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.848Z"
+    },
+    {
+      "schemaId": "connected-systems-shared/swecommon/schemas/json/AbstractSweIdentifiable.json",
+      "file": "connected-systems-shared/swecommon/schemas/json/AbstractSweIdentifiable.json",
+      "source": "github-recursive",
+      "fetchedAt": "2026-04-17T01:18:38.848Z"
     },
     {
       "schemaId": "fallback/landing-page.json",
       "file": "fallback/landing-page.json",
       "source": "fallback",
-      "fetchedAt": "2026-04-02T17:46:03.291Z"
+      "fetchedAt": "2026-04-17T01:18:41.611Z"
     },
     {
       "schemaId": "fallback/conf-classes.json",
       "file": "fallback/conf-classes.json",
       "source": "fallback",
-      "fetchedAt": "2026-04-02T17:46:03.293Z"
+      "fetchedAt": "2026-04-17T01:18:41.612Z"
     },
     {
       "schemaId": "fallback/collection.json",
       "file": "fallback/collection.json",
       "source": "fallback",
-      "fetchedAt": "2026-04-02T17:46:03.295Z"
+      "fetchedAt": "2026-04-17T01:18:41.612Z"
     },
     {
       "schemaId": "fallback/feature.json",
       "file": "fallback/feature.json",
       "source": "fallback",
-      "fetchedAt": "2026-04-02T17:46:03.297Z"
+      "fetchedAt": "2026-04-17T01:18:41.613Z"
     },
     {
       "schemaId": "fallback/feature-collection.json",
       "file": "fallback/feature-collection.json",
       "source": "fallback",
-      "fetchedAt": "2026-04-02T17:46:03.299Z"
+      "fetchedAt": "2026-04-17T01:18:41.614Z"
     }
   ]
 }

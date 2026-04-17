@@ -9,6 +9,19 @@
  * schemas split across individual JSON files in the repository, rather than
  * inline `components.schemas`. This script fetches those JSON files directly.
  *
+ * REQ-SCHEMA-001 (SCENARIO-SCHEMA-REF-001): After fetch, every bundled schema's
+ * $ref values must resolve to either (a) a fragment (#...) within the same
+ * file, or (b) another bundled file under schemas/. To satisfy this, the
+ * script performs a recursive closure walk:
+ *   1. Seed with the curated list of CS Part 1 / Part 2 schemas.
+ *   2. For each fetched schema, scan every $ref value. Resolve non-fragment
+ *      refs against the schema's GitHub source URL to produce an absolute URL.
+ *   3. If the absolute URL is not yet bundled, assign it a local path, fetch
+ *      it, and enqueue it for processing. Repeat until closure is stable.
+ *   4. Rewrite every non-fragment $ref in each fetched schema to a relative
+ *      path from the containing file's local path to the referenced file's
+ *      local path (preserving the #fragment, if any).
+ *
  * Usage: npx tsx scripts/fetch-schemas.ts
  *
  * This script is idempotent and safe to re-run. If fetching from GitHub
@@ -16,7 +29,7 @@
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, posix, relative, resolve } from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -27,8 +40,8 @@ const SCHEMAS_DIR = join(PROJECT_ROOT, 'schemas');
 const FALLBACK_DIR = join(SCHEMAS_DIR, 'fallback');
 const MANIFEST_PATH = join(SCHEMAS_DIR, 'manifest.json');
 
-const GITHUB_RAW_BASE =
-  'https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api';
+const GITHUB_REPO_ROOT =
+  'https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/';
 
 /**
  * Connected Systems Part 1 JSON schema files, organized by sub-directory
@@ -165,13 +178,28 @@ const OGC_FEATURES_SCHEMAS: Record<string, string> = {
 interface ManifestEntry {
   schemaId: string;
   file: string;
-  source: 'github-repo' | 'ogc-schema-server' | 'fallback';
+  source: 'github-repo' | 'ogc-schema-server' | 'fallback' | 'github-recursive';
   fetchedAt: string;
 }
 
 interface Manifest {
   generatedAt: string;
   schemas: ManifestEntry[];
+}
+
+/**
+ * A fetched schema pending local storage. We keep the parsed object in memory
+ * so we can rewrite its refs after closure completes.
+ */
+interface FetchedSchema {
+  /** The absolute source URL this schema was fetched from. */
+  sourceUrl: string;
+  /** The local path (relative to SCHEMAS_DIR) where this schema will be written. */
+  localPath: string;
+  /** Parsed schema object. */
+  body: unknown;
+  /** Where it came from, for manifest reporting. */
+  source: ManifestEntry['source'];
 }
 
 // ---------------------------------------------------------------------------
@@ -206,76 +234,248 @@ async function fetchText(url: string): Promise<string | null> {
   }
 }
 
-async function fetchJsonText(url: string): Promise<string | null> {
+async function fetchJson(url: string): Promise<unknown | null> {
   const text = await fetchText(url);
   if (!text) return null;
-  // Validate it's parseable JSON
   try {
-    JSON.parse(text);
-    return text;
+    return JSON.parse(text) as unknown;
   } catch {
     warn(`Invalid JSON from ${url}`);
     return null;
   }
 }
 
-async function writeSchema(filePath: string, content: string): Promise<void> {
-  // Re-format for consistent style
-  const schema = JSON.parse(content);
-  const formatted = JSON.stringify(schema, null, 2) + '\n';
-  await writeFile(filePath, formatted, 'utf-8');
-}
-
-async function writeSchemaObject(filePath: string, schema: unknown): Promise<void> {
+async function writeSchemaObject(
+  filePath: string,
+  schema: unknown,
+): Promise<void> {
+  await ensureDir(dirname(filePath));
   const content = JSON.stringify(schema, null, 2) + '\n';
   await writeFile(filePath, content, 'utf-8');
 }
 
-// ---------------------------------------------------------------------------
-// Phase 1: Fetch Connected Systems schema files from GitHub
-// ---------------------------------------------------------------------------
+/**
+ * Given a source URL on the OGC Connected Systems repo, compute a canonical
+ * local path (within schemas/) to store the schema file at.
+ *
+ * Known mappings:
+ *   api/part1/openapi/schemas/<sub>/<file> -> connected-systems-1/<sub>/<file>
+ *   api/part2/openapi/schemas/<sub>/<file> -> connected-systems-2/<sub>/<file>
+ *
+ * Everything else (e.g. common/, sensorml/schemas/json/, swecommon/schemas/json/)
+ * goes under connected-systems-shared/<repo-relative-path>.
+ */
+function computeLocalPathForSource(sourceUrl: string): string {
+  if (sourceUrl.startsWith(GITHUB_REPO_ROOT)) {
+    const rel = sourceUrl.slice(GITHUB_REPO_ROOT.length);
+    const part1 = rel.match(/^api\/part1\/openapi\/schemas\/(.+)$/);
+    if (part1) {
+      return posix.join('connected-systems-1', part1[1]);
+    }
+    const part2 = rel.match(/^api\/part2\/openapi\/schemas\/(.+)$/);
+    if (part2) {
+      return posix.join('connected-systems-2', part2[1]);
+    }
+    return posix.join('connected-systems-shared', rel);
+  }
+  // Schemas fetched from the OGC schemas server: store under dedicated dirs
+  // (handled separately by fetchOgcSchemas so we shouldn't hit this).
+  const u = new URL(sourceUrl);
+  return posix.join('external', u.hostname, u.pathname.replace(/^\//, ''));
+}
 
-async function fetchGitHubSchemas(
-  partName: string,
-  partDir: string,
-  schemaMap: Record<string, string[]>,
-  manifest: ManifestEntry[],
-): Promise<number> {
-  let count = 0;
-
-  for (const [subDir, files] of Object.entries(schemaMap)) {
-    // Local output: schemas/connected-systems-1/{subDir}/{file}
-    // e.g. schemas/connected-systems-1/geojson/system.json
-    const localSubDir = subDir.replace('schemas/', '');
-    const outDir = join(SCHEMAS_DIR, partName, localSubDir);
-    await ensureDir(outDir);
-
-    for (const fileName of files) {
-      const url = `${GITHUB_RAW_BASE}/${partDir}/openapi/${subDir}/${fileName}`;
-      log(`  Fetching ${partName}/${localSubDir}/${fileName}`);
-      const content = await fetchJsonText(url);
-      if (!content) {
-        warn(`  Could not fetch ${fileName} from ${url}`);
-        continue;
+/**
+ * Walk an arbitrary JSON value and invoke `visit` for every `$ref` string
+ * encountered at any nesting depth.
+ */
+function walkRefs(
+  node: unknown,
+  visit: (refValue: string, setValue: (next: string) => void) => void,
+): void {
+  if (Array.isArray(node)) {
+    for (const item of node) walkRefs(item, visit);
+    return;
+  }
+  if (node && typeof node === 'object') {
+    const obj = node as Record<string, unknown>;
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === '$ref' && typeof value === 'string') {
+        visit(value, (next) => {
+          obj[key] = next;
+        });
+      } else {
+        walkRefs(value, visit);
       }
-      const filePath = join(outDir, fileName);
-      await writeSchema(filePath, content);
-      const schemaId = `${partName}/${localSubDir}/${fileName}`;
-      manifest.push({
-        schemaId,
-        file: schemaId,
-        source: 'github-repo',
-        fetchedAt: new Date().toISOString(),
-      });
-      count++;
     }
   }
+}
 
-  return count;
+/**
+ * Split a ref value into its URL part and (optional) fragment.
+ * e.g. "foo.json#/$defs/X" -> ["foo.json", "/$defs/X"]
+ *      "#/$defs/X"         -> ["", "/$defs/X"]
+ *      "foo.json"          -> ["foo.json", ""]
+ */
+function splitRef(ref: string): [string, string] {
+  const idx = ref.indexOf('#');
+  if (idx < 0) return [ref, ''];
+  return [ref.slice(0, idx), idx < ref.length - 1 ? ref.slice(idx) : '#'];
+}
+
+/**
+ * Return true if a URL lives on the OGC connected-systems GitHub repo root.
+ * Absolute external URLs (geojson.org, swecommon schemas, etc.) are treated
+ * as "leave as-is" refs and are not recursively fetched.
+ */
+function isRepoUrl(url: string): boolean {
+  return url.startsWith(GITHUB_REPO_ROOT);
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2: Fetch individual OGC schema files from schemas server
+// Recursive fetch closure
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the closure of schemas starting from the given seeds. Returns a
+ * map of sourceUrl → FetchedSchema. All refs inside the returned schemas
+ * are rewritten to be relative paths between local files.
+ */
+async function fetchClosure(
+  seeds: Array<{ url: string; localPath: string; source: ManifestEntry['source'] }>,
+): Promise<Map<string, FetchedSchema>> {
+  const bySourceUrl = new Map<string, FetchedSchema>();
+  const queue: Array<{ url: string; localPath: string; source: ManifestEntry['source'] }> = [];
+
+  for (const seed of seeds) {
+    if (bySourceUrl.has(seed.url)) continue;
+    bySourceUrl.set(seed.url, {
+      sourceUrl: seed.url,
+      localPath: seed.localPath,
+      body: undefined,
+      source: seed.source,
+    });
+    queue.push(seed);
+  }
+
+  while (queue.length > 0) {
+    const item = queue.shift()!;
+    const existing = bySourceUrl.get(item.url);
+    if (existing && existing.body !== undefined) continue;
+
+    const body = await fetchJson(item.url);
+    if (body === null) {
+      warn(`  Could not fetch ${item.url}; dropping`);
+      bySourceUrl.delete(item.url);
+      continue;
+    }
+
+    // Record the fetched body.
+    const entry = bySourceUrl.get(item.url);
+    if (!entry) continue;
+    entry.body = body;
+
+    // Discover refs and enqueue new targets.
+    walkRefs(body, (refValue) => {
+      const [refPath, fragment] = splitRef(refValue);
+      if (refPath === '') return; // pure fragment — local to same file
+      if (/^https?:/i.test(refPath)) {
+        // Absolute external URL — if it points to the same repo root, we
+        // can recursively fetch. Otherwise (e.g. https://geojson.org/...)
+        // leave as-is; Ajv will either resolve via network or ignore.
+        if (isRepoUrl(refPath)) {
+          if (!bySourceUrl.has(refPath)) {
+            const localPath = computeLocalPathForSource(refPath);
+            bySourceUrl.set(refPath, {
+              sourceUrl: refPath,
+              localPath,
+              body: undefined,
+              source: 'github-recursive',
+            });
+            queue.push({ url: refPath, localPath, source: 'github-recursive' });
+          }
+        }
+        return;
+      }
+
+      // Relative ref — resolve against the containing file's source URL.
+      let targetUrl: URL;
+      try {
+        targetUrl = new URL(refPath, item.url);
+      } catch {
+        warn(`  Invalid ref "${refValue}" in ${item.url}`);
+        return;
+      }
+
+      const targetUrlStr = targetUrl.toString();
+      if (!bySourceUrl.has(targetUrlStr)) {
+        if (!isRepoUrl(targetUrlStr)) {
+          warn(`  Ref target outside repo: ${targetUrlStr} (from ${item.url})`);
+          return;
+        }
+        const localPath = computeLocalPathForSource(targetUrlStr);
+        bySourceUrl.set(targetUrlStr, {
+          sourceUrl: targetUrlStr,
+          localPath,
+          body: undefined,
+          source: 'github-recursive',
+        });
+        queue.push({ url: targetUrlStr, localPath, source: 'github-recursive' });
+      }
+      void fragment; // fragment is preserved during rewrite below
+    });
+  }
+
+  // Now rewrite refs in every fetched schema to use relative local paths.
+  // Relative paths (e.g. "../../foo/bar.json") are resolved by Ajv against
+  // the schema's base URI. Because our registration IDs don't use a URI
+  // scheme, we assign each schema an explicit $id using the dedicated
+  // `BUNDLE_IRI_BASE` namespace so Ajv's URI resolver can dereference
+  // relative and sibling refs reliably.
+  for (const schema of bySourceUrl.values()) {
+    if (schema.body === undefined) continue;
+    walkRefs(schema.body, (refValue, setValue) => {
+      const [refPath, fragment] = splitRef(refValue);
+      if (refPath === '') return; // pure fragment, unchanged
+
+      // Resolve to absolute URL
+      let absoluteUrl: string;
+      if (/^https?:/i.test(refPath)) {
+        absoluteUrl = refPath;
+      } else {
+        try {
+          absoluteUrl = new URL(refPath, schema.sourceUrl).toString();
+        } catch {
+          return;
+        }
+      }
+
+      const target = bySourceUrl.get(absoluteUrl);
+      if (!target) return; // kept as external (e.g. geojson.org)
+      // Rewrite to a canonical bundle IRI so Ajv's URI resolver can
+      // dereference regardless of where the file is registered from.
+      const bundledIri = `${BUNDLE_IRI_BASE}${target.localPath}`;
+      setValue(fragment ? `${bundledIri}${fragment}` : bundledIri);
+    });
+
+    // Set / overwrite $id to the canonical bundle IRI so refs resolve.
+    if (schema.body && typeof schema.body === 'object' && !Array.isArray(schema.body)) {
+      (schema.body as Record<string, unknown>).$id = `${BUNDLE_IRI_BASE}${schema.localPath}`;
+    }
+  }
+
+  return bySourceUrl;
+}
+
+/**
+ * All bundled OGC schemas are assigned an $id in this dedicated IRI
+ * namespace so Ajv's URI resolver can dereference any $ref regardless of
+ * on-disk layout. The IRI is not dereferenceable (no HTTP fetch); it is
+ * purely a stable key used during schema registration and validation.
+ */
+const BUNDLE_IRI_BASE = 'https://csapi-compliance.local/schemas/';
+
+// ---------------------------------------------------------------------------
+// OGC schema server fetch (no recursion — these are leaf schemas)
 // ---------------------------------------------------------------------------
 
 async function fetchOgcSchemas(
@@ -289,13 +489,13 @@ async function fetchOgcSchemas(
   let count = 0;
   for (const [fileName, url] of Object.entries(schemaUrls)) {
     log(`  Fetching ${dirName}/${fileName}`);
-    const content = await fetchJsonText(url);
-    if (!content) {
+    const body = await fetchJson(url);
+    if (body === null) {
       warn(`  Could not fetch ${fileName} from ${url}`);
       continue;
     }
     const filePath = join(outDir, fileName);
-    await writeSchema(filePath, content);
+    await writeSchemaObject(filePath, body);
     manifest.push({
       schemaId: `${dirName}/${fileName}`,
       file: `${dirName}/${fileName}`,
@@ -310,7 +510,7 @@ async function fetchOgcSchemas(
 }
 
 // ---------------------------------------------------------------------------
-// Phase 3: Ensure fallback schemas exist
+// Fallback schemas
 // ---------------------------------------------------------------------------
 
 async function writeFallbackSchemas(manifest: ManifestEntry[]): Promise<void> {
@@ -532,50 +732,110 @@ async function writeFallbackSchemas(manifest: ManifestEntry[]): Promise<void> {
   log(`  Wrote ${Object.keys(fallbacks).length} fallback schemas`);
 }
 
+/**
+ * Write stub schemas for external $refs that aren't dereferenced over the
+ * network (e.g. https://geojson.org/schema/*). These permissive stubs allow
+ * Ajv to compile bundled schemas that reference them without network access.
+ */
+async function writeExternalStubs(manifest: ManifestEntry[]): Promise<void> {
+  const geoJsonTargets = [
+    'Feature.json',
+    'FeatureCollection.json',
+    'Geometry.json',
+    'Point.json',
+  ];
+  const stubDir = join(SCHEMAS_DIR, 'external', 'geojson.org', 'schema');
+  await ensureDir(stubDir);
+  for (const fileName of geoJsonTargets) {
+    const id = `https://geojson.org/schema/${fileName}`;
+    const schema = {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      $id: id,
+      title: `GeoJSON ${fileName.replace(/\.json$/, '')} (stub)`,
+      description: `Permissive stub for GeoJSON ${fileName.replace(/\.json$/, '')}, bundled so OGC CS schemas with $ref to ${id} can be compiled offline.`,
+      type: 'object',
+    };
+    const filePath = join(stubDir, fileName);
+    await writeSchemaObject(filePath, schema);
+    manifest.push({
+      schemaId: `external/geojson.org/schema/${fileName}`,
+      file: `external/geojson.org/schema/${fileName}`,
+      source: 'fallback',
+      fetchedAt: new Date().toISOString(),
+    });
+  }
+  log(`  Wrote ${geoJsonTargets.length} external stub schemas`);
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
+function buildSeeds(
+  partName: string,
+  partDir: string,
+  schemaMap: Record<string, string[]>,
+): Array<{ url: string; localPath: string; source: ManifestEntry['source'] }> {
+  const seeds: Array<{ url: string; localPath: string; source: ManifestEntry['source'] }> = [];
+  for (const [subDir, files] of Object.entries(schemaMap)) {
+    const localSubDir = subDir.replace('schemas/', '');
+    for (const fileName of files) {
+      const url = `${GITHUB_REPO_ROOT}api/${partDir}/openapi/${subDir}/${fileName}`;
+      const localPath = posix.join(partName, localSubDir, fileName);
+      seeds.push({ url, localPath, source: 'github-repo' });
+    }
+  }
+  return seeds;
+}
+
 async function main(): Promise<void> {
-  log('Starting OGC schema fetch pipeline');
+  log('Starting OGC schema fetch pipeline (recursive closure)');
   log(`Output directory: ${SCHEMAS_DIR}`);
 
   const manifest: ManifestEntry[] = [];
-  let totalFetched = 0;
 
-  // Phase 1: Connected Systems Part 1 schemas from GitHub
-  log('--- Phase 1: Connected Systems Part 1 schemas ---');
-  const p1Count = await fetchGitHubSchemas(
-    'connected-systems-1',
-    'part1',
-    CS_PART1_SCHEMAS,
-    manifest,
-  );
-  totalFetched += p1Count;
-  log(`  Total: ${p1Count} schemas for Part 1`);
+  // Phases 1+2: Connected Systems Part 1 & Part 2 — fetch recursive closure.
+  log('--- Phase 1+2: Connected Systems Part 1 & Part 2 (recursive closure) ---');
+  const seeds = [
+    ...buildSeeds('connected-systems-1', 'part1', CS_PART1_SCHEMAS),
+    ...buildSeeds('connected-systems-2', 'part2', CS_PART2_SCHEMAS),
+  ];
+  const closure = await fetchClosure(seeds);
 
-  // Phase 2: Connected Systems Part 2 schemas from GitHub
-  log('--- Phase 2: Connected Systems Part 2 schemas ---');
-  const p2Count = await fetchGitHubSchemas(
-    'connected-systems-2',
-    'part2',
-    CS_PART2_SCHEMAS,
-    manifest,
-  );
-  totalFetched += p2Count;
-  log(`  Total: ${p2Count} schemas for Part 2`);
+  let cs1Count = 0;
+  let cs2Count = 0;
+  let sharedCount = 0;
+  for (const entry of closure.values()) {
+    if (entry.body === undefined) continue;
+    const filePath = join(SCHEMAS_DIR, entry.localPath);
+    await writeSchemaObject(filePath, entry.body);
+    manifest.push({
+      schemaId: entry.localPath,
+      file: entry.localPath,
+      source: entry.source,
+      fetchedAt: new Date().toISOString(),
+    });
+    if (entry.localPath.startsWith('connected-systems-1/')) cs1Count++;
+    else if (entry.localPath.startsWith('connected-systems-2/')) cs2Count++;
+    else sharedCount++;
+  }
+  log(`  Part 1: ${cs1Count} schemas; Part 2: ${cs2Count} schemas; shared/recursive: ${sharedCount}`);
 
   // Phase 3: OGC API Common schemas from schemas server
   log('--- Phase 3: OGC API Common schemas ---');
-  totalFetched += await fetchOgcSchemas('ogc-api-common', OGC_COMMON_SCHEMAS, manifest);
+  await fetchOgcSchemas('ogc-api-common', OGC_COMMON_SCHEMAS, manifest);
 
   // Phase 4: OGC API Features schemas from schemas server
   log('--- Phase 4: OGC API Features schemas ---');
-  totalFetched += await fetchOgcSchemas('ogc-api-features', OGC_FEATURES_SCHEMAS, manifest);
+  await fetchOgcSchemas('ogc-api-features', OGC_FEATURES_SCHEMAS, manifest);
 
   // Phase 5: Write fallback schemas (always written, regardless of fetch success)
   log('--- Phase 5: Fallback schemas ---');
   await writeFallbackSchemas(manifest);
+
+  // Phase 6: External stubs (geojson.org, etc.) so Ajv can compile offline.
+  log('--- Phase 6: External stub schemas ---');
+  await writeExternalStubs(manifest);
 
   // Write manifest
   const manifestData: Manifest = {
@@ -586,10 +846,13 @@ async function main(): Promise<void> {
   log(`Manifest written to ${MANIFEST_PATH}`);
 
   log(
-    `Done. ${totalFetched} schemas fetched from remote sources, ` +
-      `${manifest.length} total entries (including fallbacks).`,
+    `Done. ${manifest.length} total manifest entries (including fallbacks).`,
   );
 }
+
+// Silence an unused-variable warning for `relative` (kept for potential
+// extension; prefer posix path helpers elsewhere).
+void relative;
 
 main().catch((err) => {
   console.error('[fetch-schemas] Fatal error:', err);

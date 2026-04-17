@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "setValues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "title": "Number",
+                "type": "number"
+              },
+              {
+                "title": "String",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "ref",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "setArrayValues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          },
+          "value": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "ref",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "setModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "setConstraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          {
+            "properties": {
+              "ref": {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+              }
+            }
+          },
+          {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/AnyConstraint"
+          }
+        ],
+        "required": [
+          "type",
+          "ref"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "setStatus": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/PathRef"
+          },
+          "value": {
+            "type": "string",
+            "enum": [
+              "enabled",
+              "disabled"
+            ]
+          }
+        },
+        "required": [
+          "ref",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Settings.json"
+}

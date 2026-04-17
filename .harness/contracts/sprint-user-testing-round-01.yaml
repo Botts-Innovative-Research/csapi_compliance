@@ -1,0 +1,117 @@
+# User Testing Round 01 Sprint Contract
+# 7 open issues from external tester (earocorn, 2026-04-16) + 5 framework
+# rubric extensions from the github-issues-audit (same date). Each framework
+# extension is paired with the issue class it would have caught, so the fix
+# and the preventive check land together.
+
+sprint: "user-testing-round-01"
+type: "bug-fix-plus-framework-extension"
+created: "2026-04-16T23:15Z"
+description: |
+  Address all 7 open GitHub issues filed by external tester earocorn during the
+  first real-user testing round on 2026-04-16. Alongside each issue, land the
+  framework improvement from `_bmad/github-issues-audit.md` that would have
+  caught that issue's class — so the same class of gap does not recur.
+
+  This sprint also operationalizes the audit's central finding: our product is
+  a compliance tool, and our weakest coverage is in conformance-test
+  correctness. The Raze rubric extensions (Section 6.1, 6.2, 6.3) are the
+  highest-leverage outcome.
+
+upstream_audit: "_bmad/github-issues-audit.md"
+
+stories:
+  # Each story groups one user-filed issue with the framework improvement
+  # that would catch its class. The 3-cluster organisation mirrors the
+  # dependencies in the audit.
+
+  # -- Cluster 1: Schema handling (issues #4, #6, #7) --
+  - id: "S10-01"
+    title: "Recursive $ref bundling for schemas"
+    fixes: ["github#4"]
+    framework_improvement: "audit-item-1"  # Gate 1 schema-bundle integrity
+    depends_on: []
+
+  - id: "S10-02"
+    title: "Validate CRUD request bodies against target schema"
+    fixes: ["github#6"]
+    framework_improvement: "audit-item-2"  # Gate 1 request-body schema validation
+    depends_on: ["S10-01"]
+
+  - id: "S10-03"
+    title: "Observation body must derive from Datastream schema (dynamic coupling)"
+    fixes: ["github#7"]
+    framework_improvement: "audit-item-8"  # Raze 6.3 dynamic-schema coupling
+    depends_on: ["S10-01", "S10-02"]
+
+  # -- Cluster 2: Conformance-test correctness (issues #3, #5) --
+  - id: "S10-04"
+    title: "Links test must cite normative requirement, not example"
+    fixes: ["github#3"]
+    framework_improvement: "audit-item-6"  # Raze 6.1 spec-source citation
+    depends_on: []
+
+  - id: "S10-05"
+    title: "Part 2 tests must use IUT base URL, not origin"
+    fixes: ["github#5"]
+    framework_improvement: "audit-item-7"  # Raze 6.2 URL-construction consistency
+    depends_on: []
+
+  # -- Cluster 3: UX / access (issues #1, #2) --
+  - id: "S10-06"
+    title: "Opt-in escape for local development server assessments"
+    fixes: ["github#1"]
+    framework_improvement: "audit-item-4"  # Gate 2 local-dev-server persona
+    depends_on: []
+
+  - id: "S10-07"
+    title: "Allow authentication before discovery for protected IUTs"
+    fixes: ["github#2"]
+    framework_improvement: "audit-item-3"  # Gate 2 protected-IUT fixture
+    depends_on: []
+
+requirements:
+  # All fixes must maintain or strengthen existing REQs. New REQs introduced:
+  new_reqs:
+    - "REQ-SSRF-002: opt-in allowlist for local/private networks via env var"
+    - "REQ-AUTH-002: authentication config accepted before discovery for protected IUTs"
+    - "REQ-SCHEMA-001: every bundled OGC schema has all $ref targets resolved"
+    - "REQ-CRUD-001: every CRUD test's request body validates against target create-schema at test-authoring time"
+    - "REQ-TEST-DYNAMIC-001: Observation/Command bodies derive from parent-resource schema"
+    - "REQ-TEST-CITE-001: every failing conformance assertion cites normative OGC spec text"
+
+scenarios:
+  critical:
+    # Each issue gets at least one SCENARIO-* trace
+    - "SCENARIO-SSRF-LOCAL-001"       # localhost IUT assessable with explicit opt-in
+    - "SCENARIO-AUTH-PROTECTED-001"   # auth-config form reached for 401-on-discovery
+    - "SCENARIO-SCHEMA-REF-001"       # $refs in bundled schemas resolve
+    - "SCENARIO-CRUD-BODY-001"        # CRUD test bodies validate at test-authoring
+    - "SCENARIO-OBS-SCHEMA-001"       # Observation body matches Datastream schema
+    - "SCENARIO-LINKS-NORMATIVE-001"  # Links test fails only on actual requirement gaps
+    - "SCENARIO-PART2-BASEURL-001"    # Part 2 requests use IUT base URL
+  normal:
+    - "Associated SCENARIO-* for UX flows (configure page w/ auth-before-discovery, localhost warning copy, etc.)"
+
+success_criteria:
+  all_seven_issues_closed: true
+  all_five_framework_improvements_landed: true
+  unit_tests_pass: true
+  typecheck_pass: true
+  lint_pass: true
+  conformance_accuracy_verified_against_georobotix: true
+  new_false_positive_rate_zero: true
+  regression_none: true
+
+evaluation_focus:
+  # What Quinn and Raze should weight on this sprint
+  - "Raze Section 6 rubric extensions are documented and exercised during the review"
+  - "Each user issue has a test that FAILED before the fix and PASSES after"
+  - "Framework improvements land as actual code or checklist entries, not just prose in spec files"
+  - "No new surface introduced without a matching Raze rubric check"
+
+gate_4_required: true
+gate_4_triggers_custom:
+  # This sprint is methodologically sensitive — Raze runs regardless of LOC
+  force_run: true
+  reason: "First real-user-issue sprint; framework improvements must be adversarially verified"

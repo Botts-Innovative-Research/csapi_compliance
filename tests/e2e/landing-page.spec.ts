@@ -1,3 +1,7 @@
+// E2E tests for the landing page and initial discovery flow.
+// SCENARIO-SESS-LAND-001: Landing page URL input accepts and validates user endpoint URL (CRITICAL)
+// SCENARIO-SESS-LAND-002: Discover button triggers endpoint discovery and returns conformance classes (CRITICAL)
+
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page', () => {
@@ -106,13 +110,15 @@ test.describe('Landing Page', () => {
     const input = page.locator('#endpoint-url');
     await expect(input).toBeFocused();
 
-    // Tab through interactive elements -- verify focus moves
+    // Submit button is intentionally disabled until a valid URL is entered,
+    // so a disabled button is correctly skipped by Tab. Type a valid URL first
+    // to enable the button, then verify tab order: input -> Discover -> demo.
+    await input.fill('https://example.com/api');
+
     await page.keyboard.press('Tab');
-    // After input, next focusable should be the submit button
     const button = page.getByRole('button', { name: /Discover Endpoint/ });
     await expect(button).toBeFocused();
 
-    // Tab again should reach the demo URL button
     await page.keyboard.press('Tab');
     const demoButton = page.getByRole('button', {
       name: /api\.georobotix\.io/,
@@ -134,7 +140,9 @@ test.describe('Landing Page', () => {
     await input.fill('not-a-url');
     await input.blur();
 
-    const error = page.locator('[role="alert"]');
+    // Scope to the URL input's error element — Next.js injects a global
+    // [role="alert"] route-announcer div that would otherwise collide here.
+    const error = page.locator('#url-error[role="alert"]');
     await expect(error).toBeVisible();
   });
 

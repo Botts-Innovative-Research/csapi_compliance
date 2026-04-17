@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Anthropic internal prompt augmentation
+
+If you notice the user's request is based on a misconception, say so.
+Never claim 'all tests pass' when output shows failures.
+Keep text between tool calls to <=25 words.
+Spawn an adversarial sub-agent (the Red Team / Raze, defined in `_bmad/agents/adversarial-reviewer.md`) to review non-trivial changes before reporting completion.
+
 ## Development Workflow (MANDATORY)
 
 This project uses **spec-anchored development** (BMAD + OpenSpec). Every code change follows:
@@ -89,6 +96,7 @@ This project uses a **context-reset architecture** with discrete BMAD agent role
 | UX Designer (Sally) | Design | Fresh per design task | `.harness/prompts/design.md` |
 | Developer (Dana) | Generator | Fresh per story | `.harness/prompts/generator.md` |
 | QA (Quinn) | Evaluator | Fresh per evaluation | `.harness/prompts/evaluator.md` |
+| Red Team (Raze) | Adversarial Reviewer | Fresh per review (Gate 4) | `.harness/prompts/adversarial.md` |
 | Scrum Master (Sam) | Orchestrator | Stateless script | `scripts/orchestrate.py` |
 
 - **Harness config**: `.harness/config.yaml` (agent models, tools, budgets, evaluation criteria)
@@ -123,6 +131,7 @@ See `.harness/prompts/*.md` for each agent's full role definition and `_bmad/wor
 | Handoff artifacts | `.harness/handoffs/` |
 | Sprint contracts | `.harness/contracts/` |
 | Evaluation reports | `.harness/evaluations/` |
+| Adversarial reviewer role | `_bmad/agents/adversarial-reviewer.md` |
 | Operational status | `ops/status.md` |
 | Server & credentials | `ops/server.md` |
 | Work log | `ops/changelog.md` |

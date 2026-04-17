@@ -219,15 +219,15 @@ async function testUpdateLifecycle(
 // --- Test Functions ---
 
 async function testUpdateSystem(ctx: TestContext) {
-  return testUpdateLifecycle(ctx, REQ_UPDATE_SYSTEM, '/systems');
+  return testUpdateLifecycle(ctx, REQ_UPDATE_SYSTEM, 'systems');
 }
 
 async function testUpdateDeployment(ctx: TestContext) {
-  return testUpdateLifecycle(ctx, REQ_UPDATE_DEPLOYMENT, '/deployments');
+  return testUpdateLifecycle(ctx, REQ_UPDATE_DEPLOYMENT, 'deployments');
 }
 
 async function testUpdateProcedure(ctx: TestContext) {
-  return testUpdateLifecycle(ctx, REQ_UPDATE_PROCEDURE, '/procedures');
+  return testUpdateLifecycle(ctx, REQ_UPDATE_PROCEDURE, 'procedures');
 }
 
 // --- Test Module Export ---

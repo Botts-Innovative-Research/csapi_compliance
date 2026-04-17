@@ -1,5 +1,7 @@
 // Tests for DiscoveryService — src/engine/discovery-service.ts
 // REQ-DISC-001 through REQ-DISC-006: Endpoint discovery
+// SCENARIO-DISC-FLOW-001: Fetch landing page (CRITICAL)
+// SCENARIO-DISC-FLOW-002: Parse conformance declaration (CRITICAL)
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { AuthConfig, RunConfig } from '@/lib/types.js';

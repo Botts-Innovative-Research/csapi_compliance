@@ -1,7 +1,8 @@
 // REQ-ENG-005: Response body validation against JSON schemas using Ajv
 // REQ-ENG-006: Schema loading from OGC OpenAPI definitions with $ref resolution
 
-import Ajv, { type ErrorObject } from 'ajv';
+import Ajv2020 from 'ajv/dist/2020.js';
+import type { ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
@@ -19,10 +20,10 @@ import type {
  * and referenced by ID during test execution.
  */
 export class SchemaValidator implements SchemaValidatorInterface {
-  private ajv: Ajv;
+  private ajv: Ajv2020;
 
   constructor() {
-    this.ajv = new Ajv({
+    this.ajv = new Ajv2020({
       allErrors: true,
       strict: false,
       validateFormats: true,

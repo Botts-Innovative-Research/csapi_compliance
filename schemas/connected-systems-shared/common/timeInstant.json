@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Time Instant",
+  "type": "string",
+  "format": "date-time",
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstant.json"
+}

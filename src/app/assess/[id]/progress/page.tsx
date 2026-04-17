@@ -43,7 +43,7 @@ export default function ProgressPage() {
   const sseRef = useRef<{ close: () => void } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef<number | null>(null);
 
   // Fetch assessment metadata (endpoint URL)
   useEffect(() => {
@@ -54,10 +54,14 @@ export default function ProgressPage() {
     });
   }, [assessmentId]);
 
-  // Elapsed time timer
+  // Elapsed time timer. startTimeRef is initialized here (not during render —
+  // see eslint-config-next react-compiler rule "no-impure-during-render") and
+  // then read by the interval callback.
   useEffect(() => {
+    startTimeRef.current = Date.now();
+    const start = startTimeRef.current;
     timerRef.current = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
     }, 1000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);

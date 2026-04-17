@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "allOf": [
     {
-      "$ref": "controlStream.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/controlStream.json"
     },
     {
       "properties": {
         "schema": {
           "description": "Schema describing the content of commands in this control stream. The exact syntax of the schema depends on the encoding format.",
-          "$ref": "commandSchema.json",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchema.json",
           "writeOnly": true
         }
       },
@@ -16,5 +16,6 @@
         "schema"
       ]
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/controlStream_create.json"
 }

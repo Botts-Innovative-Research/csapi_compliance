@@ -3,6 +3,7 @@
 import { useMemo, type ChangeEvent } from 'react';
 import type { DeclaredConformanceClass } from '@/engine/conformance-mapper';
 import { t } from '@/lib/i18n';
+import { isDestructiveClass as isMutatingClass } from '@/lib/destructive-classes';
 
 interface ConformanceClassSelectorProps {
   classes: DeclaredConformanceClass[];
@@ -33,13 +34,6 @@ const STANDARD_PART_ORDER: Record<string, number> = {
   'cs-part2': 2,
   unknown: 3,
 };
-
-/** Check if a class URI represents a write/mutating operation. */
-function isMutatingClass(uri: string): boolean {
-  return (
-    uri.includes('/conf/create-replace-delete') || uri.includes('/conf/update')
-  );
-}
 
 /** Group classes by display label, merging common+features into "Parent Standards". */
 function groupClasses(classes: DeclaredConformanceClass[]) {

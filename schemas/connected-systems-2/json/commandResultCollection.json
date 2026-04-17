@@ -5,15 +5,16 @@
     "items": {
       "type": "array",
       "items": {
-        "$ref": "commandResult.json"
+        "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandResult.json"
       }
     },
     "links": {
       "description": "Links to related resources (including paging)",
-      "$ref": "../common/commonDefs.json#/$defs/Links"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Links"
     }
   },
   "required": [
     "items"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandResultCollection.json"
 }

@@ -1,5 +1,6 @@
 // REQ-ENG-001: Every test maps 1:1 to a canonical OGC requirement URI.
 // REQ-ENG-013: Standardized test result data structure.
+// SCENARIO-ENG-TRACE-001: Test-to-requirement traceability via RequirementDefinition (CRITICAL)
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestRegistry } from '@/engine/registry';

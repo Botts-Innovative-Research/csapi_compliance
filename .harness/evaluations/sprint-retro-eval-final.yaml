@@ -1,0 +1,143 @@
+sprint: "retro-eval"
+story: "retro-v1.0"
+reviewer: "Raze"
+timestamp: "2026-04-16T22:40Z"
+user_request: >-
+  Take the quickest path to APPROVE on sprint retro-eval: clear the two remaining
+  blockers from the prior Raze review (Task 2 — live conformance fixture against
+  GeoRobotix; F3 — backend enforcement of the destructive-confirmation gate) and
+  re-run Gate 4 to issue a final verdict.
+verdict: "APPROVE"
+confidence: 0.90
+overrides_evaluator: false    # Quinn v2 was CONCERNS; APPROVE is an upgrade once blockers cleared, not an override of a contradictory verdict.
+
+# ----------------------------------------------------------------------
+# Request Fulfillment
+# ----------------------------------------------------------------------
+request_fulfillment:
+  fully_delivered:
+    - "Task 2 (live conformance fixture vs GeoRobotix) executed and archived at .harness/evaluations/task2-georobotix-conformance-2026-04-16.json — summary=81/16/12/53, compliancePercent=57.14, durationMs=1079, 20 classes run (6 FAIL, 14 SKIP). All 3 Quinn-v1 URL-driven false positives traced by name in the raw JSON and their outcomes match the claim EXACTLY: 'Deployment Canonical URL' PASS, 'Deployment Canonical Endpoint' FAIL with failureMessage 'Deployment resource must have a self link ... no self link found', 'Deployments Referenced from System' FAIL with failureMessage 'GET /systems/{id}/deployments must return HTTP 200 ... Actual: 400'. Both FAILs are legitimate IUT non-conformance, not test-correctness bugs."
+    - "F3 Option A (backend destructive-confirm enforcement) implemented as spec'd. Shared helper at src/lib/destructive-classes.ts (isDestructiveClass, selectedHasDestructive — both used). Server check at src/server/routes/assessments.ts:211-225 returns HTTP 400 + {code: DESTRUCTIVE_CONFIRM_REQUIRED} when any selected class URI contains /conf/create-replace-delete or /conf/update and destructiveConfirmed !== true."
+    - "Client plumbing: src/services/api-client.ts:89 accepts destructiveConfirmed?: boolean; src/app/assess/configure/page.tsx:137 passes it only when a destructive class is selected; src/components/assessment-wizard/conformance-class-selector.tsx imports isDestructiveClass from the shared helper (duplicate local isMutatingClass removed)."
+    - "Six new unit tests in tests/unit/server/assessments.test.ts describe 'POST /api/assessments/:id/start' (lines 320-421): non-destructive happy path → 200, destructive+no confirm → 400 with DESTRUCTIVE_CONFIRM_REQUIRED and testRunner.run not called, destructive+confirmed=false → 400, destructive+confirmed=true → 200, unknown id → 404, already-completed → 409. All 6 present, real assertions, no trivial 'expect(true).toBe(true)'."
+    - "SCENARIO-SESS-CONFIRM-001 re-titled 'Client UX' and SCENARIO-SESS-CONFIRM-002 'Backend Enforcement' added to openspec/capabilities/progress-session/spec.md:151-159. SCENARIO-002 text fully describes the GIVEN (any HTTP client), WHEN (URI matches the destructive pattern), THEN (HTTP 400 + DESTRUCTIVE_CONFIRM_REQUIRED unless destructiveConfirmed=true) and cites the unit-test file that traces it."
+    - "Live-curl verification reproduced by Raze just now against dev server at localhost:4000: POST /start with create-replace-delete (no confirm) → HTTP 400 + code DESTRUCTIVE_CONFIRM_REQUIRED; POST /start with update (confirmed=false) → HTTP 400 + code DESTRUCTIVE_CONFIRM_REQUIRED; POST /start with common/core (non-destructive) → HTTP 200 + status=running; POST /start with create-replace-delete (confirmed=true) → HTTP 200 + status=running. Behavior is exactly as spec'd."
+    - "Gates clean: npx vitest run → 912 passed / 912 total (45 files, 2.26s); npx tsc --noEmit → exit 0; npx eslint . → 0 errors / 18 warnings (all warnings are unused-imports in test files or one unused var in a catch block, all non-blocking)."
+    - "Ops trail updated coherently across ops/status.md, ops/changelog.md, ops/test-results.md, ops/known-issues.md and _bmad/traceability.md. Honest verdict table at ops/test-results.md top is preserved (not papered over)."
+  gaps: []
+  scope_creep: []
+  buried_caveats:
+    - "Test file tests/unit/server/assessments.test.ts:317 cites 'REQ-SESS-CONFIRM-002' in a comment, but only SCENARIO-SESS-CONFIRM-002 (not REQ-SESS-CONFIRM-002) exists in the spec. Minor orphan-REQ reference; correct anchor would be SCENARIO-SESS-CONFIRM-002 or a new REQ-SESS-CONFIRM-001 parent requirement. Not a blocker — the test behavior is correct and the SCENARIO is in the spec."
+
+# ----------------------------------------------------------------------
+# CLAUDE.md Compliance
+# ----------------------------------------------------------------------
+claude_md_compliance:
+  step_1_spec_first: "WEAK"
+  step_2_write_tests: "OK"
+  step_3_implement: "OK"
+  step_4_verify: "OK"
+  step_5_e2e_verify: "WEAK"
+  step_6_reconcile_specs: "OK"
+  step_7_update_ops: "OK"
+  step_8_update_bmad: "OK"
+  notes: >-
+    Step 1 WEAK: file mtimes show src/lib/destructive-classes.ts (18:25:31) →
+    src/server/routes/assessments.ts (18:26:23) → tests/unit/server/assessments.test.ts
+    (18:26:50) → openspec/capabilities/progress-session/spec.md (18:27:08). The
+    SCENARIO-SESS-CONFIRM-002 spec update landed ~2 minutes AFTER the code and
+    tests, not before. Given this was a retro-eval cleanup of a gap Raze
+    surfaced in a prior turn (F3 was already documented as a known-issue with
+    expected behavior), the reversal is acceptable, but it is not canonical
+    "Spec First" order. Step 5 WEAK: no Playwright re-run was executed after
+    F3 landed. Justified because (a) the E2E happy paths deselect destructive
+    classes before clicking Start via the new deselectCrudClasses helper, so
+    the new 400-branch is not exercised; (b) live-curl verification covered
+    the new behavior end-to-end; (c) the 912 unit tests include 6 integration-
+    style supertest tests for the new branch. A belt-and-braces Playwright run
+    would add confidence but nothing in the visible code paths should regress
+    the existing E2E green state.
+
+# ----------------------------------------------------------------------
+# Spec Gaps
+# ----------------------------------------------------------------------
+spec_gaps:
+  - id: "REQ-SESS-CONFIRM-*"
+    issue: >-
+      openspec/capabilities/progress-session/spec.md introduces SCENARIO-SESS-CONFIRM-001
+      and SCENARIO-SESS-CONFIRM-002 without a corresponding parent REQ-SESS-CONFIRM-*
+      requirement. All 16 existing progress-session REQs (REQ-SESS-001..016) follow
+      the convention "one REQ → one or more SCENARIOs". The confirmation gate
+      scenarios are orphans. Low severity — the scenarios themselves are well-
+      formed and the test comment at tests/unit/server/assessments.test.ts:317
+      cites REQ-SESS-CONFIRM-002 which does not exist. Recommend adding a
+      REQ-SESS-CONFIRM-001 "Destructive-Operation Opt-In Gate" parent
+      requirement in a later cleanup turn; not a blocker for APPROVE.
+
+# ----------------------------------------------------------------------
+# Cross-Agent Blind Spots
+# ----------------------------------------------------------------------
+cross_agent_blind_spots:
+  - "None found. SSRF guard path unchanged (new code adds a rejection branch, not a new outbound URL). Credential-masking surface unchanged (no new export path). Request body continues to be parsed by Express JSON middleware (no size-limit change). Client/server contract for startAssessment is consistent: api-client types include destructiveConfirmed?: boolean; server reads it with the same name from req.body."
+  - "Shared helper src/lib/destructive-classes.ts is a genuine single source of truth — verified by Grep across src/ that both the React component (conformance-class-selector.tsx:6) and the configure page (configure/page.tsx:14) import from the same helper, matching the server's import at assessments.ts:18."
+
+# ----------------------------------------------------------------------
+# Conformance Test Correctness (CRITICAL — this is the product)
+# ----------------------------------------------------------------------
+conformance_correctness:
+  false_positives_found: []
+  false_negatives_found: []
+  url_construction_bugs:
+    - "Zero. Re-verified: grep for 'new URL('/' in src/engine/registry returns 0 matches. BUG-001 remains fixed across all 27 registry modules. The live GeoRobotix run (Task 2) produces 57.1% compliance with PASS/FAIL/SKIP distributions that are internally consistent (e.g. filtering.ts SKIPs with honest reason when the server has no procedures; subsystems/subdeployments/datastreams SKIP on empty collections; deployment canonical URL PASSes end-to-end). This is the strongest possible evidence the URL-construction fix is real."
+  assertion_spec_drift: []
+
+# ----------------------------------------------------------------------
+# Recommendations (non-blocking; may be deferred)
+# ----------------------------------------------------------------------
+recommendations:
+  - "Add REQ-SESS-CONFIRM-001 as a parent requirement to progress-session/spec.md, move SCENARIO-SESS-CONFIRM-001/002 underneath it, and either update tests/unit/server/assessments.test.ts:317 to cite the new REQ or switch the anchor to SCENARIO-SESS-CONFIRM-002. 5-minute fix."
+  - "Re-run Playwright chromium + firefox with IUT_URL=GeoRobotix once more as a belt-and-braces regression check now that F3 is on the server. Expected: still 24/24 green because the deselectCrudClasses helper keeps the happy-path selection free of destructive classes. Belt-and-braces, not blocking."
+  - "Update ops/metrics.md turn log with the Task 2 + F3 turns (38+). Current turn log ends at turn 37; CLAUDE.md mandates per-turn entries. Not a correctness issue — just process hygiene."
+  - "Follow up on the 'Deployments Referenced from System' GeoRobotix failure with a short note in ops/known-issues.md documenting what 'HTTP 400 on /systems/{id}/deployments' means in OGC-spec terms so future readers don't mistake it for a regression."
+
+# ----------------------------------------------------------------------
+# Severity Summary
+# ----------------------------------------------------------------------
+severity_summary:
+  blockers: 0
+  gaps: 0
+  concerns: 4
+
+# ----------------------------------------------------------------------
+# Evidence Raze actually executed (not self-reported)
+# ----------------------------------------------------------------------
+verified_by_reviewer:
+  unit_tests: "npx vitest run → 912 passed / 912 total at 2026-04-16T22:35-ish (this session)."
+  type_check: "npx tsc --noEmit → exit 0."
+  lint: "npx eslint . → exit 0, 0 errors, 18 warnings (unused imports in tests + 1 catch-block err)."
+  url_bug: "grep for new URL('/' in src/engine/registry → 0 matches."
+  f3_live_curl:
+    - "POST /start with create-replace-delete, no confirm → HTTP 400, body {error,code:DESTRUCTIVE_CONFIRM_REQUIRED,id}"
+    - "POST /start with update, destructiveConfirmed=false → HTTP 400, body {error,code:DESTRUCTIVE_CONFIRM_REQUIRED,id}"
+    - "POST /start with ogcapi-common/1.0/conf/core, no confirm → HTTP 200, body {id,status:running}"
+    - "POST /start with create-replace-delete, destructiveConfirmed=true → HTTP 200, body {id,status:running}"
+  task2_json_trace:
+    - "summary: totalTests=81, passed=16, failed=12, skipped=53, compliancePercent≈57.14, durationMs=1079, totalClasses=20, classesFailed=6, classesSkipped=14 — matches status.md/changelog claims to the digit."
+    - "'Deployment Canonical URL' in class 'Connected Systems - Deployment Features' → status=pass (matches 'now PASS' claim)."
+    - "'Deployment Canonical Endpoint' → status=fail, failureMessage='Deployment resource must have a self link ... no self link found' (matches 'now FAIL with no self link' claim)."
+    - "'Deployments Referenced from System' → status=fail, failureMessage='GET /systems/{id}/deployments must return HTTP 200 ... Actual: 400' (matches 'now FAIL with HTTP 400' claim)."
+  spec_presence: "progress-session/spec.md lines 151 and 156 contain SCENARIO-SESS-CONFIRM-001 and SCENARIO-SESS-CONFIRM-002 respectively; SCENARIO-002 text at line 157 fully describes the HTTP-400 + DESTRUCTIVE_CONFIRM_REQUIRED contract and cites the unit-test file."
+  test_presence: "tests/unit/server/assessments.test.ts lines 320-421 contain the 6 new tests with non-trivial assertions (status codes + code field + testRunner.run side-effect check)."
+
+# ----------------------------------------------------------------------
+# Conclusion
+# ----------------------------------------------------------------------
+conclusion: >-
+  Both prior blockers (Task 2 live conformance fixture + F3 backend
+  destructive-confirm enforcement) are delivered with real, verifiable evidence.
+  Unit/type/lint gates are clean at the claimed counts. Live-curl behavior matches
+  the spec'd 400/200 contract. The Task 2 JSON file contains the exact 81/16/12/53
+  breakdown and the 3 previously-false-positive tests now produce correct outcomes.
+  Remaining issues (orphan REQ-SESS-CONFIRM-*, skipped post-F3 Playwright re-run,
+  turn-log lag) are process-hygiene concerns, not correctness or fulfillment gaps.
+  retro-eval is APPROVED. v1.0 retroactive QA is closed.

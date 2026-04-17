@@ -28,5 +28,6 @@
       "id",
       "status"
     ]
-  }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/common/batch_response.json"
 }

@@ -13,15 +13,16 @@
           "properties": {
             "system@link": {
               "description": "Link to the deployed system.",
-              "$ref": "../common/commonDefs.json#/$defs/Link"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/Link"
             },
             "procedure@link": {
               "description": "Link to the procedure used by the system, or to operate the system, during the deployment (e.g., mission plan for an autonomous system, methodology for human operator).",
-              "$ref": "../common/commonDefs.json#/$defs/Link"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/Link"
             }
           }
         }
       }
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/deployedSystem.json"
 }

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AbstractSWE": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AbstractSWE"
+    },
+    "AbstractSWEIdentifiable": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractSweIdentifiable.json"
+    },
+    "DataRecord": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataRecord.json"
+    },
+    "Vector": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Vector.json"
+    },
+    "Matrix": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Matrix.json"
+    },
+    "DataArray": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataArray.json"
+    },
+    "Text": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Text.json"
+    },
+    "Category": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Category.json"
+    },
+    "AnySimpleComponent": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnySimpleComponent"
+    },
+    "AnyComponent": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
+    },
+    "SoftNamedProperty": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/SoftNamedProperty"
+    },
+    "AnyConstraint": {
+      "oneOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AllowedTokens"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AllowedValues"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AllowedTimes"
+        }
+      ]
+    }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json"
+}

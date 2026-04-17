@@ -1,5 +1,6 @@
 // Tests for conformance-mapper.ts
 // REQ-DISC-005: Map conformance URIs to requirements
+// SCENARIO-DISC-FLOW-005: Map conformance classes to internal requirement set (CRITICAL)
 
 import { describe, it, expect } from 'vitest';
 import { CS_PART1_CONF, CS_PART2_CONF, PARENT_CONF } from '@/lib/constants.js';

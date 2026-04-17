@@ -38,5 +38,6 @@
       "const": "COMPLETED",
       "description": "The command has completed after a successful execution. The actual execution time must be provided using the `executionTime` property. This is a final state. No further status updates will be sent."
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandStatusCode.json"
 }

@@ -3,6 +3,7 @@
   "type": "array",
   "items": {
     "title": "Sampling Feature",
-    "$ref": "./samplingFeature.json"
-  }
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/samplingFeature.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/samplingFeatureArray.json"
 }

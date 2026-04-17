@@ -7,10 +7,14 @@ interface URLInputFormProps {
   onSubmit: (url: string) => Promise<void>;
   isLoading?: boolean;
   serverError?: string | null;
+  /** When true, client-side validation accepts localhost and RFC 1918 ranges.
+   *  Mirrors the server's ALLOW_PRIVATE_NETWORKS setting (REQ-SSRF-002). */
+  allowPrivateNetworks?: boolean;
 }
 
-/** Client-side URL validation: must be http:// or https:// */
-function validateUrl(value: string): string | null {
+/** Client-side URL validation: must be http:// or https://. Private/reserved
+ *  IPs rejected unless allowPrivateNetworks is true (server opt-in). */
+function validateUrl(value: string, allowPrivateNetworks = false): string | null {
   if (!value.trim()) {
     return null; // Don't nag on empty
   }
@@ -21,6 +25,9 @@ function validateUrl(value: string): string | null {
     const url = new URL(value);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       return t('urlForm.validation.invalidUrl');
+    }
+    if (allowPrivateNetworks) {
+      return null;
     }
     // Check for private/reserved IPs
     const hostname = url.hostname;
@@ -46,6 +53,7 @@ export default function URLInputForm({
   onSubmit,
   isLoading = false,
   serverError = null,
+  allowPrivateNetworks = false,
 }: URLInputFormProps) {
   const [url, setUrl] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -57,26 +65,26 @@ export default function URLInputForm({
   }, []);
 
   const displayError = serverError || (touched ? validationError : null);
-  const isValid = url.trim().length > 0 && validateUrl(url) === null;
+  const isValid = url.trim().length > 0 && validateUrl(url, allowPrivateNetworks) === null;
 
   function handleBlur() {
     setTouched(true);
     if (url.trim()) {
-      setValidationError(validateUrl(url));
+      setValidationError(validateUrl(url, allowPrivateNetworks));
     }
   }
 
   function handleChange(value: string) {
     setUrl(value);
     if (touched) {
-      setValidationError(validateUrl(value));
+      setValidationError(validateUrl(value, allowPrivateNetworks));
     }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setTouched(true);
-    const error = validateUrl(url);
+    const error = validateUrl(url, allowPrivateNetworks);
     if (error) {
       setValidationError(error);
       return;

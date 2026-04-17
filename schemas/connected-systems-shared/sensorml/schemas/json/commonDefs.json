@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "XLink": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/link.json"
+    },
+    "TimeInstant": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstant.json"
+    },
+    "TimePeriod": {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timePeriod.json"
+    },
+    "TimeInstantOrPeriod": {
+      "oneOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstant.json"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timePeriod.json"
+        }
+      ]
+    },
+    "ObservableProperty": {
+      "description": "A physical property that can be observed and possibly measured (e.g., temperature, color, position). An ObservableProperty has unambiguous definition, but does not have units of measure.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/AbstractSWEIdentifiable"
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "ObservableProperty"
+            },
+            "definition": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "type",
+            "definition"
+          ]
+        }
+      ]
+    },
+    "Term": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "description": "Type of identifier/classifier (semantic link)",
+          "type": "string",
+          "format": "uri"
+        },
+        "label": {
+          "description": "Human readable label for this identifier/classifier",
+          "type": "string",
+          "minLength": 1
+        },
+        "codeSpace": {
+          "description": "URI of codespace defining the possible values for this identifier/classifier",
+          "type": "string",
+          "format": "uri"
+        },
+        "value": {
+          "description": "Actual identifier/classifier value",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "unevaluatedProperties": false
+    },
+    "AnyProperty": {
+      "oneOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/AnySimpleComponent"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/Vector"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/DataArray"
+        },
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/Matrix"
+        }
+      ]
+    },
+    "PathRef": {
+      "type": "string",
+      "pattern": "^(components|inputs|outputs|parameters|modes)/([A-Za-z][A-Za-z0-9_\\-]*/)*[A-Za-z][A-Za-z0-9_\\-]*$"
+    }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json"
+}

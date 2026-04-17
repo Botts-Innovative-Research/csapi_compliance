@@ -3,7 +3,7 @@
   "title": "SamplingFeature",
   "allOf": [
     {
-      "$ref": "feature.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/feature.json"
     },
     {
       "type": "object",
@@ -16,14 +16,15 @@
           ],
           "properties": {
             "validTime": {
-              "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/TimePeriod"
             },
             "sampledFeature@link": {
-              "$ref": "../common/commonDefs.json#/$defs/Link"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json#/$defs/Link"
             }
           }
         }
       }
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/samplingFeature.json"
 }

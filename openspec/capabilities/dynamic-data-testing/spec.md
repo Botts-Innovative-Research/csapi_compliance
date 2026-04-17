@@ -1,6 +1,6 @@
 # Dynamic Data Testing — Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
 
 ## Purpose
 
@@ -196,6 +196,12 @@ This capability defines the conformance test execution logic for OGC 23-002 (Con
 - **Description**: After executing Part 2 Create/Replace/Delete or Update tests, the test engine SHOULD attempt to delete any Part 2 resources it created during testing (datastreams, observations, control streams, commands), restoring the IUT to its pre-test state. If cleanup fails, the test engine SHALL log a warning including the IDs and URLs of resources that could not be removed.
 - **Rationale**: Leaving test artifacts on the IUT is especially problematic for dynamic data resources, as orphaned datastreams or observations may pollute time-series queries.
 
+### REQ-TEST-DYNAMIC-001: Observation and Command Bodies Derive from Parent-Resource Schema
+- **Priority**: MUST
+- **Status**: SPECIFIED
+- **Description**: Every Part 2 CRUD test that acts on a resource whose valid body depends on another just-inserted resource's state (Observation ← Datastream, Command ← ControlStream, Subsystem ← System) SHALL generate the child body from the upstream resource's declared schema, NOT from a hardcoded constant divorced from the parent's state. Specifically: when an observation-insert test creates a Datastream with `resultType` X and `schema.resultSchema` S, the subsequent observation's `result` property SHALL match S. The test code SHALL expose the body builder (e.g., `buildObservationBodyForDatastream(datastream)`) so that (a) a unit test can assert the observation result's runtime type matches the datastream's declared result type, and (b) the builder throws — rather than silently succeeds — when fed a parent schema it does not know how to mirror.
+- **Rationale**: Issue #7 — prior observation test POSTed `{ phenomenonTime, resultTime, result: 42 }` regardless of what `resultType` the datastream had just been created with. If the datastream declared `resultType: 'Count'` with a Count resultSchema, the numeric result would match by coincidence, not by contract. Worse: a future change to declare `resultType: 'Category'` with a string-valued result would leave the test's numeric `result: 42` silently wrong. Making the observation body a function of the datastream removes the hidden coupling.
+
 ### REQ-DYN-019: Conformance Class Not Declared Handling (Part 2)
 - **Priority**: MUST
 - **Status**: SPECIFIED
@@ -302,6 +308,14 @@ This capability defines the conformance test execution logic for OGC 23-002 (Con
 **Given** a CS API endpoint that responds with HTTP 406 when `Accept: text/csv` or `Accept: application/swe+binary` is requested for observations
 **When** the test engine executes SWE Common Text and SWE Common Binary tests
 **Then** the SWE Common Text tests are assigned SKIP with reason "SWE Common Text encoding not supported by server" and the SWE Common Binary tests are assigned SKIP with reason "SWE Common Binary encoding not supported by server"
+
+### SCENARIO-OBS-SCHEMA-001: Observation body mirrors just-inserted Datastream schema
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-DYNAMIC-001, REQ-CRUD-001
+
+**Given** the Part 2 CRUD module's `DATASTREAM_CREATE_BODY` declares `resultType: 'measure'` with a SWE Quantity `resultSchema`
+**When** a unit test invokes `buildObservationBodyForDatastream(DATASTREAM_CREATE_BODY)` and inspects the produced body
+**Then** the observation's `result` value is a JavaScript number (matching the Quantity schema); AND invoking the same builder with a datastream whose `resultType` is unsupported (e.g. `'record'`) throws, preventing silent drift between the inserted datastream's schema and the observation body
 
 ## Implementation Status (2026-03-31)
 

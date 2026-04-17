@@ -9,10 +9,14 @@ rework loops on failure.
 
 Pipeline sequence:
     Discovery* -> Planner -> Architect -> Design* -> Sprint Loop:
-        Generator -> Gate 1 (self-check) -> Gate 2 (Evaluator) -> Gate 3 (Reconciliation)
+        Generator -> Gate 1 (self-check) -> Gate 2 (Evaluator) -> Gate 3 (Reconciliation) -> Gate 4 (Adversarial)*
         With rework loops on failure (max retries from config, default 3)
 
-    * = conditional invocation (skipped unless explicitly requested)
+    * = conditional invocation
+      - Discovery, Design: skipped unless explicitly requested
+      - Gate 4 (Adversarial): runs for non-trivial changes per
+        config.agents.adversarial.triggers (lines changed, security-relevant
+        paths, capability additions, milestones). Can override Gate 2.
 
 Usage:
     python3 scripts/orchestrate.py --sprint 1 --story S01-001
@@ -67,13 +71,14 @@ PHASES = [
     "gate1",
     "evaluator",
     "reconciliation",
+    "adversarial",
 ]
 
 # Phases that are part of the sprint loop (subject to rework retries)
-SPRINT_LOOP_PHASES = ["generator", "gate1", "evaluator", "reconciliation"]
+SPRINT_LOOP_PHASES = ["generator", "gate1", "evaluator", "reconciliation", "adversarial"]
 
 # Phases that map to agent invocations via claude CLI
-AGENT_PHASES = ["discovery", "planner", "architect", "design", "generator", "evaluator"]
+AGENT_PHASES = ["discovery", "planner", "architect", "design", "generator", "evaluator", "adversarial"]
 
 # Conditional phases — skipped unless explicitly started at or forced
 CONDITIONAL_PHASES = {"discovery", "design"}
@@ -280,6 +285,16 @@ def read_evaluation_yaml(sprint: int) -> Optional[Dict[str, Any]]:
         logger.warning("Evaluation file not found: %s", eval_path)
         return None
     with open(eval_path) as f:
+        return yaml.safe_load(f)
+
+
+def read_adversarial_yaml(sprint: str) -> Optional[Dict[str, Any]]:
+    """Read the adversarial review report YAML for a given sprint."""
+    adv_path = PROJECT_ROOT / ".harness" / "evaluations" / f"sprint-{sprint}-adversarial.yaml"
+    if not adv_path.exists():
+        logger.warning("Adversarial review file not found: %s", adv_path)
+        return None
+    with open(adv_path) as f:
         return yaml.safe_load(f)
 
 
@@ -543,6 +558,201 @@ def check_reconciliation_artifacts(sprint: int, story_id: str) -> Dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
+# Gate 4: Adversarial review (Red Team / Raze)
+# ---------------------------------------------------------------------------
+
+def adversarial_triggered(
+    config: Dict[str, Any],
+    sprint: str,
+    story_id: str,
+) -> Tuple[bool, str]:
+    """
+    Decide whether Gate 4 (adversarial review) should run for this sprint/story.
+
+    Reads triggers from config.agents.adversarial.triggers and inspects:
+      - lines changed in the working copy vs. HEAD~1
+      - whether security-relevant paths were touched
+      - whether a capability spec was added/modified
+      - whether the generator handoff marks this as a milestone
+
+    Returns (triggered, reason).
+    """
+    adv_cfg = config.get("agents", {}).get("adversarial", {})
+    if not adv_cfg:
+        return False, "adversarial agent not configured"
+
+    triggers = adv_cfg.get("triggers", {})
+    min_lines = triggers.get("min_lines_changed", 50)
+    sec_paths = triggers.get("security_relevant_paths", []) or []
+    on_caps = triggers.get("always_on_capabilities", False)
+    on_milestone = triggers.get("always_on_milestone", False)
+
+    # 1. Line-count trigger
+    try:
+        result = subprocess.run(
+            ["git", "diff", "HEAD~1..HEAD", "--shortstat"],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        # e.g. " 4 files changed, 87 insertions(+), 12 deletions(-)"
+        shortstat = result.stdout.strip()
+        ins = dels = 0
+        for tok in shortstat.split(","):
+            tok = tok.strip()
+            if "insertion" in tok:
+                ins = int(tok.split()[0])
+            elif "deletion" in tok:
+                dels = int(tok.split()[0])
+        total = ins + dels
+        if total >= min_lines:
+            return True, f"diff has {total} line changes (>= {min_lines})"
+    except (subprocess.SubprocessError, ValueError):
+        # If git is unavailable or parsing fails, lean toward running Gate 4
+        return True, "could not measure diff size; running adversarial review defensively"
+
+    # 2. Security-relevant path trigger
+    try:
+        result = subprocess.run(
+            ["git", "diff", "HEAD~1..HEAD", "--name-only"],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        changed_files = [f for f in result.stdout.splitlines() if f.strip()]
+        for cf in changed_files:
+            for sp in sec_paths:
+                if cf.startswith(sp):
+                    return True, f"security-relevant path touched: {cf}"
+    except subprocess.SubprocessError:
+        pass
+
+    # 3. Capability spec trigger
+    if on_caps:
+        try:
+            cap_changes = [
+                f for f in changed_files
+                if f.startswith("openspec/capabilities/") and f.endswith("spec.md")
+            ]
+            if cap_changes:
+                return True, f"capability spec touched: {cap_changes[0]}"
+        except (NameError, AttributeError):
+            pass
+
+    # 4. Milestone trigger from generator handoff
+    if on_milestone:
+        handoff = read_generator_handoff()
+        if handoff and handoff.get("milestone"):
+            return True, "generator handoff marks this as a milestone"
+
+    return False, f"no triggers met (diff < {min_lines} lines, no sec paths, no spec changes)"
+
+
+def gate4_adversarial(
+    config: Dict[str, Any],
+    sprint: str,
+    story_id: str,
+    dry_run: bool = False,
+) -> Tuple[str, Optional[str]]:
+    """
+    Gate 4: Adversarial review (Red Team / Raze).
+
+    Runs after Gate 3 reconciliation. Independent post-completion review;
+    can override an Evaluator APPROVE. Reads the user's request, the diff,
+    the evaluator's report, and the spec/ops trail; verifies CLAUDE.md
+    compliance and conformance-test correctness.
+
+    Returns (verdict, retry_guidance):
+        verdict: "PASS" (APPROVE), "RETRY" (GAPS_FOUND/REJECT), or "FAIL"
+        retry_guidance: feedback text if verdict is RETRY, else None
+    """
+    logger.info("-" * 50)
+    logger.info("GATE 4: Adversarial Review (Red Team / Raze)")
+    logger.info("-" * 50)
+
+    # Trigger gate
+    triggered, reason = adversarial_triggered(config, sprint, story_id)
+    if not triggered:
+        logger.info("Gate 4 SKIPPED: %s", reason)
+        return "PASS", None
+    logger.info("Gate 4 TRIGGERED: %s", reason)
+
+    # Invoke the adversarial agent
+    exit_code, output = run_agent(
+        "adversarial", config, sprint, story_id, dry_run=dry_run
+    )
+
+    if dry_run:
+        logger.info(
+            "[DRY RUN] Would read .harness/evaluations/sprint-%s-adversarial.yaml",
+            sprint,
+        )
+        return "PASS", None
+
+    if exit_code != 0:
+        logger.error("Adversarial agent failed with exit code %d", exit_code)
+        # Still try to read the report — agent may have written it before erroring
+        adv_data = read_adversarial_yaml(sprint)
+        if adv_data is None:
+            logger.error(
+                "Gate 4: adversarial agent crashed without producing a report. "
+                "Treating as RETRY."
+            )
+            return "RETRY", (
+                "Adversarial reviewer (Raze) crashed before producing a verdict. "
+                "Re-run after addressing any obvious issues, or check claude CLI logs."
+            )
+
+    adv_data = read_adversarial_yaml(sprint)
+    if adv_data is None:
+        logger.error("Gate 4: no adversarial report found after agent ran")
+        return "RETRY", "Adversarial reviewer did not produce a verdict report."
+
+    verdict = str(adv_data.get("verdict", "REJECT")).upper()
+    overrides = adv_data.get("overrides_evaluator", False)
+    severity = adv_data.get("severity_summary", {}) or {}
+    blockers = severity.get("blockers", 0)
+    gaps = severity.get("gaps", 0)
+    recs = adv_data.get("recommendations", []) or []
+
+    logger.info("  Verdict:             %s", verdict)
+    logger.info("  Overrides Evaluator: %s", overrides)
+    logger.info("  Blockers:            %d", blockers)
+    logger.info("  Gaps:                %d", gaps)
+    if recs:
+        logger.info("  Recommendations:")
+        for r in recs[:10]:
+            logger.info("    - %s", r)
+
+    if verdict == "APPROVE":
+        logger.info("Gate 4 PASS: adversarial review approved")
+        return "PASS", None
+
+    # Build rework guidance
+    guidance_parts = [
+        f"Adversarial reviewer (Raze) returned {verdict}.",
+        f"See .harness/evaluations/sprint-{sprint}-adversarial.yaml for the full report.",
+    ]
+    if recs:
+        guidance_parts.append("Required fixes (in order):")
+        for i, r in enumerate(recs, 1):
+            guidance_parts.append(f"  {i}. {r}")
+    guidance = "\n".join(guidance_parts)
+
+    if verdict == "REJECT":
+        logger.error("Gate 4 REJECT: significant gaps found, rework required")
+        return "RETRY", guidance
+    if verdict == "GAPS_FOUND":
+        logger.warning("Gate 4 GAPS_FOUND: rework required for specific items")
+        return "RETRY", guidance
+
+    logger.warning("Gate 4: unknown verdict '%s', treating as RETRY", verdict)
+    return "RETRY", guidance
+
+
+# ---------------------------------------------------------------------------
 # Pipeline orchestration
 # ---------------------------------------------------------------------------
 
@@ -558,6 +768,11 @@ def resolve_start_index(start_at: str) -> int:
         "gate_2": "evaluator",
         "gate3": "reconciliation",
         "gate_3": "reconciliation",
+        "gate4": "adversarial",
+        "gate_4": "adversarial",
+        "redteam": "adversarial",
+        "red-team": "adversarial",
+        "raze": "adversarial",
         "reconcile": "reconciliation",
         "recon": "reconciliation",
         "generate": "generator",
@@ -597,6 +812,16 @@ def validate_prerequisites(start_phase: str, sprint: int, story_id: str) -> List
         eval_file = PROJECT_ROOT / ".harness" / "evaluations" / f"sprint-{sprint}-eval.yaml"
         if not eval_file.exists():
             warnings.append(f"Evaluation file not found: {eval_file.relative_to(PROJECT_ROOT)}")
+
+    # Adversarial review needs the evaluator's report (to know what to override)
+    # and the generator handoff (for milestone trigger)
+    if start_phase == "adversarial":
+        eval_file = PROJECT_ROOT / ".harness" / "evaluations" / f"sprint-{sprint}-eval.yaml"
+        if not eval_file.exists():
+            warnings.append(f"Evaluation file not found: {eval_file.relative_to(PROJECT_ROOT)}")
+        handoff = PROJECT_ROOT / ".harness" / "handoffs" / "generator-handoff.yaml"
+        if not handoff.exists():
+            warnings.append(f"Generator handoff not found: {handoff.relative_to(PROJECT_ROOT)}")
 
     return warnings
 
@@ -654,7 +879,7 @@ def run_pipeline(
 
     # Phase 2: Sprint loop (generator -> gate1 -> gate2 -> gate3) with retries
     sprint_start = max(start_index, PHASES.index("generator"))
-    if start_index > PHASES.index("reconciliation"):
+    if start_index > PHASES.index("adversarial"):
         # Nothing to do — start_at was beyond the last phase
         logger.info("Start phase is beyond pipeline end. Nothing to do.")
         return 0
@@ -739,6 +964,26 @@ def run_pipeline(
                     )
                     # Do not fail the pipeline for missing docs — warn and continue
 
+        # --- Gate 4: Adversarial Review (Red Team / Raze) ---
+        if loop_start <= PHASES.index("adversarial"):
+            g4_verdict, g4_feedback = gate4_adversarial(
+                config, sprint, story_id, dry_run=dry_run
+            )
+            if g4_verdict == "FAIL":
+                logger.error("Gate 4 hard FAIL — sprint cannot continue")
+                return 2
+            if g4_verdict == "RETRY":
+                attempt += 1
+                retry_feedback = g4_feedback or (
+                    "Adversarial review (Raze) returned RETRY. Re-read "
+                    f".harness/evaluations/sprint-{sprint}-adversarial.yaml "
+                    "for the full verdict and recommendations."
+                )
+                if attempt > max_retries:
+                    logger.error("Gate 4 retries exhausted (%d attempts)", max_retries)
+                    return 1
+                continue
+
         # All gates passed
         logger.info("")
         logger.info("=" * 70)
@@ -779,9 +1024,13 @@ def build_parser() -> argparse.ArgumentParser:
 
             Phases (in order):
               discovery*  -> planner -> architect -> design* -> generator ->
-              gate1       -> evaluator -> reconciliation
+              gate1       -> evaluator -> reconciliation -> adversarial*
 
-              * = conditional, skipped unless --include-conditional or --start-at targets them
+              * = conditional
+                  - discovery, design: skipped unless --include-conditional or
+                    --start-at targets them
+                  - adversarial (Gate 4): runs for non-trivial changes per
+                    config.agents.adversarial.triggers; can override Gate 2
 
             Environment:
               Requires `claude` CLI on PATH. If using nvm:
@@ -809,7 +1058,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Phase to start at (default: planner). "
             "Options: discovery, planner, architect, design, generator, "
-            "gate1, evaluator, reconciliation"
+            "gate1, evaluator, reconciliation, adversarial"
         ),
     )
     parser.add_argument(

@@ -4,30 +4,30 @@
     {
       "oneOf": [
         {
-          "$ref": "sensormlDefs.json#/$defs/SimpleProcess"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/sensormlDefs.json#/$defs/SimpleProcess"
         },
         {
-          "$ref": "sensormlDefs.json#/$defs/AggregateProcess"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/sensormlDefs.json#/$defs/AggregateProcess"
         },
         {
-          "$ref": "sensormlDefs.json#/$defs/PhysicalComponent"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/sensormlDefs.json#/$defs/PhysicalComponent"
         },
         {
-          "$ref": "sensormlDefs.json#/$defs/PhysicalSystem"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/sensormlDefs.json#/$defs/PhysicalSystem"
         }
       ]
     },
     {
       "properties": {
         "definition": {
-          "$ref": "../common/uris.json#/$defs/ProcedureTypeUris"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/uris.json#/$defs/ProcedureTypeUris"
         },
         "position": {
           "not": {}
         },
         "links": {
           "description": "Links to related resources",
-          "$ref": "../common/links.json"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/links.json"
         }
       },
       "required": [
@@ -35,5 +35,6 @@
         "uniqueId"
       ]
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/procedure.json"
 }

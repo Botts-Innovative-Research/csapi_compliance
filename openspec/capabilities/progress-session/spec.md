@@ -1,6 +1,6 @@
 # Progress & Session Management — Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16T18:55Z (SESS-LAND-001..006 reconciled to two-step Discover-then-Configure-then-Start flow per Task 1 Playwright run)
 
 ## Purpose
 
@@ -121,32 +121,42 @@ The system SHALL support multiple concurrent assessments from different users wi
 ### SCENARIO-SESS-LAND-001: Landing Page Initial View
 **GIVEN** a user navigates to the application root URL for the first time
 **WHEN** the page loads
-**THEN** the page displays an explanation of the tool's purpose, a URL input field with a placeholder example URL, and a "Start Assessment" button.
+**THEN** the page displays an explanation of the tool's purpose, a URL input field with a placeholder example URL, and a "Discover Endpoint" button (disabled until a valid URL is entered).
 
-### SCENARIO-SESS-LAND-002: Starting an Assessment from the Landing Page
+### SCENARIO-SESS-LAND-002: Starting Discovery from the Landing Page
 **GIVEN** the user is on the landing page
-**WHEN** the user enters `https://demo.ogc.org/api` in the URL field and clicks "Start Assessment"
-**THEN** the system begins the assessment against `https://demo.ogc.org/api` and transitions to the progress view.
+**WHEN** the user enters `https://demo.ogc.org/api` in the URL field and clicks "Discover Endpoint"
+**THEN** the system performs synchronous endpoint discovery (landing page + conformance + collections), creates a session, and transitions to `/assess/configure?session={id}` where the user reviews discovered conformance classes, selects which to run, configures auth and run settings, and then clicks a separate **"Start Assessment"** button to launch the test execution and transition to the progress view. Rationale for two-step flow: surfaced 2026-04-02 to give users explicit class-selection control and to detect unreachable IUTs before committing to a long test run.
 
-### SCENARIO-SESS-LAND-003: Starting an Assessment via Enter Key
+### SCENARIO-SESS-LAND-003: Starting Discovery via Enter Key
 **GIVEN** the user is on the landing page and has entered a valid URL in the input field
 **WHEN** the user presses the Enter key while the input field is focused
-**THEN** the system begins the assessment, equivalent to clicking "Start Assessment".
+**THEN** the system performs discovery and transitions to the configure page, equivalent to clicking "Discover Endpoint".
 
 ### SCENARIO-SESS-LAND-004: Invalid URL Rejection
 **GIVEN** the user is on the landing page
-**WHEN** the user enters `not-a-url` in the URL field and clicks "Start Assessment"
-**THEN** the system displays an inline error message such as "Please enter a valid HTTP or HTTPS URL" and does not start an assessment.
+**WHEN** the user enters `not-a-url` in the URL field and blurs the input
+**THEN** the system displays an inline error message such as "Please enter a valid HTTP or HTTPS URL", marks the input `aria-invalid="true"`, and keeps the "Discover Endpoint" button disabled.
 
 ### SCENARIO-SESS-LAND-005: FTP URL Rejection
 **GIVEN** the user is on the landing page
-**WHEN** the user enters `ftp://example.com/data` in the URL field and clicks "Start Assessment"
-**THEN** the system displays an inline error message indicating only HTTP and HTTPS URLs are accepted.
+**WHEN** the user enters `ftp://example.com/data` in the URL field and blurs the input
+**THEN** the system displays an inline error message indicating only HTTP and HTTPS URLs are accepted, and keeps the "Discover Endpoint" button disabled.
 
 ### SCENARIO-SESS-LAND-006: Empty URL Rejection
 **GIVEN** the user is on the landing page
-**WHEN** the user clicks "Start Assessment" without entering any URL
-**THEN** the system displays an inline error message such as "URL is required" and does not start an assessment.
+**WHEN** no URL has been entered
+**THEN** the "Discover Endpoint" button remains disabled (the system gates submission at the button rather than at click time, so no error message is shown until the user types and blurs an invalid value).
+
+### SCENARIO-SESS-CONFIRM-001: Destructive-Operation Confirmation Gate (Client UX)
+**GIVEN** the user is on the configure page after discovering an IUT that advertises a mutating conformance class (e.g., `create-replace-delete` or `update`)
+**WHEN** the mutating class is selected (auto-selected by default if supported)
+**THEN** the system displays a destructive-confirmation checkbox labeled "I understand these tests will mutate data on the target endpoint", keeps the Start Assessment button disabled until the checkbox is checked, re-disables Start if the checkbox is unchecked again, and removes the checkbox entirely if no mutating class remains selected.
+
+### SCENARIO-SESS-CONFIRM-002: Destructive-Operation Confirmation Gate (Backend Enforcement)
+**GIVEN** a POST /api/assessments/:id/start request arrives at the server from any HTTP client (including curl, scripts, or third-party tools bypassing the browser UX)
+**WHEN** the request body selects one or more conformance classes whose URI ends in `/conf/create-replace-delete` or `/conf/update`
+**THEN** the server returns HTTP 400 with `{ "code": "DESTRUCTIVE_CONFIRM_REQUIRED", "error": "..." }` and the test run is **not** started — unless the request body also includes `destructiveConfirmed: true`, in which case the run proceeds normally. This mirrors the client UX gate and provides defense-in-depth against curl-bypass of the checkbox. Traced by `tests/unit/server/assessments.test.ts` (3 tests covering non-destructive happy path, destructive-without-confirm 400, and destructive-with-confirm 200).
 
 ### SCENARIO-SESS-AUTH-001: No Login Required for Any Action
 **GIVEN** a user has never visited the application before and has no account

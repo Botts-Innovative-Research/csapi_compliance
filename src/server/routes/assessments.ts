@@ -15,6 +15,7 @@ import { ExportEngine, generateFilename } from '@/engine/export-engine';
 import type { ResultStore } from '@/engine/result-store';
 import type { ProgressEvent, AuthConfig, RunConfig, HttpExchange } from '@/lib/types';
 import { ENGINE_DEFAULTS, SESSION_DEFAULTS } from '@/lib/constants';
+import { selectedHasDestructive } from '@/lib/destructive-classes';
 import { validateUrl } from '@/server/middleware/ssrf-guard';
 
 export interface AssessmentDeps {
@@ -200,11 +201,28 @@ export function assessmentRoutes(deps: AssessmentDeps): Router {
       return;
     }
 
-    const { conformanceClasses, auth, config } = req.body as {
+    const { conformanceClasses, auth, config, destructiveConfirmed } = req.body as {
       conformanceClasses?: string[];
       auth?: Partial<AuthConfig>;
       config?: Partial<RunConfig>;
+      destructiveConfirmed?: boolean;
     };
+
+    // Defense-in-depth: enforce destructive-opt-in at the API boundary.
+    // The configure UI (`src/app/assess/configure/page.tsx`) requires an
+    // explicit checkbox before enabling Start; this check prevents a curl /
+    // scripted caller from bypassing that gate against a shared testbed.
+    // SCENARIO-SESS-CONFIRM-002.
+    const classesToCheck = conformanceClasses ?? session.selectedClasses;
+    if (selectedHasDestructive(classesToCheck) && destructiveConfirmed !== true) {
+      res.status(400).json({
+        error:
+          'Selection includes destructive conformance classes (create-replace-delete or update); destructiveConfirmed=true is required to proceed',
+        code: 'DESTRUCTIVE_CONFIRM_REQUIRED',
+        id: session.id,
+      });
+      return;
+    }
 
     // Update session with user selections
     if (conformanceClasses) {

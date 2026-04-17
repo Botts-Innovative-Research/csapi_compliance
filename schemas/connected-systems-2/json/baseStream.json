@@ -20,7 +20,7 @@
     },
     "validTime": {
       "description": "Validity period of the resource",
-      "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/TimePeriod"
     },
     "formats": {
       "description": "List of available formats",
@@ -36,5 +36,6 @@
     "id",
     "name",
     "formats"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/baseStream.json"
 }

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://geojson.org/schema/Point.json",
+  "title": "GeoJSON Point (stub)",
+  "description": "Permissive stub for GeoJSON Point, bundled so OGC CS schemas with $ref to https://geojson.org/schema/Point.json can be compiled offline.",
+  "type": "object"
+}

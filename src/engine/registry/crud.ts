@@ -226,7 +226,7 @@ async function testCrudLifecycle(
 // --- Test Functions ---
 
 async function testCrudSystem(ctx: TestContext) {
-  return testCrudLifecycle(ctx, REQ_CRUD_SYSTEM, '/systems');
+  return testCrudLifecycle(ctx, REQ_CRUD_SYSTEM, 'systems');
 }
 
 async function testCrudSystemDeleteCascade(ctx: TestContext) {
@@ -328,19 +328,19 @@ async function testCrudSystemDeleteCascade(ctx: TestContext) {
 }
 
 async function testCrudDeployment(ctx: TestContext) {
-  return testCrudLifecycle(ctx, REQ_CRUD_DEPLOYMENT, '/deployments');
+  return testCrudLifecycle(ctx, REQ_CRUD_DEPLOYMENT, 'deployments');
 }
 
 async function testCrudProcedure(ctx: TestContext) {
-  return testCrudLifecycle(ctx, REQ_CRUD_PROCEDURE, '/procedures');
+  return testCrudLifecycle(ctx, REQ_CRUD_PROCEDURE, 'procedures');
 }
 
 async function testCrudSamplingFeature(ctx: TestContext) {
-  return testCrudLifecycle(ctx, REQ_CRUD_SAMPLING_FEATURE, '/samplingFeatures');
+  return testCrudLifecycle(ctx, REQ_CRUD_SAMPLING_FEATURE, 'samplingFeatures');
 }
 
 async function testCrudProperty(ctx: TestContext) {
-  return testCrudLifecycle(ctx, REQ_CRUD_PROPERTY, '/properties');
+  return testCrudLifecycle(ctx, REQ_CRUD_PROPERTY, 'properties');
 }
 
 // --- Test Module Export ---

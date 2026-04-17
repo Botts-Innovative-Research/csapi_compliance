@@ -3,6 +3,7 @@
   "type": "array",
   "items": {
     "title": "Deployment Feature",
-    "$ref": "./deployment.json"
-  }
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/deployment.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/deploymentArray.json"
 }

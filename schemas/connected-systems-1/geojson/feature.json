@@ -50,9 +50,10 @@
         },
         "links": {
           "description": "Links to related resources",
-          "$ref": "../common/links.json"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/links.json"
         }
       }
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/geojson/feature.json"
 }

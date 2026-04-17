@@ -1,6 +1,6 @@
 # Endpoint Discovery & Configuration — Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
 
 ## Purpose
 
@@ -47,6 +47,16 @@ The system SHALL accept optional authentication credentials in one of the follow
 - **Basic auth**: a username and password pair sent as an `Authorization: Basic <base64>` header
 
 The system SHALL apply the configured credentials to all subsequent requests made during the test run. If no credentials are provided, the system SHALL proceed without authentication. The system SHALL NOT persist credentials to disk in plaintext.
+
+### REQ-AUTH-002: Authentication Before Discovery for Protected IUTs
+- **Status**: Implemented 2026-04-16
+- **Description**: When discovery against an IUT returns HTTP 401 (Unauthorized) or 403 (Forbidden), the system SHALL present an inline authentication form on the landing page immediately — without requiring the user to reach the configure page (which is unreachable until discovery succeeds). The inline form SHALL accept the same auth types as the configure-page form (bearer, api-key, basic). On retry submission, the system SHALL re-issue the discovery request with the provided credentials; a subsequent 401/403 SHALL display a distinct "credentials rejected" error that keeps the auth form visible for correction. Credentials that succeeded against discovery SHALL be persisted via sessionStorage under key `auth:{sessionId}` and SHALL be pre-loaded into the configure-page auth form when the user reaches it. Credentials SHALL NOT be persisted beyond the browser session.
+- **Rationale**: Reporter of issue #2 (earocorn, 2026-04-16): "if you put a URL to a protected CS API endpoint, the assessor will fail to progress to the next page and show a 401 error. However, the next page asks for authentication, so there is no way to get to this next page on protected endpoints." The original design assumed unauthenticated public IUTs; real-world protected deployments need an earlier opportunity to provide credentials.
+
+### SCENARIO-AUTH-PROTECTED-001: Inline Auth Retry After 401 at Discovery
+**GIVEN** the user submits `https://protected.example.com/ogcapi` on the landing page and the IUT returns HTTP 401 with `WWW-Authenticate: Bearer`
+**WHEN** the client receives the 401 from `POST /api/assessments`
+**THEN** the landing page displays an inline "Authentication required" panel containing an auth-type selector (bearer/api-key/basic) and the appropriate fields; the URL input remains populated with the pending URL; the user can enter a bearer token and click "Discover with credentials" to retry; on retry success, discovery proceeds, the user is routed to `/assess/configure?session={id}`, and the configure-page auth form pre-populates with the successful credentials. If the retry also 401s, the panel stays visible with the "Authentication rejected" message so the user can correct the token.
 
 ### REQ-DISC-009: Configure Request Timeout
 The system SHALL accept an optional request timeout value in seconds. The default timeout SHALL be 30 seconds. The system SHALL reject timeout values less than 1 second or greater than 300 seconds. The configured timeout SHALL apply to every HTTP request made during the test run.

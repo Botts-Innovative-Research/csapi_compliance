@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Implementation of ISO-11404 Array datatype. This defines an array of identical data components with a elementCount. Values are given as a block and can be encoded in different ways",
+  "allOf": [
+    {
+      "$ref": "#/$defs/AbstractArray"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "DataArray"
+        }
+      },
+      "required": [
+        "type",
+        "elementType"
+      ]
+    }
+  ],
+  "$defs": {
+    "AbstractArray": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractDataComponent.json"
+        },
+        {
+          "properties": {
+            "elementCount": {
+              "description": "Specifies the size of the array (i.e., the number of elements of the defined type it contains)",
+              "oneOf": [
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AssociationAttributeGroup"
+                },
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/ElementCount"
+                }
+              ]
+            },
+            "elementType": {
+              "description": "Defines the structure of the element that will be repeated in the array",
+              "allOf": [
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/SoftNamedProperty"
+                },
+                {
+                  "oneOf": [
+                    {
+                      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AssociationAttributeGroup"
+                    },
+                    {
+                      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
+                    }
+                  ]
+                }
+              ]
+            },
+            "encoding": {
+              "description": "Specifies the type of method used to encode the array values",
+              "oneOf": [
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/BinaryEncoding"
+                },
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/TextEncoding"
+                },
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/XMLEncoding"
+                },
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/JSONEncoding"
+                }
+              ]
+            },
+            "values": {
+              "description": "If present, contains an encoded block of the values contained in the array. Values are optional so that the array definition can be used a as a schema for values provided separately",
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/EncodedValues"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataArray.json"
+}

@@ -3,6 +3,7 @@
   "type": "array",
   "items": {
     "title": "Procedure Feature",
-    "$ref": "./procedure.json"
-  }
+    "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/procedure.json"
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/sensorml/procedureArray.json"
 }

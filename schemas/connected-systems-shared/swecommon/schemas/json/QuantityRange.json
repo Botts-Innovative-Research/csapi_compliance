@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Decimal pair for specifying a quantity range with a unit of measure",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractSimpleComponent.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "QuantityRange"
+        },
+        "uom": {
+          "description": "Unit of measure used to express the value of this data component",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/UnitReference"
+        },
+        "constraint": {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AllowedValues"
+        },
+        "nilValues": {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/NilValuesNumber"
+        },
+        "value": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/NumberOrSpecial"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "definition",
+        "label",
+        "uom"
+      ]
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/QuantityRange.json"
+}

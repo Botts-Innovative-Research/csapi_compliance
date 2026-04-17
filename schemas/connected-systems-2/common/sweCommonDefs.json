@@ -2,28 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "AnyComponent": {
-      "$ref": "../../../../../swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
     },
     "DataRecord": {
-      "$ref": "../../../../../swecommon/schemas/json/DataRecord.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataRecord.json"
     },
     "Time": {
-      "$ref": "../../../../../swecommon/schemas/json/Time.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Time.json"
     },
     "Category": {
-      "$ref": "../../../../../swecommon/schemas/json/Category.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Category.json"
     },
     "AnyEncoding": {
-      "$ref": "../../../../../swecommon/schemas/json/encodings.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json"
     },
     "JSONEncoding": {
-      "$ref": "../../../../../swecommon/schemas/json/encodings.json#/$defs/JSONEncoding"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/JSONEncoding"
     },
     "TextEncoding": {
-      "$ref": "../../../../../swecommon/schemas/json/encodings.json#/$defs/TextEncoding"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/TextEncoding"
     },
     "BinaryEncoding": {
-      "$ref": "../../../../../swecommon/schemas/json/encodings.json#/$defs/BinaryEncoding"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/BinaryEncoding"
     }
-  }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json"
 }

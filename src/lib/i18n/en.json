@@ -13,7 +13,12 @@
   "landing.feature.tests": "Tests 103 requirements",
   "landing.feature.export": "Exports JSON & PDF reports",
   "landing.error.authRequired": "This endpoint requires authentication.",
+  "landing.error.authRejected": "Authentication rejected by the server. Check your credentials and try again.",
   "landing.error.unreachable": "Could not reach this endpoint. Verify the URL and try again.",
+  "landing.authPanel.heading": "Authentication required",
+  "landing.authPanel.retry": "Discover with credentials",
+  "landing.authPanel.retrying": "Retrying...",
+  "landing.authPanel.cancel": "Cancel",
 
   "urlForm.label": "CS API Landing Page URL",
   "urlForm.placeholder": "https://api.example.com/ogc/csapi",

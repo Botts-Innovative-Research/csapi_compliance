@@ -111,10 +111,10 @@ export class TestRunner extends EventEmitter {
         break;
       }
 
-      const module: ConformanceClassTest | undefined =
+      const testModule: ConformanceClassTest | undefined =
         this.registry.getTestModule(classDef.classUri);
 
-      if (!module) {
+      if (!testModule) {
         // No module registered — skip the class
         const skippedTests = classDef.requirements.map((req) =>
           skipResult(req, 'No test module registered'),
@@ -170,7 +170,7 @@ export class TestRunner extends EventEmitter {
       // 2b–c. Create executable tests
       let executableTests: ExecutableTest[];
       try {
-        executableTests = module.createTests(ctx);
+        executableTests = testModule.createTests(ctx);
       } catch (err: unknown) {
         // If createTests itself throws, fail all requirements in this class
         const message =

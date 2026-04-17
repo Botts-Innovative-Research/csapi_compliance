@@ -1,3 +1,7 @@
+// Tests for result aggregation — src/engine/result-aggregator.ts
+// REQ-ENG-013: Standardized test result data structure
+// SCENARIO-ENG-RESULT-001: Result aggregation produces canonical verdict structure (CRITICAL)
+
 import { describe, it, expect } from 'vitest';
 import type { RequirementDefinition, TestResult } from '@/lib/types';
 import {

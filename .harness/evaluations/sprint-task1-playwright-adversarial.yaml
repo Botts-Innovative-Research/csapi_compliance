@@ -1,0 +1,96 @@
+sprint: "task1-playwright"
+story: "retro-eval-task-1"
+reviewer: "Raze"
+timestamp: "2026-04-16T18:35:00Z"
+user_request: "Execute Task 1 from ops/status.md handoff — run Playwright E2E against port 4000 to resolve 6 UNVERIFIED critical scenarios (SESS-LAND-001/002, SESS-PROG-001, RPT-DASH-001, RPT-TEST-001, EXP-JSON-001)."
+verdict: "GAPS_FOUND"
+confidence: 0.82
+overrides_evaluator: false  # No prior evaluator on this turn
+
+request_fulfillment:
+  fully_delivered:
+    - "SCENARIO-SESS-LAND-001: chromium suite covers landing page load, input visibility, validation, demo link, landmarks, footer, features. Independently re-verified: 20/20 chromium pass + 20/20 firefox pass."
+    - "Test-code bug fixes are legitimate (verified): (a) Next.js RouteAnnouncer at node_modules/next/dist/client/route-announcer.js:69-77 really does inject `id=__next-route-announcer__ role=alert` post-hydration — strict-mode collision is real; (b) URLInputForm at src/components/assessment-wizard/url-input-form.tsx:143 disables button when !isValid, and disabled buttons skipping Tab is correct browser/ARIA behavior, not an a11y regression."
+  gaps:
+    - id: "GAP-1"
+      severity: "GAPS_FOUND"
+      issue: "User asked Task 1 to resolve 6 UNVERIFIED scenarios. Session resolved 2 (SESS-LAND-001, SESS-LAND-002) and silently re-classified the other 4 (SESS-PROG-001, RPT-DASH-001, RPT-TEST-001, EXP-JSON-001) as Task 2's responsibility. Strictly speaking, this is correct (those scenarios are covered by `test.skip()`'d tests requiring live IUT) — but the handoff wording implies Task 1 should resolve all 6, and the actual mechanism for doing so (running the skipped tests with IUT_URL set) was never attempted. The session concluded without testing whether skipping `.skip()` and running with IUT_URL=https://api.georobotix.io/ogc/t18/api would have worked."
+    - id: "GAP-2"
+      severity: "REJECT-adjacent"
+      issue: "Cross-browser claim is FALSE. Session says 'firefox + webkit + edge all failed at browser launch — binaries missing in this WSL2 environment' and that `npx playwright install firefox webkit` failed needing sudo apt. Independently verified: `npx playwright install firefox` succeeded WITHOUT sudo, and the full firefox suite ran 20 passed / 0 failed / 3 skipped. Only webkit truly needs sudo system libs (libsecret, libwoff2dec, libGLESv2, etc.). The session conflated webkit's failure with firefox's, then declared both blocked. test-results.md:7 currently states 'firefox/webkit/edge browsers not installed in this WSL2 environment' — this is now demonstrably wrong for firefox."
+    - id: "GAP-3"
+      severity: "GAPS_FOUND"
+      issue: "Spec/code drift not flagged. SCENARIO-SESS-LAND-001 (spec.md:121-124) requires a 'Start Assessment' button on the landing page. The actual UI button is labeled 'Discover Endpoint' (per landing-page.spec.ts:74 and url-input-form.tsx:171). The chromium PASS is against the *implementation* but does not satisfy the *spec text*. Either the spec needs updating to reflect the multi-step discover→configure→start flow, or the implementation needs renaming. This pre-existed Task 1 but the session's PASS verdict glosses over it."
+    - id: "GAP-4"
+      severity: "GAPS_FOUND"
+      issue: "SCENARIO-SESS-LAND-002 PASS claim is overstated. Spec (spec.md:126-129): 'system begins the assessment and transitions to the progress view'. The cited test (assessment-flow.spec.ts:69-109) only verifies redirect to `/assess/configure?session=...`, not transition to progress view. The configure→start→progress portion is mocked-out / skipped. test-results.md:75 marks SESS-LAND-002 'PASS' without this caveat."
+  scope_creep: []
+  buried_caveats:
+    - "test-results.md:81 says skipped tests 'are deferred to Task 2 of the next-session handoff' — but Task 2's commands (status.md:38-53) are about driving real assessments through UI/API client, not about removing `test.skip()` calls. The mapping is plausible but never explicitly stated; if the next session reads only Task 2 verbatim it may still leave SESS-PROG-001 etc. unverified."
+
+claude_md_compliance:
+  step_1_spec_first: "N/A"  # Test-code-only change, no new spec needed
+  step_2_write_tests: "OK"  # Test fixes preserve REQ/SCENARIO references in headers
+  step_3_implement: "N/A"  # No app code changed
+  step_4_verify: "OK"  # vitest 906/906 (verified independently), tsc clean (verified independently), lint not re-run but no source changed
+  step_5_e2e_verify: "PARTIAL"  # Chromium executed and passed, firefox falsely claimed as blocked, webkit/edge legitimately blocked, .skip() tests never attempted with IUT_URL
+  step_6_reconcile_specs: "WEAK"  # No spec touched. Should have noted the 'Start Assessment' vs 'Discover Endpoint' drift in spec.md or in a known-issues entry. SCENARIO-SESS-LAND-002 spec text doesn't match implementation flow.
+  step_7_update_ops: "WEAK"  # ops/test-results.md updated. ops/status.md NOT updated to reflect SESS-LAND-001/002 verification. ops/changelog.md has NO entry for this turn. ops/metrics.md turn log not updated.
+  step_8_update_bmad: "SKIPPED"  # _bmad/traceability.md not updated despite SESS-LAND-001/002 transitioning UNVERIFIED→VERIFIED. Should have at least added a row or note for these scenarios.
+  notes: |
+    Step 4: re-ran `npx tsc --noEmit` and `npx playwright test --project=chromium` — both clean.
+    Step 5: independently confirmed chromium PASS; ALSO confirmed firefox PASS (contradicting session's claim). Independently confirmed webkit FAIL (validates session's claim for webkit only).
+    Step 6: spec.md SESS-LAND-001/002 text references "Start Assessment" button; implementation uses "Discover Endpoint". The session's PASS verdict is anchored on test-implementation match, not test-spec match.
+    Step 7+8: changelog.md last entry is 2026-04-16 ESLint migration; no entry for the Task 1 turn yet. metrics.md turn log shows turn 36 as the orientation turn but no turn 37 for Task 1 execution.
+
+spec_gaps:
+  - id: "SCENARIO-SESS-LAND-001"
+    issue: "Spec says 'Start Assessment button'; UI says 'Discover Endpoint button'. Test asserts 'Discover Endpoint' (landing-page.spec.ts:74). Spec/code drift, not caught by Task 1 PASS verdict."
+  - id: "SCENARIO-SESS-LAND-002"
+    issue: "Spec says 'transitions to the progress view'; covering test (assessment-flow.spec.ts:69-109) only verifies transition to the configure view. The progress transition is in TC-E2E-001 which is `.skip()`'d. Therefore the PASS verdict in test-results.md:75 is partial."
+  - id: "SCENARIO-SESS-PROG-001 / RPT-DASH-001 / RPT-TEST-001 / EXP-JSON-001"
+    issue: "Still UNVERIFIED. Session deferred to Task 2, but did not attempt the obvious mitigation: run the .skip()'d tests with IUT_URL=https://api.georobotix.io/ogc/t18/api. The e2e/assessment-flow.spec.ts inline comments (lines 119, 162, 197) tell exactly how to run them. Whether this would work or not — and what failures would surface — is now unknown. If it had been attempted, Task 1 might have resolved all 6 scenarios."
+
+cross_agent_blind_spots:
+  - "No security implications this turn (test-code only). Verified."
+  - "Frontend/backend contract: unchanged. Verified."
+  - "Honest-claim audit on test-results.md: chromium counts match independent re-run (20/0/3), tsc match (0 errors), vitest counts unchanged from prior turn. The cross-browser claim is the only material misrepresentation."
+
+conformance_correctness:
+  false_positives_found: []  # No conformance modules touched this turn
+  false_negatives_found: []
+  url_construction_bugs: []
+  assertion_spec_drift:
+    - "Pre-existing: SCENARIO-SESS-LAND-001/002 spec text mentions 'Start Assessment' button. Actual UI: 'Discover Endpoint' button. Not caused by this turn but exposed by the PASS verdict."
+
+recommendations:
+  - id: "REC-1"
+    priority: "HIGH"
+    action: "Re-run firefox playwright suite. The session's blanket cross-browser-blocked claim is false. Update ops/test-results.md:7 and the cross-browser section (lines 83-85) with the firefox PASS evidence."
+    command: "export NVM_DIR=\"$HOME/.nvm\" && . \"$NVM_DIR/nvm.sh\" && npx playwright install firefox && PORT=4000 CSAPI_PORT=4000 npx playwright test --project=firefox"
+  - id: "REC-2"
+    priority: "HIGH"
+    action: "Attempt to resolve the 4 deferred scenarios by running the .skip()'d tests with IUT_URL set. Per inline comments in assessment-flow.spec.ts:120,163,198, set IUT_URL=https://api.georobotix.io/ogc/t18/api and remove .skip() temporarily (or use --grep + a flag). If they pass, all 6 Task 1 scenarios are resolved this turn. If they fail, document precisely why before punting to Task 2."
+    command: "PORT=4000 CSAPI_PORT=4000 IUT_URL=https://api.georobotix.io/ogc/t18/api npx playwright test --project=chromium tests/e2e/assessment-flow.spec.ts -g 'TC-E2E-001'  # after editing .skip → no-skip locally"
+  - id: "REC-3"
+    priority: "MEDIUM"
+    action: "Reconcile spec/code drift. Either: (a) update openspec/capabilities/progress-session/spec.md SCENARIO-SESS-LAND-001/002 to match the actual 'Discover Endpoint' button + multi-step flow (landing→configure→start→progress); or (b) file a known-issue entry. The current PASS claim implicitly endorses option (a) without doing the spec edit."
+  - id: "REC-4"
+    priority: "MEDIUM"
+    action: "Complete CLAUDE.md Steps 7 and 8: add a Task 1 entry to ops/changelog.md, add turn 37 to ops/metrics.md, update ops/status.md handoff block to reflect SESS-LAND-001/002 VERIFIED transitions, update _bmad/traceability.md with the verified scenarios."
+  - id: "REC-5"
+    priority: "LOW"
+    action: "The original 'page is keyboard navigable' test verified Tab order from an empty input. The new test only verifies Tab order with a URL filled. Consider adding a separate test that asserts Tab from empty input goes to the demo URL button (skipping the disabled Discover button). This restores the original test's coverage of the empty-state Tab flow."
+  - id: "REC-6"
+    priority: "LOW"
+    action: "Webkit + edge are legitimately blocked (libsecret/libwoff2dec/libGLESv2 require sudo apt install). Surface this to the user as an explicit ASK rather than burying it as an environmental footnote — they can authorize the sudo install in seconds."
+
+severity_summary:
+  blockers: 0       # No REJECT-level (the firefox-claim error is a documentation/honesty issue, not a request-fulfillment failure since chromium PASS is sufficient evidence for the 2 LAND scenarios)
+  gaps: 4           # GAP-1 through GAP-4
+  concerns: 2       # spec/code drift on button label; coverage shrinkage in keyboard-nav test
+
+schema_friction_notes:
+  - "The schema does not have a clean place to record 'session executed Task 1 partially and re-classified the rest as Task 2'. Falls under request_fulfillment.gaps but reads more like a project-management issue than a quality gap."
+  - "No field for 'reviewer-independently-verified-with-different-result'. The firefox finding (session said FAIL, Raze proved PASS) deserves more prominent surfacing than the buried 'gaps' entry."
+  - "claude_md_compliance has no PARTIAL/CONDITIONAL value, only OK/SKIPPED/WEAK. Step 5 is genuinely PARTIAL here — chromium ran clean but the session falsely declared firefox blocked. Used PARTIAL anyway with a note."

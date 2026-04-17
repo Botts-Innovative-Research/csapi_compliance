@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "description": {
+      "description": "A textual description of the deployed system",
+      "type": "string",
+      "minLength": 1
+    },
+    "system": {
+      "description": "Link to the system being deployed",
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/commonDefs.json#/$defs/XLink"
+    },
+    "configuration": {
+      "description": "The configuration of the system used during this deployment (e.g., sampling rate setting, etc.)",
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Settings.json"
+    }
+  },
+  "required": [
+    "system"
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/DeployedSystem.json"
+}

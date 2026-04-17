@@ -2,7 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "Event": {
-      "$ref": "../../../../../sensorml/schemas/json/Event.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Event.json"
     }
-  }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/common/sensormlDefs.json"
 }

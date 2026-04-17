@@ -141,14 +141,15 @@ function createApp(deps: AssessmentDeps): Express {
 // ---------------------------------------------------------------
 
 describe('GET /api/health', () => {
-  it('returns { status: "ok" }', async () => {
+  it('returns status=ok and the current allowPrivateNetworks flag', async () => {
     const deps = createMockDeps();
     const app = createApp(deps);
 
     const res = await request(app).get('/api/health');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body.status).toBe('ok');
+    expect(typeof res.body.allowPrivateNetworks).toBe('boolean');
   });
 });
 
@@ -311,6 +312,113 @@ describe('GET /api/assessments/:id', () => {
       'Bearer secret-token-value-12345',
     );
     expect(exchange.request.headers.authorization).toContain('***');
+  });
+});
+
+// SCENARIO-SESS-CONFIRM-002 (progress-session/spec.md): backend must reject
+// /start requests that select destructive conformance classes without an
+// explicit destructiveConfirmed flag. Defense-in-depth against curl /
+// scripted callers bypassing the client UX gate (SCENARIO-SESS-CONFIRM-001).
+describe('POST /api/assessments/:id/start', () => {
+  let deps: AssessmentDeps;
+  let app: Express;
+
+  beforeEach(() => {
+    deps = createMockDeps();
+    app = createApp(deps);
+  });
+
+  it('starts a non-destructive assessment and returns running status', async () => {
+    const mockSession = createMockSession({ status: 'discovered' });
+    vi.mocked(deps.sessionManager.get).mockReturnValue(mockSession);
+
+    const res = await request(app)
+      .post(`/api/assessments/${mockSession.id}/start`)
+      .send({
+        conformanceClasses: [
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/core',
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system',
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('running');
+  });
+
+  it('returns 400 when destructive class selected without destructiveConfirmed', async () => {
+    const mockSession = createMockSession({ status: 'discovered' });
+    vi.mocked(deps.sessionManager.get).mockReturnValue(mockSession);
+
+    const res = await request(app)
+      .post(`/api/assessments/${mockSession.id}/start`)
+      .send({
+        conformanceClasses: [
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system',
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete',
+        ],
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('DESTRUCTIVE_CONFIRM_REQUIRED');
+    expect(res.body.error).toMatch(/destructive/i);
+    expect(deps.testRunner.run).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when destructiveConfirmed is false with a destructive class', async () => {
+    const mockSession = createMockSession({ status: 'discovered' });
+    vi.mocked(deps.sessionManager.get).mockReturnValue(mockSession);
+
+    const res = await request(app)
+      .post(`/api/assessments/${mockSession.id}/start`)
+      .send({
+        conformanceClasses: [
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/update',
+        ],
+        destructiveConfirmed: false,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('DESTRUCTIVE_CONFIRM_REQUIRED');
+  });
+
+  it('starts a destructive assessment when destructiveConfirmed=true', async () => {
+    const mockSession = createMockSession({ status: 'discovered' });
+    vi.mocked(deps.sessionManager.get).mockReturnValue(mockSession);
+
+    const res = await request(app)
+      .post(`/api/assessments/${mockSession.id}/start`)
+      .send({
+        conformanceClasses: [
+          'http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/create-replace-delete',
+        ],
+        destructiveConfirmed: true,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('running');
+  });
+
+  it('returns 404 for unknown id', async () => {
+    vi.mocked(deps.sessionManager.get).mockReturnValue(undefined);
+
+    const res = await request(app)
+      .post('/api/assessments/nonexistent/start')
+      .send({ conformanceClasses: [] });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toMatch(/not found/i);
+  });
+
+  it('returns 409 when session is already completed', async () => {
+    const mockSession = createMockSession({ status: 'completed' });
+    vi.mocked(deps.sessionManager.get).mockReturnValue(mockSession);
+
+    const res = await request(app)
+      .post(`/api/assessments/${mockSession.id}/start`)
+      .send({ conformanceClasses: [] });
+
+    expect(res.status).toBe(409);
+    expect(res.body.status).toBe('completed');
   });
 });
 

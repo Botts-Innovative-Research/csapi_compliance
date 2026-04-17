@@ -2,16 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "TimeInstant": {
-      "$ref": "../../../../../common/timeInstant.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstant.json"
     },
     "TimePeriod": {
-      "$ref": "../../../../../common/timePeriod.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timePeriod.json"
     },
     "Link": {
-      "$ref": "../../../../../common/link.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/link.json"
     },
     "Links": {
-      "$ref": "links.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-1/common/links.json"
     }
-  }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/common/commonDefs.json"
 }

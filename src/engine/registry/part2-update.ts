@@ -1,5 +1,9 @@
 // S09-06: Part 2 Update conformance class test module.
 // Conformance class: http://www.opengis.net/spec/ogcapi-connectedsystems-2/1.0/conf/update
+//
+// REQ-CRUD-001 (SCENARIO-CRUD-BODY-001): Update tests reuse the same
+// dataStream_create.json / controlStream_create.json-compliant bodies as
+// the CRUD module so the initial POST succeeds against a spec-strict server.
 
 import { CS_PART2_CONF } from '@/lib/constants';
 import type {
@@ -15,24 +19,16 @@ import {
   skipResult,
   assertionFailure,
 } from '@/engine/result-aggregator';
+import {
+  DATASTREAM_CREATE_BODY,
+  CONTROLSTREAM_CREATE_BODY,
+} from '@/engine/registry/part2-crud';
 
 // --- Payloads ---
 
-const CREATE_DATASTREAM_BODY = {
-  name: 'CSAPI Compliance Test Datastream',
-  outputName: 'test-output',
-  schema: {
-    obsFormat: 'application/om+json',
-  },
-};
+const CREATE_DATASTREAM_BODY = DATASTREAM_CREATE_BODY;
 
-const CREATE_CONTROLSTREAM_BODY = {
-  name: 'CSAPI Compliance Test Control Stream',
-  inputName: 'test-input',
-  schema: {
-    commandFormat: 'application/json',
-  },
-};
+const CREATE_CONTROLSTREAM_BODY = CONTROLSTREAM_CREATE_BODY;
 
 const PATCH_DATASTREAM_BODY = {
   name: 'CSAPI Compliance Test Datastream Updated',

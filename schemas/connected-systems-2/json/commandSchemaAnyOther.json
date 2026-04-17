@@ -20,5 +20,6 @@
   },
   "required": [
     "commandFormat"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaAnyOther.json"
 }

@@ -86,6 +86,7 @@ export const apiClient = {
       conformanceClasses: string[];
       auth?: AuthConfig;
       config?: RunConfig;
+      destructiveConfirmed?: boolean;
     },
   ): Promise<StartAssessmentResponse> {
     const response = await fetch(`/api/assessments/${id}/start`, {

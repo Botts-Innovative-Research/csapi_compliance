@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Free text component used to store comments or any other type of textual statement",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractSimpleComponent.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "Text"
+        },
+        "constraint": {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AllowedTokens"
+        },
+        "nilValues": {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/NilValuesText"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "definition",
+        "label"
+      ]
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Text.json"
+}

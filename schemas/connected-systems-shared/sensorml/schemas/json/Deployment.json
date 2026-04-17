@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/DescribedObject.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "Deployment"
+        },
+        "definition": {
+          "description": "Type of deployment (semantic link)",
+          "type": "string",
+          "format": "uri"
+        },
+        "location": {
+          "description": "The deployment location or area",
+          "$ref": "https://geojson.org/schema/Geometry.json"
+        },
+        "platform": {
+          "description": "The platform that the systems are deployed on",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/DeployedSystem.json"
+        },
+        "deployedSystems": {
+          "description": "The list of deployed systems",
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/sweCommonDefs.json#/$defs/SoftNamedProperty"
+              },
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/DeployedSystem.json"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Deployment.json"
+}

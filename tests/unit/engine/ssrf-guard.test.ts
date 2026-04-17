@@ -1,7 +1,8 @@
 // Tests for SSRF guard — src/server/middleware/ssrf-guard.ts
 // REQ-ENG-012: Graceful network error handling (no cascading failures)
+// REQ-SSRF-002 / SCENARIO-SSRF-LOCAL-001: opt-in private-network allowlist
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SsrfError } from '@/engine/errors.js';
 
 // We mock dns.resolve4 / dns.resolve6 so tests don't hit real DNS.
@@ -151,6 +152,76 @@ describe('SSRF Guard', () => {
 
     it('blocks IPv6 link-local (fe80::/10)', () => {
       expect(isBlockedIp('fe80::1')).toBe(true);
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // REQ-SSRF-002 / SCENARIO-SSRF-LOCAL-001 — opt-in private networks
+  // ------------------------------------------------------------------
+
+  describe('ALLOW_PRIVATE_NETWORKS=true opt-in', () => {
+    const originalFlag = process.env.ALLOW_PRIVATE_NETWORKS;
+
+    beforeEach(() => {
+      process.env.ALLOW_PRIVATE_NETWORKS = 'true';
+    });
+
+    afterEach(() => {
+      if (originalFlag === undefined) {
+        delete process.env.ALLOW_PRIVATE_NETWORKS;
+      } else {
+        process.env.ALLOW_PRIVATE_NETWORKS = originalFlag;
+      }
+    });
+
+    it('accepts localhost when opt-in is set', async () => {
+      await expect(validateUrl('http://localhost:8080/api')).resolves.toBeUndefined();
+    });
+
+    it('accepts 127.0.0.1 when opt-in is set', async () => {
+      await expect(validateUrl('http://127.0.0.1:4000/')).resolves.toBeUndefined();
+    });
+
+    it('accepts 10.x.x.x when opt-in is set', async () => {
+      await expect(validateUrl('http://10.0.0.5/api')).resolves.toBeUndefined();
+    });
+
+    it('accepts 192.168.x.x when opt-in is set', async () => {
+      await expect(validateUrl('http://192.168.1.1/api')).resolves.toBeUndefined();
+    });
+
+    it('accepts hostnames that resolve to private IPs when opt-in is set', async () => {
+      mockResolve4.mockResolvedValue(['10.0.0.5']);
+      await expect(validateUrl('http://internal.example.com/')).resolves.toBeUndefined();
+    });
+
+    it('still blocks non-HTTP schemes even when opt-in is set', async () => {
+      await expect(validateUrl('file:///etc/passwd')).rejects.toThrow(SsrfError);
+      await expect(validateUrl('ftp://localhost/')).rejects.toThrow(SsrfError);
+    });
+  });
+
+  describe('ALLOW_PRIVATE_NETWORKS unset (default)', () => {
+    // Explicitly re-verify the default path still blocks, in case a prior
+    // test leaked the env var.
+    const originalFlag = process.env.ALLOW_PRIVATE_NETWORKS;
+
+    beforeEach(() => {
+      delete process.env.ALLOW_PRIVATE_NETWORKS;
+    });
+
+    afterEach(() => {
+      if (originalFlag !== undefined) {
+        process.env.ALLOW_PRIVATE_NETWORKS = originalFlag;
+      }
+    });
+
+    it('blocks localhost when flag is unset', async () => {
+      await expect(validateUrl('http://localhost/')).rejects.toThrow(SsrfError);
+    });
+
+    it('blocks 10.x.x.x when flag is unset', async () => {
+      await expect(validateUrl('http://10.0.0.1/')).rejects.toThrow(SsrfError);
     });
   });
 });

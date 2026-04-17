@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/AbstractPhysicalProcess.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "PhysicalComponent"
+        },
+        "method": {
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/SimpleProcess.json#/$defs/ProcessMethod"
+        }
+      }
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/PhysicalComponent.json"
+}

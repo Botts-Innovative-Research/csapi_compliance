@@ -1,6 +1,6 @@
 # Conformance Testing — Specification
 
-> Version: 1.0 | Status: Draft | Last updated: 2026-03-31
+> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
 
 ## Purpose
 
@@ -13,10 +13,11 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the OGC API Common Part 1 conformance class:
   1. **Landing page structure** -- `GET /` returns HTTP 200 with a JSON body containing `title` (string), `description` (string), and `links` (array of link objects each with `href`, `rel`, and `type`).
-  2. **Conformance endpoint** -- `GET /conformance` returns HTTP 200 with a JSON body containing `conformsTo` (array of URI strings).
-  3. **JSON encoding** -- All tested endpoints return `Content-Type: application/json` (or a compatible media type with `+json` suffix) when requested with `Accept: application/json`.
-  4. **OpenAPI 3.0 definition link** -- The landing page `links` array contains at least one entry with `rel: "service-desc"` whose `href` resolves (GET returns HTTP 200) and whose response body is a valid OpenAPI 3.0.x document (verified by checking `openapi` field starts with `"3.0"` or `"3.1"`).
-- **Rationale**: OGC API Common Part 1 is a prerequisite for all other conformance classes. If these tests fail, dependent classes cannot be reliably assessed.
+  2. **Landing page required link relations** -- Per OGC API - Common Part 1 (19-072) `/req/core/root-success`, the landing page `links` array SHALL include (a) a link to the API definition with `rel: "service-desc"` OR `rel: "service-doc"`, AND (b) a link to the conformance declaration with `rel: "conformance"`. The relation `rel: "self"` appears in the informative example landing page in the spec but is NOT a normative requirement and SHALL NOT be asserted as mandatory.
+  3. **Conformance endpoint** -- `GET /conformance` returns HTTP 200 with a JSON body containing `conformsTo` (array of URI strings).
+  4. **JSON encoding** -- All tested endpoints return `Content-Type: application/json` (or a compatible media type with `+json` suffix) when requested with `Accept: application/json`.
+  5. **OpenAPI 3.0 definition link** -- The landing page `links` array contains at least one entry with `rel: "service-desc"` whose `href` resolves (GET returns HTTP 200) and whose response body is a valid OpenAPI 3.0.x document (verified by checking `openapi` field starts with `"3.0"` or `"3.1"`).
+- **Rationale**: OGC API Common Part 1 is a prerequisite for all other conformance classes. If these tests fail, dependent classes cannot be reliably assessed. The normative link-relation list is narrow (API definition OR API doc, plus conformance); asserting additional example relations such as `self` as required causes false-positive failures against real-world conformant servers (see issue #3).
 
 ### REQ-TEST-002: OGC API Features Part 1 Core Tests (FR-10)
 - **Priority**: MUST
@@ -197,6 +198,24 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Description**: When a resource collection is empty (the items endpoint returns an empty `features` array), the test engine SHALL skip tests that require an existing resource (e.g., single-resource access, schema validation on a resource body, link inspection) with reason "Collection is empty; no resources available to test." The collection-level tests (collection endpoint availability, items endpoint returning valid FeatureCollection) SHALL still execute normally.
 - **Rationale**: An empty collection is a valid server state and should not cause test failures for resource-level checks.
 
+### REQ-SCHEMA-001: Bundled OGC Schemas are Fully Resolved (FR-09, FR-10, FR-11)
+- **Priority**: MUST
+- **Status**: SPECIFIED
+- **Description**: Every JSON schema bundled under `schemas/` SHALL have its `$ref` targets resolvable without network access. For every `$ref` value in every bundled schema, the target SHALL either (a) resolve to another file within the bundle (by relative path or by matching an `$id` of another bundled schema), or (b) be a pure fragment (`#...`) within the same file. The fetch pipeline (`scripts/fetch-schemas.ts`) SHALL walk every fetched schema's refs recursively, enqueue transitively-referenced files, and continue fetching until the closure is stable. The resulting bundle is covered by a Gate 1 integrity test (`tests/unit/engine/schema-bundle-integrity.test.ts`) so regressions are caught mechanically.
+- **Rationale**: Issue #4 — `dataStream_create.json`'s `$ref: "dataStream.json"` resolved but `dataStream.json`'s `$ref: "../../../../../common/timePeriod.json"` dangled. Schema validation silently weakened; invalid bodies passed. A closed, integrity-checked bundle restores validator fidelity.
+
+### REQ-CRUD-001: CRUD Request Bodies Validate Against OGC Create-Schemas (FR-20)
+- **Priority**: MUST
+- **Status**: SPECIFIED
+- **Description**: Every CRUD conformance test that POSTs a resource body SHALL use a body that passes JSON Schema validation against the corresponding OGC `*_create.json` schema at test-authoring time. Module-owned body builders (`DATASTREAM_CREATE_BODY`, `CONTROLSTREAM_CREATE_BODY`, etc. in `src/engine/registry/part2-crud.ts`) SHALL be unit-tested against the bundled schema so that schema evolution or body drift produces a failing test, not a silent server-side rejection during live assessments.
+- **Rationale**: Issue #6 — the previous minimal Datastream create body (`name`, `outputName`, `schema.obsFormat` only) failed validation against `dataStream_create.json` once the schema closure was restored (REQ-SCHEMA-001). A compliant server SHOULD reject the malformed body, and the conformance test was therefore not exercising create-replace-delete.
+
+### REQ-PART2-BASEURL-001: Part 2 Tests Preserve the IUT Base Path (FR-11)
+- **Priority**: MUST
+- **Status**: SPECIFIED
+- **Description**: Every Part 2 test module SHALL construct outbound request URLs using `new URL(relativePath, ctx.baseUrl)` where `relativePath` does NOT begin with a slash. This guarantees the full path segment of the IUT base URL (e.g. `/sensorhub/api/`) is preserved. A leading slash makes WHATWG URL resolution strip the base path, rerouting requests to the origin root. The invariant is covered by `tests/unit/engine/registry/part2-url-construction.test.ts`, which asserts every outbound URL emitted by every Part 2 module begins with the configured IUT base URL.
+- **Rationale**: Issue #5 — the Part 1 URL fix in commit 168c032 rewrote leading-slash patterns to relative paths across all Part 1 modules but missed `part2-common.ts` (`['/datastreams', '/observations', ...]`), `crud.ts` (`testCrudLifecycle(…, '/systems')`), and `update.ts`. Assessments against IUTs with non-root base paths silently hit the wrong URLs and returned 404s.
+
 ### REQ-TEST-021: Test Cleanup for Write Operations
 - **Priority**: SHOULD
 - **Status**: SPECIFIED
@@ -222,6 +241,15 @@ This capability defines the conformance test execution engine for the CS API Com
 **Given** a CS API endpoint where `GET /systems/{systemId}` returns a body missing the required `properties.name` field
 **When** the test engine executes the System Features conformance class tests
 **Then** the "System schema validation" test produces a FAIL verdict with reason containing "missing required field 'name' in properties" and all OGC API Common Part 1 and Features Part 1 Core tests produce PASS verdicts
+
+### SCENARIO-LINKS-NORMATIVE-001: Landing Page Links Test Respects Normative /req/core/root-success Only
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-001 (item 2), REQ-TEST-019
+- **Preconditions**: The IUT returns a conformant landing page per OGC API Common Part 1 (19-072) `/req/core/root-success`: it includes an API-definition link (`rel: "service-desc"` OR `rel: "service-doc"`) and a conformance link (`rel: "conformance"`), but omits the informative-example relation `rel: "self"`.
+
+**Given** a landing page whose `links` array contains `rel: "service-desc"` and `rel: "conformance"` but no `rel: "self"`
+**When** the test engine executes the "Landing page required link relations" test
+**Then** the test produces a PASS verdict because `rel: "self"` is not listed as a normative requirement in 19-072 `/req/core/root-success` (it appears only as an illustrative example); AND a landing page that substitutes `rel: "service-doc"` for `rel: "service-desc"` also produces PASS (the relation is an OR); AND a landing page missing `rel: "conformance"` produces FAIL with a message citing the missing `conformance` relation
 
 ### SCENARIO-TEST-SKIP-001: Conformance Class Not Declared by Server
 - **Priority**: CRITICAL
@@ -321,6 +349,30 @@ This capability defines the conformance test execution engine for the CS API Com
 **Given** a CS API endpoint where `GET /` returns HTTP 200 but the body is missing the required `links` array
 **When** the test engine executes OGC API Common Part 1 tests and at least one test FAILS
 **Then** OGC API Features Part 1 Core tests are all SKIPPED with reason "Dependency class 'OGC API Common Part 1' failed", and CS API Core tests are all SKIPPED with reason "Dependency class 'OGC API Features Part 1 Core' failed" (transitive), and all subsequent CS API resource class tests are similarly SKIPPED
+
+### SCENARIO-SCHEMA-REF-001: Every bundled $ref resolves locally
+- **Priority**: CRITICAL
+- **References**: REQ-SCHEMA-001
+
+**Given** the schemas directory populated by `npx tsx scripts/fetch-schemas.ts`
+**When** the Gate 1 integrity test walks every `.json` file and inspects every `$ref` value
+**Then** every `$ref` either starts with `#` (pure fragment), resolves to another file in the bundle by relative path, or matches the `$id` of another bundled schema — no external or dangling targets remain
+
+### SCENARIO-CRUD-BODY-001: CRUD request bodies pass schema validation at authoring time
+- **Priority**: CRITICAL
+- **References**: REQ-CRUD-001, REQ-SCHEMA-001
+
+**Given** the CRUD body builders exported from `src/engine/registry/part2-crud.ts`
+**When** a unit test loads the schema bundle and validates `DATASTREAM_CREATE_BODY` against `connected-systems-2/json/dataStream_create.json` and `CONTROLSTREAM_CREATE_BODY` against `connected-systems-2/json/controlStream_create.json`
+**Then** both validations return `{ valid: true, errors: [] }` without the validator needing to fall back to permissive defaults
+
+### SCENARIO-PART2-BASEURL-001: Part 2 tests keep the IUT base path
+- **Priority**: CRITICAL
+- **References**: REQ-PART2-BASEURL-001
+
+**Given** a TestContext configured with `baseUrl = 'https://example.com/path/segment/api/'`
+**When** every Part 2 conformance class test module runs its executable tests against a URL-capturing mock HTTP client
+**Then** every captured request URL starts with `https://example.com/path/segment/api/…` — no request drops any path segment of the base URL
 
 ## Implementation Status (2026-03-31)
 

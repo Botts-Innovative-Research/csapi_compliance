@@ -89,6 +89,13 @@ async function main() {
   const port = parseInt(process.env.CSAPI_PORT || '3000', 10);
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    if (process.env.ALLOW_PRIVATE_NETWORKS === 'true') {
+      console.warn(
+        '\n⚠️  ALLOW_PRIVATE_NETWORKS=true — SSRF guard is relaxed. ' +
+          'Private/loopback IP addresses and localhost are allowed as IUT targets. ' +
+          'This is intended for local-dev workflows only; DO NOT run in production.\n',
+      );
+    }
   });
 
   // Graceful shutdown

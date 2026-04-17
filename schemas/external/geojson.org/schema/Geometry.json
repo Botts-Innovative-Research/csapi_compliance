@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://geojson.org/schema/Geometry.json",
+  "title": "GeoJSON Geometry (stub)",
+  "description": "Permissive stub for GeoJSON Geometry, bundled so OGC CS schemas with $ref to https://geojson.org/schema/Geometry.json can be compiled offline.",
+  "type": "object"
+}

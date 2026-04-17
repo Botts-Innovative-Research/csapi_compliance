@@ -6,5 +6,6 @@
   "minItems": 1,
   "items": {
     "type": "string"
-  }
+  },
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-1/common/batch_delete.json"
 }

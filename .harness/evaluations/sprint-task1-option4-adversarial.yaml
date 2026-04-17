@@ -1,0 +1,216 @@
+sprint: "task1-option4"
+story: "Task 1 — Playwright E2E closure of 6 critical scenarios; Option 4 (separate destructive-confirm test from happy path)"
+reviewer: "Raze"
+timestamp: "2026-04-16T15:15:00Z"
+user_request: >
+  User said 'Do 4' — selecting Option 4 from a four-option list: keep happy-path
+  live-IUT tests safe by deselecting CRUD classes, and add a separate dedicated
+  test that exercises the destructive-confirm UX gate against a mocked API.
+
+verdict: "GAPS_FOUND"
+confidence: 0.85
+overrides_evaluator: false  # no Gate 2 v3 has been run yet; Raze's previous task1-playwright verdict (0.82) is superseded by this one
+
+request_fulfillment:
+  fully_delivered:
+    - "Helper deselectCrudClasses(page) added at tests/e2e/assessment-flow.spec.ts:13-37"
+    - "TC-E2E-001/004/005 wired through the helper; all pass with IUT_URL=GeoRobotix"
+    - "New TC-E2E-006 (mocked discovery, always-on) validates Start-disabled-without-confirm, checkbox enables Start, idempotency, deselect-hides-confirm"
+    - "Race condition (helper vs sessionStorage useEffect) fixed by waiting for Conformance Classes heading first"
+    - "Strict-mode locator collision in TC-E2E-004 ('Cancelled' badge vs description prose) fixed with exact: true scoping"
+    - "Chromium 24/0/0 (12.5s) and firefox 24/0/0 (16.9s) with IUT_URL reproduced by Raze: TC-E2E-001 3.2s, TC-E2E-006 752ms"
+    - "Ops trail updated: test-results.md, known-issues.md (finding moved to RESOLVED), changelog.md, status.md (Task 1 → CLOSED), traceability.md, metrics.md"
+
+  gaps:
+    - id: "PROG-ASSERTION-WEAK"
+      severity: "HIGH"
+      issue: >
+        SCENARIO-SESS-PROG-001 marked PASS on the strength of a single
+        assertion (getByText(/Assessment in Progress/i)). The spec text
+        explicitly requires: current class name, next test name, 'N/M' counter,
+        progress bar percentage, and 1-second update latency. TC-E2E-001
+        validates NONE of these observable behaviors. Backend duration on the
+        last run was 1331ms (81 tests total; 16 pass / 12 fail / 53 skip), so
+        the progress page likely renders and redirects in under 2 seconds —
+        the Playwright assertion only confirms the heading mounted briefly
+        before redirect. This is a render check, not a behavior check.
+      locations:
+        - "tests/e2e/assessment-flow.spec.ts:176-178"
+        - "openspec/capabilities/progress-session/spec.md:61-64 (SCENARIO text)"
+    - id: "RPT-TEST-FILTER-NOT-EXERCISED"
+      severity: "HIGH"
+      issue: >
+        SCENARIO-RPT-TEST-001 ('test-level filtering') marked PASS. TC-E2E-001
+        never clicks any filter button. Filter buttons exist at
+        src/app/assess/[id]/results/page.tsx:277-295 (all/pass/fail/skip),
+        but no E2E test exercises them, and no unit test exercises them
+        either. The traceability.md claim 'per-filter behavior covered by
+        unit tests in tests/unit/components' is FALSE — that directory does
+        not exist, and no unit test touches StatusFilter/setFilter.
+      locations:
+        - "_bmad/traceability.md:154"
+        - "tests/e2e/assessment-flow.spec.ts:183-191"
+    - id: "EXP-JSON-NOT-DOWNLOADED"
+      severity: "MEDIUM"
+      issue: >
+        SCENARIO-EXP-JSON-001 marked PASS based on the Export JSON button
+        being visible. TC-E2E-001 does NOT click the button, does NOT
+        assert the download event, and does NOT assert the downloaded
+        payload shape. There is server-route + api-client unit coverage
+        (tests/unit/server/assessments.test.ts, tests/unit/engine/export-engine.test.ts),
+        so this gap is smaller than RPT-TEST-001, but the E2E claim is
+        still weaker than the scenario text.
+      locations:
+        - "tests/e2e/assessment-flow.spec.ts:190-191"
+    - id: "DESTRUCTIVE-BACKEND-UNENFORCED"
+      severity: "HIGH"
+      issue: >
+        Spec openspec/capabilities/conformance-testing/design.md:123 and
+        dynamic-data-testing/design.md:278 state that the backend MUST return
+        HTTP 400 if a destructive-class selection arrives without the opt-in
+        confirmation. Grep of src/server/ shows ZERO references to
+        'destructive' or 'destructiveConfirm'. The POST /api/assessments/:id/start
+        handler (src/server/routes/assessments.ts:185-232) accepts
+        conformanceClasses with no gating whatsoever. TC-E2E-006 validates
+        only the frontend UX gate; the backend is a latent bypass. Not
+        introduced this turn, but this turn marked the destructive-confirm
+        story as RESOLVED in known-issues.md, which is premature.
+      locations:
+        - "src/server/routes/assessments.ts:185-232"
+        - "openspec/capabilities/conformance-testing/design.md:123"
+        - "ops/known-issues.md (FINDING marked RESOLVED)"
+    - id: "SCENARIO-GAP-DESTRUCTIVE"
+      severity: "MEDIUM"
+      issue: >
+        The destructive-confirm gate is now a first-class tested behavior
+        but has NO SCENARIO-* in openspec/capabilities/progress-session/spec.md
+        or conformance-testing/spec.md enumerating the Given/When/Then.
+        TC-E2E-006 has no SCENARIO-* trace in its header comment
+        (assessment-flow.spec.ts:263-267 only says 'destructive-confirm UX
+        gate'). This violates CLAUDE.md Step 1 (Spec First) and Step 2
+        (tests reference REQ-*/SCENARIO-*).
+      locations:
+        - "tests/e2e/assessment-flow.spec.ts:263-267"
+        - "openspec/capabilities/progress-session/spec.md (missing scenario)"
+
+  scope_creep:
+    - "None — the turn stayed within Option 4 scope"
+
+  buried_caveats:
+    - "test-results.md:83 says 'PASS at render level; per-filter behavior covered by unit tests' — the unit-test claim is unverified (see RPT-TEST-FILTER-NOT-EXERCISED)"
+    - "test-results.md:84 says 'PASS at button-visible level' — the caveat is honest but the scenario is still tallied as PASS in the summary table and traceability.md"
+
+claude_md_compliance:
+  step_1_spec_first: "WEAK"
+  step_2_write_tests: "WEAK"
+  step_3_implement: "OK"
+  step_4_verify: "OK"
+  step_5_e2e_verify: "OK"
+  step_6_reconcile_specs: "WEAK"
+  step_7_update_ops: "OK"
+  step_8_update_bmad: "WEAK"
+  notes: >
+    Step 1 (Spec First): No SCENARIO-* was added for the destructive-confirm
+    UX gate before tests were written. TC-E2E-006 is tested behavior without
+    a spec anchor.
+
+    Step 2 (Write Tests): TC-E2E-006 has no SCENARIO-*/REQ-* trace in its
+    header comment. The file-level header at lines 1-5 cites
+    SCENARIO-SESS-PROG-001/RPT-DASH-001/RPT-TEST-001/EXP-JSON-001 for
+    TC-E2E-001 but TC-E2E-006 is orphaned.
+
+    Step 4 (Verify): Raze independently re-ran `npx vitest run` (906/906
+    PASS), `npx tsc --noEmit` (0 errors), `npx eslint .` (0 errors 18
+    warnings), and `IUT_URL=... npx playwright test -g TC-E2E-001` (PASS
+    3.2s chromium) and `-g TC-E2E-006` (PASS 752ms chromium). Claims match
+    observed output.
+
+    Step 5 (E2E Verify): Confirmed chromium 24/24 and firefox 24/24 via
+    /tmp/playwright-iut-4.log and /tmp/playwright-iut-firefox.log. Timestamps
+    are recent (Apr 16 15:01 / 15:02). OK.
+
+    Step 6 (Reconcile Specs): progress-session/spec.md updated for
+    LAND-001..006 but NOT for destructive-confirm. The Implementation Status
+    table in progress-session/spec.md still says 'None' under Deviations
+    even though a new tested behavior exists that isn't speced.
+
+    Step 8 (Update _bmad): traceability.md "Verified scenarios" table makes
+    a factually WRONG claim: 'per-filter behavior covered by unit tests in
+    tests/unit/components' — that directory does not exist. This is the
+    single most concrete CLAUDE.md-compliance finding of this review.
+
+spec_gaps:
+  - id: "SCENARIO-SESS-DESTRUCTIVE-001 (missing)"
+    issue: "Destructive-confirm UX gate is tested but not specified. No SCENARIO-* in progress-session/spec.md describes the Given/When/Then."
+  - id: "REQ-CONF-DESTRUCTIVE-BACKEND (designed, not implemented)"
+    issue: "design.md describes backend HTTP 400 enforcement; src/server/routes/assessments.ts does not enforce it."
+  - id: "SCENARIO-SESS-PROG-001"
+    issue: "Spec requires counter/bar/class-name observations; E2E test verifies only page-load. A proper test needs to mock a slow assessment (or run against a deliberately slow IUT) so multiple progress events are observable, and assert at least two distinct progress states (e.g., 0/N then >0/N)."
+  - id: "SCENARIO-RPT-TEST-001"
+    issue: "Spec calls out pass/fail/skip filtering. No test clicks the filter buttons. Should be covered either by a component-level unit test (render results with mixed statuses, click filter, assert class visibility) or by an extension of TC-E2E-001."
+
+cross_agent_blind_spots:
+  - concern: "Backend destructive-confirm enforcement is absent. Any non-browser client can POST /api/assessments/:id/start with CRUD classes and no confirmation. TC-E2E-006 would pass, but a curl script would succeed against the same backend and mutate data."
+    location: "src/server/routes/assessments.ts:185-232"
+  - concern: "deselectCrudClasses helper matches label text by URI substring. Works for the current supported-set, but is brittle to future label copy changes. Not a blocker — just a maintenance note."
+    location: "tests/e2e/assessment-flow.spec.ts:25-27"
+  - concern: "The fast-run (1.3s backend, 3.2s E2E) on GeoRobotix is not a bug per se, but it means SCENARIO-SESS-PROG-001 is effectively a chrome-render test, not a progress-behavior test."
+    location: "tests/e2e/assessment-flow.spec.ts:175-178"
+
+conformance_correctness:
+  false_positives_found:
+    - suspect: "12 failing tests against the GeoRobotix reference implementation (data/results/92366f39...json shows 16 pass / 12 FAIL / 53 SKIP at 1331ms). Failing classes include 'canonical-endpoint', 'canonical-url', 'landing-page-links', and 'JSON Content-Type Header'. Against a known-good server these should PASS — each FAIL is either a false positive in the test module or a real bug worth documenting. THIS IS TASK 2 territory (explicitly deferred per test-results.md:130), but the verdict PASS on SCENARIO-SESS-PROG-001 is silently standing on an assessment where 15% of tests failed against a reference implementation."
+  false_negatives_found:
+    - "Not assessed this turn (requires known-bad fixtures; Task 2)"
+  url_construction_bugs:
+    - "Not re-grepped this turn; prior finding states zero leading-slash 'new URL(' calls remain in src/engine/registry/"
+  assertion_spec_drift:
+    - "Not spot-checked this turn; deferred to Task 2"
+
+recommendations:
+  - priority: 1
+    action: >
+      Strengthen SCENARIO-SESS-PROG-001 coverage. Either (a) add a
+      progress-page component unit test that mounts the page with mocked
+      SSE events and asserts the progress bar width, '12/58' counter, and
+      class/test name updates; or (b) extend TC-E2E-001 to assert two
+      distinct progress states (e.g., progressbar aria-valuenow==0 before
+      first test, then >0 after). One Playwright assertion on a transient
+      heading is not sufficient evidence for the scenario's Given/When/Then.
+  - priority: 2
+    action: >
+      Remove the false claim from _bmad/traceability.md RPT-TEST-001 row:
+      'per-filter behavior covered by unit tests in tests/unit/components'
+      — that directory does not exist and no unit test clicks filter
+      buttons. Replace with either (a) a new component test, or (b) honest
+      'PARTIAL: results page render verified E2E; filter-click behavior
+      NOT tested'. The current wording is exactly the kind of copy-paste
+      overstatement the Gate-4 rubric warns about.
+  - priority: 3
+    action: >
+      Add SCENARIO-SESS-DESTRUCTIVE-001 (or similar) to
+      openspec/capabilities/progress-session/spec.md describing the Given/When/Then
+      for the destructive-confirm UX gate. Update TC-E2E-006's header
+      comment to cite it. Retroactive spec-first is allowed per CLAUDE.md
+      Step 6 reconciliation, but silently tested-but-not-spec'd is not.
+  - priority: 4
+    action: >
+      Implement the backend destructive-confirm enforcement described in
+      conformance-testing/design.md:123. POST /api/assessments/:id/start
+      should require an opt-in flag (e.g., destructiveConfirmed: true) when
+      session.selectedClasses contains any CRUD/update URI, and return
+      HTTP 400 otherwise. Add a unit test against the route. Without this,
+      the destructive-confirm story is single-layer defense (frontend only).
+      The known-issues.md move to RESOLVED should be downgraded to
+      PARTIAL-RESOLVED until the backend gate lands.
+  - priority: 5
+    action: >
+      Extend TC-E2E-001 (or add a separate TC-E2E-007) to actually CLICK
+      the Export JSON button and assert the download event fires with the
+      correct filename + content-type. Current assertion ('button visible')
+      is weaker than the scenario text.
+
+severity_summary:
+  blockers: 0
+  gaps: 5     # PROG-ASSERTION-WEAK, RPT-TEST-FILTER-NOT-EXERCISED, DESTRUCTIVE-BACKEND-UNENFORCED, SCENARIO-GAP-DESTRUCTIVE, traceability false claim
+  concerns: 3  # 12 failing tests against reference (pre-existing Task 2), EXP-JSON-NOT-DOWNLOADED, helper brittleness

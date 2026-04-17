@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "allOf": [
     {
-      "$ref": "baseStream.json"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/baseStream.json"
     },
     {
       "properties": {
         "system@link": {
           "description": "Link to the system producing the observations",
-          "$ref": "../common/commonDefs.json#/$defs/Link",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link",
           "readOnly": true
         },
         "outputName": {
@@ -17,19 +17,19 @@
         },
         "procedure@link": {
           "description": "Link to the procedure used to acquire observations (only provided if all observations in the datastream share the same procedure)",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         },
         "deployment@link": {
           "description": "Link to the deployment during which the observations are/were collected (only provided if all observations in the datastream share the same deployment)",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         },
         "featureOfInterest@link": {
           "description": "Link to the ultimate feature of interest (only provided if all observations in the datastream share the same feature of interest)",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         },
         "samplingFeature@link": {
           "description": "Link to the sampling feature (only provided if all observations in the datastream share the same sampling feature)",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         },
         "observedProperties": {
           "oneOf": [
@@ -66,7 +66,7 @@
             },
             {
               "description": "Time extent spanning all phenomenon times of observations in this datastream",
-              "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/TimePeriod"
             }
           ],
           "readOnly": true
@@ -83,7 +83,7 @@
             },
             {
               "description": "Time extent spanning all result times of observations in this datastream",
-              "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/TimePeriod"
             }
           ],
           "readOnly": true
@@ -131,12 +131,12 @@
         },
         "schema": {
           "description": "Schema describing the content of observations in this datastream. The exact syntax of the schema depends on the encoding format.",
-          "$ref": "observationSchema.json",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/json/observationSchema.json",
           "writeOnly": true
         },
         "links": {
           "description": "Other links to related resources",
-          "$ref": "../common/commonDefs.json#/$defs/Links"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Links"
         }
       }
     }
@@ -149,5 +149,6 @@
     "resultTime",
     "resultType",
     "live"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/dataStream.json"
 }

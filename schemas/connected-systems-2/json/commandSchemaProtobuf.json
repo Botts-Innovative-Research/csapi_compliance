@@ -15,7 +15,7 @@
         },
         {
           "title": "Link to external file",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         }
       ]
     }
@@ -23,5 +23,6 @@
   "required": [
     "commandFormat",
     "messageSchema"
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaProtobuf.json"
 }

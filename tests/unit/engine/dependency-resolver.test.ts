@@ -1,5 +1,6 @@
 // REQ-ENG-007: DAG-based dependency ordering with topological sort and cycle detection
 // REQ-ENG-008: Dependency failure cascading — skip dependents when prerequisites fail
+// SCENARIO-ENG-DEP-001: Dependency resolution produces correct execution order (CRITICAL)
 
 import { describe, it, expect } from 'vitest';
 import { DependencyResolver } from '@/engine/dependency-resolver';

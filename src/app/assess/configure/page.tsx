@@ -11,6 +11,7 @@ import type { DeclaredConformanceClass } from '@/engine/conformance-mapper';
 import type { AuthConfig, RunConfig } from '@/lib/types';
 import { ENGINE_DEFAULTS } from '@/lib/constants';
 import apiClient, { ApiError } from '@/services/api-client';
+import { selectedHasDestructive } from '@/lib/destructive-classes';
 import { t } from '@/lib/i18n';
 
 interface DiscoveryResult {
@@ -90,6 +91,20 @@ function ConfigurePage() {
       const mapped = mapConformanceClasses(data.conformsTo);
       const supported = mapped.filter((c) => c.supported).map((c) => c.uri);
       setSelectedUris(supported);
+
+      // REQ-AUTH-002 / SCENARIO-AUTH-PROTECTED-001: inherit credentials the
+      // landing page established during auth-retry. Without this, the user
+      // would have to re-enter credentials on the configure page before
+      // starting tests against a protected IUT.
+      const storedAuth = sessionStorage.getItem(`auth:${sessionId}`);
+      if (storedAuth) {
+        try {
+          const inherited = JSON.parse(storedAuth) as AuthConfig;
+          setAuth(inherited);
+        } catch {
+          /* ignore malformed — user can re-enter on the configure page */
+        }
+      }
     } catch {
       setError(t('config.error.loadFailed'));
     } finally {
@@ -105,12 +120,7 @@ function ConfigurePage() {
 
   // Check if any mutating class is selected
   const anyMutatingSelected = useMemo(
-    () =>
-      selectedUris.some(
-        (uri) =>
-          uri.includes('/conf/create-replace-delete') ||
-          uri.includes('/conf/update'),
-      ),
+    () => selectedHasDestructive(selectedUris),
     [selectedUris],
   );
 
@@ -138,6 +148,7 @@ function ConfigurePage() {
         conformanceClasses: selectedUris,
         auth: auth.type !== 'none' ? auth : undefined,
         config: runConfig,
+        destructiveConfirmed: anyMutatingSelected ? destructiveConfirmed : undefined,
       });
 
       router.push(`/assess/${result.id}/progress`);

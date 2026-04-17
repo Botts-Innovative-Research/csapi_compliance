@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Time Instant",
+  "oneOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstant.json"
+    },
+    {
+      "type": "string",
+      "const": "now"
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/common/timeInstantOrNow.json"
+}

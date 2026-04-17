@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/DescribedObject.json"
+    },
+    {
+      "properties": {
+        "configuration": {
+          "description": "Value settings that further constrain the properties of the base process in this mode.",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Settings.json"
+        }
+      }
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/sensorml/schemas/json/Mode.json"
+}

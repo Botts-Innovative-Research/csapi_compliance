@@ -1,6 +1,7 @@
 // Tests for CredentialMasker — src/engine/credential-masker.ts
 // REQ-CAP-006: Credential masking in captured HTTP exchanges
 // REQ-CAP-007: Sensitive data protection for stored exchanges
+// SCENARIO-CAP-MASK-001: Credential masking redacts auth headers and secret-bearing fields (CRITICAL)
 
 import { describe, it, expect } from 'vitest';
 import { CredentialMasker } from '@/engine/credential-masker.js';

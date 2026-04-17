@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Base substitution groups for all SWE Common objects with identification metadata",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AbstractSWE"
+    },
+    {
+      "properties": {
+        "label": {
+          "description": "Human readable label for the object",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "Human readable description of the object",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractSweIdentifiable.json"
+}

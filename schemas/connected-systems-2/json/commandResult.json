@@ -40,7 +40,7 @@
         "command@id": {},
         "observation@link": {
           "description": "Link to an observation resulting from the execution of the command",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         }
       },
       "required": [
@@ -54,7 +54,7 @@
         "command@id": {},
         "observationSet@link": {
           "description": "Link to a set of observations resulting from the execution of the command",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         }
       },
       "required": [
@@ -70,13 +70,13 @@
           "description": "Link to a datastream containing observations resulting from the execution of the command",
           "allOf": [
             {
-              "$ref": "../common/commonDefs.json#/$defs/Link"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
             },
             {
               "properties": {
                 "resultTime": {
                   "description": "Time range during which the resulting observations were generated (If not provided, the entire datastream is assumed to be the result)",
-                  "$ref": "../common/commonDefs.json#/$defs/TimePeriod"
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/TimePeriod"
                 }
               }
             }
@@ -94,12 +94,13 @@
         "command@id": {},
         "external@link": {
           "description": "Link to an external dataset containing the result(s) of the command",
-          "$ref": "../common/commonDefs.json#/$defs/Link"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/commonDefs.json#/$defs/Link"
         }
       },
       "required": [
         "external@link"
       ]
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandResult.json"
 }

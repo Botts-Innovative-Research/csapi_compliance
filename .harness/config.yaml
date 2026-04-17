@@ -99,6 +99,43 @@ harness:
       reads: ["openspec/", "epics/stories/", "_bmad/ux-spec.md", ".harness/contracts/", "ops/e2e-test-plan.md", "src/"]
       writes: [".harness/evaluations/", "ops/test-results.md"]
 
+    adversarial:
+      model: "claude-opus-4-6"
+      mode: "auto"
+      effort: "high"
+      prompt: ".harness/prompts/adversarial.md"
+      tools: ["Read", "Grep", "Glob", "Bash"]
+      invocation: "conditional"  # Gate 4 — runs after Gate 3 for non-trivial changes
+      skepticism_level: "maximum"
+      max_turns: 40
+      max_budget_usd: 15.00
+      # Triggers — orchestrator runs Gate 4 if any are true
+      triggers:
+        min_lines_changed: 50
+        security_relevant_paths:
+          - "src/server/middleware/"
+          - "src/engine/credential-masker.ts"
+          - "src/engine/registry/"
+          - "src/services/api-client.ts"
+        always_on_capabilities: true   # any change adding/modifying a capability spec
+        always_on_milestone: true      # any change marked as milestone in handoff
+      can_override_evaluator: true
+      reads:
+        - "_bmad/agents/adversarial-reviewer.md"
+        - "ops/metrics.md"
+        - "ops/changelog.md"
+        - "ops/status.md"
+        - "ops/test-results.md"
+        - "CLAUDE.md"
+        - ".harness/contracts/"
+        - ".harness/evaluations/"
+        - ".harness/handoffs/"
+        - "openspec/"
+        - "epics/stories/"
+        - "src/"
+        - "tests/"
+      writes: [".harness/evaluations/"]   # only the adversarial verdict YAML
+
   coverage:
     spec_coverage:
       req_implemented_must_be_tested: true

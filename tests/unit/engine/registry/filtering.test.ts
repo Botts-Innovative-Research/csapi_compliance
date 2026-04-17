@@ -274,7 +274,7 @@ describe('Advanced Filtering conformance tests', () => {
 
     it('fails when GET /systems?procedure={id} returns non-200', async () => {
       const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ statusCode: 400, body: 'Bad Request' }));
-      const ctx = makeTestContext(getMock, { systemId: 'sys-1' });
+      const ctx = makeTestContext(getMock, { systemId: 'sys-1', procedureId: 'proc-1' });
       const tests = filteringTestModule.createTests(ctx);
 
       const result = await tests[4].execute(ctx);
@@ -293,15 +293,15 @@ describe('Advanced Filtering conformance tests', () => {
       expect(result.status).toBe('skip');
     });
 
-    it('uses fallback procedure URI when no procedureId available', async () => {
-      const body = JSON.stringify({ items: [], links: [] });
-      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+    it('skips when no procedureId is available on the server', async () => {
+      const getMock = vi.fn();
       const ctx = makeTestContext(getMock, { systemId: 'sys-1' });
       const tests = filteringTestModule.createTests(ctx);
 
       const result = await tests[4].execute(ctx);
 
-      expect(result.status).toBe('pass');
+      expect(result.status).toBe('skip');
+      expect(getMock).not.toHaveBeenCalled();
     });
   });
 
@@ -375,7 +375,7 @@ describe('Advanced Filtering conformance tests', () => {
   describe('error handling', () => {
     it('handles network errors gracefully', async () => {
       const getMock = vi.fn().mockRejectedValue(new Error('Connection refused'));
-      const ctx = makeTestContext(getMock, { systemId: 'sys-1' });
+      const ctx = makeTestContext(getMock, { systemId: 'sys-1', procedureId: 'proc-1' });
       const tests = filteringTestModule.createTests(ctx);
 
       for (const test of tests) {

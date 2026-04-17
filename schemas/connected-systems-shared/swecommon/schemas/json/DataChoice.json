@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Implementation of a choice of two or more Data Components (also called disjoint union)",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractDataComponent.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "DataChoice"
+        },
+        "choiceValue": {
+          "description": "This category component marks the data stream element that will indicate the actual choice made. Possible choices are listed in the Category constraint section as an enumeration and should map to item names.",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/Category.json"
+        },
+        "items": {
+          "description": "Definition of the choice items. Items can be of any component types",
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/SoftNamedProperty"
+              },
+              {
+                "oneOf": [
+                  {
+                    "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AssociationAttributeGroup"
+                  },
+                  {
+                    "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "type",
+        "items"
+      ]
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataChoice.json"
+}

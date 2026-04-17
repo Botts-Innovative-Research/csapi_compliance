@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Defines the structure of the element that will be repeated in the stream",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/AbstractSweIdentifiable.json"
+    },
+    {
+      "properties": {
+        "type": {
+          "const": "DataStream"
+        },
+        "elementType": {
+          "description": "Definition and structure of one stream element",
+          "allOf": [
+            {
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/SoftNamedProperty"
+            },
+            {
+              "oneOf": [
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AssociationAttributeGroup"
+                },
+                {
+                  "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/sweCommon.json#/$defs/AnyComponent"
+                }
+              ]
+            }
+          ]
+        },
+        "encoding": {
+          "description": "Method used to encode the stream values",
+          "oneOf": [
+            {
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/BinaryEncoding"
+            },
+            {
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/TextEncoding"
+            },
+            {
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/XMLEncoding"
+            },
+            {
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/encodings.json#/$defs/JSONEncoding"
+            }
+          ]
+        },
+        "values": {
+          "description": "Encoded values for the stream (can be out of band)",
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/basicTypes.json#/$defs/AssociationAttributeGroup"
+        }
+      },
+      "required": [
+        "type",
+        "elementType",
+        "encoding"
+      ]
+    }
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-shared/swecommon/schemas/json/DataStream.json"
+}

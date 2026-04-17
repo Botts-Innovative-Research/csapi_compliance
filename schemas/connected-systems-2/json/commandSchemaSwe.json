@@ -6,7 +6,7 @@
       "type": "string"
     },
     "recordSchema": {
-      "$ref": "../common/sweCommonDefs.json#/$defs/AnyComponent"
+      "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json#/$defs/AnyComponent"
     },
     "encoding": {}
   },
@@ -23,7 +23,7 @@
           "const": "application/swe+json"
         },
         "encoding": {
-          "$ref": "../common/sweCommonDefs.json#/$defs/JSONEncoding"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json#/$defs/JSONEncoding"
         }
       }
     },
@@ -34,7 +34,7 @@
           "const": "application/swe+text"
         },
         "encoding": {
-          "$ref": "../common/sweCommonDefs.json#/$defs/TextEncoding"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json#/$defs/TextEncoding"
         }
       }
     },
@@ -47,7 +47,7 @@
         "encoding": {
           "allOf": [
             {
-              "$ref": "../common/sweCommonDefs.json#/$defs/TextEncoding"
+              "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json#/$defs/TextEncoding"
             },
             {
               "properties": {
@@ -70,9 +70,10 @@
           "const": "application/swe+binary"
         },
         "encoding": {
-          "$ref": "../common/sweCommonDefs.json#/$defs/BinaryEncoding"
+          "$ref": "https://csapi-compliance.local/schemas/connected-systems-2/common/sweCommonDefs.json#/$defs/BinaryEncoding"
         }
       }
     }
-  ]
+  ],
+  "$id": "https://csapi-compliance.local/schemas/connected-systems-2/json/commandSchemaSwe.json"
 }

@@ -31,7 +31,12 @@ const REQ_LANDING_PAGE_LINKS: RequirementDefinition = {
   conformanceUri: '/conf/ogcapi-common/landing-page-links',
   name: 'Landing Page Required Links',
   priority: 'MUST',
-  description: 'Landing page has required links: self, service-desc, conformance.',
+  // Per OGC API - Common Part 1 (19-072) /req/core/root-success: the landing page SHALL include
+  // a link to the API definition (rel=service-desc OR rel=service-doc) and a link to the
+  // conformance declaration (rel=conformance). `self` is only an illustrative example in the spec,
+  // not a normative requirement.
+  description:
+    'Landing page has required links: (service-desc OR service-doc) AND conformance. `self` is not normatively required.',
 };
 
 const REQ_CONFORMANCE_ENDPOINT: RequirementDefinition = {
@@ -170,17 +175,28 @@ async function testLandingPageLinks(ctx: TestContext) {
       );
     }
 
-    const requiredRels = ['self', 'service-desc', 'conformance'];
-    const foundRels = new Set(links.map((l: Record<string, unknown>) => l.rel));
-    const missingRels = requiredRels.filter((r) => !foundRels.has(r));
+    // OGC API Common Part 1 (19-072) /req/core/root-success normatively requires:
+    //   (a) an API definition link: rel=service-desc OR rel=service-doc, AND
+    //   (b) a conformance declaration link: rel=conformance.
+    // Note: rel=self is shown in the example landing page in the spec but is NOT listed as a
+    // normative requirement; treating it as required produced false-positive failures (issue #3).
+    const foundRels = new Set(
+      links.map((l: Record<string, unknown>) => (typeof l?.rel === 'string' ? l.rel : undefined)),
+    );
+    const hasApiDefinitionLink = foundRels.has('service-desc') || foundRels.has('service-doc');
+    const hasConformanceLink = foundRels.has('conformance');
 
-    if (missingRels.length > 0) {
+    const missing: string[] = [];
+    if (!hasApiDefinitionLink) missing.push('service-desc OR service-doc');
+    if (!hasConformanceLink) missing.push('conformance');
+
+    if (missing.length > 0) {
       return failResult(
         REQ_LANDING_PAGE_LINKS,
         assertionFailure(
-          'Landing page must contain links with rel: self, service-desc, conformance',
-          requiredRels.join(', '),
-          `missing: ${missingRels.join(', ')}`,
+          'Landing page must contain an API definition link (service-desc OR service-doc) and a conformance link',
+          '(service-desc OR service-doc) AND conformance',
+          `missing: ${missing.join(', ')}`,
         ),
         exchangeIds,
         durationMs,
