@@ -1,51 +1,44 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T03:20Z | Sprint `rubric-6-1-sweep` CLOSED (Raze APPROVE 0.88, 2 gaps + 1 caveat addressed same-turn). Ready for commit + push.
+> Last updated: 2026-04-17T15:52Z | Sprint `api-definition-service-doc-fallback` CLOSED (Raze APPROVE 0.92, GAP-2 addressed same-turn). Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
 Read this file first. It is the single authoritative "where are we" doc. Everything below is enough to pick up work without reading other files. The trails you'll need are in `_bmad/`, `openspec/capabilities/`, and `.harness/evaluations/`.
 
-## Current State (2026-04-17T03:20Z)
+## Current State (2026-04-17T15:45Z)
 
-- **Gates**: `npx vitest run` → **983/983** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 18 warnings** (all pre-existing unused-imports in test files, non-blocking).
+- **Gates**: `npx vitest run` → **986/986** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 18 warnings** (all pre-existing unused-imports in test files, non-blocking).
 - **v1.0 scope**: all 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
-- **Commit state**: last pushed commit is `780fdc1` on `main` (sprint user-testing-followup). Working tree carries the `rubric-6-1-sweep` sprint changes — **uncommitted**. See "Uncommitted Work" below.
-- **All 4 BMAD gates operational**: Gate 1 self-check, Gate 2 Evaluator (Quinn), Gate 3 Reconciliation, Gate 4 Adversarial (Raze). Gate 4 ran same-session against `rubric-6-1-sweep` → APPROVE 0.88.
-- **REQ-TEST-CITE-002** status: Implemented. All 9 registry modules with rel-link assertions carry adjacent source citations; 28-test `registry-links-normative.test.ts` locks in the pattern with an audit-trail meta-test per module.
+- **Commit state**: last pushed commit is `7a2b654` on `main` (sprint rubric-6-1-sweep). Working tree carries the `api-definition-service-doc-fallback` sprint — **uncommitted**. See "Uncommitted Work" below.
+- **All 4 BMAD gates operational**: Gate 1 self-check, Gate 2 Evaluator (Quinn), Gate 3 Reconciliation, Gate 4 Adversarial (Raze). Two Raze APPROVEs on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback pending).
+- **REQ-TEST-CITE-002** status: Implemented across all 9 registry modules. **REQ-TEST-001 item 5** (API definition link) now honors OGC 19-072 `service-desc OR service-doc`, closing the last known GH-#3-class false positive in the test engine.
+- **Known issues against the test engine**: none. All polish / roadmap items moved to § Remaining Work below.
 
-## Suggested Next Action — Commit + push rubric-6-1-sweep, then tackle `api-definition-service-doc-fallback`
+## Suggested Next Action — Commit + push
 
-Sprint `rubric-6-1-sweep` closed 2026-04-17T03:20Z with Raze APPROVE 0.88 (`.harness/evaluations/sprint-rubric-6-1-sweep-adversarial.yaml`). Raze independently re-fetched the OGC 23-001 requirement files and verified every citation the Generator wrote — no paraphrasing. 2 gaps (GAP-1 adjacent-comment at `common.ts:360`, GAP-2 URI-path `/req/core/root-success` → `/req/landing-page/root-success`) and 1 caveat (missing `req_recursive_assoc.adoc` upstream) addressed same-turn. Gate 1 re-verified post-fix: **983/983 vitest, 0 tsc, 18 eslint warnings (unchanged)**.
+Sprint `api-definition-service-doc-fallback` CLOSED 2026-04-17T15:52Z with Raze APPROVE 0.92. Raze fetched the upstream OGC 19-072 adoc independently and confirmed the `service-desc OR service-doc` OR-relation. GAP-2 (structural-check tradeoff prose in spec) addressed same-turn. Gate 1 re-verified post-fix: **986/986 vitest, 0 tsc, 18 eslint warnings (unchanged)**.
 
-Suggested commit message: `Sprint rubric-6-1-sweep: REQ-TEST-CITE-002 → Implemented (Raze APPROVE 0.88; 7 registry files cited; +28 regression tests)`.
+Suggested commit message: `Sprint api-definition-service-doc-fallback: testApiDefinition honors service-desc OR service-doc (Raze APPROVE 0.92)`.
 
-After commit, the next sprint target is `api-definition-service-doc-fallback` (~30 min + 2 regression tests). Fix at `src/engine/registry/common.ts:359-372`: when `rel="service-desc"` is absent, fall back to `rel="service-doc"` with a relaxed structural check (service-doc is HTML-docs, not OpenAPI). Closes the last known false-positive of the GH #3 class.
+After commit, the next sprint target is P0 #1 (Deployments heuristic citation, ~1 hour) per § Remaining Work.
 
-## Uncommitted Work (sprint `rubric-6-1-sweep`, 24 files)
+## Uncommitted Work (sprint `api-definition-service-doc-fallback`)
 
-Working tree contains the rubric-6.1 sweep + Raze same-turn gap fixes:
+Working tree contains:
 
-- `src/engine/registry/procedures.ts` — citation + FAIL→SKIP downgrade for rel="self"
-- `src/engine/registry/properties.ts` — citation + FAIL→SKIP downgrade for rel="self"
-- `src/engine/registry/sampling.ts` — citation + FAIL→SKIP downgrade for rel="self"
-- `src/engine/registry/deployments.ts` — citation + FAIL→SKIP downgrade for rel="self"
-- `src/engine/registry/system-features.ts` — citation + FAIL→SKIP downgrade for rel="self"
-- `src/engine/registry/subsystems.ts` — citation + FAIL→SKIP for parent-link + Raze caveat about missing upstream req_recursive_assoc.adoc
-- `src/engine/registry/subdeployments.ts` — citation + FAIL→SKIP for parent-link + Raze caveat about missing upstream req_recursive_assoc.adoc
-- `src/engine/registry/common.ts` — REQ_API_DEFINITION citation block (19-072 `/req/landing-page/root-success`, known-deviation note) + Raze GAP-1 adjacent-comment fix at line 360 + Raze GAP-2 URI-path corrections (`/req/core/root-success` → `/req/landing-page/root-success` ×3)
-- `tests/unit/engine/registry/registry-links-normative.test.ts` (new, 28 tests)
-- `tests/unit/engine/registry/{procedures,properties,sampling,deployments,system-features,subsystems,subdeployments}.test.ts` — "fails when missing" → "SKIPs when missing (non-normative per OGC 23-001 rubric-6.1 audit)"
-- `openspec/capabilities/conformance-testing/spec.md` — REQ-TEST-CITE-002 PARTIAL → Implemented + Verification stanza
-- `ops/status.md`, `ops/changelog.md`, `ops/known-issues.md`, `ops/metrics.md`, `ops/test-results.md`, `_bmad/traceability.md` — doc reconciliation + Raze verdict + same-turn gap narrative + test-count refresh (946 → 983)
-- `.harness/evaluations/sprint-rubric-6-1-sweep-adversarial.yaml` (new, Raze APPROVE 0.88 artifact)
+- `src/engine/registry/common.ts` — REQ_API_DEFINITION description rewritten for service-desc OR service-doc; `testApiDefinition` now prefers service-desc, falls back to service-doc, FAILs only when neither present. Chosen-rel embedded in non-200 / empty-body failure messages.
+- `tests/unit/engine/registry/common.test.ts` — 4 new + 1 updated tests in the "API Definition Link test" describe block: FAIL when neither rel present (cites OGC 19-072), PASS when only service-doc (fallback path URL-sanity-checked), PASS + service-desc preferred when both present (URL-sanity-checked), FAIL on non-200 with chosen-rel named, FAIL on empty-body with chosen-rel named.
+- `openspec/capabilities/conformance-testing/spec.md` — REQ-TEST-001 item 5 rewritten; new SCENARIO-API-DEF-FALLBACK-001.
+- `ops/status.md`, `ops/changelog.md`, `ops/known-issues.md`, `ops/metrics.md` — doc reconciliation (issue Active → Resolved; turn 43 added; sprint narrative).
 
-**Decision pending from user**: commit + push (Raze has APPROVEd, gates are green, work is safely reviewable).
+**Decision pending**: spawn Raze first, then commit + push.
 
 ## Recent Sprints (audit trail — most recent first)
 
 | Sprint | Close date | Raze verdict | Artifact |
 |--------|------------|--------------|----------|
+| `api-definition-service-doc-fallback` | 2026-04-17T15:52Z | **APPROVE 0.92** — GAP-2 (structural-check prose) addressed same-turn; GAP-1 (no live E2E) defensible | `.harness/evaluations/sprint-api-def-fallback-adversarial.yaml` |
 | `rubric-6-1-sweep` | 2026-04-17T03:20Z | **APPROVE 0.88** — 7 registry files cited; 2 gaps + 1 caveat addressed same-turn | `.harness/evaluations/sprint-rubric-6-1-sweep-adversarial.yaml` |
 | `user-testing-followup` | 2026-04-17T02:45Z | **GAPS_FOUND 0.86** (S11-01 APPROVE, S11-02 scope mismatch — closed by rubric-6-1-sweep) | `.harness/evaluations/sprint-user-testing-followup-adversarial.yaml` |
 | `user-testing-round-01` | 2026-04-17T01:30Z | **APPROVE 0.88** — 7 GH issues closed + 5 framework improvements | `.harness/evaluations/sprint-user-testing-round-01-adversarial.yaml` |
@@ -65,9 +58,9 @@ Full changelog at `ops/changelog.md`. Traceability with per-scenario PASS/PARTIA
 
 See `ops/known-issues.md` for full detail. Active summary:
 
-- **`api-definition-service-doc-fallback`** (NEW 2026-04-17, medium) — `common.ts:359-372` only probes `rel="service-desc"`; OGC 19-072 `/req/landing-page/root-success` permits `service-desc` OR `service-doc`. False-positive FAIL on servers that expose only `service-doc`. ~30 min fix + 2 regression tests.
-- **Requirement URIs use local paths** (`/req/ogcapi-features/items-links`), not canonical OGC (`/req/core/fc-links`). Low impact; not blocking. Raze 2026-04-16 finding.
-- **"Deployments in Collections" heuristic undocumented** — `deployments.ts:385-389` accepts `id === 'deployments' OR 'deployment' OR itemType includes 'deployment'`; spec justification not cited. Potential false positive.
+- _(No active issues against the test engine as of 2026-04-17T15:45Z.)_
+- **Requirement URIs use local paths** (`/req/ogcapi-features/items-links`), not canonical OGC (`/req/core/fc-links`). Low impact; polish item tracked under P2 below. Raze 2026-04-16 finding.
+- **"Deployments in Collections" heuristic undocumented** — `deployments.ts:385-389` accepts `id === 'deployments' OR 'deployment' OR itemType includes 'deployment'`; spec justification not cited. Potential false positive; P0 below.
 - **SWE Common Binary deep parsing not implemented** — surface-level check only. Low impact per design spec.
 - **WebKit + Edge Playwright blocked** in WSL2 (missing system libs + no `microsoft-edge-stable`). Chromium + Firefox cover dominant share.
 - **NFR-09 uptime monitoring deferred** — hosted deployment prerequisite.
@@ -79,15 +72,10 @@ Prioritized list of open work. All items below are *post-v1.0*; the v1.0 scope (
 
 ### P0 — Active issues with identified fixes
 
-1. **`api-definition-service-doc-fallback`** (~30 min + 2 regression tests)
-   - `src/engine/registry/common.ts:359-372` currently only finds `rel="service-desc"`. When absent, fall back to `rel="service-doc"` with relaxed structural check (service-doc is HTML-docs, not OpenAPI).
-   - Fix closes the last known false-positive of the GH #3 class.
-   - Add regression tests to `tests/unit/engine/registry/common.test.ts` or `common-links-normative.test.ts` — (a) PASS when only service-doc present, (b) PASS when only service-desc present, (c) FAIL when neither.
-
-2. **"Deployments in Collections" heuristic undocumented** (~1 hour spec read + citation)
+1. **"Deployments in Collections" heuristic undocumented** (~1 hour spec read + citation)
    - `src/engine/registry/deployments.ts:385-389` matches `id === 'deployments' OR 'deployment' OR itemType includes 'deployment'`. Read OGC 23-001 `/req/deployment/collections` and either narrow to spec or cite why the relaxation is safe. Quinn flagged 2026-04-02; still unadjudicated.
 
-3. **18 pre-existing lint warnings** (~15 min cleanup)
+2. **18 pre-existing lint warnings** (~15 min cleanup)
    - Unused test imports in test-runner.ts, assessments.test.ts, middleware.test.ts, discovery-service.test.ts, session-manager.test.ts, dependency-resolver.test.ts, test-runner.test.ts, i18n utilities, routes/assessments.ts. All are either delete or `_`-prefix.
 
 ### P1 — Scenario assertion-depth upgrades (traceability gaps)

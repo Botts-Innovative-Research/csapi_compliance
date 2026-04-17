@@ -16,7 +16,7 @@ This capability defines the conformance test execution engine for the CS API Com
   2. **Landing page required link relations** -- Per OGC API - Common Part 1 (19-072) `/req/core/root-success`, the landing page `links` array SHALL include (a) a link to the API definition with `rel: "service-desc"` OR `rel: "service-doc"`, AND (b) a link to the conformance declaration with `rel: "conformance"`. The relation `rel: "self"` appears in the informative example landing page in the spec but is NOT a normative requirement and SHALL NOT be asserted as mandatory.
   3. **Conformance endpoint** -- `GET /conformance` returns HTTP 200 with a JSON body containing `conformsTo` (array of URI strings).
   4. **JSON encoding** -- All tested endpoints return `Content-Type: application/json` (or a compatible media type with `+json` suffix) when requested with `Accept: application/json`.
-  5. **OpenAPI 3.0 definition link** -- The landing page `links` array contains at least one entry with `rel: "service-desc"` whose `href` resolves (GET returns HTTP 200) and whose response body is a valid OpenAPI 3.0.x document (verified by checking `openapi` field starts with `"3.0"` or `"3.1"`).
+  5. **API definition link** -- The landing page `links` array contains at least one entry with EITHER `rel: "service-desc"` (machine-readable, typically OpenAPI) OR `rel: "service-doc"` (human-readable, typically HTML) whose `href` resolves (GET returns HTTP 200) with a non-empty response body. `service-desc` is preferred when both are present. This aligns with OGC API - Common Part 1 (19-072) `/req/landing-page/root-success` which permits either relation to satisfy the API-definition requirement. Absence of BOTH is the FAIL condition — absence of only one produces PASS via the fallback. **Structural-check tradeoff**: the response-body assertion is deliberately lax (non-empty only). A stricter check that required an `openapi` field would regress the `service-doc` path (which serves HTML, not OpenAPI); a stricter check that required valid HTML would regress `service-desc`. "Non-empty body" is the strongest assertion compatible with both rels, at the cost of admitting pathological bodies (e.g. a single space-character body would still FAIL because `trim().length === 0`, but a body of "Hello" would pass). See SCENARIO-API-DEF-FALLBACK-001.
 - **Rationale**: OGC API Common Part 1 is a prerequisite for all other conformance classes. If these tests fail, dependent classes cannot be reliably assessed. The normative link-relation list is narrow (API definition OR API doc, plus conformance); asserting additional example relations such as `self` as required causes false-positive failures against real-world conformant servers (see issue #3).
 
 ### REQ-TEST-002: OGC API Features Part 1 Core Tests (FR-10)
@@ -249,6 +249,15 @@ This capability defines the conformance test execution engine for the CS API Com
 **Given** a CS API endpoint where `GET /systems/{systemId}` returns a body missing the required `properties.name` field
 **When** the test engine executes the System Features conformance class tests
 **Then** the "System schema validation" test produces a FAIL verdict with reason containing "missing required field 'name' in properties" and all OGC API Common Part 1 and Features Part 1 Core tests produce PASS verdicts
+
+### SCENARIO-API-DEF-FALLBACK-001: API Definition Link Accepts Either service-desc Or service-doc
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-001 (item 5)
+- **Preconditions**: The IUT's landing page includes an API-definition link using either `rel: "service-desc"` (machine-readable, typically OpenAPI) or `rel: "service-doc"` (human-readable, typically HTML). OGC API Common Part 1 (19-072) `/req/landing-page/root-success` permits either relation.
+
+**Given** a conformant landing page whose `links` array contains `rel: "service-doc"` but no `rel: "service-desc"`
+**When** the test engine executes the "API Definition Link" test (REQ_API_DEFINITION, item 5 of REQ-TEST-001)
+**Then** the test produces PASS because the fallback lookup finds the `service-doc` link, fetches it (HTTP 200), and verifies a non-empty body; AND a landing page with `rel: "service-desc"` only also produces PASS (`service-desc` is preferred when both are present); AND a landing page with BOTH produces PASS and the `service-desc` URL is the one fetched; AND a landing page with NEITHER produces FAIL with a message naming both rels.
 
 ### SCENARIO-LINKS-NORMATIVE-001: Landing Page Links Test Respects Normative /req/core/root-success Only
 - **Priority**: CRITICAL

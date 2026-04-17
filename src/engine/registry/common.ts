@@ -59,24 +59,25 @@ const REQ_CONFORMANCE_CONFORMS_TO: RequirementDefinition = {
 // to locate the API definition is normatively required by OGC 19-072
 // (Common Part 1) /req/landing-page/root-success, which allows EITHER
 // rel="service-desc" (machine-readable, typically OpenAPI) OR
-// rel="service-doc" (human-readable). See SCENARIO-LINKS-NORMATIVE-001.
+// rel="service-doc" (human-readable, typically HTML).
+// See SCENARIO-LINKS-NORMATIVE-001 and SCENARIO-API-DEF-FALLBACK-001.
 //
-// KNOWN DEVIATION (tracked in ops/known-issues.md as
-// `api-definition-service-doc-fallback`): `testApiDefinition` currently only
-// probes rel="service-desc" and FAILs a spec-conformant server that exposes
-// only rel="service-doc". The REQ_LANDING_PAGE_LINKS test above correctly
-// handles the OR, but this follow-up fetch does not. Deferred — fix is
-// out-of-scope for the rubric-6.1 citation sprint.
+// `testApiDefinition` honors the OR: it prefers rel="service-desc" when present
+// and falls back to rel="service-doc". FAIL only when NEITHER is present, or
+// when the chosen link's URL does not resolve / returns an empty body. Since
+// service-doc is expected to be HTML rather than OpenAPI, the structural check
+// is deliberately lax (HTTP 200 + non-empty body) rather than probing an
+// `openapi` field — the latter would regress false-positive on service-doc.
 const REQ_API_DEFINITION: RequirementDefinition = {
   requirementUri: '/req/ogcapi-common/api-definition',
   conformanceUri: '/conf/ogcapi-common/api-definition',
   name: 'API Definition Link',
   priority: 'MUST',
   description:
-    'The service-desc link on the landing page returns a valid API definition ' +
-    'document (OGC 19-072 /req/landing-page/root-success permits rel="service-desc" OR ' +
-    'rel="service-doc"; current implementation probes service-desc only — see ' +
-    'ops/known-issues.md `api-definition-service-doc-fallback`).',
+    'Landing page has an API definition link with rel="service-desc" OR ' +
+    'rel="service-doc" whose href returns HTTP 200 with a non-empty body ' +
+    '(OGC 19-072 /req/landing-page/root-success). Prefers service-desc; ' +
+    'falls back to service-doc when service-desc is absent.',
 };
 
 const REQ_JSON_CONTENT_TYPE: RequirementDefinition = {
@@ -330,7 +331,6 @@ async function testConformanceConformsTo(ctx: TestContext) {
 async function testApiDefinition(ctx: TestContext) {
   const start = Date.now();
   try {
-    // First, find the service-desc link from the landing page
     const landingResponse = await ctx.httpClient.get(ctx.baseUrl);
     const exchangeIds = [landingResponse.exchange.id];
 
@@ -340,7 +340,7 @@ async function testApiDefinition(ctx: TestContext) {
     } catch {
       return failResult(
         REQ_API_DEFINITION,
-        'Landing page did not return valid JSON; cannot locate service-desc link.',
+        'Landing page did not return valid JSON; cannot locate API definition link.',
         exchangeIds,
         Date.now() - start,
       );
@@ -350,38 +350,41 @@ async function testApiDefinition(ctx: TestContext) {
     if (!Array.isArray(links)) {
       return failResult(
         REQ_API_DEFINITION,
-        'Landing page does not contain a links array; cannot locate service-desc link.',
+        'Landing page does not contain a links array; cannot locate API definition link.',
         exchangeIds,
         Date.now() - start,
       );
     }
 
-    // REQ-TEST-CITE-002 rubric-6.1 audit (assertion-site citation, addresses
-    // Raze GAP-1 2026-04-17T03:18Z): the normative basis for this lookup is
-    // OGC 19-072 /req/landing-page/root-success — see the REQ_API_DEFINITION
-    // comment block at lines 58-73 for the full citation and the known
-    // deviation (api-definition-service-doc-fallback in ops/known-issues.md).
-    // Reminder: the spec permits rel="service-desc" OR rel="service-doc"; the
-    // probe below only checks service-desc, which is a known latent bug
-    // deferred from the rubric-6.1 sweep.
+    // SCENARIO-API-DEF-FALLBACK-001: OGC 19-072 /req/landing-page/root-success
+    // permits EITHER rel="service-desc" OR rel="service-doc" to satisfy the
+    // API-definition requirement. Prefer service-desc (machine-readable
+    // OpenAPI) when present; fall back to service-doc (human-readable HTML)
+    // when only the latter is exposed. FAIL only when NEITHER is present.
     const serviceDescLink = links.find(
-      (l: Record<string, unknown>) => l.rel === 'service-desc',
-    );
-    if (!serviceDescLink || !serviceDescLink.href) {
+      (l: Record<string, unknown>) =>
+        l.rel === 'service-desc' && typeof l.href === 'string' && (l.href as string).length > 0,
+    ) as Record<string, unknown> | undefined;
+    const serviceDocLink = links.find(
+      (l: Record<string, unknown>) =>
+        l.rel === 'service-doc' && typeof l.href === 'string' && (l.href as string).length > 0,
+    ) as Record<string, unknown> | undefined;
+    const chosen = serviceDescLink ?? serviceDocLink;
+    if (!chosen) {
       return failResult(
         REQ_API_DEFINITION,
         assertionFailure(
-          'Landing page must include a service-desc link',
-          'link with rel="service-desc"',
-          'no service-desc link found',
+          'Landing page must include an API definition link with rel="service-desc" OR rel="service-doc" (OGC 19-072 /req/landing-page/root-success)',
+          'link with rel="service-desc" or rel="service-doc"',
+          'neither service-desc nor service-doc link found',
         ),
         exchangeIds,
         Date.now() - start,
       );
     }
+    const chosenRel = chosen.rel as string;
 
-    // Resolve relative URL against base
-    const apiDefUrl = new URL(serviceDescLink.href as string, ctx.baseUrl).toString();
+    const apiDefUrl = new URL(chosen.href as string, ctx.baseUrl).toString();
     const apiResponse = await ctx.httpClient.get(apiDefUrl);
     exchangeIds.push(apiResponse.exchange.id);
     const durationMs = Date.now() - start;
@@ -390,7 +393,7 @@ async function testApiDefinition(ctx: TestContext) {
       return failResult(
         REQ_API_DEFINITION,
         assertionFailure(
-          'API definition endpoint must return HTTP 200',
+          `API definition link (rel="${chosenRel}") must return HTTP 200`,
           '200',
           String(apiResponse.statusCode),
         ),
@@ -399,12 +402,14 @@ async function testApiDefinition(ctx: TestContext) {
       );
     }
 
-    // Verify the body is non-empty (valid document)
+    // Structural check is lax by design: service-doc is typically HTML, not
+    // OpenAPI, so probing an `openapi` field would regress service-doc. A
+    // non-empty body is the strongest assertion compatible with both rels.
     if (!apiResponse.body || apiResponse.body.trim().length === 0) {
       return failResult(
         REQ_API_DEFINITION,
         assertionFailure(
-          'API definition must return a non-empty document',
+          `API definition link (rel="${chosenRel}") must return a non-empty document`,
           'non-empty response body',
           'empty response body',
         ),

@@ -326,7 +326,9 @@ describe('OGC API Common - Core conformance tests', () => {
       expect(result.exchangeIds).toHaveLength(2);
     });
 
-    it('fails when no service-desc link exists', async () => {
+    it('fails when NEITHER service-desc nor service-doc is present (SCENARIO-API-DEF-FALLBACK-001)', async () => {
+      // OGC 19-072 /req/landing-page/root-success permits service-desc OR
+      // service-doc. FAIL only when BOTH are absent. Failure message names both.
       const landingBody = JSON.stringify({
         links: [
           { rel: 'self', href: 'http://example.com' },
@@ -343,9 +345,72 @@ describe('OGC API Common - Core conformance tests', () => {
 
       expect(result.status).toBe('fail');
       expect(result.failureMessage).toContain('service-desc');
+      expect(result.failureMessage).toContain('service-doc');
+      expect(result.failureMessage).toMatch(/19-072|landing-page\/root-success/);
     });
 
-    it('fails when API definition endpoint returns non-200', async () => {
+    it('PASSES when only service-doc is present (SCENARIO-API-DEF-FALLBACK-001 fallback)', async () => {
+      // Closes `api-definition-service-doc-fallback`: a server exposing
+      // HTML-only API docs (rel="service-doc") is spec-conformant per
+      // OGC 19-072 and must NOT be flagged as failing.
+      const landingBody = JSON.stringify({
+        links: [
+          { rel: 'self', href: 'http://example.com' },
+          { rel: 'service-doc', href: '/api/docs.html' },
+          { rel: 'conformance', href: '/conformance' },
+        ],
+      });
+      const htmlBody = '<!doctype html><html><body><h1>API Docs</h1></body></html>';
+
+      const getMock = vi.fn()
+        .mockResolvedValueOnce(makeHttpResponse({ body: landingBody }))
+        .mockResolvedValueOnce(makeHttpResponse({
+          headers: { 'content-type': 'text/html' },
+          body: htmlBody,
+        }));
+
+      const ctx = makeTestContext(getMock);
+      const tests = commonTestModule.createTests(ctx);
+      const apiDefTest = tests[4];
+
+      const result = await apiDefTest.execute(ctx);
+
+      expect(result.status).toBe('pass');
+      expect(result.requirementUri).toBe('/req/ogcapi-common/api-definition');
+      expect(result.exchangeIds).toHaveLength(2);
+      // Sanity: the second GET was against the service-doc URL, not service-desc.
+      expect(getMock.mock.calls[1][0]).toContain('/api/docs.html');
+    });
+
+    it('prefers service-desc over service-doc when BOTH are present', async () => {
+      // When a landing page exposes both, service-desc (machine-readable) is
+      // the canonical API definition per OGC 19-072 and SHOULD be fetched.
+      const landingBody = JSON.stringify({
+        links: [
+          { rel: 'self', href: 'http://example.com' },
+          { rel: 'service-doc', href: '/api/docs.html' },
+          { rel: 'service-desc', href: '/api/openapi.json' },
+        ],
+      });
+      const openapiBody = JSON.stringify({ openapi: '3.0.3', info: { title: 'API' } });
+
+      const getMock = vi.fn()
+        .mockResolvedValueOnce(makeHttpResponse({ body: landingBody }))
+        .mockResolvedValueOnce(makeHttpResponse({ body: openapiBody }));
+
+      const ctx = makeTestContext(getMock);
+      const tests = commonTestModule.createTests(ctx);
+      const apiDefTest = tests[4];
+
+      const result = await apiDefTest.execute(ctx);
+
+      expect(result.status).toBe('pass');
+      // The fetched URL must be the service-desc one, not service-doc.
+      expect(getMock.mock.calls[1][0]).toContain('/api/openapi.json');
+      expect(getMock.mock.calls[1][0]).not.toContain('docs.html');
+    });
+
+    it('fails when chosen API definition link returns non-200 (message names chosen rel)', async () => {
       const landingBody = JSON.stringify({
         links: [
           { rel: 'service-desc', href: '/api' },
@@ -364,6 +429,34 @@ describe('OGC API Common - Core conformance tests', () => {
       expect(result.status).toBe('fail');
       expect(result.failureMessage).toContain('200');
       expect(result.failureMessage).toContain('404');
+      // Failure message must identify WHICH rel was chosen, to aid debugging.
+      expect(result.failureMessage).toContain('service-desc');
+    });
+
+    it('fails when chosen link returns empty body (service-doc fallback path)', async () => {
+      // Even via the service-doc fallback, the server must return a non-empty
+      // document — an empty response can't be a meaningful API definition.
+      const landingBody = JSON.stringify({
+        links: [
+          { rel: 'service-doc', href: '/docs' },
+        ],
+      });
+      const getMock = vi.fn()
+        .mockResolvedValueOnce(makeHttpResponse({ body: landingBody }))
+        .mockResolvedValueOnce(makeHttpResponse({
+          headers: { 'content-type': 'text/html' },
+          body: '   ',  // whitespace-only body
+        }));
+
+      const ctx = makeTestContext(getMock);
+      const tests = commonTestModule.createTests(ctx);
+      const apiDefTest = tests[4];
+
+      const result = await apiDefTest.execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('non-empty');
+      expect(result.failureMessage).toContain('service-doc');
     });
   });
 

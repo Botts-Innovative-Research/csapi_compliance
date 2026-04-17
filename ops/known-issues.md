@@ -1,14 +1,10 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T03:00Z (sprint `rubric-6-1-sweep` closed; REQ-TEST-CITE-002 → Implemented; latent `api-definition-service-doc-fallback` logged as new Active)
+> Last updated: 2026-04-17T15:40Z (sprint `api-definition-service-doc-fallback` CLOSED; `testApiDefinition` now honors OGC 19-072 `service-desc OR service-doc` permission. No active issues remaining for the test engine.)
 
 ## Active Issues
 
-### api-definition-service-doc-fallback (NEW 2026-04-17, surfaced by rubric-6-1-sweep)
-- **Symptom**: `src/engine/registry/common.ts:343-357` (`testApiDefinition`) finds the API-definition URL using `rel="service-desc"` only. OGC 19-072 (Common Part 1) `/req/core/root-success` normatively permits EITHER `rel="service-desc"` (machine-readable, e.g. OpenAPI) OR `rel="service-doc"` (human-readable). A spec-conformant server that exposes only `service-doc` will FAIL this test for a non-conformance reason.
-- **Impact**: False-positive FAIL on a narrow but real class of spec-conformant IUTs. `REQ_LANDING_PAGE_LINKS` at `common.ts:179-192` correctly handles the OR — but the follow-up fetch does not.
-- **Workaround / fix**: Change line 343-357 to fall back to `rel="service-doc"` when `rel="service-desc"` is absent. For `service-doc`, relax the OpenAPI structural check (service-doc is HTML-documentation, not machine-readable OpenAPI). Approximate effort: 30 min + 2 regression tests. Deferred from rubric-6.1 sprint for scope discipline.
-- **Source**: Found during `rubric-6-1-sweep` audit trail sweep 2026-04-17.
+_(No active issues against the test engine. Outstanding tracked items are polish / roadmap — see `ops/status.md` § Remaining Work.)_
 
 
 
@@ -94,6 +90,14 @@
 - **Workaround**: Read OGC CS API Part 1 `/req/deployment/collections` text and either narrow the heuristic to match the spec, or document why the relaxation is safe.
 
 ## Resolved Issues
+
+### api-definition-service-doc-fallback (RESOLVED 2026-04-17 — sprint `api-definition-service-doc-fallback`)
+- **Symptom (resolved)**: `src/engine/registry/common.ts` `testApiDefinition` found the API-definition URL using `rel="service-desc"` only. OGC 19-072 (Common Part 1) `/req/landing-page/root-success` normatively permits EITHER `rel="service-desc"` (machine-readable, e.g. OpenAPI) OR `rel="service-doc"` (human-readable). A spec-conformant server that exposed only `service-doc` would FAIL this test for a non-conformance reason — the same false-positive class as GH #3.
+- **Resolution**: `testApiDefinition` now prefers `rel="service-desc"` when present and falls back to `rel="service-doc"` when only the latter is exposed. FAIL is produced only when NEITHER is present, with a message that names both rels AND cites OGC 19-072 `/req/landing-page/root-success`. When one is chosen, the subsequent fetch enforces HTTP 200 + non-empty body (deliberately lax — probing an `openapi` field would regress service-doc which is typically HTML). Chosen-rel is embedded in the non-200 / empty-body failure messages for debuggability.
+- **Spec additions**: REQ-TEST-001 item 5 rewritten to reflect the OR; SCENARIO-API-DEF-FALLBACK-001 added to `openspec/capabilities/conformance-testing/spec.md`.
+- **Regression tests**: 4 new + 1 updated in `tests/unit/engine/registry/common.test.ts` "API Definition Link test" describe block: (a) FAIL when neither rel present (message cites both + OGC 19-072), (b) PASS when only `service-doc` present (fallback path, sanity-checks the fetched URL), (c) PASS + service-desc preferred when BOTH present, (d) FAIL on non-200 with chosen rel named, (e) FAIL on empty body with chosen rel named.
+- **Gates**: vitest 986/986 PASS (was 983; +3 net-new), tsc 0 errors, eslint 0 errors / 18 pre-existing warnings (unchanged).
+- **Source**: Surfaced by Raze on `rubric-6-1-sweep` as a side finding; logged 2026-04-17T03:00Z; closed 2026-04-17T15:40Z.
 
 ### Rubric-6.1 sweep across remaining 7 registry files (RESOLVED 2026-04-17 — sprint `rubric-6-1-sweep`)
 - **Finding (resolved)**: 7 registry files carried rel-link assertions without normative-source citations: `procedures.ts:245`, `properties.ts:236`, `sampling.ts:245`, `deployments.ts:250`, `system-features.ts:260` (all `rel="self"` on CS canonical URLs) and `subsystems.ts:338-342`, `subdeployments.ts:339` (parent-link checks).
