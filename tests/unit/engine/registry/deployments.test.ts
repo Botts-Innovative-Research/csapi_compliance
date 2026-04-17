@@ -87,10 +87,12 @@ function validSingleDeploymentBody(id = 'dep-1') {
 }
 
 function validCollectionsWithDeployments() {
+  // Per OGC 23-001 /req/deployment/collections, a conformant deployment
+  // collection is identified by featureType="sosa:Deployment" (NOT by id).
   return JSON.stringify({
     collections: [
-      { id: 'systems', title: 'Systems', links: [] },
-      { id: 'deployments', title: 'Deployments', links: [] },
+      { id: 'systems', title: 'Systems', itemType: 'feature', featureType: 'sosa:System', links: [] },
+      { id: 'deployments', title: 'Deployments', itemType: 'feature', featureType: 'sosa:Deployment', links: [] },
     ],
   });
 }
@@ -344,7 +346,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
   });
 
   describe('Deployments in Collections test', () => {
-    it('passes when collections contain a deployments collection', async () => {
+    it('passes when a collection declares featureType="sosa:Deployment" (OGC 23-001 /req/deployment/collections)', async () => {
       const getMock = vi.fn().mockResolvedValue(
         makeHttpResponse({ body: validCollectionsWithDeployments() }),
       );
@@ -357,10 +359,96 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       expect(result.requirementUri).toBe('/req/deployment/collections');
     });
 
-    it('fails when no deployment-related collection exists', async () => {
+    it('passes when a collection has non-canonical id but declares featureType="sosa:Deployment" (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
+      // Per OGC 23-001, collection id is NOT normatively constrained — the
+      // spec gives examples like "saildrone_missions". The featureType is
+      // the authoritative signal. A spec-conformant server using a custom
+      // id MUST pass this test.
       const body = JSON.stringify({
         collections: [
-          { id: 'roads', title: 'Roads', links: [] },
+          {
+            id: 'saildrone_missions',
+            title: 'Saildrone Missions',
+            itemType: 'feature',
+            featureType: 'sosa:Deployment',
+            links: [],
+          },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = deploymentsTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('pass');
+    });
+
+    it('FAILS when a collection has id="deployments" but no featureType (closes legacy-id loophole; failure cites OGC 23-001)', async () => {
+      // The old heuristic admitted this collection via id convention. Under
+      // the new spec-correct check it FAILs because featureType is absent.
+      // The failure message must cite /req/deployment/collections so the
+      // server operator knows exactly what to add.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'deployments', title: 'Deployments', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = deploymentsTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Deployment');
+      expect(result.failureMessage).toMatch(/23-001|\/req\/deployment\/collections/);
+    });
+
+    it('FAILS when a collection has itemType containing "deployment" but no featureType (closes the wrong-itemType loophole)', async () => {
+      // The old heuristic admitted this via itemType.includes('deployment').
+      // Spec says itemType="feature" (not a string containing "deployment"),
+      // and the required signal is featureType="sosa:Deployment" — which
+      // this fixture lacks. FAIL is spec-correct.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'my_missions', title: 'Missions', itemType: 'deployment_feature', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = deploymentsTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Deployment');
+    });
+
+    it('FAILS when a collection has itemType="feature" but NO featureType (addresses Raze GAP-2 2026-04-17T16:30Z)', async () => {
+      // Half-conformant server: sets itemType correctly but omits featureType.
+      // featureType is the authoritative signal per OGC 23-001
+      // /req/deployment/collections; its absence MUST fail regardless of
+      // itemType. This closes the "looks almost right" loophole.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'my_missions', title: 'Missions', itemType: 'feature', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = deploymentsTestModule.createTests(ctx);
+
+      const result = await tests[4].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:Deployment');
+    });
+
+    it('fails when no deployment-related collection exists at all', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'roads', title: 'Roads', itemType: 'feature', featureType: 'sosa:Road', links: [] },
         ],
       });
       const getMock = vi.fn().mockResolvedValue(
@@ -372,7 +460,7 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       const result = await tests[4].execute(ctx);
 
       expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('deployment');
+      expect(result.failureMessage).toContain('sosa:Deployment');
     });
 
     it('fails when collections array is missing', async () => {

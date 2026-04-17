@@ -348,20 +348,30 @@ async function testCollections(ctx: TestContext) {
       );
     }
 
-    // Check that at least one collection references systems
+    // OGC 23-001 /req/system/collections (clause 8):
+    //   "The server SHALL identify all Feature collections containing
+    //   System resources by setting the `itemType` attribute to `feature`
+    //   and the `featureType` attribute to `sosa:System` in the Collection
+    //   metadata."
+    // Collection `id` is NOT normatively constrained. The spec-correct check
+    // looks for `featureType="sosa:System"`. Prior heuristic (id==='systems'
+    // || id==='system' || itemType.includes('system')) was both over-broad
+    // and WRONG (spec says itemType="feature", not a string containing
+    // "system"). Same class of bug as the deployments.ts heuristic; fixed in
+    // the same sprint (deployments-collections-heuristic, 2026-04-17).
+    // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 8).
     const collections = body.collections as Record<string, unknown>[];
     const hasSystemCollection = collections.some(
-      (c) => c.id === 'systems' || c.id === 'system' ||
-        (typeof c.itemType === 'string' && c.itemType.toLowerCase().includes('system')),
+      (c) => c.featureType === 'sosa:System',
     );
 
     if (!hasSystemCollection) {
       return failResult(
         REQ_COLLECTIONS,
         assertionFailure(
-          'Systems must appear in /collections',
-          'a collection for systems',
-          'no system-related collection found',
+          'At least one collection must declare featureType="sosa:System" (OGC 23-001 /req/system/collections)',
+          'collection with featureType="sosa:System"',
+          'no collection with featureType="sosa:System" found',
         ),
         exchangeIds,
         durationMs,

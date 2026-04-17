@@ -88,10 +88,12 @@ function validSingleSystemBody(id = 'system-1') {
 }
 
 function validCollectionsWithSystems() {
+  // Per OGC 23-001 /req/system/collections, a conformant system collection is
+  // identified by featureType="sosa:System" (NOT by id).
   return JSON.stringify({
     collections: [
-      { id: 'systems', title: 'Systems', links: [] },
-      { id: 'deployments', title: 'Deployments', links: [] },
+      { id: 'systems', title: 'Systems', itemType: 'feature', featureType: 'sosa:System', links: [] },
+      { id: 'deployments', title: 'Deployments', itemType: 'feature', featureType: 'sosa:Deployment', links: [] },
     ],
   });
 }
@@ -320,7 +322,7 @@ describe('Connected Systems - System Features conformance tests', () => {
   });
 
   describe('Systems in Collections test', () => {
-    it('passes when collections contain a systems collection', async () => {
+    it('passes when a collection declares featureType="sosa:System" (OGC 23-001 /req/system/collections)', async () => {
       const getMock = vi.fn().mockResolvedValue(
         makeHttpResponse({ body: validCollectionsWithSystems() }),
       );
@@ -333,10 +335,85 @@ describe('Connected Systems - System Features conformance tests', () => {
       expect(result.requirementUri).toBe('/req/system/collections');
     });
 
-    it('fails when no system-related collection exists', async () => {
+    it('passes when a collection has non-canonical id but declares featureType="sosa:System" (SCENARIO-FEATURECOLLECTION-TYPE-001)', async () => {
+      // Collection id is NOT normatively constrained. A custom id with the
+      // correct featureType MUST pass.
       const body = JSON.stringify({
         collections: [
-          { id: 'roads', title: 'Roads', links: [] },
+          {
+            id: 'weather_stations',
+            title: 'Weather Stations',
+            itemType: 'feature',
+            featureType: 'sosa:System',
+            links: [],
+          },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = systemFeaturesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('pass');
+    });
+
+    it('FAILS when a collection has id="systems" but no featureType (closes legacy-id loophole; failure cites OGC 23-001)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'systems', title: 'Systems', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = systemFeaturesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:System');
+      expect(result.failureMessage).toMatch(/23-001|\/req\/system\/collections/);
+    });
+
+    it('FAILS when a collection has itemType containing "system" but no featureType (closes the wrong-itemType loophole)', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'platforms', title: 'Platforms', itemType: 'system_feature', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = systemFeaturesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:System');
+    });
+
+    it('FAILS when a collection has itemType="feature" but NO featureType (addresses Raze GAP-2 2026-04-17T16:30Z)', async () => {
+      // Half-conformant server: sets itemType correctly but omits featureType.
+      // featureType is the authoritative signal per OGC 23-001
+      // /req/system/collections; its absence MUST fail regardless of itemType.
+      const body = JSON.stringify({
+        collections: [
+          { id: 'platforms', title: 'Platforms', itemType: 'feature', links: [] },
+        ],
+      });
+      const getMock = vi.fn().mockResolvedValue(makeHttpResponse({ body }));
+      const ctx = makeTestContext(getMock);
+      const tests = systemFeaturesTestModule.createTests(ctx);
+
+      const result = await tests[3].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toContain('sosa:System');
+    });
+
+    it('fails when no system-related collection exists at all', async () => {
+      const body = JSON.stringify({
+        collections: [
+          { id: 'roads', title: 'Roads', itemType: 'feature', featureType: 'sosa:Road', links: [] },
         ],
       });
       const getMock = vi.fn().mockResolvedValue(
@@ -348,7 +425,7 @@ describe('Connected Systems - System Features conformance tests', () => {
       const result = await tests[3].execute(ctx);
 
       expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('system');
+      expect(result.failureMessage).toContain('sosa:System');
     });
 
     it('fails when collections array is missing', async () => {

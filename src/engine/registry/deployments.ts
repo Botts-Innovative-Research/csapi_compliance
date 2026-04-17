@@ -397,19 +397,32 @@ async function testCollections(ctx: TestContext) {
       );
     }
 
+    // OGC 23-001 /req/deployment/collections (clause 10):
+    //   "The server SHALL identify all Feature collections containing
+    //   Deployment resources by setting the `itemType` attribute to `feature`
+    //   and the `featureType` attribute to `sosa:Deployment` in the Collection
+    //   metadata."
+    // The collection `id` is NOT normatively constrained (spec examples:
+    // `saildrone_missions`, `sof_missions`). The spec-correct test looks for
+    // the normative `featureType="sosa:Deployment"` marker, not for an id
+    // convention. Prior heuristic (id==='deployments' || id==='deployment' ||
+    // itemType.includes('deployment')) was both over-broad (admitted non-
+    // conformant servers via id convention) and WRONG (spec says
+    // itemType="feature", not a string containing "deployment"). Quinn flagged
+    // 2026-04-02; closed 2026-04-17 by sprint deployments-collections-heuristic.
+    // Source: https://docs.ogc.org/is/23-001/23-001.html (clause 10).
     const collections = body.collections as Record<string, unknown>[];
     const hasDeploymentCollection = collections.some(
-      (c) => c.id === 'deployments' || c.id === 'deployment' ||
-        (typeof c.itemType === 'string' && c.itemType.toLowerCase().includes('deployment')),
+      (c) => c.featureType === 'sosa:Deployment',
     );
 
     if (!hasDeploymentCollection) {
       return failResult(
         REQ_COLLECTIONS,
         assertionFailure(
-          'Deployments must appear in /collections',
-          'a collection for deployments',
-          'no deployment-related collection found',
+          'At least one collection must declare featureType="sosa:Deployment" (OGC 23-001 /req/deployment/collections)',
+          'collection with featureType="sosa:Deployment"',
+          'no collection with featureType="sosa:Deployment" found',
         ),
         exchangeIds,
         durationMs,

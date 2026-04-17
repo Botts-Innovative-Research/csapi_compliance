@@ -51,8 +51,8 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Priority**: MUST
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the System Features conformance class (`/req/system`):
-  1. **System collection availability** -- `GET /collections/systems` (or the collection whose `id` matches the system collection) returns HTTP 200.
-  2. **System items listing** -- `GET /collections/systems/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array.
+  1. **System collection availability** -- `GET /collections` returns HTTP 200 with a `collections` array containing at least one entry whose `featureType` attribute equals `"sosa:System"`. Per OGC 23-001 `/req/system/collections`, the server SHALL identify Feature collections containing System resources by setting `itemType="feature"` and `featureType="sosa:System"` in the Collection metadata. The `id` of such a collection is NOT constrained — implementers may use arbitrary names. The test therefore looks for the normative `featureType` marker, NOT for `id === "systems"` (which is convention, not requirement). See SCENARIO-FEATURECOLLECTION-TYPE-001.
+  2. **System items listing** -- `GET /collections/{systemCollectionId}/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array, where `{systemCollectionId}` is the id of any collection with `featureType="sosa:System"`.
   3. **Canonical system URL** -- For at least one system, `GET /systems/{systemId}` returns HTTP 200 with the system resource representation.
   4. **System schema validation** -- The system resource body validates against the CS API system JSON schema (required fields: `id`, `type`, `properties` containing at minimum `name` and `description`).
   5. **System links** -- The system resource contains `links` entries for related resources: deployments (`rel: "deployments"` or equivalent), subsystems (`rel: "subsystems"`), sampling features, datastreams, and command streams where supported.
@@ -71,8 +71,8 @@ This capability defines the conformance test execution engine for the CS API Com
 - **Priority**: MUST
 - **Status**: SPECIFIED
 - **Description**: The test engine SHALL execute the following tests for the Deployment Features conformance class (`/req/deployment`):
-  1. **Deployment collection availability** -- `GET /collections/deployments` (or the deployment collection endpoint) returns HTTP 200.
-  2. **Deployment items listing** -- `GET /collections/deployments/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array.
+  1. **Deployment collection availability** -- `GET /collections` returns HTTP 200 with a `collections` array containing at least one entry whose `featureType` attribute equals `"sosa:Deployment"`. Per OGC 23-001 `/req/deployment/collections`, the server SHALL identify Feature collections containing Deployment resources by setting `itemType="feature"` and `featureType="sosa:Deployment"` in the Collection metadata. The `id` is NOT constrained (spec examples: `saildrone_missions`, `sof_missions`). The test looks for the normative `featureType` marker. See SCENARIO-FEATURECOLLECTION-TYPE-001.
+  2. **Deployment items listing** -- `GET /collections/{deploymentCollectionId}/items` returns HTTP 200 with `type: "FeatureCollection"` and a `features` array, where `{deploymentCollectionId}` is the id of any collection with `featureType="sosa:Deployment"`.
   3. **Canonical deployment URL** -- For at least one deployment, `GET /deployments/{deploymentId}` returns HTTP 200 with the deployment resource representation.
   4. **Deployment schema validation** -- The deployment resource body validates against the CS API deployment JSON schema (required fields: `id`, `type`, `properties` containing deployment-specific members).
   5. **Deployment links** -- The deployment resource contains `links` entries for deployed systems (`rel: "deployedSystems"` or equivalent) and subdeployments (`rel: "subdeployments"`) where supported.
@@ -249,6 +249,15 @@ This capability defines the conformance test execution engine for the CS API Com
 **Given** a CS API endpoint where `GET /systems/{systemId}` returns a body missing the required `properties.name` field
 **When** the test engine executes the System Features conformance class tests
 **Then** the "System schema validation" test produces a FAIL verdict with reason containing "missing required field 'name' in properties" and all OGC API Common Part 1 and Features Part 1 Core tests produce PASS verdicts
+
+### SCENARIO-FEATURECOLLECTION-TYPE-001: Feature Collections Identified By featureType Per OGC 23-001 §collections
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-004 (item 1), REQ-TEST-006 (item 1)
+- **Preconditions**: The IUT exposes at least one Feature collection containing System or Deployment resources per OGC 23-001 `/req/system/collections` and `/req/deployment/collections`. Those requirements normatively mandate `itemType="feature"` and `featureType="sosa:System"` (or `sosa:Deployment`) in the Collection metadata. Collection `id` is NOT normatively constrained — the spec gives examples like `saildrone_missions` and `sof_missions` for deployment collections.
+
+**Given** a landing-page `/collections` response that includes `{ id: "saildrone_missions", itemType: "feature", featureType: "sosa:Deployment" }` — a spec-conformant collection with a non-canonical id
+**When** the test engine executes the "Deployment collection availability" test (REQ-TEST-006 item 1)
+**Then** the test produces PASS because the normative `featureType="sosa:Deployment"` marker is present; AND a collection with `id: "deployments"` but NO `featureType` (legacy/non-conformant server) produces FAIL with a message citing OGC 23-001 `/req/deployment/collections` and naming the required `featureType="sosa:Deployment"`; AND the same logic applies symmetrically to `/req/system/collections` and `featureType="sosa:System"`.
 
 ### SCENARIO-API-DEF-FALLBACK-001: API Definition Link Accepts Either service-desc Or service-doc
 - **Priority**: CRITICAL

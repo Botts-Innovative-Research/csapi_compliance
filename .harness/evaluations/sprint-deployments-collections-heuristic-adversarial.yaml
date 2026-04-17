@@ -1,0 +1,307 @@
+sprint_id: "deployments-collections-heuristic"
+story: "(sprint-level; closes P0 #1 — Quinn's 2026-04-02 finding on deployments.ts collection-heuristic)"
+reviewer: "raze"
+reviewed_at: "2026-04-17T16:35Z"
+user_request: "Do it — execute P0 #1 (Deployments in Collections heuristic undocumented, per ops/status.md § Remaining Work, turn 44)."
+verdict: "APPROVE"
+confidence: 0.93
+overrides_evaluator: false  # Gate 1 self-check only for this sprint
+
+# --------------------------------------------------------------------------
+# Request fulfillment
+# --------------------------------------------------------------------------
+request_fulfillment:
+  fully_delivered:
+    - "Core bug fix at src/engine/registry/deployments.ts:397-428: heuristic rewritten from over-broad+wrong three-way `(c.id === 'deployments' || c.id === 'deployment' || c.itemType.toLowerCase().includes('deployment'))` to spec-correct `collections.some((c) => c.featureType === 'sosa:Deployment')`. Inline OGC citation comment explains WHY both branches of the old heuristic were wrong (id is not normatively constrained — spec examples `saildrone_missions`, `sof_missions`; itemType is the fixed string `feature`, not a substring-match). Failure message names the required featureType verbatim AND cites `/req/deployment/collections` for grep-ability."
+    - "Parallel fix at src/engine/registry/system-features.ts:348-378 for `sosa:System` per `/req/system/collections`. Same class of bug; same fix pattern. Scope expansion declared explicitly in sprint changelog rather than silently bundled."
+    - "Failure messages are operator-friendly: verbatim `featureType=\"sosa:Deployment\"` / `featureType=\"sosa:System\"` (including the colon and quoted form a server operator can grep their codebase for), AND cite `/req/deployment/collections` / `/req/system/collections`. Verified by direct read of deployments.ts:423 and system-features.ts:372 AND by the test-level regex assertions that lock in the citation."
+    - "Tests: 3 net-new + 1 updated per file (6 net-new total). Critical LOAD-BEARING tests:
+        * `passes when a collection has non-canonical id but declares featureType=\"sosa:Deployment\"` — fixture uses `saildrone_missions` (a spec-mentioned example); proves conformant servers with arbitrary ids still PASS. Prevents a future regression that re-introduced an id-convention check.
+        * `FAILS when a collection has id=\"deployments\" but no featureType (closes legacy-id loophole)` — fixture has ONLY the old-style id; no featureType anywhere. This is the load-bearing regression that proves the id-convention loophole is genuinely closed. Confirmed by direct read of deployments.test.ts:380-406 (no featureType in the body) and system-features.test.ts:360-374.
+        * `FAILS when a collection has itemType containing \"deployment\" but no featureType (closes the wrong-itemType loophole)` — fixture uses `itemType: 'deployment_feature'` with NO featureType. This would have passed the old `itemType.toLowerCase().includes('deployment')` branch; now FAILs. Verified by direct read of deployments.test.ts:413-426."
+    - "Fixtures `validCollectionsWithDeployments`/`validCollectionsWithSystems` augmented to include normative `itemType: 'feature'` + `featureType: 'sosa:<X>'` — a strengthening (not a weakening). grep confirmed these helpers are consumed by EXACTLY ONE test each (the happy-path PASS test at deployments.test.ts:351 and system-features.test.ts:327). No other tests silently weakened by the fixture change."
+    - "Spec accuracy verified independently: Raze fetched raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/deployment/req_collections.adoc AND .../system/req_collections.adoc. Both literally state the SHALL-clause for `itemType='feature'` + `featureType='sosa:Deployment'` / `'sosa:System'` — exact capitalization and `sosa:` namespace as cited in the code. Requirement identifiers `/req/deployment/collections` and `/req/system/collections` match the citations verbatim."
+    - "Sister-bug deferral is honest: Raze grep'd for `featureType|itemType|sosa:` across src/engine/registry/{procedures,properties,sampling}.ts and found ZERO matches. Direct read of procedures.ts:293-350, properties.ts:274-331, sampling.ts:343-400 confirms all three `testCollections` functions merely assert `body.collections` is an array then PASS — no collection-type check at all. This is a DIFFERENT class of bug (missing check, not wrong check), and the deferral to new Active issue `procedures-properties-sampling-collections-missing-check` is legitimate, not scope-avoidance."
+    - "New Active issue contents correctness: the issue narrative notes property uses a DIFFERENT pattern (`itemType='sosa:Property'` with no featureType) and sampling uses `featureType='sosa:Sample'` (not `'sosa:SamplingFeature'`). Raze independently verified BOTH: WebFetch of `/req/property/req_collections.adoc` confirmed `itemType='sosa:Property'` (no featureType); WebFetch of `/req/sf/req_collections.adoc` confirmed `featureType='sosa:Sample'`, `itemType='feature'`. The distinction is load-bearing — a naive future fix using `sosa:SamplingFeature` would introduce false-negatives — and is correctly captured in the Active-issue fix-guidance."
+    - "Spec reconciliation: REQ-TEST-004 item 1 (systems) and REQ-TEST-006 item 1 (deployments) both rewritten from id-based prose ('GET /collections/systems (or the collection whose id matches the system collection)') to spec-correct featureType-based prose citing OGC 23-001. New SCENARIO-FEATURECOLLECTION-TYPE-001 explicitly covers both PASS-on-non-canonical-id and FAIL-on-legacy-id-only. Both REQs reference the new scenario. Spec and code edited in the same uncommitted-work set (single-session sprint; spec-first verified by the diff containing both)."
+    - "Ops-docs reconciled: ops/changelog.md top entry is detailed and honest about the scope expansion; ops/known-issues.md old issues moved Active → Resolved with detailed resolution narrative; new Active issue logged with OGC-accurate fix guidance. ops/status.md header date updated, 'Uncommitted Work' block rewritten from api-def-fallback to deployments-collections-heuristic, P0 #1 replaced with the new follow-up issue (the old P0 #1 entry is deleted, not duplicated — verified by git diff). _bmad/traceability.md appended with sprint gate rows + new SCENARIO-FEATURECOLLECTION-TYPE-001 in Verified Scenarios table."
+    - "Gate 1 honesty: Raze re-ran `npx vitest run` → 992/992 PASS (52 files, 2.20s); `npx tsc --noEmit` → 0 errors; `npx eslint .` → 0 errors / 18 warnings (all pre-existing unused-imports — spot-checked 18 items in output, all in test files + test-runner.ts + assessments.ts line 277 variants). Generator's 992/992 / 0 / 18 claim matches exactly. +6 net-new test count (986 → 992) matches '3 new + 1 updated per file × 2 files = 6 net-new it() blocks' — the updated test was renamed but still counts (so 1 updated + 3 new per file = 4 total per file; 4 × 2 = 8, but the per-file delta is (4 new + 1 updated) − (1 pre-existing replaced) = 3 net-new per file × 2 = 6 net-new total. Matches)."
+
+  gaps:
+    - "[GAP-1] No E2E/live-IUT verification. Per CLAUDE.md Step 5, every change derived from user instruction must be verified E2E. The sprint touches pure test-engine assertion logic (no UI, no HTTP-layer behavior change), and GeoRobotix (`api.georobotix.io/ogc/t18/api`) is unlikely to have a collection without featureType (or would already fail assertion against it). The unit tests with explicit-fixture assertions are sufficient to lock in behavior, but the rule is unconditional. Same WEAK treatment as prior sprints (rubric-6-1-sweep, api-def-fallback). NOT a blocker."
+    - "[GAP-2] The 'closes the wrong-itemType loophole' test is a high-quality regression but could be even stronger. Current fixture has `itemType: 'deployment_feature'`. A hypothetical future regression that re-introduced the bad branch could choose `includes('deployment_feature')` and the test would still FAIL (good). But a branch like `itemType === 'feature'` (spec-correct check for itemType) would introduce a DIFFERENT failure mode: servers that correctly set itemType='feature' but forgot featureType would still be admitted. The test doesn't cover the `{ itemType: 'feature', /* no featureType */ }` case. Minor; the primary test (pass-on-non-canonical-id-with-featureType) is structurally strong. NOT a blocker — would be a ~3-line fixture addition."
+
+  scope_creep:
+    - "[SCOPE-EXPANSION] P0 #1 was deployments-only; system-features.ts was added to the same sprint. Raze ruling: LEGITIMATE expansion, NOT scope creep. Justification: (a) the sister bug is IDENTICAL in structure (same heuristic pattern, same spec-citation class, same fix shape), (b) the generator flagged the expansion explicitly in the sprint changelog ('Scope transparency: user-requested P0 #1 was deployments-only, but the sister bug in system-features.ts with identical spec pattern was found during the audit. Fixing both in one sprint (same class; fixing one would leave a half-done audit).'), (c) fixing only deployments while leaving the identical system-features bug would be inconsistent: a user running the assessor would see `sosa:Deployment` properly cited on one test but still see the old id-heuristic on the sister test. This is the 'same class of bug' expansion the adversarial-reviewer.md framework specifically contemplates as OK (distinct from drive-by refactoring of unrelated files)."
+
+  buried_caveats: []  # none found — the scope expansion was explicit, the sister-file deferral is explicit, and gate results match claims
+
+# --------------------------------------------------------------------------
+# CLAUDE.md compliance
+# --------------------------------------------------------------------------
+claude_md_compliance:
+  step_1_spec_first: "OK"       # spec.md REQ-TEST-004 item 1 + REQ-TEST-006 item 1 + new SCENARIO-FEATURECOLLECTION-TYPE-001 are in the same uncommitted-work set as the code changes
+  step_2_write_tests: "OK"      # tests reference SCENARIO-FEATURECOLLECTION-TYPE-001 explicitly in `it()` titles; the load-bearing loophole-closure tests prove the new behavior, not a generic smoke check
+  step_3_implement: "OK"        # code at deployments.ts:397-428 + system-features.ts:348-378 satisfies REQ-TEST-004/006 item 1 as rewritten; failure messages and citations are verbatim-correct
+  step_4_verify: "OK"           # Raze re-ran all three: vitest 992/992, tsc 0, eslint 0/18 — matches Generator's claim exactly
+  step_5_e2e_verify: "WEAK"     # no live-IUT run — defensible for pure registry-layer sprint (no UI/server/route change). CLAUDE.md rule is unconditional, so WEAK not OK. Same treatment as prior sprints.
+  step_6_reconcile_specs: "OK"  # REQ-TEST-004 item 1 + REQ-TEST-006 item 1 rewritten honestly; SCENARIO-FEATURECOLLECTION-TYPE-001 added with PASS-on-non-canonical-id + FAIL-on-legacy-id-only + symmetric application to systems
+  step_7_update_ops: "OK"       # ops/status.md refreshed (Uncommitted Work block rewritten from api-def-fallback to this sprint; old P0 #1 replaced with new follow-up; no duplicate blocks); changelog.md substantive entry; known-issues.md Active→Resolved movement + new Active logged; metrics.md turn 44 honest
+  step_8_update_bmad: "OK"      # traceability.md Gate 1 + Gate 4 (pending) rows added + new SCENARIO-FEATURECOLLECTION-TYPE-001 row in Verified Scenarios with per-test enumeration
+  notes: |
+    Step 5 (E2E): The sprint touches test-engine assertion logic only. A live
+    GeoRobotix run would exercise the featureType="sosa:Deployment" happy
+    path (assuming GeoRobotix sets it — historically probable given they
+    implement 23-001). An IUT that set featureType incorrectly would FAIL
+    correctly under the new assertion, which is the desired outcome and
+    not a regression. WEAK acknowledges the unconditional CLAUDE.md rule
+    without claiming OK. Consistent with prior-sprint treatment.
+
+    Step 2 detail: the three load-bearing regression tests per file
+    (non-canonical id PASS, legacy id-only FAIL, wrong-itemType FAIL)
+    together cover the non-trivial behavior of the rewritten check.
+    The citation-grep assertion `toMatch(/23-001|\/req\/deployment\/collections/)`
+    locks in the failure-message quality.
+
+# --------------------------------------------------------------------------
+# Spec gaps
+# --------------------------------------------------------------------------
+spec_gaps:
+  - id: "REQ-TEST-004 item 1 (systems)"
+    issue: "OK — rewritten to cite `/req/system/collections` and name `featureType='sosa:System'` verbatim. Explicitly notes id is NOT constrained and points forward to SCENARIO-FEATURECOLLECTION-TYPE-001."
+  - id: "REQ-TEST-006 item 1 (deployments)"
+    issue: "OK — symmetric rewrite citing `/req/deployment/collections` and `featureType='sosa:Deployment'`. Spec examples (saildrone_missions, sof_missions) called out to motivate the featureType-not-id approach."
+  - id: "SCENARIO-FEATURECOLLECTION-TYPE-001"
+    issue: "OK — single scenario covers both system and deployment paths symmetrically with explicit PASS-on-non-canonical-id and FAIL-on-legacy-id-only. References both REQs."
+
+# --------------------------------------------------------------------------
+# Cross-agent blind spots
+# --------------------------------------------------------------------------
+cross_agent_blind_spots:
+  - "URL construction: no change. The existing `new URL('collections', ctx.baseUrl).toString()` pattern is preserved — base-path behavior not affected."
+  - "SSRF/security: no new outbound URL pattern. Only the heuristic evaluating the already-fetched /collections response body changed."
+  - "Frontend/backend contract: failure-message content changed (now names featureType + cites /req/<X>/collections). UI renders failureMessage as a string; no schema change."
+  - "Discovery cache: `ctx.discoveryCache.deploymentId` / `systemId` gating preserved — SKIP when no deployments/systems found remains in place, so servers without deployments don't FAIL spuriously."
+  - "Sister-file verified NOT affected: procedures/properties/sampling still use the old (missing-check) logic. They will silently PASS non-conformant servers, but that is the DIFFERENT pre-existing bug now tracked as a new Active issue."
+
+# --------------------------------------------------------------------------
+# Conformance correctness (product-specific)
+# --------------------------------------------------------------------------
+conformance_correctness:
+  false_positives_found: []  # closed: the old heuristic's id-convention loophole AND wrong-itemType loophole are now regression-locked
+  false_negatives_found: []  # a spec-conformant server using a non-canonical id now PASSES (previously would FAIL); verified by the `saildrone_missions` test
+  url_construction_bugs: []
+  dynamic_schema_violations: []
+  assertion_spec_drift: []
+  spec_source_mismatches: []
+
+  spec_source_accuracy_check:
+    - module: "src/engine/registry/deployments.ts"
+      claim: "OGC 23-001 /req/deployment/collections mandates itemType='feature' + featureType='sosa:Deployment'"
+      verified_against: "https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/deployment/req_collections.adoc"
+      verdict: "ACCURATE — adoc literally specifies requirement id `/req/deployment/collections` with normative SHALL-clauses: (a) 'The server SHALL expose at least one Feature collection containing Deployment resources', (b) 'The server SHALL identify all Feature collections containing Deployment resources by setting the itemType attribute to feature and the featureType attribute to sosa:Deployment'. The capitalization and namespace prefix match verbatim."
+
+    - module: "src/engine/registry/system-features.ts"
+      claim: "OGC 23-001 /req/system/collections mandates itemType='feature' + featureType='sosa:System'"
+      verified_against: "https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/req_collections.adoc"
+      verdict: "ACCURATE — same pattern as deployment/collections with `sosa:System` as the featureType. Requirement identifier and normative text match the citations."
+
+    - module: "ops/known-issues.md new Active issue"
+      claim: "sampling feature collection uses featureType='sosa:Sample' (NOT sosa:SamplingFeature); property collection uses itemType='sosa:Property' (no featureType)"
+      verified_against: "https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/sf/req_collections.adoc AND .../property/req_collections.adoc"
+      verdict: "ACCURATE — sf confirms `featureType='sosa:Sample'` + `itemType='feature'`. Property confirms `itemType='sosa:Property'` with no featureType — the differentiating pattern is correctly captured in the Active-issue fix-guidance."
+
+  loophole_closure_verification:
+    - loophole: "id-convention (old heuristic admitted `c.id === 'deployments' || c.id === 'deployment'` with no featureType)"
+      regression_test: "deployments.test.ts:380-406 (`FAILS when a collection has id=\"deployments\" but no featureType`) — fixture contains ONLY `{ id: 'deployments', title: 'Deployments', links: [] }` with no featureType anywhere; asserts FAIL + message names `sosa:Deployment` + matches /23-001|\\/req\\/deployment\\/collections/."
+      verdict: "CLOSED — test would FAIL the suite if a future refactor reintroduced the id-convention branch."
+    - loophole: "wrong-itemType (old heuristic admitted `c.itemType.toLowerCase().includes('deployment')` with no featureType)"
+      regression_test: "deployments.test.ts:408-426 — fixture is `{ id: 'my_missions', title: 'Missions', itemType: 'deployment_feature', links: [] }` (no featureType); asserts FAIL + message names `sosa:Deployment`."
+      verdict: "CLOSED — test would FAIL if a future refactor reintroduced any substring-match branch on itemType."
+    - loophole: "same two loopholes for systems"
+      regression_test: "system-features.test.ts:360-374 (legacy-id loophole) AND :376-390 (wrong-itemType loophole) — parallel structure, same assertion pattern."
+      verdict: "CLOSED symmetrically."
+
+# --------------------------------------------------------------------------
+# Recommendations (ordered, not blocking)
+# --------------------------------------------------------------------------
+recommendations:
+  - "Optional: extend the wrong-itemType regression test to also cover `{ itemType: 'feature', /* no featureType */ }` — i.e. the case where a server correctly sets itemType but forgot featureType. Would prevent a future refactor that accidentally loosened the check to `itemType === 'feature'` only. ~3-line fixture addition. Closes GAP-2."
+  - "Priority: address the follow-up Active issue `procedures-properties-sampling-collections-missing-check` in the next sprint. ~90 min total per the status.md estimate. The OGC pattern asymmetry (sampling uses featureType='sosa:Sample'; property uses itemType='sosa:Property' with no featureType) is already captured in the issue's fix-guidance — avoid the obvious naive fix."
+  - "Commit + push: gates green, Raze APPROVE, no blocking gaps."
+
+# --------------------------------------------------------------------------
+# Severity summary
+# --------------------------------------------------------------------------
+severity_summary:
+  blockers: 0
+  gaps: 2       # GAP-1 (no live E2E — defensible), GAP-2 (wrong-itemType regression could cover itemType='feature'+no-featureType)
+  concerns: 0
+  scope_expansions: 1   # system-features.ts added — legitimate, declared, not scope creep
+
+# --------------------------------------------------------------------------
+# Per-story verdicts
+# --------------------------------------------------------------------------
+story_verdicts:
+  deployments-collections-heuristic:
+    verdict: "APPROVE"
+    confidence: 0.93
+    notes: |
+      Sprint cleanly closes P0 #1 (Quinn's 2026-04-02 finding on the
+      deployments collection heuristic). The fix is SPEC-CORRECT in a
+      deeper sense than just adding documentation: the old heuristic was
+      both over-broad (id convention admits non-conformant servers) AND
+      wrong (itemType.includes() would never match a spec-conformant
+      server, which sets itemType='feature' as a fixed string). The
+      generator diagnosed both defects and fixed both with a single
+      spec-grounded check `collections.some((c) => c.featureType === 'sosa:<X>')`.
+
+      Failure messages are operator-friendly (name featureType verbatim +
+      cite /req/<X>/collections). Regression tests lock in the two
+      loophole closures with fixtures that have NO featureType — proving
+      the new check doesn't silently still admit old-style collections.
+
+      Scope expansion to system-features.ts is legitimate and declared —
+      same class of bug, same fix pattern. The 3-sibling deferral
+      (procedures/properties/sampling) is honest: Raze grep-verified
+      those files have a DIFFERENT bug (missing check entirely, not wrong
+      check), with spec-pattern asymmetry (sampling featureType='sosa:Sample';
+      property itemType='sosa:Property') correctly captured in the new
+      Active issue's fix-guidance.
+
+      Source-spec accuracy verified: Raze independently fetched the 2
+      primary requirement adocs + 2 sibling adocs (property, sf) and
+      confirmed all values verbatim — capitalization, namespace, and
+      distinct property-pattern are correct.
+
+      Gates match claims exactly: vitest 992/992, tsc 0, eslint 0/18.
+      Scope discipline is clean (10 files touched, all expected).
+
+      Confidence 0.93 (slightly higher than api-def-fallback's 0.92)
+      reflects the quality of the regression tests — closing TWO distinct
+      loopholes with per-loophole fixtures, plus the honest scope
+      expansion and the correctly-scoped deferral of the sibling bug.
+
+# --------------------------------------------------------------------------
+# Gate evidence (Raze-rerun, not self-reported)
+# --------------------------------------------------------------------------
+gate_reruns:
+  vitest:
+    claimed: "992/992"
+    raze_reran: "992/992 (52 files, 2.20s)"
+    match: true
+    duration: "2.20s"
+  tsc:
+    claimed: "0 errors"
+    raze_reran: "tsc exit=0 (no output)"
+    match: true
+  eslint:
+    claimed: "0 errors / 18 warnings"
+    raze_reran: "0 errors / 18 warnings (all pre-existing unused-imports in test files + test-runner.ts + assessments.ts)"
+    match: true
+  e2e:
+    claimed: "not run (pure registry-layer sprint, no UI/server/route change)"
+    raze_reran: "not run"
+    note: "defensible for pure assertion-logic scope; same treatment as rubric-6-1-sweep and api-def-fallback. WEAK rather than SKIPPED to acknowledge the unconditional CLAUDE.md rule."
+
+# --------------------------------------------------------------------------
+# Source-adoc verification trail (Raze fetched independently)
+# --------------------------------------------------------------------------
+source_verification:
+  fetched_directly_by_raze:
+    - uri: "/req/deployment/collections"
+      source: "raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/deployment/req_collections.adoc"
+      key_text: |
+        identifier:: /req/deployment/collections
+        SHALL expose at least one Feature collection containing Deployment resources.
+        SHALL identify all Feature collections containing Deployment resources by
+        setting the itemType attribute to feature and the featureType attribute
+        to sosa:Deployment in the Collection metadata.
+      interpretation_matches_generator: true
+
+    - uri: "/req/system/collections"
+      source: "raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/req_collections.adoc"
+      key_text: |
+        identifier:: /req/system/collections
+        SHALL identify all Feature collections containing System resources by
+        setting the itemType attribute to feature and the featureType attribute
+        to sosa:System in the Collection metadata.
+      interpretation_matches_generator: true
+
+    - uri: "/req/sf/collections (sibling — for sister-bug deferral verification)"
+      source: "raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/sf/req_collections.adoc"
+      key_text: |
+        featureType: sosa:Sample (NOT sosa:SamplingFeature)
+        itemType: feature
+      interpretation_matches_generator: true
+      notes: "Critical for the new Active issue's fix-guidance — a naive future fix using 'sosa:SamplingFeature' would introduce a false-negative. Correctly captured."
+
+    - uri: "/req/property/collections (sibling — for sister-bug deferral verification)"
+      source: "raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/property/req_collections.adoc"
+      key_text: |
+        SHALL identify all resource collections containing Property resources by
+        setting the itemType attribute to sosa:Property.
+        (No featureType — property uses a different pattern.)
+      interpretation_matches_generator: true
+      notes: "Property pattern is distinct: uses itemType='sosa:Property' with no featureType. A symmetric fix using `featureType === 'sosa:Property'` would introduce a false-negative. Correctly captured in the new Active-issue fix-guidance."
+
+# --------------------------------------------------------------------------
+# Summary
+# --------------------------------------------------------------------------
+summary: |
+  APPROVE 0.93. Sprint `deployments-collections-heuristic` closes P0 #1
+  (Quinn's 2026-04-02 finding) with a spec-grounded fix that addresses
+  BOTH defects in the old heuristic: the over-broad id-convention branch
+  AND the wrong itemType-includes branch. Heuristic rewritten in both
+  deployments.ts and system-features.ts to
+  `collections.some((c) => c.featureType === 'sosa:<X>')`, with inline
+  OGC citation comments and operator-friendly failure messages that name
+  the required featureType verbatim and cite the normative requirement
+  URI.
+
+  Test quality is high — 6 net-new tests across 2 files, with
+  load-bearing regression tests that close EACH of the two loopholes
+  independently. Fixtures in the legacy-id-loophole tests contain NO
+  featureType anywhere, proving the new check doesn't silently still
+  admit old-style collections.
+
+  Source-spec accuracy verified against 4 upstream adoc files (deployment,
+  system, sf, property). The sibling asymmetry (sampling=sosa:Sample;
+  property uses itemType not featureType) is correctly captured in the
+  new Active issue's fix-guidance — a load-bearing detail for the next
+  sprint.
+
+  Scope expansion to system-features.ts is legitimate (same class of bug,
+  declared explicitly, not drive-by refactoring). Deferral of the three
+  sibling files (procedures/properties/sampling) is honest — Raze grep
+  and direct-read confirmed those files have a DIFFERENT bug (missing
+  check entirely, not wrong check).
+
+  Gates match claims exactly: vitest 992/992, tsc 0, eslint 0/18
+  warnings (all pre-existing). Scope discipline clean (10 files touched,
+  all expected).
+
+  Two minor gaps: (1) no E2E live-IUT verification (defensible — same
+  treatment as prior sprints); (2) the wrong-itemType regression test
+  could also cover `itemType='feature' + no featureType` to prevent a
+  future refactor that accidentally loosened the check to itemType only.
+  Neither warrants downgrading to GAPS_FOUND.
+
+final_conclusion: |
+  Well-executed sprint with the tightest diagnostic work Raze has seen
+  this session. The generator identified that the old heuristic had TWO
+  distinct defects (over-broad id + wrong itemType), fixed both with one
+  spec-grounded check, and wrote a dedicated regression test per
+  loophole rather than bundling them into one vague "fails on bad
+  collection" test. That test-level discipline is the pattern that makes
+  the anti-regression guarantee structural rather than aspirational.
+
+  The scope expansion to system-features.ts is the right call: fixing
+  deployments-only would leave a visible inconsistency for any user
+  running the assessor. The sister-bug deferral (procedures/properties/sampling)
+  is genuinely a DIFFERENT class of bug, with a spec-pattern asymmetry
+  (property uses itemType; sampling uses sosa:Sample not SamplingFeature)
+  that warrants its own focused sprint rather than being rushed into
+  this one.
+
+  APPROVE and commit.

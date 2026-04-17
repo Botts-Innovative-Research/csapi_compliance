@@ -1,10 +1,18 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T15:40Z (sprint `api-definition-service-doc-fallback` CLOSED; `testApiDefinition` now honors OGC 19-072 `service-desc OR service-doc` permission. No active issues remaining for the test engine.)
+> Last updated: 2026-04-17T16:20Z (sprint `deployments-collections-heuristic` CLOSED; deployments.ts + system-features.ts heuristics rewritten to normative featureType check. New Active issue `procedures-properties-sampling-collections-missing-check` logged.)
 
 ## Active Issues
 
-_(No active issues against the test engine. Outstanding tracked items are polish / roadmap — see `ops/status.md` § Remaining Work.)_
+### procedures-properties-sampling-collections-missing-check (NEW 2026-04-17, surfaced by deployments-collections-heuristic)
+- **Symptom**: `src/engine/registry/procedures.ts`, `properties.ts`, and `sampling.ts` all have a `testCollections` function (executes `/req/<X>/collections`) but none of them actually verifies that a collection with the normative marker exists. They only assert `body.collections` is a JSON array — any response with an array will PASS, even if no collection declares the required `featureType`/`itemType`.
+- **Per OGC 23-001**:
+  - `/req/procedure/collections` mandates `itemType="feature"` + `featureType="sosa:Procedure"`
+  - `/req/sf/collections` mandates `itemType="feature"` + `featureType="sosa:Sample"` (note: "Sample", not "SamplingFeature")
+  - `/req/property/collections` mandates `itemType="sosa:Property"` (different pattern — property does NOT use featureType)
+- **Impact**: Silent false-positive PASS on servers that don't identify their feature collections correctly. Same class of bug as the deployments/systems heuristic fixed in the sprint that surfaced this.
+- **Fix**: Add a `collections.some((c) => c.featureType === "sosa:Procedure")` (and equivalents for sf+property, with the property variant checking `itemType`) with OGC citation comment. Update existing "passes when collections are valid" tests to include the featureType marker. ~30 min per file + 3 regression tests each.
+- **Source**: Found during `deployments-collections-heuristic` sprint 2026-04-17.
 
 
 
@@ -90,6 +98,18 @@ _(No active issues against the test engine. Outstanding tracked items are polish
 - **Workaround**: Read OGC CS API Part 1 `/req/deployment/collections` text and either narrow the heuristic to match the spec, or document why the relaxation is safe.
 
 ## Resolved Issues
+
+### deployments-collections-heuristic + systems-collections-heuristic (RESOLVED 2026-04-17 — sprint `deployments-collections-heuristic`)
+- **Symptom (resolved)**: `src/engine/registry/deployments.ts:401-404` and `system-features.ts:353-355` both used a three-way heuristic `(c.id === '<x>s' || c.id === '<x>' || c.itemType.toLowerCase().includes('<x>'))` to identify deployment/system collections. Both over-broad AND wrong:
+  - Over-broad: accepted `id === "deployments"` (or `"systems"`) which is convention, not a spec requirement.
+  - Wrong: `c.itemType.includes("deployment")` — spec says `itemType="feature"` (a fixed string), NOT a string containing the type name. This branch would NEVER match a spec-conformant server.
+- **Spec reality**: OGC 23-001 `/req/deployment/collections` and `/req/system/collections` both mandate `itemType="feature"` + `featureType="sosa:Deployment"` (or `"sosa:System"`) in Collection metadata. Collection `id` is NOT normatively constrained (spec deployment-collection examples: `saildrone_missions`, `sof_missions`). The authoritative signal is `featureType`.
+- **Resolution**: Rewrote both heuristics to `collections.some((c) => c.featureType === "sosa:<X>")` with inline OGC citation comment. Failure message now names `featureType="sosa:<X>"` and cites `/req/<X>/collections`.
+- **Tests**: 3 new + 1 updated per file. Regression cases cover (a) PASS when featureType present with arbitrary id (e.g. `saildrone_missions`), (b) FAIL when id-only legacy collection (no featureType), (c) FAIL when wrong-itemType fallback that old heuristic admitted, (d) FAIL when no matching collection. Fixtures `validCollectionsWithDeployments`/`validCollectionsWithSystems` updated to include the normative `itemType` + `featureType` attributes.
+- **Spec**: REQ-TEST-004 item 1 + REQ-TEST-006 item 1 rewritten; new SCENARIO-FEATURECOLLECTION-TYPE-001 in `openspec/capabilities/conformance-testing/spec.md`.
+- **Gates**: vitest 992/992 (was 986; +6 net-new across 2 files), tsc 0 errors, eslint 0 errors / 18 pre-existing warnings.
+- **Side finding logged as new Active**: `procedures.ts`, `properties.ts`, `sampling.ts` `testCollections` don't do this check at all — silent false-positive PASS — see Active section above.
+- **Source**: Originally flagged by Quinn 2026-04-02; explicit scope user-selected as P0 #1 on 2026-04-17.
 
 ### api-definition-service-doc-fallback (RESOLVED 2026-04-17 — sprint `api-definition-service-doc-fallback`)
 - **Symptom (resolved)**: `src/engine/registry/common.ts` `testApiDefinition` found the API-definition URL using `rel="service-desc"` only. OGC 19-072 (Common Part 1) `/req/landing-page/root-success` normatively permits EITHER `rel="service-desc"` (machine-readable, e.g. OpenAPI) OR `rel="service-doc"` (human-readable). A spec-conformant server that exposed only `service-doc` would FAIL this test for a non-conformance reason — the same false-positive class as GH #3.
