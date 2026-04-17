@@ -42,12 +42,38 @@ const REQ_RECURSIVE_SEARCH_SYSTEMS: RequirementDefinition = {
   description: 'Recursive search returns nested subsystem results.',
 };
 
+// REQ-TEST-CITE-002 rubric-6.1 audit (2026-04-17) against OGC 23-001 Part 1:
+// - /req/subsystem/recursive-assoc (clause 9, "System Associations"):
+//   "Whenever a `System` resource has subsystems, the target content of its
+//   associations SHALL be adjusted as indicated in <table system-assocs-recursive>."
+//   The table enumerates `samplingFeatures`, `datastreams`, `controlstreams` —
+//   it is about RECURSIVE AGGREGATION of child-resource associations on the
+//   PARENT, NOT about a rel="parent" or rel="up" link from subsystem → parent.
+// - Clause 9 does document a `parentSystem` PROPERTY (inverse of
+//   sosa:hasSubSystem), but `parentSystem` is a resource property, not a
+//   link-relation value — the spec never mandates rel="parent" or rel="up".
+// Per REQ-TEST-CITE-002 + GH #3 precedent, absence of a parent-link relation
+// on a subsystem is downgraded from FAIL to SKIP-with-reason below.
+//
+// Caveat (Raze 2026-04-17T03:18Z): the upstream opengeospatial/ogcapi-connected-systems
+// repository's api/part1/standard/requirements/subsystem/ directory has NO
+// separate req_recursive_assoc.adoc file; the requirement is defined only
+// inline in clause 9 of the compiled spec (the requirements_class lists it
+// but no standalone .adoc exists). Citation therefore points at the compiled
+// HTML section rather than a requirement-file URL.
+// Source: https://docs.ogc.org/is/23-001/23-001.html (clause 9, /req/subsystem/recursive-assoc).
 const REQ_RECURSIVE_ASSOC: RequirementDefinition = {
   requirementUri: '/req/subsystem/recursive-assoc',
   conformanceUri: '/conf/subsystem/recursive-assoc',
   name: 'Subsystem Parent Association',
   priority: 'MUST',
-  description: 'Subsystem links back to parent system.',
+  description:
+    'Subsystem has a links array; presence of rel="parent" or rel="up" (or ' +
+    'an href pointing back at the parent system) is checked but absence ' +
+    'produces SKIP (not FAIL) because OGC 23-001 /req/subsystem/recursive-assoc ' +
+    'is about recursive aggregation of sampling-feature / datastream / ' +
+    'controlstream associations on the parent — not a parent-link relation ' +
+    'on the subsystem.',
 };
 
 // --- Conformance Class Definition ---
@@ -335,6 +361,13 @@ async function testRecursiveAssoc(ctx: TestContext) {
       );
     }
 
+    // REQ-TEST-CITE-002: OGC 23-001 /req/subsystem/recursive-assoc governs
+    // recursive aggregation of associations on the parent (samplingFeatures,
+    // datastreams, controlstreams) — it does NOT mandate rel="parent" or
+    // rel="up" on subsystem resources. The parentSystem property exists per
+    // clause 9 but is a resource property, not a link relation. Downgrade
+    // missing parent-link relation from FAIL to SKIP-with-reason per GH #3
+    // precedent.
     const hasParentLink = links.some(
       (l: Record<string, unknown>) =>
         l.rel === 'parent' || l.rel === 'up' ||
@@ -342,15 +375,13 @@ async function testRecursiveAssoc(ctx: TestContext) {
     );
 
     if (!hasParentLink) {
-      return failResult(
+      return skipResult(
         REQ_RECURSIVE_ASSOC,
-        assertionFailure(
-          'Subsystem must link back to parent system',
-          'link with rel="parent" or rel="up" referencing parent system',
-          'no parent association link found',
-        ),
-        exchangeIds,
-        durationMs,
+        'Subsystem has no rel="parent"/"up" link and no href pointing at the ' +
+          'parent system, but OGC 23-001 /req/subsystem/recursive-assoc does ' +
+          'not mandate such a link relation (it governs recursive aggregation ' +
+          'of samplingFeatures/datastreams/controlstreams). Per ' +
+          'REQ-TEST-CITE-002 and GH #3 precedent, absence is not FAIL.',
       );
     }
 

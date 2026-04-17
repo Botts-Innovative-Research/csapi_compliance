@@ -270,7 +270,11 @@ describe('Connected Systems - Subsystems conformance tests', () => {
       expect(result.requirementUri).toBe('/req/subsystem/recursive-assoc');
     });
 
-    it('fails when subsystem has no parent link', async () => {
+    it('SKIPs when subsystem has no parent link (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
+      // REQ-TEST-CITE-002: OGC 23-001 /req/subsystem/recursive-assoc is about
+      // recursive aggregation of samplingFeatures/datastreams/controlstreams
+      // on the parent — it does NOT mandate rel="parent"/"up" on subsystem
+      // resources. Per GH #3 precedent, absence is SKIP (not FAIL).
       const body = JSON.stringify({
         items: [
           {
@@ -287,8 +291,8 @@ describe('Connected Systems - Subsystems conformance tests', () => {
 
       const result = await tests[3].execute(ctx);
 
-      expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('parent');
+      expect(result.status).toBe('skip');
+      expect(result.skipReason).toMatch(/23-001|recursive-assoc|aggregation/);
     });
 
     it('fails when subsystem links array is missing', async () => {

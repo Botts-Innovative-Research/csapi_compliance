@@ -34,12 +34,26 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
   description: 'GET /deployments/{id} returns HTTP 200 with the correct deployment id.',
 };
 
+// REQ-TEST-CITE-002 rubric-6.1 audit (2026-04-17) against OGC 23-001 Part 1:
+// - /req/deployment/canonical-endpoint: exposes /deployments collection endpoint.
+// - /req/deployment/canonical-url: rel="canonical" required ONLY on
+//   non-canonical URLs. No SHALL clause requires rel="self" on
+//   GET /deployments/{id}.
+// - Parent OGC 17-069 /req/core/f-links applies to /collections/.../items/{id},
+//   not the CS canonical URL.
+// Per REQ-TEST-CITE-002 + GH #3 precedent, absence of rel="self" is downgraded
+// from FAIL to SKIP-with-reason below.
+// Source: https://docs.ogc.org/is/23-001/23-001.html (clause 10, /req/deployment/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
   requirementUri: '/req/deployment/canonical-endpoint',
   conformanceUri: '/conf/deployment/canonical-endpoint',
   name: 'Deployment Canonical Endpoint',
   priority: 'MUST',
-  description: 'Deployment resource has a self link.',
+  description:
+    'Deployment resource has a links array; presence of rel="self" is ' +
+    'checked but absence produces SKIP (not FAIL) because OGC 23-001 ' +
+    '/req/deployment/canonical-url only requires rel="canonical" on ' +
+    'non-canonical URLs — rel="self" on /deployments/{id} is not normative.',
 };
 
 const REQ_REF_FROM_SYSTEM: RequirementDefinition = {
@@ -247,17 +261,18 @@ async function testCanonicalEndpoint(ctx: TestContext) {
       );
     }
 
+    // REQ-TEST-CITE-002: rel="self" at canonical URL /deployments/{id} is NOT
+    // normatively required by OGC 23-001 /req/deployment/canonical-url (which
+    // only mandates rel="canonical" on non-canonical URLs). Downgrade missing
+    // rel="self" from FAIL to SKIP-with-reason per GH #3 precedent.
     const hasSelf = links.some((l: Record<string, unknown>) => l.rel === 'self');
     if (!hasSelf) {
-      return failResult(
+      return skipResult(
         REQ_CANONICAL_ENDPOINT,
-        assertionFailure(
-          'Deployment resource must have a self link',
-          'link with rel="self"',
-          'no self link found',
-        ),
-        exchangeIds,
-        durationMs,
+        'Deployment resource has no rel="self" link, but OGC 23-001 ' +
+          '/req/deployment/canonical-url only requires rel="canonical" on ' +
+          'non-canonical URLs (not rel="self" on /deployments/{id}). ' +
+          'Per REQ-TEST-CITE-002 and GH #3 precedent, absence is not FAIL.',
       );
     }
 

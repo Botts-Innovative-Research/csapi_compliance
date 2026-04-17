@@ -205,7 +205,10 @@ describe('Sampling Features conformance tests', () => {
       expect(result.requirementUri).toBe('/req/sf/canonical-endpoint');
     });
 
-    it('fails when self link is missing', async () => {
+    it('SKIPs when self link is missing (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
+      // REQ-TEST-CITE-002: rel="self" at canonical URL /samplingFeatures/{id}
+      // is NOT normatively required by OGC 23-001 /req/sf/canonical-url.
+      // Per GH #3 precedent, absence of self is SKIP (not FAIL).
       const body = JSON.stringify({
         id: 'sf-1',
         links: [{ rel: 'alternate', href: '/other' }],
@@ -216,8 +219,8 @@ describe('Sampling Features conformance tests', () => {
 
       const result = await tests[2].execute(ctx);
 
-      expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('self');
+      expect(result.status).toBe('skip');
+      expect(result.skipReason).toMatch(/23-001|canonical-url|non-canonical/);
     });
 
     it('fails when links array is missing', async () => {

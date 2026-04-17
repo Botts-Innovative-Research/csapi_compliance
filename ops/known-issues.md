@@ -1,13 +1,14 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T02:45Z (Raze GAPS_FOUND on sprint user-testing-followup — scope mismatch between REQ-TEST-CITE-002 wording and actual audit coverage; 7 registry files remain uncited)
+> Last updated: 2026-04-17T03:00Z (sprint `rubric-6-1-sweep` closed; REQ-TEST-CITE-002 → Implemented; latent `api-definition-service-doc-fallback` logged as new Active)
 
 ## Active Issues
 
-### Rubric-6.1 sweep across remaining registry files (NEW 2026-04-17, Raze GAPS_FOUND finding)
-- **Symptom**: REQ-TEST-CITE-002 is written as a project-wide source-citation mandate for every `rel=*` assertion in `src/engine/registry/**/*.ts`, but the sprint user-testing-followup audit only covered `common.ts` (GH #3) and `features-core.ts`. Raze's review (2026-04-17T02:45Z) enumerated 7 remaining files with uncited rel-link assertions: `procedures.ts:245`, `properties.ts:236`, `sampling.ts:245`, `deployments.ts:250`, `system-features.ts:260`, `subsystems.ts:338-342`, `subdeployments.ts:339`.
-- **Impact**: Each uncited assertion is a potential false-positive of the GH #3 class (asserting spec examples as requirements). Without source citations, a reviewer cannot efficiently audit whether each assertion maps to a SHALL clause or an illustrative example.
-- **Workaround / follow-up sprint `rubric-6-1-sweep`**: for each of the 7 files, either (a) add a citation comment pointing to a normative SHALL/MUST/REQUIRED clause in the corresponding OGC spec (cs-part1, system-features, etc.), OR (b) downgrade the assertion to SKIP-with-reason if the cited source is only an illustrative example (GH #3 precedent). Verification: `grep -n "rel=" src/engine/registry/` should show every match adjacent to a citation comment. Estimated 2–4 hours of OGC-spec reading + doc edits; no significant code change expected unless a new false positive is surfaced.
+### api-definition-service-doc-fallback (NEW 2026-04-17, surfaced by rubric-6-1-sweep)
+- **Symptom**: `src/engine/registry/common.ts:343-357` (`testApiDefinition`) finds the API-definition URL using `rel="service-desc"` only. OGC 19-072 (Common Part 1) `/req/core/root-success` normatively permits EITHER `rel="service-desc"` (machine-readable, e.g. OpenAPI) OR `rel="service-doc"` (human-readable). A spec-conformant server that exposes only `service-doc` will FAIL this test for a non-conformance reason.
+- **Impact**: False-positive FAIL on a narrow but real class of spec-conformant IUTs. `REQ_LANDING_PAGE_LINKS` at `common.ts:179-192` correctly handles the OR — but the follow-up fetch does not.
+- **Workaround / fix**: Change line 343-357 to fall back to `rel="service-doc"` when `rel="service-desc"` is absent. For `service-doc`, relax the OpenAPI structural check (service-doc is HTML-documentation, not machine-readable OpenAPI). Approximate effort: 30 min + 2 regression tests. Deferred from rubric-6.1 sprint for scope discipline.
+- **Source**: Found during `rubric-6-1-sweep` audit trail sweep 2026-04-17.
 
 
 
@@ -93,6 +94,21 @@
 - **Workaround**: Read OGC CS API Part 1 `/req/deployment/collections` text and either narrow the heuristic to match the spec, or document why the relaxation is safe.
 
 ## Resolved Issues
+
+### Rubric-6.1 sweep across remaining 7 registry files (RESOLVED 2026-04-17 — sprint `rubric-6-1-sweep`)
+- **Finding (resolved)**: 7 registry files carried rel-link assertions without normative-source citations: `procedures.ts:245`, `properties.ts:236`, `sampling.ts:245`, `deployments.ts:250`, `system-features.ts:260` (all `rel="self"` on CS canonical URLs) and `subsystems.ts:338-342`, `subdeployments.ts:339` (parent-link checks).
+- **Audit outcome**: All 7 assertions map to OGC 23-001 URIs that do NOT actually require the asserted link relation:
+  - For the 5 single-resource modules: `/req/<X>/canonical-url` requires `rel="canonical"` ONLY on NON-canonical URLs. No SHALL clause requires `rel="self"` on `GET /<X>/{id}` (the canonical URL). Parent OGC 17-069 `/req/core/f-links` applies to `/collections/.../items/{id}`, not the CS canonical URLs.
+  - For subsystems/subdeployments: `/req/sub<Y>/recursive-assoc` governs recursive aggregation of child-resource associations on the parent (e.g. samplingFeatures, datastreams) — it does NOT mandate `rel="parent"`/`rel="up"` on children. The `parentSystem`/`parentDeployment` concept exists per clauses 9/11 but as a resource property, not a link relation.
+- **Resolution actions (2026-04-17)**:
+  - All 7 assertions downgraded from FAIL → SKIP-with-reason per GH #3 precedent.
+  - Inline citation comments added at each REQ definition site pointing at `docs.ogc.org/is/23-001/23-001.html` with clause/req-id.
+  - 7 existing *.test.ts files updated: "fails when self/parent missing" → "SKIPs when missing (non-normative per OGC 23-001 rubric-6.1 audit)".
+  - New consolidated regression suite at `tests/unit/engine/registry/registry-links-normative.test.ts` (28 tests): for each of the 7 modules, (a) PASS when link present, (b) SKIP with citation when absent, (c) FAIL when links-array structurally missing, (d) audit-trail check that REQ description carries the citation.
+  - REQ-TEST-CITE-002 status flipped `PARTIAL` → `Implemented` in `openspec/capabilities/conformance-testing/spec.md`.
+  - Verification `grep -rn "rel\.===\|foundRels\.has\|l\.rel" src/engine/registry/` — every match adjacent to OGC citation.
+- **Side finding (logged as new Active)**: `common.ts:343` requires `rel="service-desc"` only, but spec permits `service-desc` OR `service-doc` — see `api-definition-service-doc-fallback` in Active Issues.
+- **Gates**: 983/983 vitest PASS (was 955; +28 new), 0 tsc errors, 0 eslint errors.
 
 ### features-core.ts rel=self audit (RESOLVED 2026-04-17 — rubric-6.1 exercise)
 - **Finding (resolved)**: Raze's review of sprint user-testing-round-01 flagged `src/engine/registry/features-core.ts` `/req/ogcapi-features/items-links` as potentially the same class of bug as GH #3 (spec example asserted as requirement).

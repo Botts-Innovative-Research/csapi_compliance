@@ -31,7 +31,7 @@ const REQ_LANDING_PAGE_LINKS: RequirementDefinition = {
   conformanceUri: '/conf/ogcapi-common/landing-page-links',
   name: 'Landing Page Required Links',
   priority: 'MUST',
-  // Per OGC API - Common Part 1 (19-072) /req/core/root-success: the landing page SHALL include
+  // Per OGC API - Common Part 1 (19-072) /req/landing-page/root-success: the landing page SHALL include
   // a link to the API definition (rel=service-desc OR rel=service-doc) and a link to the
   // conformance declaration (rel=conformance). `self` is only an illustrative example in the spec,
   // not a normative requirement.
@@ -55,12 +55,28 @@ const REQ_CONFORMANCE_CONFORMS_TO: RequirementDefinition = {
   description: 'Conformance response body contains a conformsTo array.',
 };
 
+// REQ-TEST-CITE-002 rubric-6.1 audit (2026-04-17): the landing-page link used
+// to locate the API definition is normatively required by OGC 19-072
+// (Common Part 1) /req/landing-page/root-success, which allows EITHER
+// rel="service-desc" (machine-readable, typically OpenAPI) OR
+// rel="service-doc" (human-readable). See SCENARIO-LINKS-NORMATIVE-001.
+//
+// KNOWN DEVIATION (tracked in ops/known-issues.md as
+// `api-definition-service-doc-fallback`): `testApiDefinition` currently only
+// probes rel="service-desc" and FAILs a spec-conformant server that exposes
+// only rel="service-doc". The REQ_LANDING_PAGE_LINKS test above correctly
+// handles the OR, but this follow-up fetch does not. Deferred — fix is
+// out-of-scope for the rubric-6.1 citation sprint.
 const REQ_API_DEFINITION: RequirementDefinition = {
   requirementUri: '/req/ogcapi-common/api-definition',
   conformanceUri: '/conf/ogcapi-common/api-definition',
   name: 'API Definition Link',
   priority: 'MUST',
-  description: 'The service-desc link on the landing page returns a valid API definition document.',
+  description:
+    'The service-desc link on the landing page returns a valid API definition ' +
+    'document (OGC 19-072 /req/landing-page/root-success permits rel="service-desc" OR ' +
+    'rel="service-doc"; current implementation probes service-desc only — see ' +
+    'ops/known-issues.md `api-definition-service-doc-fallback`).',
 };
 
 const REQ_JSON_CONTENT_TYPE: RequirementDefinition = {
@@ -175,7 +191,7 @@ async function testLandingPageLinks(ctx: TestContext) {
       );
     }
 
-    // OGC API Common Part 1 (19-072) /req/core/root-success normatively requires:
+    // OGC API Common Part 1 (19-072) /req/landing-page/root-success normatively requires:
     //   (a) an API definition link: rel=service-desc OR rel=service-doc, AND
     //   (b) a conformance declaration link: rel=conformance.
     // Note: rel=self is shown in the example landing page in the spec but is NOT listed as a
@@ -340,6 +356,14 @@ async function testApiDefinition(ctx: TestContext) {
       );
     }
 
+    // REQ-TEST-CITE-002 rubric-6.1 audit (assertion-site citation, addresses
+    // Raze GAP-1 2026-04-17T03:18Z): the normative basis for this lookup is
+    // OGC 19-072 /req/landing-page/root-success — see the REQ_API_DEFINITION
+    // comment block at lines 58-73 for the full citation and the known
+    // deviation (api-definition-service-doc-fallback in ops/known-issues.md).
+    // Reminder: the spec permits rel="service-desc" OR rel="service-doc"; the
+    // probe below only checks service-desc, which is a known latent bug
+    // deferred from the rubric-6.1 sweep.
     const serviceDescLink = links.find(
       (l: Record<string, unknown>) => l.rel === 'service-desc',
     );

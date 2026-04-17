@@ -257,7 +257,10 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
       expect(result.requirementUri).toBe('/req/deployment/canonical-endpoint');
     });
 
-    it('fails when self link is absent', async () => {
+    it('SKIPs when self link is absent (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
+      // REQ-TEST-CITE-002: rel="self" at canonical URL /deployments/{id} is NOT
+      // normatively required by OGC 23-001 /req/deployment/canonical-url.
+      // Per GH #3 precedent, absence of self is SKIP (not FAIL).
       const body = JSON.stringify({
         id: 'dep-1',
         links: [{ rel: 'alternate', href: 'http://example.com/other' }],
@@ -270,8 +273,8 @@ describe('Connected Systems - Deployment Features conformance tests', () => {
 
       const result = await tests[2].execute(ctx);
 
-      expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('self');
+      expect(result.status).toBe('skip');
+      expect(result.skipReason).toMatch(/23-001|canonical-url|non-canonical/);
     });
 
     it('fails when links array is missing', async () => {

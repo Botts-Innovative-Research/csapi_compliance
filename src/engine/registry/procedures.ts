@@ -34,12 +34,35 @@ const REQ_CANONICAL_URL: RequirementDefinition = {
   description: 'GET /procedures/{id} returns HTTP 200 with the procedure resource.',
 };
 
+// REQ-TEST-CITE-002 rubric-6.1 audit (2026-04-17) against OGC 23-001 Part 1:
+// - /req/procedure/canonical-endpoint (§12 / req_canonical_endpoint.adoc):
+//   "The server SHALL expose a procedure-resources-endpoint at {api_root}/procedures"
+//   — this is about the COLLECTION endpoint existence, NOT about a self-link
+//   on individual procedure resources.
+// - /req/procedure/canonical-url (req_canonical_url.adoc): "Every Procedure
+//   resource SHALL be accessible through its canonical URL ... If a Procedure
+//   resource is retrieved through any other URL than its canonical URL, the
+//   server response SHALL include a link ... with relation type `canonical`."
+//   — rel="canonical" is required ONLY on NON-canonical URLs.
+// - No SHALL clause in OGC 23-001 requires rel="self" on the response of
+//   GET /procedures/{id}. rel="self" at the canonical URL is a widely-used
+//   convention but not normative in CS Part 1.
+// - Parent OGC 17-069 /req/core/f-links (self on features) applies only to
+//   /collections/{id}/items/{id}, not the CS canonical URL /procedures/{id}.
+// Therefore, per REQ-TEST-CITE-002 + GH #3 precedent (no FAIL when the cited
+// source is an illustrative example rather than a SHALL clause), this test
+// SKIPs-with-reason when the self link is absent instead of flagging FAIL.
+// Source: https://docs.ogc.org/is/23-001/23-001.html (clause 12, /req/procedure/canonical-url).
 const REQ_CANONICAL_ENDPOINT: RequirementDefinition = {
   requirementUri: '/req/procedure/canonical-endpoint',
   conformanceUri: '/conf/procedure/canonical-endpoint',
   name: 'Procedure Canonical Endpoint Self Link',
   priority: 'MUST',
-  description: 'Procedure resource has a self link.',
+  description:
+    'Procedure resource has a links array; presence of rel="self" is ' +
+    'checked but absence produces SKIP (not FAIL) because OGC 23-001 ' +
+    '/req/procedure/canonical-url only requires rel="canonical" on ' +
+    'non-canonical URLs — rel="self" on /procedures/{id} is not normative.',
 };
 
 const REQ_COLLECTIONS: RequirementDefinition = {
@@ -241,17 +264,18 @@ async function testCanonicalEndpoint(ctx: TestContext) {
       );
     }
 
+    // REQ-TEST-CITE-002: rel="self" at canonical URL /procedures/{id} is NOT
+    // normatively required by OGC 23-001 /req/procedure/canonical-url
+    // (which only mandates rel="canonical" on non-canonical URLs). Downgrade
+    // missing rel="self" from FAIL to SKIP-with-reason per GH #3 precedent.
     const foundRels = new Set(links.map((l: Record<string, unknown>) => l.rel));
     if (!foundRels.has('self')) {
-      return failResult(
+      return skipResult(
         REQ_CANONICAL_ENDPOINT,
-        assertionFailure(
-          'Procedure resource must have a self link',
-          'link with rel="self"',
-          'no self link found',
-        ),
-        exchangeIds,
-        durationMs,
+        'Procedure resource has no rel="self" link, but OGC 23-001 ' +
+          '/req/procedure/canonical-url only requires rel="canonical" on ' +
+          'non-canonical URLs (not rel="self" on /procedures/{id}). ' +
+          'Per REQ-TEST-CITE-002 and GH #3 precedent, absence is not FAIL.',
       );
     }
 

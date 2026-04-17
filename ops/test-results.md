@@ -1,8 +1,8 @@
 # Test Results
 
-Last updated: 2026-04-17 (Sprint user-testing-round-01 — GH #1/#2/#3/#4/#5/#6/#7 fixes land with 5 new regression files + 8 tests added to existing ssrf-guard.test.ts; unit tests 912 → 946)
+Last updated: 2026-04-17T03:20Z (Sprint `rubric-6-1-sweep` — REQ-TEST-CITE-002 Implemented; 7 registry files audited against OGC 23-001; all `rel=*` assertions downgraded FAIL→SKIP per GH #3 precedent; +28 regression tests. Raze Gate 4 APPROVE 0.88.)
 
-## Verdict (Unit + Type-check): PASS — 946 unit tests (was 912; +26 across 5 new files + 8 added to existing `ssrf-guard.test.ts` = +34 total; addresses all 7 GitHub issues)
+## Verdict (Unit + Type-check): PASS — **983 unit tests** (was 946; +28 in new `registry-links-normative.test.ts` across 7 modules + 9 net-new from earlier sprints = +37 total since user-testing-round-01)
 ## Verdict (E2E, chromium default-skip): PASS — 21 / 0 / 3 (3 conditional-skip live-IUT tests)
 ## Verdict (E2E, firefox default-skip): PASS — 21 / 0 / 3
 ## Verdict (E2E, chromium IUT_URL=GeoRobotix): MIXED — 24/24 tests execute green, but per-scenario assertion depth is PARTIAL / MODERATE for 4 of 6 critical scenarios (see table below). 12.5s.

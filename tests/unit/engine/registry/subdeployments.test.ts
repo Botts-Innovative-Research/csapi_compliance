@@ -287,7 +287,11 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
       expect(result.requirementUri).toBe('/req/subdeployment/recursive-assoc');
     });
 
-    it('fails when subdeployment has no parent link', async () => {
+    it('SKIPs when subdeployment has no parent link (non-normative per OGC 23-001 rubric-6.1 audit)', async () => {
+      // REQ-TEST-CITE-002: OGC 23-001 /req/subdeployment/recursive-assoc is
+      // about recursive aggregation of deployedSystems/samplingFeatures/etc
+      // on the parent — it does NOT mandate rel="parent"/"up" on subdeployment
+      // resources. Per GH #3 precedent, absence is SKIP (not FAIL).
       const body = JSON.stringify({
         items: [
           {
@@ -304,8 +308,8 @@ describe('Connected Systems - Subdeployments conformance tests', () => {
 
       const result = await tests[3].execute(ctx);
 
-      expect(result.status).toBe('fail');
-      expect(result.failureMessage).toContain('parent');
+      expect(result.status).toBe('skip');
+      expect(result.skipReason).toMatch(/23-001|recursive-assoc|aggregation/);
     });
 
     it('fails when subdeployment links array is missing', async () => {
