@@ -1,0 +1,63 @@
+# User Testing Followup Sprint Contract
+# Addresses the two residues flagged during Raze's review of
+# sprint user-testing-round-01 (2026-04-17):
+#   - GH #7 PARTIAL: observation body runtime coupling
+#   - features-core.ts rel=self rubric-6.1 audit
+# Both tracked in ops/known-issues.md Active after the prior sprint closed.
+
+sprint: "user-testing-followup"
+type: "carry-forward"
+created: "2026-04-17T02:15Z"
+description: |
+  Close the two non-blocking residues from sprint user-testing-round-01's Raze
+  review. These were deliberately split off as follow-ups rather than held
+  the APPROVE verdict — their resolution is framework-correctness polish, not
+  user-blocking fixes.
+
+upstream_sprint: "user-testing-round-01"
+upstream_raze_verdict: ".harness/evaluations/sprint-user-testing-round-01-adversarial.yaml"
+
+stories:
+  - id: "S11-01"
+    title: "Runtime datastream→observation coupling (GH #7 runtime layer)"
+    fixes: ["user-testing-round-01 residue"]
+    raze_rubric_exercised: "6.3 dynamic-schema coupling"
+    depends_on: []
+
+  - id: "S11-02"
+    title: "features-core.ts rel=self assertion audit (rubric-6.1 exercise)"
+    fixes: ["user-testing-round-01 residue"]
+    raze_rubric_exercised: "6.1 spec-source citation"
+    depends_on: []
+
+requirements:
+  new_reqs:
+    - "REQ-TEST-DYNAMIC-002: Observation body SHALL be derived from the datastream object returned by the IUT's POST response, not from the request fixture"
+    - "REQ-TEST-CITE-002: Every conformance assertion citing a `rel=*` link requirement SHALL include a comment referencing the normative spec section (SHALL/MUST/REQUIRED clause, not illustrative example)"
+
+scenarios:
+  critical:
+    - "SCENARIO-OBS-SCHEMA-002"   # observation body uses server-returned resultType
+    - "SCENARIO-FEATURES-LINKS-001"  # items-links normatively requires self per OGC 17-069 §7.15
+  normal:
+    - "SCENARIO-OBS-SCHEMA-003"   # server returns different resultType -> observation body matches the server's version
+    - "SCENARIO-FEATURES-LINKS-002"  # items-links test source-cites /req/core/fc-links
+
+success_criteria:
+  all_stories_implemented: true
+  unit_tests_pass: true
+  typecheck_pass: true
+  lint_pass: true
+  no_regression: true
+  raze_rubric_6_3_satisfied: true  # server-response-driven, not fixture-driven
+  raze_rubric_6_1_satisfied: true  # every link-rel assertion cites normative text
+
+evaluation_focus:
+  - "For S11-01: verify the observation body is actually built from a SERVER response object, not a REQUEST fixture. A regression test with a mock that rewrites resultType should prove it."
+  - "For S11-02: the audit conclusion is that `self` IS normative here (unlike GH #3 in Common landing-page). Deliverable is a written audit note + citation in the source + a regression test that locks in the normative interpretation."
+  - "The Raze rubric itself should be exercised during review — this sprint is the first real test of whether rubrics 6.1 and 6.3 are actionable (concrete steps) or prose-only."
+
+gate_4_required: true
+gate_4_triggers_custom:
+  force_run: true
+  reason: "Exercises two new Raze rubric items; methodology validation"

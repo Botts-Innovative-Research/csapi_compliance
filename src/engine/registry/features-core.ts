@@ -74,12 +74,28 @@ const REQ_SINGLE_FEATURE: RequirementDefinition = {
   description: 'Single feature (GET /collections/{id}/items/{featureId}) returns HTTP 200.',
 };
 
+// REQ-TEST-002 (item 5), REQ-TEST-CITE-002, SCENARIO-FEATURES-LINKS-001.
+//
+// Normative source: OGC API Features Part 1 (OGC 17-069r4) §7.15 Requirement 28
+// `/req/core/fc-links` A: "The response SHALL include a link to this resource
+// (i.e. `self`) and to the alternate representations of this resource
+// (`alternate`) (permitted only if the resource is represented in alternate
+// formats)." https://docs.ogc.org/is/17-069r4/17-069r4.html#_requirement_28
+//
+// This is DISTINCT from OGC 19-072 (Common Part 1) `/req/core/root-success`
+// where `self` appears only as an illustrative landing-page example and is
+// NOT normative — that case is covered by SCENARIO-LINKS-NORMATIVE-001 in
+// `src/engine/registry/common.ts`. Raze rubric-6.1 audit performed 2026-04-17
+// confirmed `self` is normative here (items response), not in Common
+// (landing page). Source-citation added per REQ-TEST-CITE-002.
 const REQ_ITEMS_LINKS: RequirementDefinition = {
   requirementUri: '/req/ogcapi-features/items-links',
   conformanceUri: '/conf/ogcapi-features/items-links',
   name: 'Items Response Links',
   priority: 'MUST',
-  description: 'Items response contains links (self, and next if paginated).',
+  description:
+    'Items response contains rel="self" (OGC 17-069r4 §7.15 Req 28 A, normative). ' +
+    'rel="next" when paginated, rel="prev" when not on first page.',
 };
 
 // --- Conformance Class Definition ---
@@ -607,11 +623,15 @@ async function testItemsLinks(ctx: TestContext) {
     }
 
     const foundRels = new Set(links.map((l: Record<string, unknown>) => l.rel));
+    // REQ-TEST-CITE-002: source citation for the `self` assertion.
+    // OGC 17-069r4 §7.15 Requirement 28 A: "The response SHALL include a link
+    // to this resource (i.e. `self`)". Normative clause (SHALL), distinguishing
+    // this from the Common landing page where `self` is example-only.
     if (!foundRels.has('self')) {
       return failResult(
         REQ_ITEMS_LINKS,
         assertionFailure(
-          'Items response links must include a self link',
+          'Items response links must include a self link (OGC 17-069r4 §7.15 Req 28 A)',
           'link with rel="self"',
           'no self link found',
         ),

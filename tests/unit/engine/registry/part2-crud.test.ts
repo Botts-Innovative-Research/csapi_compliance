@@ -196,7 +196,64 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
   });
 
   describe('CRUD Observation test', () => {
-    it('passes when observation POST returns 201', async () => {
+    // REQ-TEST-DYNAMIC-002: testCrudObservation now performs a GET on the
+    // server's datastream between POST-datastream and POST-observation so
+    // the observation body derives from the server's view. These tests
+    // provide the GET mock accordingly.
+    const validServerDatastream = {
+      statusCode: 200,
+      body: JSON.stringify({
+        id: 'ds-1',
+        resultType: 'measure',
+        schema: {
+          resultSchema: { type: 'Quantity', uom: { code: 'Cel' } },
+        },
+      }),
+    };
+
+    // REQ-TEST-DYNAMIC-002: existing-datastream fallback path (no POST-datastream
+    // Location header to build from — the test reuses a datastreamId from the
+    // discovery cache). The runtime-coupling GET must still fire against the
+    // existing datastream so the observation body derives from the server's view.
+    it('fallback: when POST datastream lacks Location header and discovery has datastreamId, GET the existing datastream and derive the observation body from it', async () => {
+      const postMock = vi.fn()
+        // First POST: datastream creation returns 201 but NO Location
+        // (server impl that only uses explicit IDs); the code falls back to
+        // the discovery-cache datastreamId.
+        .mockResolvedValueOnce(
+          makeHttpResponse({ statusCode: 201, headers: {} }),
+        )
+        // Second POST: observation insert — must use server-returned shape.
+        .mockResolvedValueOnce(
+          makeHttpResponse({
+            statusCode: 201,
+            headers: { 'location': '/observations/obs-1' },
+          }),
+        );
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse(validServerDatastream),
+      );
+      const deleteMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 204, body: '' }),
+      );
+
+      const ctx = makeTestContext(
+        { post: postMock, get: getMock, delete: deleteMock },
+        { systemId: 'sys-1', datastreamId: 'existing-ds-7' },
+      );
+      const tests = part2CrudTestModule.createTests(ctx);
+      const result = await tests[1].execute(ctx);
+
+      // The test must PASS — the existing-datastream path should still exercise
+      // the runtime coupling, not silently skip it.
+      expect(result.status).toBe('pass');
+      // GET must have been called exactly once on the existing datastream URL
+      expect(getMock).toHaveBeenCalledTimes(1);
+      const getUrl = getMock.mock.calls[0][0] as string;
+      expect(getUrl).toMatch(/datastreams\/existing-ds-7/);
+    });
+
+    it('passes when observation POST returns 201 (server echoes client resultType)', async () => {
       const postMock = vi.fn()
         .mockResolvedValueOnce(
           makeHttpResponse({
@@ -210,12 +267,15 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
             headers: { 'location': '/observations/obs-1' },
           }),
         );
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse(validServerDatastream),
+      );
       const deleteMock = vi.fn().mockResolvedValue(
         makeHttpResponse({ statusCode: 204, body: '' }),
       );
 
       const ctx = makeTestContext(
-        { post: postMock, delete: deleteMock },
+        { post: postMock, get: getMock, delete: deleteMock },
         { systemId: 'sys-1' },
       );
       const tests = part2CrudTestModule.createTests(ctx);
@@ -244,12 +304,15 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
         .mockResolvedValueOnce(
           makeHttpResponse({ statusCode: 400, body: 'Bad Request' }),
         );
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse(validServerDatastream),
+      );
       const deleteMock = vi.fn().mockResolvedValue(
         makeHttpResponse({ statusCode: 204, body: '' }),
       );
 
       const ctx = makeTestContext(
-        { post: postMock, delete: deleteMock },
+        { post: postMock, get: getMock, delete: deleteMock },
         { systemId: 'sys-1' },
       );
       const tests = part2CrudTestModule.createTests(ctx);
@@ -257,6 +320,96 @@ describe('Part 2 Create/Replace/Delete conformance tests', () => {
 
       expect(result.status).toBe('fail');
       expect(result.failureMessage).toContain('201');
+    });
+
+    // REQ-TEST-DYNAMIC-002 / SCENARIO-OBS-SCHEMA-003: unparseable datastream
+    // response fails loudly (doesn't silently fall back to the fixture).
+    it('fails with a parseable-JSON error when GET datastream returns non-JSON body', async () => {
+      const postMock = vi.fn().mockResolvedValueOnce(
+        makeHttpResponse({
+          statusCode: 201,
+          headers: { 'location': '/datastreams/ds-1' },
+        }),
+      );
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 200, body: '<html>not json</html>' }),
+      );
+      const deleteMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 204, body: '' }),
+      );
+
+      const ctx = makeTestContext(
+        { post: postMock, get: getMock, delete: deleteMock },
+        { systemId: 'sys-1' },
+      );
+      const tests = part2CrudTestModule.createTests(ctx);
+      const result = await tests[1].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toMatch(/parseable JSON|parse error/i);
+      // Must NOT have POSTed an observation with the fixture body
+      expect(postMock).toHaveBeenCalledTimes(1);
+    });
+
+    // REQ-TEST-DYNAMIC-002 / SCENARIO-OBS-SCHEMA-003: GET datastream 4xx/5xx
+    it('fails when GET datastream returns non-200 (cannot derive observation body)', async () => {
+      const postMock = vi.fn().mockResolvedValueOnce(
+        makeHttpResponse({
+          statusCode: 201,
+          headers: { 'location': '/datastreams/ds-1' },
+        }),
+      );
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 500, body: 'server error' }),
+      );
+      const deleteMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 204, body: '' }),
+      );
+
+      const ctx = makeTestContext(
+        { post: postMock, get: getMock, delete: deleteMock },
+        { systemId: 'sys-1' },
+      );
+      const tests = part2CrudTestModule.createTests(ctx);
+      const result = await tests[1].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toMatch(/REQ-TEST-DYNAMIC-002|200/);
+      expect(postMock).toHaveBeenCalledTimes(1);
+    });
+
+    // REQ-TEST-DYNAMIC-002 / SCENARIO-OBS-SCHEMA-002: server rewrites resultType
+    it('fails when server-returned datastream has unsupported resultType (runtime coupling)', async () => {
+      const postMock = vi.fn().mockResolvedValueOnce(
+        makeHttpResponse({
+          statusCode: 201,
+          headers: { 'location': '/datastreams/ds-1' },
+        }),
+      );
+      // Server rewrote the client's 'measure' proposal to 'record' (a
+      // resultType the observation builder does not currently support).
+      const getMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({
+          statusCode: 200,
+          body: JSON.stringify({ id: 'ds-1', resultType: 'record' }),
+        }),
+      );
+      const deleteMock = vi.fn().mockResolvedValue(
+        makeHttpResponse({ statusCode: 204, body: '' }),
+      );
+
+      const ctx = makeTestContext(
+        { post: postMock, get: getMock, delete: deleteMock },
+        { systemId: 'sys-1' },
+      );
+      const tests = part2CrudTestModule.createTests(ctx);
+      const result = await tests[1].execute(ctx);
+
+      expect(result.status).toBe('fail');
+      expect(result.failureMessage).toMatch(/REQ-TEST-DYNAMIC-002|mirror|resultType/i);
+      // No observation should have been POSTed when the builder could not
+      // mirror the server's shape.
+      expect(postMock).toHaveBeenCalledTimes(1);
     });
   });
 

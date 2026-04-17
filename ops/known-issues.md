@@ -1,18 +1,13 @@
 # Known Issues & Lessons Learned — CS API Compliance Assessor
 
-> Last updated: 2026-04-16T22:30Z (Task 2 closed; F3 backend enforcement implemented; retro-eval APPROVE blockers cleared)
+> Last updated: 2026-04-17T02:45Z (Raze GAPS_FOUND on sprint user-testing-followup — scope mismatch between REQ-TEST-CITE-002 wording and actual audit coverage; 7 registry files remain uncited)
 
 ## Active Issues
 
-### `features-core.ts` may still cite `rel=self` as required link (Raze flag 2026-04-17)
-- **Symptom**: Raze's review of sprint user-testing-round-01 noted that `src/engine/registry/features-core.ts` `/req/ogcapi-features/items-links` may assert `rel=self` as required. Same class of bug as GH #3 (Links false positive) — asserting against spec examples instead of normative requirements.
-- **Impact**: Potential false positive on OGC API Features Part 1 collections items endpoint. Scope limited to servers lacking `self` links on items responses.
-- **Workaround / follow-up**: Apply the new Raze rubric 6.1 (spec-source citation) to this file and any other `rel=self` assertion in `src/engine/registry/`. Verify each `self`-requiring assertion cites actual normative spec text (SHALL/MUST/REQUIRED) rather than example JSON.
-
-### GH #7 Observation-body runtime coupling (PARTIAL fix)
-- **Symptom**: `buildObservationBodyForDatastream(ds)` correctly reads `ds.resultType` — but the `ds` passed in is the hardcoded `DATASTREAM_CREATE_BODY` fixture, not the datastream object the IUT returned after insertion. If a server accepted our insert but rewrote the result schema, the observation body would silently not match.
-- **Impact**: Authoring-time coupling works (unit tests pass against fixture), but runtime coupling is incomplete.
-- **Workaround / follow-up**: After POSTing the datastream, capture the server's response and feed its returned `resultType` into `buildObservationBodyForDatastream` for the subsequent observation insert. Raze flagged 2026-04-17 as the remaining residue of GH #7.
+### Rubric-6.1 sweep across remaining registry files (NEW 2026-04-17, Raze GAPS_FOUND finding)
+- **Symptom**: REQ-TEST-CITE-002 is written as a project-wide source-citation mandate for every `rel=*` assertion in `src/engine/registry/**/*.ts`, but the sprint user-testing-followup audit only covered `common.ts` (GH #3) and `features-core.ts`. Raze's review (2026-04-17T02:45Z) enumerated 7 remaining files with uncited rel-link assertions: `procedures.ts:245`, `properties.ts:236`, `sampling.ts:245`, `deployments.ts:250`, `system-features.ts:260`, `subsystems.ts:338-342`, `subdeployments.ts:339`.
+- **Impact**: Each uncited assertion is a potential false-positive of the GH #3 class (asserting spec examples as requirements). Without source citations, a reviewer cannot efficiently audit whether each assertion maps to a SHALL clause or an illustrative example.
+- **Workaround / follow-up sprint `rubric-6-1-sweep`**: for each of the 7 files, either (a) add a citation comment pointing to a normative SHALL/MUST/REQUIRED clause in the corresponding OGC spec (cs-part1, system-features, etc.), OR (b) downgrade the assertion to SKIP-with-reason if the cited source is only an illustrative example (GH #3 precedent). Verification: `grep -n "rel=" src/engine/registry/` should show every match adjacent to a citation comment. Estimated 2–4 hours of OGC-spec reading + doc edits; no significant code change expected unless a new false positive is surfaced.
 
 
 
@@ -98,6 +93,28 @@
 - **Workaround**: Read OGC CS API Part 1 `/req/deployment/collections` text and either narrow the heuristic to match the spec, or document why the relaxation is safe.
 
 ## Resolved Issues
+
+### features-core.ts rel=self audit (RESOLVED 2026-04-17 — rubric-6.1 exercise)
+- **Finding (resolved)**: Raze's review of sprint user-testing-round-01 flagged `src/engine/registry/features-core.ts` `/req/ogcapi-features/items-links` as potentially the same class of bug as GH #3 (spec example asserted as requirement).
+- **Audit outcome**: `self` IS normatively required on OGC API Features Part 1 items responses per OGC 17-069r4 §7.15 Requirement 28 A: *"The response SHALL include a link to this resource (i.e. `self`) and to the alternate representations of this resource (`alternate`) (permitted only if the resource is represented in alternate formats)."* — a SHALL clause, not an example. The existing assertion was **correct**. Distinguishing case: OGC Common Part 1 (19-072) landing page has `self` only as an illustrative example (GH #3); OGC Features Part 1 (17-069) items response has `self` as normative.
+- **Resolution actions (2026-04-17)**:
+  - Added source-citation comments at `src/engine/registry/features-core.ts:77-97` (REQ definition) and `:611-614` (assertion site), citing OGC 17-069r4 §7.15 Req 28 A.
+  - Updated the failure message to reference the normative source so reviewers can audit quickly.
+  - Added 5 regression tests at `tests/unit/engine/registry/features-core-links-normative.test.ts` covering the PASS (self present) / FAIL (self absent, cites 17-069) / minimal-self-only PASS / missing-links-array FAIL / audit-trail cases.
+  - Added `REQ-TEST-002.5`, `REQ-TEST-CITE-002`, `SCENARIO-FEATURES-LINKS-001`, `SCENARIO-FEATURES-LINKS-002` to `openspec/capabilities/conformance-testing/spec.md`.
+- **Generalization**: The audit produced `REQ-TEST-CITE-002` — a project-wide mandate that every `rel=*` assertion in `src/engine/registry/**/*.ts` must include a source-citation comment identifying the normative clause (`SHALL`/`MUST`/`REQUIRED`). This makes the next rubric-6.1 sweep mechanical: grep for `rel=` without nearby `/req/` or `OGC \d{2}-\d+` citation.
+
+### GH #7 Observation-body runtime coupling (RESOLVED 2026-04-17 — REQ-TEST-DYNAMIC-002)
+- **Prior residue (resolved)**: After sprint user-testing-round-01, `buildObservationBodyForDatastream` was called with the hardcoded `DATASTREAM_CREATE_BODY` fixture. A server that accepted our datastream insert but canonicalized `resultType` or `schema` would leave the observation body silently misaligned with the server's actual datastream.
+- **Resolution (2026-04-17)**: `testCrudObservation` at `src/engine/registry/part2-crud.ts` now:
+  1. POSTs the datastream (as before).
+  2. **GETs the server's view of the newly-created datastream** (or the existing datastream-ID from the discovery cache if reusing).
+  3. Parses the server response; FAILs with `REQ-TEST-DYNAMIC-002` + `parseable JSON` error if unparseable (SCENARIO-OBS-SCHEMA-003).
+  4. Feeds the SERVER's datastream object into `buildObservationBodyForDatastream`; FAILs with `REQ-TEST-DYNAMIC-002` + `cannot mirror` error if the server's resultType isn't supported (SCENARIO-OBS-SCHEMA-002).
+  5. Only then POSTs the derived observation body.
+- **Builder type loosened**: `buildObservationBodyForDatastream` parameter relaxed from `typeof DATASTREAM_CREATE_BODY` to structural `DatastreamShapeForObservation = { resultType?: unknown; schema?: unknown; ... }` so the same builder serves both the authoring-time call (module load, REQ-TEST-DYNAMIC-001) and the runtime call (inside the CRUD test, REQ-TEST-DYNAMIC-002).
+- **Regression tests**: 3 new cases in `tests/unit/engine/registry/part2-crud.test.ts` describe "CRUD Observation test": (a) unparseable JSON from GET datastream, (b) non-200 from GET datastream, (c) server rewrites to unsupported resultType. Each asserts `postMock` is called exactly once (the datastream POST) — proving the observation body is NOT silently POSTed when the runtime-coupling check trips. The existing "passes when observation POST returns 201" test was updated to include a valid GET-datastream mock so the full flow exercises.
+- **Spec**: `REQ-TEST-DYNAMIC-002`, `SCENARIO-OBS-SCHEMA-002`, `SCENARIO-OBS-SCHEMA-003` in `openspec/capabilities/dynamic-data-testing/spec.md`. Earlier `SCENARIO-OBS-SCHEMA-001` retitled "authoring layer" for clarity.
 
 ### GH #1 — Assessments blocked on local development servers (RESOLVED 2026-04-17)
 - **Symptom (resolved)**: SSRF guard rejected `http://localhost:*`, `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` etc. unconditionally — correct for production but blocked the primary developer workflow of testing `http://localhost:8080` against their own CS API implementation. The reporter (earocorn) flagged this as a "critical component" of debuggability.

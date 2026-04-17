@@ -1,0 +1,221 @@
+sprint: "user-testing-followup"
+story: "S11-01, S11-02"
+reviewer: "Raze"
+timestamp: "2026-04-17T02:24Z"
+user_request: "Close two residues from sprint user-testing-round-01's Raze review: (a) GH #7 runtime datastream->observation coupling, and (b) features-core.ts rel=self rubric-6.1 audit."
+verdict: "GAPS_FOUND"
+confidence: 0.86
+overrides_evaluator: false  # no prior evaluator run for this sprint
+
+# --------------------------------------------------------------------------
+# Request fulfillment
+# --------------------------------------------------------------------------
+request_fulfillment:
+  fully_delivered:
+    - "S11-01: testCrudObservation in src/engine/registry/part2-crud.ts performs a GET on the server's datastream between POST-datastream and POST-observation; parses JSON; feeds the server-returned object into buildObservationBodyForDatastream. All three failure modes produce FAIL results with REQ-TEST-DYNAMIC-002 in the message (non-200 GET, unparseable JSON, unsupported resultType). No silent fallback to the fixture on any failure path."
+    - "S11-01: Builder parameter widened from `typeof DATASTREAM_CREATE_BODY` to structural `DatastreamShapeForObservation` (resultType?: unknown; schema?: unknown; [key]: unknown). Authoring-time call with DATASTREAM_CREATE_BODY still typechecks (narrow satisfies structural). No other callers broken — only callsites are: part2-crud.ts:122 (authoring, module load), part2-crud.ts:424 (runtime), and observation-dynamic-schema.test.ts (tests)."
+    - "S11-01: 3 new regression tests + 1 existing test updated with GET-datastream mock. Each new-failure-path test explicitly asserts postMock.toHaveBeenCalledTimes(1) — locking in the 'no silent fallback' invariant."
+    - "S11-01: Legacy MINIMAL_OBSERVATION_BODY alias removed; no residual references in src/."
+    - "S11-02: Audit conclusion (rel=self IS normative per OGC 17-069r4 §7.15 Req 28 A) is correct and well-defended. The audit correctly distinguishes this case from the GH #3 Common landing-page case."
+    - "S11-02: Source-citation comments added at features-core.ts:77-97 (REQ definition) and :623-626 (assertion site). Failure message now includes 'OGC 17-069r4 §7.15 Req 28 A'."
+    - "S11-02: 5 regression tests in features-core-links-normative.test.ts (passes 954/954). Audit-trail meta-test asserts the REQ description contains the `17-069` and `7.15` citations — provably fails if someone strips the citation. The failure-case test asserts result.failureMessage matches /17-069/, proving the failure-path citation works."
+    - "Rubrics 6.1 and 6.3 were exercised (not just prose-cited): 6.3 — verified observation body is built from a server response, three failure modes fail loudly, postMock-called-once assertions prove no-silent-fallback. 6.1 — verified citations point to SHALL clauses (Req 28 A), audit-trail meta-test enforces citation presence."
+
+  gaps:
+    - "[GAP-1] RUBRIC-6.1 APPLIED TO FEATURES-CORE ONLY — SEVEN OTHER MODULES REMAIN UNAUDITED. REQ-TEST-CITE-002 was introduced as a PROJECT-WIDE mandate ('every conformance assertion in src/engine/registry/**/*.ts that requires the presence of a specific rel=* link SHALL include an inline comment citing the normative source'), but the audit only applied it to features-core.ts. A grep of `rel=` and `foundRels.has` in src/engine/registry/ finds 7 other rel-link assertions across 6 modules, NONE carrying source citations: procedures.ts:245 (self), properties.ts:236 (self), sampling.ts:245 (self), deployments.ts:250 (self), system-features.ts:260 (self), subsystems.ts:338-342 (parent/up), subdeployments.ts:339 (parent/up). The scope of the audit was narrower than the scope of the new REQ. Either widen the audit or explicitly scope REQ-TEST-CITE-002 to features-core only. Either way, SCENARIO-FEATURES-LINKS-002's claim ('grep for `rel=` in the codebase produces zero matches where the cited source is only an informative example') is UNVERIFIED for the 7 uncited assertions — they may or may not be normatively grounded, nobody's checked."
+    - "[GAP-2] existing-datastream fallback path lacks a dedicated regression test. The code at part2-crud.ts:382-384 correctly handles the case where `createdDsLocation` is null (existing-datastream path) — it still performs `GET datastreams/{dsId}` and feeds the result through the builder. The Raze prompt specifically flagged this edge case ('Edge case: what happens if ctx.discoveryCache.datastreamId is used (existing datastream path, no location header)?'). The source CODE handles it, but none of the 4 new/updated unit tests exercise this branch (all 4 set up a successful POST returning a Location header, so createdDsLocation is set). The branch is unit-test-unreachable today. Not a correctness bug, but a test-coverage gap — a future refactor could break the fallback path silently."
+
+  scope_creep: []
+
+  buried_caveats:
+    - "[CAVEAT-1] The loosened DatastreamShapeForObservation = { [key: string]: unknown } interface means the builder will accept literally any object shape at runtime. The only validation is the resultType === 'measure' check inside the builder. A server that returns a datastream with resultType: 'measure' but a completely wrong schema.resultSchema (say, a Text schema labeled as measure) would pass through the builder and produce an observation with a numeric result, which would be wrong. Current code doesn't inspect schema.resultSchema at runtime. The builder comment acknowledges this ('Extending to Count/Text/Category requires synthesizing a matching result value') but doesn't acknowledge that the current code trusts resultType alone without cross-checking the resultSchema. Minor; not raised in the contract."
+
+# --------------------------------------------------------------------------
+# CLAUDE.md compliance
+# --------------------------------------------------------------------------
+claude_md_compliance:
+  step_1_spec_first: "OK"       # REQ-TEST-DYNAMIC-002 and REQ-TEST-CITE-002 are in specs; scenarios 002/003 and FEATURES-LINKS-001/002 are all present
+  step_2_write_tests: "OK"      # tests reference REQ-TEST-DYNAMIC-002, SCENARIO-OBS-SCHEMA-002/003, REQ-TEST-CITE-002, SCENARIO-FEATURES-LINKS-001/002 in comments
+  step_3_implement: "OK"        # code satisfies both specs
+  step_4_verify: "OK"           # Raze re-ran: vitest 954/954, tsc 0, eslint 0 errors / 18 warnings
+  step_5_e2e_verify: "WEAK"     # no E2E run — defensible for a registry-layer, pure-unit-test sprint (no UI or server-route changes); but the CLAUDE.md rule is unconditional
+  step_6_reconcile_specs: "OK"  # REQ-TEST-DYNAMIC-001 status flipped to Implemented with layer qualifier; REQ-TEST-DYNAMIC-002 new with Implemented; SCENARIO-OBS-SCHEMA-001 retitled; traceability.md upgraded from PARTIAL to PASS with new rows for 002/003 and FEATURES-LINKS-001/002
+  step_7_update_ops: "OK"       # status.md, changelog.md, known-issues.md all updated (not copy-paste — substantive detail on each story)
+  step_8_update_bmad: "OK"      # traceability.md Verified-Scenarios extended; Gate-4 runs row added for this sprint (pending)
+  notes: |
+    Step 5: The sprint is registry-layer (no UI/server/route changes), so full Playwright E2E against a dev server would exercise nothing the unit tests don't already cover. The runtime-coupling change DOES change the number of HTTP requests fired during a Part-2 CRUD run (+1 GET per observation test), which in principle could be validated against the GeoRobotix live testbed — but this was not run. For a pure-test-engine refactor of this scope, the unit tests + eslint + tsc are reasonable gates, and the sprint contract does not require E2E. Marking WEAK rather than SKIPPED to acknowledge the gap is defensible here.
+
+# --------------------------------------------------------------------------
+# Spec gaps
+# --------------------------------------------------------------------------
+spec_gaps:
+  - id: "REQ-TEST-CITE-002"
+    issue: "Spec says this requirement applies to 'Every conformance assertion in src/engine/registry/**/*.ts that requires the presence of a specific rel=* link', but the implementation only audited features-core.ts. Seven other modules with rel-link assertions (procedures, properties, sampling, deployments, system-features, subsystems, subdeployments) remain uncited. Either the REQ's scope or the sprint's implementation scope is mis-stated. Reconcile by (a) narrowing REQ to 'for features-core and subsequent rubric-6.1 audits' or (b) filing a follow-up sprint to apply REQ-TEST-CITE-002 to the remaining 7 assertions."
+
+# --------------------------------------------------------------------------
+# Cross-agent blind spots
+# --------------------------------------------------------------------------
+cross_agent_blind_spots:
+  - "The new GET datastream request at part2-crud.ts:385 uses a URL derived from (a) the server's Location header or (b) `new URL(`datastreams/${dsId}`, ctx.baseUrl)`. When the existing-datastream path runs, `dsId` is `ctx.discoveryCache.datastreamId`. If `datastreamId` is stored as a full-URL or a leading-slash path (rather than a bare id), `new URL(`datastreams/${fullUrl}`, base)` could produce an unexpected URL. part2-url-construction.test.ts was noted as the unit-level guard for URL-construction invariants — worth verifying it still holds for the new GET request."
+
+# --------------------------------------------------------------------------
+# Conformance correctness (product-specific)
+# --------------------------------------------------------------------------
+conformance_correctness:
+  false_positives_found: []
+  false_negatives_found: []
+  url_construction_bugs: []
+  dynamic_schema_violations: []
+  assertion_spec_drift: []
+  spec_source_mismatches:
+    - module: "src/engine/registry/procedures.ts"
+      line: 245
+      assertion: "foundRels.has('self') — Procedure resource must have a self link"
+      issue: "No source citation. REQ-TEST-CITE-002 (introduced this sprint) mandates a /req/... or OGC-section citation for every such assertion. Normative source must be verified — OGC 23-002 or referenced API specification."
+    - module: "src/engine/registry/properties.ts"
+      line: 236
+      assertion: "foundRels.has('self') — Property resource must have a self link"
+      issue: "No source citation. REQ-TEST-CITE-002 audit target."
+    - module: "src/engine/registry/sampling.ts"
+      line: 245
+      assertion: "foundRels.has('self') — Sampling feature resource must have a self link"
+      issue: "No source citation. REQ-TEST-CITE-002 audit target."
+    - module: "src/engine/registry/deployments.ts"
+      line: 250
+      assertion: "links.some(l => l.rel === 'self') — Deployment resource must have a self link"
+      issue: "No source citation. REQ-TEST-CITE-002 audit target."
+    - module: "src/engine/registry/system-features.ts"
+      line: 260
+      assertion: "links.some(l => l.rel === 'self') — System resource must have a self link"
+      issue: "No source citation. REQ-TEST-CITE-002 audit target. (Note: despite the filename 'system-features', the assertion message says 'System resource' — possible pre-existing naming drift worth a separate look.)"
+    - module: "src/engine/registry/subsystems.ts"
+      line: 338-342
+      assertion: "l.rel === 'parent' || l.rel === 'up' — Subsystem must link back to parent system"
+      issue: "No source citation. The assertion allows EITHER rel=parent OR rel=up, plus a href-includes fallback — three disjuncts whose normative basis isn't cited. REQ-TEST-CITE-002 audit target."
+    - module: "src/engine/registry/subdeployments.ts"
+      line: 339
+      assertion: "l.rel === 'parent' || l.rel === 'up' — Subdeployment parent-link"
+      issue: "No source citation. REQ-TEST-CITE-002 audit target."
+
+# --------------------------------------------------------------------------
+# Recommendations (ordered)
+# --------------------------------------------------------------------------
+recommendations:
+  - "File a rubric-6.1 follow-up sprint covering the 7 uncited rel-link assertions: procedures.ts, properties.ts, sampling.ts, deployments.ts, system-features.ts, subsystems.ts, subdeployments.ts. For each, either (a) locate the normative OGC source, add the citation comment + failure-message reference, OR (b) if the assertion is based on an illustrative example (GH #3 class), downgrade or remove it. This is what REQ-TEST-CITE-002 obligates as a project-wide mandate."
+  - "Add one regression test for testCrudObservation's existing-datastream fallback path (ctx.discoveryCache.datastreamId set, POST returns non-201). Verify the GET datastream still fires against the discovery-cache path and the observation body still derives from that response."
+  - "Consider adding a result-schema cross-check to buildObservationBodyForDatastream: if datastream.resultType === 'measure' but datastream.schema.resultSchema.type is something other than 'Quantity', either warn or widen the check. Otherwise a server that accepts our 'measure' resultType but stores a mismatched resultSchema silently passes through the builder."
+  - "Retitle SCENARIO-FEATURES-LINKS-002 or widen REQ-TEST-CITE-002's stated scope to match reality — currently the scenario claims an audit-trail property that holds only for features-core.ts, not for the 7 other rel-link assertion sites."
+  - "Minor: the assertion at system-features.ts:260 uses the message 'System resource must have a self link' in a module named system-features — verify the module's scope label. Not a blocker."
+
+# --------------------------------------------------------------------------
+# Severity summary
+# --------------------------------------------------------------------------
+severity_summary:
+  blockers: 0
+  gaps: 2
+  concerns: 2
+
+# --------------------------------------------------------------------------
+# Per-story verdicts
+# --------------------------------------------------------------------------
+story_verdicts:
+  S11-01:
+    verdict: "APPROVE"
+    confidence: 0.94
+    notes: |
+      Story fully delivered. Runtime coupling is real — observation body is
+      generated from a SERVER response, not a request fixture. All three
+      failure modes produce loud FAIL results with REQ-TEST-DYNAMIC-002 in
+      the message, and each failure-path test asserts postMock is called
+      exactly once (proving no silent fallback). Builder type loosening is
+      sound — authoring-time call still typechecks, no callers broken.
+      Gates pass clean when Raze reruns them.
+      Minor caveat: existing-datastream (discoveryCache.datastreamId)
+      fallback branch is not directly unit-test-covered. Source code
+      handles it; tests don't exercise it.
+
+  S11-02:
+    verdict: "GAPS_FOUND"
+    confidence: 0.80
+    notes: |
+      The features-core audit itself is well-executed: source citations
+      added at both REQ-definition and assertion sites; failure message
+      updated; 5 regression tests including a meta-audit-trail test that
+      provably fails if the citation is stripped. Rubric 6.1 was
+      exercised, not just prose-cited.
+
+      BUT the rubric-6.1 AUDIT SCOPE was narrower than the REQ's stated
+      SCOPE. REQ-TEST-CITE-002 is written as a project-wide mandate, but
+      only features-core was audited. Seven other rel-link assertions in
+      src/engine/registry/ remain uncited. The audit should either widen
+      to cover them or the REQ should explicitly scope to
+      'features-core plus follow-ups'.
+
+# --------------------------------------------------------------------------
+# Gate evidence (Raze-rerun, not self-reported)
+# --------------------------------------------------------------------------
+gate_evidence:
+  vitest:
+    claimed: "954/954"
+    raze_reran: "954/954"
+    match: true
+  tsc:
+    claimed: "0 errors"
+    raze_reran: "tsc exit=0"
+    match: true
+  eslint:
+    claimed: "0 errors / 18 warnings"
+    raze_reran: "0 errors / 18 warnings (all pre-existing unused-vars in test files)"
+    match: true
+  e2e:
+    claimed: "not run (registry-layer sprint)"
+    raze_reran: "not run"
+    note: "defensible for this scope but leaves CLAUDE.md Step 5 at WEAK rather than OK"
+
+# --------------------------------------------------------------------------
+# Rubric exercise notes (this sprint was the first real test of 6.1 and 6.3)
+# --------------------------------------------------------------------------
+rubric_exercise:
+  rubric_6_1_actionable:
+    verdict: "YES with a scope caveat"
+    evidence: |
+      The rubric steps (a)-(d) in adversarial.md:93 were mechanically applied
+      to features-core.ts:77-97 and :623-626. The audit confirmed the citation
+      points to a SHALL clause (Req 28 A), distinguished it from GH #3
+      (landing-page example), and produced an enforceable artifact (the
+      audit-trail meta-test in features-core-links-normative.test.ts:170-182
+      which asserts /17-069/ and /7.15/ match the REQ description).
+
+      However, the rubric's step (d) ('list under spec_source_mismatches')
+      produced 7 entries — uncited rel-link assertions in 6 other modules.
+      The rubric is actionable; the sprint used it on only 1 of 8 candidates.
+
+  rubric_6_3_actionable:
+    verdict: "YES, fully"
+    evidence: |
+      Rubric steps (a)-(d) applied mechanically to testCrudObservation:
+      (a) opened part2-crud.ts, (b) found parent creation at :339 and child
+      build at :424, (c) confirmed child body reads from
+      buildObservationBodyForDatastream(serverDatastream) where
+      serverDatastream comes from JSON.parse(dsGetResponse.body), (d) no
+      hardcoded child-body constant in the runtime path. The three new
+      regression tests exercise the exact failure modes the rubric warned
+      about (hardcoded fallback would silently pass). postMock.toHaveBeenCalledTimes(1)
+      is the invariant that locks in 'no silent fallback'.
+
+      6.3 passes with no mismatches. This rubric is concrete, mechanical,
+      and exercised end-to-end here.
+
+final_conclusion: |
+  APPROVE S11-01 outright. S11-02 passes on its narrow scope (features-core
+  audit is complete and correct) but GAPS_FOUND on the scope mismatch
+  between REQ-TEST-CITE-002's project-wide wording and the sprint's
+  features-core-only audit. Seven other rel-link assertions remain uncited
+  and unaudited — a follow-up sprint is required to close REQ-TEST-CITE-002
+  as stated.
+
+  Overall verdict: GAPS_FOUND. The gap is identifiable, scoped, and
+  non-user-blocking — framework-correctness polish, consistent with the
+  nature of the upstream carry-forward. Not a REJECT. The rubrics
+  themselves (6.1 and 6.3) are proven actionable by this sprint's
+  execution, which was the second explicit success criterion.

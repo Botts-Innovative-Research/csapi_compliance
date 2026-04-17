@@ -27,8 +27,16 @@ This capability defines the conformance test execution engine for the CS API Com
   2. **Single collection access** -- For at least one collection, `GET /collections/{collectionId}` returns HTTP 200 with a JSON body containing `id`, `title`, and `links`.
   3. **Items endpoint with limit** -- `GET /collections/{collectionId}/items?limit=10` returns HTTP 200 with a JSON body containing `type: "FeatureCollection"`, `features` (array with at most 10 entries), and `numberMatched` or `numberReturned`.
   4. **Single feature access** -- For at least one feature, `GET /collections/{collectionId}/items/{featureId}` returns HTTP 200 with a JSON body containing `type: "Feature"`, `id`, `geometry`, and `properties`.
-  5. **GeoJSON response structure** -- Items endpoint responses conform to GeoJSON FeatureCollection schema; individual feature responses conform to GeoJSON Feature schema.
+  5. **Items response links (REQ-TEST-002.5)** -- Items response SHALL include a link with `rel="self"` pointing to the response itself. This assertion cites OGC API Features Part 1 (OGC 17-069r4) §7.15 Requirement 28 `/req/core/fc-links` A, which normatively states "The response SHALL include a link to this resource (i.e. `self`)." Unlike the Common landing-page `self` (which is example-only — see issue #3 and SCENARIO-LINKS-NORMATIVE-001), `self` on the Features items response IS normative. See SCENARIO-FEATURES-LINKS-001.
+  6. **GeoJSON response structure** -- Items endpoint responses conform to GeoJSON FeatureCollection schema; individual feature responses conform to GeoJSON Feature schema.
 - **Rationale**: OGC API Features Part 1 Core provides the collection and item access patterns that all CS API resource types inherit.
+
+### REQ-TEST-CITE-002: Source-Citation for Link-Relation Assertions
+- **Priority**: MUST
+- **Status**: PARTIAL 2026-04-17 — audited files: `src/engine/registry/common.ts` (GH #3, sprint user-testing-round-01) and `src/engine/registry/features-core.ts` (sprint user-testing-followup). 7 other registry files remain unaudited: `procedures.ts`, `properties.ts`, `sampling.ts`, `deployments.ts`, `system-features.ts`, `subsystems.ts`, `subdeployments.ts`. These are the next rubric-6.1 sweep target (logged as Active in `ops/known-issues.md`).
+- **Description**: Every conformance assertion in `src/engine/registry/**/*.ts` that requires the presence of a specific `rel=*` link SHALL include an inline comment immediately above the assertion citing the normative source: either a `/req/...` requirement identifier or a direct OGC-spec section reference (e.g., "OGC 17-069r4 §7.15 Requirement 28"). If the cited source is only an illustrative example (not a SHALL/MUST/REQUIRED clause), the assertion SHALL NOT flag absence as a FAIL — consistent with the fix applied to issue #3.
+- **Rationale**: Raze Section 6.1 rubric demands that every assertion be traceable to a normative clause. Explicit citation in the source code makes the review mechanical: a grep for "rel=" that has no nearby citation is a candidate for audit. This requirement was generalized from the GH #3 fix and the sprint user-testing-followup audit of `features-core.ts`.
+- **Sweep plan**: The Raze review of sprint user-testing-followup (2026-04-17T02:45Z) enumerated the 7 uncited assertion sites (one per file listed above). A follow-up sprint SHALL work through each site, either (a) adding a citation to a normative SHALL/MUST/REQUIRED clause in the corresponding OGC spec, OR (b) downgrading the assertion to SKIP-with-reason if the cited source is only an illustrative example (per the GH #3 precedent). Completion is verified by greping `src/engine/registry/` for `rel=` and observing every hit has an adjacent citation.
 
 ### REQ-TEST-003: CS API Core Tests (FR-11)
 - **Priority**: MUST
@@ -250,6 +258,24 @@ This capability defines the conformance test execution engine for the CS API Com
 **Given** a landing page whose `links` array contains `rel: "service-desc"` and `rel: "conformance"` but no `rel: "self"`
 **When** the test engine executes the "Landing page required link relations" test
 **Then** the test produces a PASS verdict because `rel: "self"` is not listed as a normative requirement in 19-072 `/req/core/root-success` (it appears only as an illustrative example); AND a landing page that substitutes `rel: "service-doc"` for `rel: "service-desc"` also produces PASS (the relation is an OR); AND a landing page missing `rel: "conformance"` produces FAIL with a message citing the missing `conformance` relation
+
+### SCENARIO-FEATURES-LINKS-001: Items Response Self-Link Is Normative Per OGC 17-069 §7.15
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-002 (item 5), REQ-TEST-CITE-002
+- **Preconditions**: The IUT is being tested against OGC API Features Part 1 Core conformance class and serves items at `/collections/{id}/items`. The spec source is OGC 17-069r4 §7.15 Requirement 28 `/req/core/fc-links` A: "The response SHALL include a link to this resource (i.e. `self`) and to the alternate representations of this resource (`alternate`) (permitted only if the resource is represented in alternate formats)."
+
+**Given** the `/req/ogcapi-features/items-links` rubric-6.1 audit was performed 2026-04-17 against OGC 17-069r4 §7.15
+**When** a reviewer asks "is `self` a normative requirement here, or a spec example?"
+**Then** the answer is NORMATIVE — the OGC text says "SHALL include a link ... (i.e. `self`)" — distinguishing this case from SCENARIO-LINKS-NORMATIVE-001 (where `self` on the Common landing page is example-only). The existing `testItemsLinks` assertion in `src/engine/registry/features-core.ts` is therefore retained, with an added source-citation comment per REQ-TEST-CITE-002 and regression tests in `tests/unit/engine/registry/features-core-links-normative.test.ts` that lock in: (a) PASS when items response includes `self`, (b) FAIL when `self` missing with a message citing the 17-069 §7.15 source, (c) PASS when the links array is non-empty and contains `self` even if other relations are absent (alternate/next/prev are conditional).
+
+### SCENARIO-FEATURES-LINKS-002: Audit Trail For rel-Link Assertions
+- **Priority**: MUST
+- **References**: REQ-TEST-CITE-002
+- **Preconditions**: A code-review tool (Raze sub-agent or human reviewer) is auditing `src/engine/registry/**/*.ts` for link-relation assertions.
+
+**Given** the reviewer greps `foundRels.has('...')` or `rel === '...'` across `src/engine/registry/`
+**When** the reviewer finds each assertion site
+**Then** the lines immediately above the assertion contain either (a) a `/req/...` requirement identifier that can be cross-referenced to an OGC spec section, or (b) an explicit OGC-document section citation (e.g., `OGC 17-069r4 §7.15 Requirement 28`); AND grep for `rel=` in the codebase produces zero matches where the cited source is only an informative example; AND the project `ops/known-issues.md` has no pending rubric-6.1-follow-up entry naming any of the audited files
 
 ### SCENARIO-TEST-SKIP-001: Conformance Class Not Declared by Server
 - **Priority**: CRITICAL

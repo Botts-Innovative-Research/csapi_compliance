@@ -110,6 +110,40 @@
 
 ## Session Summary
 
+### Session `4efc7a70` (2026-04-16 → 2026-04-17, retro-eval APPROVE + user-testing-round-01 + user-testing-followup + spec-anchor back-port + GitHub issue triage)
+
+Extracted 2026-04-17T02:33Z via `python3 scripts/session-metrics.py .../4efc7a70-971e-4e0c-9ffe-ae666f962358.jsonl`.
+
+| Category | Tokens | Cost |
+|----------|--------|------|
+| Input | 17,769 | $0.27 |
+| Output | 549,273 | $41.20 |
+| Cache Write | 2,343,747 | $8.79 |
+| Cache Read | 149,194,032 | $223.79 |
+| **TOTAL** | **152,104,821** | **$274.04** |
+
+API calls (assistant turns): 539
+
+**Deliverables this session** (in chronological order):
+- **Retro-eval (v1.0 retroactive QA) closed, Raze APPROVE 0.90**: Task 2 live conformance fixture vs GeoRobotix (81/16/12/53; 3 Quinn v1 URL false positives all verifiably resolved); F3 Option A backend destructive-confirm enforcement; honest-verdict pattern (PARTIAL/MODERATE labels) propagated after Raze caught overstated claims.
+- **Spec-anchor template back-port** (12 files in `/home/nh/docker/spec-anchor/`): Raze/Gate 4 operational prompt, config block, orchestrate.py functions, role-doc rewrite, workflow v2.1, CLAUDE.md role-name reconciliation + typo fix, PASS/PARTIAL/MODERATE legend, ops/ section-header conventions, `{{FILL}}` shell-prelude.
+- **GitHub-issues audit + sprint user-testing-round-01** (Raze APPROVE 0.88): 7 user-filed GH issues closed (SSRF opt-in, auth-before-discovery, Links false positive, recursive $ref bundling, Part 2 base path, Datastream body schema, Observation dynamic schema); 5 framework improvements landed (2 Gate 1 invariants + 3 Raze rubric extensions 6.1/6.2/6.3); 34 new tests. Commit `1536fbb` pushed; all 7 issues commented + closed on GitHub.
+- **Sprint user-testing-followup** (Raze GAPS_FOUND 0.86): S11-01 runtime datastream→observation coupling APPROVE 0.94; S11-02 features-core rubric-6.1 audit GAPS_FOUND 0.80 (REQ-TEST-CITE-002 scope mismatch — 7 files logged for follow-up); 9 new tests.
+
+**Final gates**: vitest 955/955, tsc 0 errors, eslint 0 errors / 18 warnings.
+
+**Raze sub-agent invocations** (all archived in `.harness/evaluations/`):
+- `sprint-retro-eval-final.yaml` — APPROVE 0.90
+- `sprint-user-testing-round-01-adversarial.yaml` — APPROVE 0.88
+- `sprint-user-testing-followup-adversarial.yaml` — GAPS_FOUND 0.86
+
+**Commits pushed this session**: `1536fbb` (193 files, +9282 / -939 — retro-eval close + user-testing-round-01 sprint). User-testing-followup work (+9 tests, 2 new spec REQ sections, 5 new spec SCENARIOs, ops/doc reconciliation, 7-file rubric-6.1 sweep logged) remains uncommitted in the working tree for user review.
+
+**Outstanding follow-ups** (tracked in `ops/known-issues.md` Active):
+- `rubric-6-1-sweep` sprint: 7 registry files need rel-link source citations (`procedures.ts`, `properties.ts`, `sampling.ts`, `deployments.ts`, `system-features.ts`, `subsystems.ts`, `subdeployments.ts`) — estimated 2-4 hours of OGC-spec reading
+
+---
+
 ### Session `e87be1cc` (2026-04-16, Gate 4 import + post-live-run cleanup + ESLint migration)
 
 Extracted 2026-04-16T18:10Z via `python3 scripts/session-metrics.py`.

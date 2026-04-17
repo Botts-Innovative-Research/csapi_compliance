@@ -198,9 +198,15 @@ This capability defines the conformance test execution logic for OGC 23-002 (Con
 
 ### REQ-TEST-DYNAMIC-001: Observation and Command Bodies Derive from Parent-Resource Schema
 - **Priority**: MUST
-- **Status**: SPECIFIED
+- **Status**: Implemented 2026-04-17 (authoring-layer only; runtime layer = REQ-TEST-DYNAMIC-002)
 - **Description**: Every Part 2 CRUD test that acts on a resource whose valid body depends on another just-inserted resource's state (Observation ← Datastream, Command ← ControlStream, Subsystem ← System) SHALL generate the child body from the upstream resource's declared schema, NOT from a hardcoded constant divorced from the parent's state. Specifically: when an observation-insert test creates a Datastream with `resultType` X and `schema.resultSchema` S, the subsequent observation's `result` property SHALL match S. The test code SHALL expose the body builder (e.g., `buildObservationBodyForDatastream(datastream)`) so that (a) a unit test can assert the observation result's runtime type matches the datastream's declared result type, and (b) the builder throws — rather than silently succeeds — when fed a parent schema it does not know how to mirror.
 - **Rationale**: Issue #7 — prior observation test POSTed `{ phenomenonTime, resultTime, result: 42 }` regardless of what `resultType` the datastream had just been created with. If the datastream declared `resultType: 'Count'` with a Count resultSchema, the numeric result would match by coincidence, not by contract. Worse: a future change to declare `resultType: 'Category'` with a string-valued result would leave the test's numeric `result: 42` silently wrong. Making the observation body a function of the datastream removes the hidden coupling.
+
+### REQ-TEST-DYNAMIC-002: Parent-Resource Coupling Reads Server-Returned Shape
+- **Priority**: MUST
+- **Status**: Implemented 2026-04-17 (sprint user-testing-followup)
+- **Description**: In addition to REQ-TEST-DYNAMIC-001's authoring-layer coupling, the runtime lifecycle (`testCrudLifecycle` and equivalents) SHALL capture the server's POST response when creating the parent resource (Datastream, ControlStream, System), parse the returned resource, and feed that returned object — not the request fixture — into the child-body builder for the subsequent child insert (Observation, Command, Subsystem). If the server rewrites the parent's `resultType`, `schema`, or other shape-determining properties, the child body SHALL match the server's version. If the server returns an unparseable body, the test SHALL produce a FAIL result with a clear message (not a silent default to the request fixture).
+- **Rationale**: REQ-TEST-DYNAMIC-001 closes the authoring-time coupling (observation body is derived from the request fixture at module load). REQ-TEST-DYNAMIC-002 closes the runtime-layer gap Raze flagged during the sprint user-testing-round-01 review: a server that accepts our datastream insert but rewrites the shape would make us POST an observation that doesn't match what the server actually holds. The authoritative source of truth for the child body is the server's view of the parent resource, not the client's proposed view.
 
 ### REQ-DYN-019: Conformance Class Not Declared Handling (Part 2)
 - **Priority**: MUST
@@ -309,13 +315,29 @@ This capability defines the conformance test execution logic for OGC 23-002 (Con
 **When** the test engine executes SWE Common Text and SWE Common Binary tests
 **Then** the SWE Common Text tests are assigned SKIP with reason "SWE Common Text encoding not supported by server" and the SWE Common Binary tests are assigned SKIP with reason "SWE Common Binary encoding not supported by server"
 
-### SCENARIO-OBS-SCHEMA-001: Observation body mirrors just-inserted Datastream schema
+### SCENARIO-OBS-SCHEMA-001: Observation body mirrors just-inserted Datastream schema (authoring layer)
 - **Priority**: CRITICAL
 - **References**: REQ-TEST-DYNAMIC-001, REQ-CRUD-001
 
 **Given** the Part 2 CRUD module's `DATASTREAM_CREATE_BODY` declares `resultType: 'measure'` with a SWE Quantity `resultSchema`
 **When** a unit test invokes `buildObservationBodyForDatastream(DATASTREAM_CREATE_BODY)` and inspects the produced body
 **Then** the observation's `result` value is a JavaScript number (matching the Quantity schema); AND invoking the same builder with a datastream whose `resultType` is unsupported (e.g. `'record'`) throws, preventing silent drift between the inserted datastream's schema and the observation body
+
+### SCENARIO-OBS-SCHEMA-002: Observation body uses server-returned datastream (runtime layer)
+- **Priority**: CRITICAL
+- **References**: REQ-TEST-DYNAMIC-002
+
+**Given** an IUT accepts the client's datastream insert request but the server-returned representation has a different `resultType` or `schema.resultSchema` than the client proposed (for example, the client proposed `resultType: 'measure'` but the server canonicalized to `resultType: 'Quantity'` with a different schema identifier)
+**When** the test runs the lifecycle `POST /datastreams` → read response body → `POST /datastreams/{id}/observations`
+**Then** the observation body's `result` value SHALL match the server-returned datastream's schema, not the client's proposed schema — i.e., the test SHALL call `buildObservationBodyForDatastream(serverResponseBody)`, not `buildObservationBodyForDatastream(DATASTREAM_CREATE_BODY)`
+
+### SCENARIO-OBS-SCHEMA-003: Unparseable server response fails loudly (runtime layer)
+- **Priority**: MUST
+- **References**: REQ-TEST-DYNAMIC-002
+
+**Given** an IUT returns a 201 Created for the datastream POST but with a body the client cannot parse into a datastream shape (malformed JSON, empty body, wrong content-type)
+**When** the test attempts to feed the response into the child-body builder
+**Then** the test SHALL return a FAIL result with a clear message identifying the parse failure — the test SHALL NOT silently fall back to the request fixture (which would mask a real IUT-conformance problem as a passing observation)
 
 ## Implementation Status (2026-03-31)
 

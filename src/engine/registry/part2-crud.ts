@@ -5,7 +5,12 @@
 //   validates against the OGC create-schema at test-authoring time.
 // REQ-TEST-DYNAMIC-001 (SCENARIO-OBS-SCHEMA-001): The observation-insert
 //   test builds its observation body from the same resultType/resultSchema
-//   used to create the parent datastream (dynamic-schema coupling).
+//   used to create the parent datastream (dynamic-schema coupling,
+//   authoring layer).
+// REQ-TEST-DYNAMIC-002 (SCENARIO-OBS-SCHEMA-002/003): The observation-insert
+//   test fetches the server's view of the datastream after POST and feeds
+//   that (not the request fixture) into the observation-body builder —
+//   runtime layer, catches servers that rewrite resultType.
 // REQ-PART2-BASEURL-001 (SCENARIO-PART2-BASEURL-001): all Part 2 requests
 //   resolve against the IUT's full base URL including any path segments.
 
@@ -63,29 +68,47 @@ export const DATASTREAM_CREATE_BODY = {
 } as const;
 
 /**
+ * Minimal structural view of a datastream for the purposes of deriving a
+ * conforming observation body. Loosened from `typeof DATASTREAM_CREATE_BODY`
+ * so the same builder can accept EITHER the client's fixture (authoring
+ * layer, REQ-TEST-DYNAMIC-001) OR a datastream parsed from the IUT's own
+ * response to a POST /datastreams (runtime layer, REQ-TEST-DYNAMIC-002).
+ */
+export interface DatastreamShapeForObservation {
+  resultType?: unknown;
+  schema?: unknown;
+  [key: string]: unknown;
+}
+
+/**
  * Build an observation body whose result matches the SWE Quantity schema
- * declared in {@link DATASTREAM_CREATE_BODY}. REQ-TEST-DYNAMIC-001.
+ * declared in {@link DATASTREAM_CREATE_BODY} — or, at runtime, in the
+ * server's returned datastream. REQ-TEST-DYNAMIC-001 (authoring-layer call
+ * at module load) and REQ-TEST-DYNAMIC-002 (runtime call inside
+ * {@link testCrudObservation}).
  *
- * Exposed so the companion regression test
- * (tests/unit/engine/registry/observation-dynamic-schema.test.ts) can
- * verify the observation body derives from the parent datastream's
- * resultSchema, rather than being hardcoded independently.
+ * Exposed so the companion regression tests can verify both layers:
+ * - `tests/unit/engine/registry/observation-dynamic-schema.test.ts` —
+ *   authoring-layer coupling
+ * - `tests/unit/engine/registry/observation-runtime-coupling.test.ts` —
+ *   runtime-layer coupling (feeds a mock server-returned datastream with
+ *   a different resultType and asserts the builder matches the server's
+ *   shape, not the client's fixture)
  */
 export function buildObservationBodyForDatastream(
-  datastreamCreateBody: typeof DATASTREAM_CREATE_BODY,
+  datastream: DatastreamShapeForObservation,
 ): {
   phenomenonTime: string;
   resultTime: string;
   result: number;
 } {
-  const { resultType } = datastreamCreateBody;
-  // The bundled datastream declares resultType: 'measure' with a Quantity
-  // resultSchema, so the observation's `result` is a number. If we ever
-  // switch to a Count/Text/Category resultSchema, this builder must be
-  // updated in lockstep with DATASTREAM_CREATE_BODY.
+  const resultType = datastream.resultType;
+  // Current impl handles 'measure' (SWE Quantity) → numeric result.
+  // Extending to Count/Text/Category requires synthesizing a matching
+  // result value AND the builder's return type widens to a union.
   if (resultType !== 'measure') {
     throw new Error(
-      `Unsupported datastream resultType "${resultType}"; observation builder only handles 'measure' (Quantity).`,
+      `Unsupported datastream resultType "${String(resultType)}"; observation builder only handles 'measure' (Quantity).`,
     );
   }
   return {
@@ -134,7 +157,9 @@ export const CONTROLSTREAM_CREATE_BODY = {
 // later sprint once all references migrate to the explicit *_CREATE_BODY
 // names above).
 const MINIMAL_DATASTREAM_BODY = DATASTREAM_CREATE_BODY;
-const MINIMAL_OBSERVATION_BODY = OBSERVATION_CREATE_BODY;
+// (Legacy MINIMAL_OBSERVATION_BODY alias removed 2026-04-17:
+// testCrudObservation now derives the body from the server's datastream
+// shape at runtime — REQ-TEST-DYNAMIC-002.)
 const MINIMAL_CONTROLSTREAM_BODY = CONTROLSTREAM_CREATE_BODY;
 
 // --- Requirement Definitions ---
@@ -349,10 +374,71 @@ async function testCrudObservation(ctx: TestContext) {
       ? new URL(`${createdDsLocation}/observations`).toString()
       : new URL(`datastreams/${dsId}/observations`, ctx.baseUrl).toString();
 
-    // Step 2: POST observation
+    // REQ-TEST-DYNAMIC-002: runtime coupling — fetch the server's view of
+    // the datastream we just created (or the existing one we're reusing)
+    // and feed THAT into the observation-body builder. If the server
+    // rewrote resultType/schema during POST, we need the server's version
+    // so the observation we POST next matches what the server holds.
+    const dsGetUrl = createdDsLocation
+      ? createdDsLocation
+      : new URL(`datastreams/${dsId}`, ctx.baseUrl).toString();
+    const dsGetResponse = await ctx.httpClient.get(dsGetUrl);
+    exchangeIds.push(dsGetResponse.exchange.id);
+
+    if (dsGetResponse.statusCode !== 200) {
+      return failResult(
+        REQ_CRUD_OBSERVATION,
+        assertionFailure(
+          'Observation body must derive from server-returned datastream ' +
+            '(REQ-TEST-DYNAMIC-002), so GET datastream must return 200',
+          '200',
+          String(dsGetResponse.statusCode),
+        ),
+        exchangeIds,
+        Date.now() - start,
+      );
+    }
+
+    let serverDatastream: DatastreamShapeForObservation;
+    try {
+      serverDatastream = JSON.parse(
+        dsGetResponse.body,
+      ) as DatastreamShapeForObservation;
+    } catch (parseErr) {
+      return failResult(
+        REQ_CRUD_OBSERVATION,
+        assertionFailure(
+          'Server-returned datastream body must be parseable JSON so the ' +
+            'observation body can derive from its resultType ' +
+            '(REQ-TEST-DYNAMIC-002)',
+          'parseable JSON datastream',
+          `parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`,
+        ),
+        exchangeIds,
+        Date.now() - start,
+      );
+    }
+
+    let observationBody: ReturnType<typeof buildObservationBodyForDatastream>;
+    try {
+      observationBody = buildObservationBodyForDatastream(serverDatastream);
+    } catch (builderErr) {
+      return failResult(
+        REQ_CRUD_OBSERVATION,
+        `Server-returned datastream has a resultType the observation ` +
+          `builder cannot mirror (REQ-TEST-DYNAMIC-002). Extend ` +
+          `buildObservationBodyForDatastream to support this resultType, or ` +
+          `investigate why the server rewrote the client's proposed shape. ` +
+          `Builder said: ${builderErr instanceof Error ? builderErr.message : String(builderErr)}`,
+        exchangeIds,
+        Date.now() - start,
+      );
+    }
+
+    // Step 2: POST observation (body derived from SERVER's datastream shape)
     const obsResponse = await ctx.httpClient.post(
       obsUrl,
-      MINIMAL_OBSERVATION_BODY,
+      observationBody,
       { 'Content-Type': 'application/json' },
     );
     exchangeIds.push(obsResponse.exchange.id);
