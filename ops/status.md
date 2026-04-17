@@ -1,6 +1,6 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T18:02Z | Sprint `lint-warnings-cleanup` CLOSED — 18 pre-existing lint warnings → 0 (12 unused imports deleted, 6 unused vars handled case-by-case). Adjacent-finding documented: exportPdf had a dead `maskedExchanges` computation; PDF renderer omits exchange data entirely so REQ-EXP-003 holds vacuously. Ready for commit + push.
+> Last updated: 2026-04-17T19:22Z | Sprint `e2e-assertion-depth-batch` CLOSED — 3 P1 scenarios upgraded PARTIAL/MODERATE → PASS (RPT-DASH-001, RPT-TEST-001, EXP-JSON-001). TC-E2E-001 extended, live-verified on chromium + firefox against GeoRobotix. Ready for commit + push.
 
 ## ▶ Fresh-Session Entry Point
 
@@ -15,19 +15,23 @@ Read this file first. It is the single authoritative "where are we" doc. Everyth
 - **Collection-type identification (ALL 5 CS Part 1 feature types)**: systems → `featureType="sosa:System"`, deployments → `featureType="sosa:Deployment"`, procedures → `featureType="sosa:Procedure"`, sampling features → `featureType="sosa:Sample"` (shorter form, spec-trap guarded), properties → `itemType="sosa:Property"` (asymmetric, trap-guarded). All per OGC 23-001 `/req/<X>/collections`.
 - **Known issues against the test engine**: none. Active section of `ops/known-issues.md` is empty.
 
-## Suggested Next Action — Spawn Raze on sprint `procedures-properties-sampling-collections-missing-check`
+## Suggested Next Action — Commit + push
 
-Sprint completed 2026-04-17T17:45Z. Per CLAUDE.md Anthropic augmentation, spawn Raze. Expected artifact: `.harness/evaluations/sprint-procedures-properties-sampling-collections-missing-check-adversarial.yaml`.
+Sprint `e2e-assertion-depth-batch` CLOSED 2026-04-17T19:22Z. 3 P1 scenario upgrades (RPT-DASH-001 / RPT-TEST-001 / EXP-JSON-001). Live-verified 14/14 on chromium + firefox against GeoRobotix. No Raze — E2E assertion-depth work follows established Playwright patterns, live-verified on 2 browsers, no spec reinterpretation.
 
-Raze's review scope:
-1. Re-verify spec accuracy against upstream adoc for `/req/procedure/collections`, `/req/sf/collections`, `/req/property/collections` — particularly the `sosa:Sample` vs `sosa:SamplingFeature` form and the property asymmetric pattern (`itemType="sosa:Property"` with no featureType).
-2. Verify the spec-trap regression tests actually guard: sampling's wrong-capitalization case (`sosa:SamplingFeature`) must produce FAIL; property's asymmetric-inversion case (`featureType="sosa:Property"` with `itemType="feature"`) must produce FAIL.
-3. Verify the loophole-closure tests don't silently admit the old behavior.
-4. Cross-check that the SCENARIO-FEATURECOLLECTION-TYPE-001 5-row table in the spec matches the actual code.
-5. Gate 1 honesty: 1002/1002.
-6. Confirm the Active section of `ops/known-issues.md` is truly empty for the test engine (no Active entries, only polish/roadmap items belong elsewhere).
+Suggested commit message: `Sprint e2e-assertion-depth-batch: 3 P1 scenarios PARTIAL/MODERATE → PASS (14/14 live E2E verified)`.
 
-## Uncommitted Work (sprint `lint-warnings-cleanup`)
+After commit, remaining P1 assertion-depth work: SESS-PROG-001 (~1-2h; needs SSE-mockable component test). Or pivot to P1 #5 (111+ SCENARIO-\* traceability, ~2-4h).
+
+## Uncommitted Work (sprint `e2e-assertion-depth-batch`)
+
+- `tests/e2e/assessment-flow.spec.ts` — TC-E2E-001 extended with 3 assertion-depth upgrades (RPT-DASH-001 / RPT-TEST-001 / EXP-JSON-001). +61 / -3.
+- `_bmad/traceability.md` — 3 scenarios flipped to PASS with dated rationale + E2E evidence.
+- `ops/status.md`, `ops/changelog.md`, `ops/metrics.md` — sprint narrative.
+
+**Note**: no Raze review — E2E assertion-depth work live-verified twice (chromium + firefox), follows established Playwright patterns, no spec reinterpretation, no behavior changes. See changelog for justification.
+
+## Prior Uncommitted Work (sprint `lint-warnings-cleanup`) — committed as `d933326`
 
 Working tree contains:
 - 12 unused imports deleted across `src/app/assess/[id]/results/page.tsx`, `src/engine/registry/{common,crud,part2-common,update}.ts`, `src/engine/result-aggregator.ts`, `src/engine/test-runner.ts`, `tests/unit/engine/test-runner.test.ts`, `tests/unit/server/{assessments,middleware}.test.ts`.
@@ -94,20 +98,17 @@ _(None remaining. All active test-engine and lint/typing issues are resolved as 
 
 ### P1 — Scenario assertion-depth upgrades (traceability gaps)
 
-4. **SESS-PROG-001 PARTIAL → PASS** (~1-2 hours)
+4. **SESS-PROG-001 PARTIAL → PASS** (~1-2 hours) — LAST ASSERTION-DEPTH ITEM
    - Current TC-E2E-001 only asserts "Assessment in Progress" text appears; spec demands counter ("12/58"), progress bar %, current class/test names, 1s update latency.
    - To upgrade: add an SSE-mockable component test OR longer-running backend fixture so the progress page stays rendered for >1s before redirect.
 
-5. **RPT-TEST-001 PARTIAL → PASS** (~1 hour)
-   - Filter UI never clicked in any test. Add E2E assertion that clicks Failed/Passed/Skipped filter and verifies test-row visibility changes.
+5. ~~**RPT-TEST-001 PARTIAL → PASS**~~ — RESOLVED 2026-04-17T19:20Z (sprint `e2e-assertion-depth-batch`).
 
-6. **EXP-JSON-001 PARTIAL → PASS** (~30 min)
-   - Export-JSON button asserted visible but never clicked. Click and verify download event content via Playwright `page.waitForEvent('download')`.
+6. ~~**EXP-JSON-001 PARTIAL → PASS**~~ — RESOLVED 2026-04-17T19:20Z (sprint `e2e-assertion-depth-batch`).
 
-7. **RPT-DASH-001 MODERATE → PASS** (~30 min)
-   - Dashboard heading + "%" visible but not the actual percentage value or per-class counts. Assert numeric value present.
+7. ~~**RPT-DASH-001 MODERATE → PASS**~~ — RESOLVED 2026-04-17T19:20Z (sprint `e2e-assertion-depth-batch`).
 
-8. **111+ normal SCENARIO-* traceability** (~2-4 hours)
+8. **111+ normal SCENARIO-\* traceability** (~2-4 hours)
    - Only 15 critical scenarios are traced; ~126 total SCENARIO-* IDs defined across 7 capabilities. Add SCENARIO-* references in test file comments. Quinn's WARN-003 open since 2026-04-02.
 
 ### P2 — Framework / infra

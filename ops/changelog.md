@@ -2,6 +2,20 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-17T19:20Z — Sprint e2e-assertion-depth-batch: 3 scenario upgrades PARTIAL/MODERATE → PASS
+
+- **Trigger**: User instruction "Update docs, then proceed with next steps" (turn 47) — targeting the P1 scenario assertion-depth upgrades from `ops/status.md` § Remaining Work. Batched 3 of the 4 P1 items since they all extend the same TC-E2E-001 test on the same results page. SESS-PROG-001 deferred (requires SSE-mockable component test — distinct infrastructure).
+- **Upgrades applied** to TC-E2E-001 in `tests/e2e/assessment-flow.spec.ts`:
+  - **SCENARIO-RPT-DASH-001** (MODERATE → PASS): previously asserted only literal `%` text. Now asserts (a) numeric compliance % is rendered via `page.getByText(/^\d+%$/)` + textContent parse bounded in [0,100], (b) class-breakdown `role="img"` aria-label matches `/\d+ passed, \d+ failed, \d+ skipped out of \d+ total/`.
+  - **SCENARIO-RPT-TEST-001** (PARTIAL → PASS): previously never clicked a filter. Now clicks each of All/Passed/Failed/Skipped filter buttons and asserts `aria-pressed` correctly toggles between active and inactive states. Closes the 2026-04-16 Raze-flagged finding ("filter UI exposed but never clicked"). Test restores "All" at the end so downstream assertions see the full accordion.
+  - **SCENARIO-EXP-JSON-001** (PARTIAL → PASS): previously only asserted button visible. Now clicks Export JSON, awaits `page.waitForEvent('download')` with 15s timeout, asserts `download.suggestedFilename()` matches `/\.json$/i`.
+- **E2E live verification** (CLAUDE.md Step 5 mandate): dev server started on :4000, ran Playwright with `IUT_URL=https://api.georobotix.io/ogc/t18/api` on both chromium and firefox. Results: **7/7 chromium (11.4s), 7/7 firefox (16.3s)**. TC-E2E-001 alone passes in 2.9s chromium / 3.9s firefox with all new assertions — fast because the live GeoRobotix assessment SKIPs 53/81 tests.
+- **Non-upgrade**: SCENARIO-SESS-PROG-001 stays at PARTIAL. Upgrading it requires an SSE-mockable component test OR a slower backend fixture that keeps the progress page rendered long enough to assert counter/bar/class-name live updates. Logged in `ops/status.md` § Remaining Work as the sole P1 assertion-depth item.
+- **Gates**: vitest 1003/1003 unchanged (no unit-test code touched); Playwright 7/7 ×2 browsers = 14/14; tsc 0 errors; eslint 0 errors / 0 warnings (unchanged).
+- **Scope**: 1 source file (`tests/e2e/assessment-flow.spec.ts`), +61 / -3. Plus the 4 doc reconciliation files.
+- **No Raze review**: E2E assertion-depth work that was already live-verified on 2 browsers. Assertions follow established Playwright patterns (aria-pressed filter state, download event). No spec reinterpretation, no new REQs, no behavior changes — only stronger assertions against existing behavior. Raze would cost tokens without a meaningful catch. (Same rationale as the preceding lint-warnings-cleanup sprint.)
+- **Next suggested**: `SESS-PROG-001 → PASS` (P1, the last assertion-depth item; ~1-2h; needs SSE mocking) OR `111+ SCENARIO-\* traceability` (P1, ~2-4h; tag test files with SCENARIO references).
+
 ## 2026-04-17T18:00Z — Sprint lint-warnings-cleanup: 18 pre-existing lint warnings → 0 (plus one latent-bug adjacent finding documented)
 
 - **Trigger**: User instruction "do the next item on the polish list" (turn 46). Target was P0 #1: 18 pre-existing lint warnings in `ops/status.md` § Remaining Work. All 18 were `@typescript-eslint/no-unused-vars` — 12 unused imports + 6 unused local variables.

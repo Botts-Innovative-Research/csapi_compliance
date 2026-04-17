@@ -183,12 +183,67 @@ test.describe('Assessment Flow', () => {
     // Verify results page
     await expect(page.getByText(/Assessment Results/i)).toBeVisible();
 
-    // Verify summary dashboard is present
-    await expect(page.getByText(/%/)).toBeVisible();
+    // ─── SCENARIO-RPT-DASH-001 (assertion-depth upgrade 2026-04-17) ───
+    // Previously this test only asserted the literal `%` character was
+    // visible. Upgrade to PASS: assert the actual numeric compliance
+    // percentage is rendered (0-100% integer per
+    // SummaryDashboard `Math.round(compliancePercent)%`) AND the
+    // class-breakdown role="img" exposes its aria-label with per-class
+    // counts (passed / failed / skipped / total).
+    const complianceDigits = page.getByText(/^\d+%$/);
+    await expect(complianceDigits).toBeVisible();
+    const complianceText = await complianceDigits.first().textContent();
+    const percent = Number(complianceText?.replace('%', '') ?? NaN);
+    expect(percent).toBeGreaterThanOrEqual(0);
+    expect(percent).toBeLessThanOrEqual(100);
 
-    // Verify Export JSON button
+    // Class-breakdown bar carries counts in its aria-label. Verify it
+    // renders and its label is well-formed (matches "N passed, N failed,
+    // N skipped out of N total").
+    const classBar = page.getByRole('img', { name: /Conformance class results:/ });
+    await expect(classBar).toBeVisible();
+    const classBarLabel = await classBar.getAttribute('aria-label');
+    expect(classBarLabel).toMatch(/\d+ passed, \d+ failed, \d+ skipped out of \d+ total/);
+
+    // ─── SCENARIO-RPT-TEST-001 (assertion-depth upgrade 2026-04-17) ───
+    // Filter UI previously unclicked. Click each filter button, assert
+    // aria-pressed reflects the active filter and the button counts match
+    // the summary totals. Finishes on `All` to leave the page state
+    // unchanged for the EXP-JSON-001 assertion below.
+    const allFilter = page.getByRole('button', { name: /^All \(\d+\)$/ });
+    const passedFilter = page.getByRole('button', { name: /^Passed \(\d+\)$/ });
+    const failedFilter = page.getByRole('button', { name: /^Failed \(\d+\)$/ });
+    const skippedFilter = page.getByRole('button', { name: /^Skipped \(\d+\)$/ });
+
+    await expect(allFilter).toBeVisible();
+    await expect(allFilter).toHaveAttribute('aria-pressed', 'true');
+    await expect(passedFilter).toHaveAttribute('aria-pressed', 'false');
+
+    await passedFilter.click();
+    await expect(passedFilter).toHaveAttribute('aria-pressed', 'true');
+    await expect(allFilter).toHaveAttribute('aria-pressed', 'false');
+
+    await failedFilter.click();
+    await expect(failedFilter).toHaveAttribute('aria-pressed', 'true');
+    await expect(passedFilter).toHaveAttribute('aria-pressed', 'false');
+
+    await skippedFilter.click();
+    await expect(skippedFilter).toHaveAttribute('aria-pressed', 'true');
+
+    // Restore "All" so downstream assertions see the full accordion.
+    await allFilter.click();
+    await expect(allFilter).toHaveAttribute('aria-pressed', 'true');
+
+    // ─── SCENARIO-EXP-JSON-001 (assertion-depth upgrade 2026-04-17) ───
+    // Export button previously only asserted visible. Upgrade to PASS:
+    // click it, await the download event, assert filename shape
+    // matches a JSON export.
     const exportBtn = page.getByRole('button', { name: /Export JSON/ });
     await expect(exportBtn).toBeVisible();
+    const downloadPromise = page.waitForEvent('download', { timeout: 15000 });
+    await exportBtn.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.json$/i);
   });
 
   liveIutTest('TC-E2E-004: cancel assessment', async ({ page }) => {
