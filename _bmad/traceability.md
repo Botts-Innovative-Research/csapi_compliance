@@ -84,7 +84,7 @@
 | NFR-10 | Resilience test: network errors fail gracefully, no cascading crashes | Passed | HTTP client catches all errors; unit tested with 38 tests |
 | NFR-11 | Log review: structured logging, no credentials or full bodies in logs | Implemented | pino logger with credential redaction; request-logger middleware |
 | NFR-12 | Deployment test: `docker-compose up` with no additional dependencies | Implemented | Dockerfile + docker-compose.yml + health check |
-| NFR-13 | Coverage report: >= 80% unit test coverage for test engine module | Configured | vitest.config.ts coverage thresholds set; 906 tests for engine |
+| NFR-13 | Coverage report: >= 80% unit test coverage for test engine module | Configured | vitest.config.ts coverage thresholds set; 1003 tests (52 files) with engine-module coverage filter |
 | NFR-14 | Performance test: JSON/PDF export < 10 seconds for full report | Passed | 33ms measured (perf-benchmark.ts) |
 | NFR-15 | Code review: all user-facing strings externalized for i18n readiness | Passed | 148 strings in en.json; all 10 frontend files migrated to t() |
 

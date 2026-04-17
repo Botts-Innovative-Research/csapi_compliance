@@ -13,7 +13,7 @@ A web application that performs comprehensive conformance assessment of endpoint
 | **CS API Part 1: Feature Resources** | **OGC 23-001** | **103 requirements** | Systems, deployments, procedures, sampling features, properties, filtering, CRUD, GeoJSON, SensorML |
 | **CS API Part 2: Dynamic Data** | **OGC 23-002** | **130 requirements** | Datastreams, observations, control streams, commands, feasibility, events, history, SWE encodings |
 
-**233 OGC requirements** tested across **28 conformance classes** with **906 unit tests**.
+**233 OGC requirements** tested across **28 conformance classes** with **1003 unit tests** + **25 Playwright E2E tests** (22 always-run + 3 live-IUT, chromium + firefox verified).
 
 ## Quick Start
 
@@ -71,14 +71,17 @@ Use the OGC demo server to test: `https://api.georobotix.io/ogc/t18/api`
 ## Development
 
 ```bash
-# Run unit tests (906 tests, ~2s)
+# Run unit tests (1003 tests, ~3s)
 npm test
 
 # Run E2E tests (Playwright, Chromium)
 npm run test:e2e
 
-# Run across all browsers
+# Run across all browsers (chromium + firefox + webkit; webkit needs system deps via sudo)
 npm run test:e2e:all-browsers
+
+# Run E2E against a live Connected Systems IUT (exercises TC-E2E-001/004/005)
+IUT_URL=https://api.georobotix.io/ogc/t18/api npm run test:e2e
 
 # Type check
 npm run typecheck
@@ -120,18 +123,19 @@ tests/                    # Unit tests (Vitest) + E2E tests (Playwright)
 | Backend | Express, Node.js 22, TypeScript |
 | Schema Validation | Ajv 8 with OGC OpenAPI schemas |
 | PDF Export | PDFKit |
-| Testing | Vitest (906 unit tests), Playwright (20 E2E tests) |
+| Testing | Vitest (1003 unit tests), Playwright (25 E2E tests) |
 | Deployment | Docker, docker-compose |
 
 ## Development Methodology
 
 This project was built using **spec-anchored development** via the [BMAD](https://github.com/bmadcode/BMAD-METHOD) + **OpenSpec** framework:
 
-- **BMAD agents** (Discovery, PM, Architect, Design, Developer, QA, Scrum Master) each operated with fresh context windows, producing artifacts that feed into the next stage
+- **BMAD agents** (Discovery, PM, Architect, Design, Developer, QA, Red Team, Scrum Master) each operate with fresh context windows, producing artifacts that feed the next stage
+- **Four quality gates** enforced by `scripts/orchestrate.py`: Gate 1 (self-check: tests/types/lint), Gate 2 (Evaluator/Quinn independent QA), Gate 3 (Reconciliation), Gate 4 (Adversarial/Raze Red Team review — can override an Evaluator APPROVE)
 - **OpenSpec capabilities** define testable requirements (REQ-\*) and acceptance scenarios (SCENARIO-\*) that trace from PRD through to tests
-- **Full traceability chain**: User Need &rarr; PRD (59 FRs) &rarr; OpenSpec REQ-\* &rarr; Stories (39) &rarr; Tests (906) &rarr; Implementation
+- **Full traceability chain**: User Need &rarr; PRD (59 FRs) &rarr; OpenSpec REQ-\* &rarr; Stories (39) &rarr; Tests (1003) &rarr; Implementation
 
-The complete specification, architecture, UX design, epics, stories, and traceability matrix live in the repository under `_bmad/`, `openspec/`, and `epics/`.
+The complete specification, architecture, UX design, epics, stories, and traceability matrix live in the repository under `_bmad/`, `openspec/`, and `epics/`. Per-sprint Raze Gate 4 verdicts are archived under `.harness/evaluations/`.
 
 ## Disclaimer
 

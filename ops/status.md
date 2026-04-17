@@ -1,33 +1,35 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T21:05Z | Sprint `sess-prog-001-assertion-depth` CLOSED. SCENARIO-SESS-PROG-001 PARTIAL → PASS via new hermetic TC-E2E-007 (FakeEventSource + staged events). All P1 assertion-depth items now PASS. Ready for Raze + commit.
+> Last updated: 2026-04-17T22:10Z | Working tree clean. Sprint `sess-prog-001-assertion-depth` pushed as `ab53658` (Raze APPROVE 0.92 round 2). All P0 and P1 items closed. Next action: user picks P2 #9 (hosted deploy) or P2 #10 (fixture mock server).
 
 ## ▶ Fresh-Session Entry Point
 
 Read this file first. It is the single authoritative "where are we" doc. Everything below is enough to pick up work without reading other files. The trails you'll need are in `_bmad/`, `openspec/capabilities/`, and `.harness/evaluations/`.
 
-## Current State (2026-04-17T20:56Z)
+## Current State (2026-04-17T22:10Z)
 
-- **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 0 warnings**.
+- **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 0 warnings** · Playwright chromium **22/0/3** · firefox **22/0/3** (TC-E2E-007 added for SESS-PROG-001).
 - **v1.0 scope**: all 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
-- **Commit state**: working tree clean. HEAD = `d5e2124` on `main` (sprint `uri-canonicalization`, pushed to `origin/main`). 5 sprints closed and pushed since `561f39e` (`procedures-properties-…` → `lint-warnings-cleanup` → `e2e-assertion-depth-batch` → `scenario-traceability-sweep` → `uri-canonicalization`).
-- **All 4 BMAD gates operational**: Three Raze APPROVEs on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback 0.92, deployments-collections-heuristic 0.93). Subsequent 5 sprints justified no-Raze (mechanical/live-verified) inline in each changelog entry.
+- **Commit state**: working tree clean. HEAD = `ab53658` on `main` (sprint `sess-prog-001-assertion-depth`, pushed to `origin/main`). 6 sprints closed and pushed since `561f39e` (`procedures-properties-…` → `lint-warnings-cleanup` → `e2e-assertion-depth-batch` → `scenario-traceability-sweep` → `uri-canonicalization` → `sess-prog-001-assertion-depth`).
+- **All 4 BMAD gates operational**: Four Raze verdicts on 2026-04-17 (rubric-6-1-sweep 0.88, api-def-fallback 0.92, deployments-collections-heuristic 0.93, sess-prog-001-assertion-depth APPROVE 0.92 round 2 after round 1 GAPS_FOUND 0.82). Intervening 4 sprints justified no-Raze (mechanical/live-verified) inline in each changelog entry.
 - **Collection-type identification (ALL 5 CS Part 1 feature types)**: systems → `featureType="sosa:System"`, deployments → `featureType="sosa:Deployment"`, procedures → `featureType="sosa:Procedure"`, sampling features → `featureType="sosa:Sample"` (shorter form, spec-trap guarded), properties → `itemType="sosa:Property"` (asymmetric, trap-guarded). All per OGC 23-001 `/req/<X>/collections`.
 - **Requirement URIs**: all 110 `requirementUri`/`conformanceUri` fields + 114 test assertions in canonical OGC form (`http://www.opengis.net/spec/...`).
 - **Known issues against the test engine**: none. Active section of `ops/known-issues.md` is empty.
 
-## Suggested Next Action — Spawn Raze, then commit + push
+## Suggested Next Action — User picks P2 #9 (hosted deploy) or P2 #10 (fixture mock server)
 
-Sprint `sess-prog-001-assertion-depth` introduces a new test pattern (monkey-patched `window.EventSource` via `page.addInitScript`) that did not previously exist in this repo — unlike the prior 5 "no-Raze" sprints, this one is not purely mechanical. Spawn Raze (Gate 4) before committing per CLAUDE.md augmentation.
+All P0 and P1 items are closed. Working tree is clean and pushed (`ab53658` on `origin/main`). The two live P2 options, briefly:
 
-Suggested commit message: `Sprint sess-prog-001-assertion-depth: SESS-PROG-001 PARTIAL → PASS via hermetic TC-E2E-007 (FakeEventSource + staged SSE events)`.
+- **P2 #9 — Hosted deployment + NFR-09 uptime monitoring (0.5–1 day)**: deploy `docker-compose.yml` to Fly.io / Railway / Render. **Avoid Vercel** — serverless SSE buffering breaks the progress page. Verify SSE end-to-end through the host's proxy before declaring success. Add an uptime monitor (UptimeRobot free / Better Uptime) pointed at `/api/health`. Unblocks NFR-09 (no metric exists until deployed) and P3 #14 (second user-testing round).
+- **P2 #10 — Known-good/known-bad fixture mock server (1–2 days)**: new Express app at `tests/fixtures/mock-iut/` implementing CS Part 1 landing + conformance + collections routes in two modes — spec-conformant vs deliberately-broken (missing `featureType="sosa:System"`, wrong capitalization, asymmetric-pattern inversions from the unit-test spec-trap corpus). New regression suite runs the engine against each mode and asserts expected PASS/FAIL/SKIP counts, mechanizing Raze's §6.3 accuracy check. Highest ROI for the BMAD framework itself.
 
-After Raze APPROVE + commit, next candidate work (from § Remaining Work): P2 #9 (hosted deployment, 0.5–1 day) or P2 #10 (known-good/known-bad fixture mock server, 1–2 days).
+Recommendation: **#10 first** — hermetic, pays back every future sprint via mechanical regression detection, and the hosted-platform pick for #9 is a user call with real SSE-proxy risk that isn't worth eating first.
 
 ## Recent Sprints (audit trail — most recent first)
 
 | Sprint | Close date | Raze verdict | Artifact |
 |--------|------------|--------------|----------|
+| `sess-prog-001-assertion-depth` | 2026-04-17T21:30Z | **APPROVE 0.92** (round 2; round 1 GAPS_FOUND 0.82 on 2 stale ops docs, both addressed same-turn). Commit `ab53658`. | in-conversation YAML report (no `.harness/evaluations/` file written this sprint — sub-agent output inlined in changelog + status) |
 | `uri-canonicalization` | 2026-04-17T20:30Z | _(no Raze — mechanical sed prefix sweep, 1003/1003 safety check, 0-behavior delta)_ | changelog only |
 | `scenario-traceability-sweep` | 2026-04-17T19:40Z | _(no Raze — comment-only prepends, pure-additive file-level tags)_ | changelog only |
 | `e2e-assertion-depth-batch` | 2026-04-17T19:22Z | _(no Raze — live-verified 14/14 on chromium + firefox, established Playwright patterns)_ | changelog only |
