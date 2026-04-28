@@ -96,17 +96,30 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - **Description**: The Core suite SHALL assert that any resource discoverable from the landing-page links includes `id` (string), `type` (string matching the resource kind), and `links` (array of objects with `href`, `rel`, optional `type`, optional `title`).
 - **Maps to**: PRD FR-ETS-10. Direct port of v1.0 `REQ-TEST-003`.
 
-### Sub-deliverable 3 — Other Part 1 Conformance Classes (placeholders)
+### Sub-deliverable 3 — Other Part 1 Conformance Classes
 
-> Detailed REQ-* per-class will be drafted in a later sprint cluster (post-Sprint 1).
-> The 13 placeholder REQs below establish the certification surface and traceability chain.
+> Sprint 2 expands REQ-ETS-PART1-002 (SystemFeatures) from PLACEHOLDER → SPECIFIED.
+> The remaining 12 placeholder REQs below establish the certification surface and traceability chain.
 
-#### REQ-ETS-PART1-001..013: Per-Class Conformance Suites
+#### REQ-ETS-PART1-001: `/conf/common` Conformance Suite
+- **Priority**: MUST
+- **Status**: PLACEHOLDER (per-class detail deferred — likely Sprint 3)
+- **Description**: TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004) covering OGC 23-001 `/conf/common` assertions. Likely package `org.opengis.cite.ogcapiconnectedsystems10.conformance.common` per design.md.
+- **Maps to**: PRD FR-ETS-11.
+
+#### REQ-ETS-PART1-002: SystemFeatures Conformance Class (Sprint 2 target)
+- **Priority**: MUST
+- **Status**: SPECIFIED
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/system-features/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form (e.g. `OGC-23-001 /req/system-features/<assertion>`). The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.systemfeatures.SystemFeaturesTests` per design.md placeholder. Required behaviors: (a) `GET /systems` returns HTTP 200 with JSON body conforming to OGC API – Common collection shape (`type: "FeatureCollection"` or equivalent CS API collection wrapper, `features` or `items` array, `links`); (b) every item in the collection has `id` (string), `type` (string matching `System` or equivalent CS API type discriminator), `links` (array per REQ-ETS-CORE-004 base shape); (c) the SystemFeatures class declares TestNG suite-level dependency on Core via `dependsOnGroups="core"` so SystemFeatures @Tests SKIP gracefully if Core FAILs. Coverage scope (4-6 minimal vs 12-15 full) ratified by Architect prior to Generator implementation.
+- **Rationale**: SystemFeatures is the foundational CS API collection — every other CS API endpoint exposes `/systems` collections, so the patterns established here (collection shape, item shape, dependency-skip wiring) propagate to Subsystems, Procedures, Sampling, Properties, Deployments. GeoRobotix serves a non-empty `/systems` collection (verified by v1.0 web-app E2E history).
+- **Maps to**: PRD FR-ETS-12.
+
+#### REQ-ETS-PART1-003..013: Remaining Per-Class Conformance Suites
 - **Priority**: MUST
 - **Status**: PLACEHOLDER (per-class detail deferred to future sprint planning)
-- **Description**: For each of the 13 OGC 23-001 conformance classes beyond Core, the ETS SHALL provide a TestNG suite class structurally equivalent to the Core suite (REQ-ETS-CORE-001..004): one `@Test` per ATS assertion, `description` attribute carries the OGC requirement URI, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails. The 13 classes are: `common`, `system-features`, `subsystems`, `deployment-features`, `subdeployments`, `procedure-features`, `sampling-features`, `property-definitions`, `advanced-filtering`, `create-replace-delete`, `update`, `geojson`, `sensorml` (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27).
+- **Description**: For each of the remaining 11 OGC 23-001 conformance classes (003=`subsystems`, 004=`deployment-features`, 005=`subdeployments`, 006=`procedure-features`, 007=`sampling-features`, 008=`property-definitions`, 009=`advanced-filtering`, 010=`create-replace-delete`, 011=`update`, 012=`geojson`, 013=`sensorml`), the ETS SHALL provide a TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004) and SystemFeatures (REQ-ETS-PART1-002): one `@Test` per ATS assertion, `description` attribute carries the OGC canonical `.adoc` requirement URI form, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails. (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27).
 - **Rationale**: PRD SC-2 requires Part 1 coverage. Placeholder REQ shape lets the planner enumerate the certification surface without front-loading per-assertion detail.
-- **Maps to**: PRD FR-ETS-11..23.
+- **Maps to**: PRD FR-ETS-13..23.
 
 ### Sub-deliverable 4 — Part 2 Conformance Classes (placeholders, NOT in Sprint 1)
 
@@ -303,6 +316,88 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **WHEN** the Core suite runs the API-definition assertion
 **THEN** the test PASSES via the service-doc fallback.
 *Maps to*: REQ-ETS-CORE-002. Direct port of v1.0 SCENARIO-API-DEF-FALLBACK-001.
+
+#### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001 (CRITICAL — Sprint 2)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**AND** Core suite has PASSED (no dependency-skip triggered)
+**WHEN** the SystemFeatures suite executes `GET /systems`
+**THEN** the response is HTTP 200
+**AND** the body is a JSON collection (CS API system-features wrapper with `items` or `features` array)
+**AND** the body contains a non-empty `links` array.
+*Maps to*: REQ-ETS-PART1-002.
+
+#### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 2)
+**GIVEN** the Core suite produces at least one FAIL verdict for a target IUT
+**WHEN** the SystemFeatures suite (`/conf/system-features`) attempts to run
+**THEN** all `@Test` methods in SystemFeatures emit SKIP with reason referencing `dependency /conf/core not satisfied`
+**AND** no assertion in SystemFeatures is reported as FAIL or ERROR.
+*Maps to*: REQ-ETS-PART1-002. Closes SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 against SystemFeatures specifically.
+
+#### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-RESOURCE-SHAPE-001 (NORMAL — Sprint 2)
+**GIVEN** any item fetched from the `/systems` collection on the IUT
+**WHEN** the SystemFeatures suite asserts the item shape
+**THEN** the item has `id` (string), `type` (string matching `System` or the IUT's CS API type discriminator), and `links` (array of objects with `href`, `rel`).
+*Maps to*: REQ-ETS-PART1-002, REQ-ETS-CORE-004.
+
+#### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001 (NORMAL — Sprint 2)
+**GIVEN** the `/systems` collection response on the IUT
+**WHEN** the SystemFeatures suite runs the links-discipline assertion
+**THEN** the collection-level `links` array contains entries with `rel=collection` AND/OR `rel=items` (per OGC API – Common collection link conventions)
+**AND** absence of `rel=self` is NOT a FAIL (consistent with the v1.0 GH#3 fix policy applied at the Core landing page).
+*Maps to*: REQ-ETS-PART1-002, REQ-ETS-CORE-002 (link-discipline policy carryover).
+
+#### SCENARIO-ETS-CLEANUP-URI-CANONICALIZATION-001 (CRITICAL — Sprint 2)
+**GIVEN** the spec.md REQ blocks for REQ-ETS-CORE-002..004 + the Java `static final String REQ_*` constants in `conformance/core/*.java`
+**WHEN** S-ETS-02-03 sweep completes
+**THEN** every URI in spec.md, traceability.md, Java source, and the Sprint 2 close commit message references the OGC canonical `.adoc` form (e.g. `/req/landing-page/root-success` not `/req/core/root-success`)
+**AND** dereferencing any updated URI against the OGC normative document returns HTTP 200 (verified by curl spot-check on at least 3 randomly-chosen URIs).
+*Maps to*: REQ-ETS-CORE-001..004 (modified), REQ-ETS-CLEANUP-002. Closes Sprint 1 inherited PARTIAL `uri_mapping_fidelity_preserved`.
+
+#### SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001 (CRITICAL — Sprint 2)
+**GIVEN** all Sprint 2 cleanup commits have landed (S-ETS-02-02 EtsAssert refactor + S-ETS-02-03 URI sweep + S-ETS-02-05 Dockerfile multi-stage)
+**WHEN** `bash scripts/smoke-test.sh` runs end-to-end
+**THEN** the script exits 0
+**AND** the TestNG XML report shows total = 12 (Core preserved) PASS at minimum (plus N for SystemFeatures once S-ETS-02-06 lands)
+**AND** zero startup ERROR/SEVERE in the container log.
+*Maps to*: REQ-ETS-TEAMENGINE-005, all Sprint 2 cleanup REQs.
+
+#### SCENARIO-ETS-CLEANUP-ETSASSERT-REFACTOR-001 (NORMAL — Sprint 2)
+**GIVEN** the conformance.core.* and conformance.systemfeatures.* test classes at the Sprint 2 close HEAD
+**WHEN** `grep -E 'throw new AssertionError|Assert\\.fail' src/main/java/.../conformance/*/*.java` runs
+**THEN** the grep returns ZERO hits
+**AND** every assertion goes through an `ETSAssert.assert*` or `ETSAssert.failWithUri` helper.
+*Maps to*: REQ-ETS-CLEANUP-001, REQ-ETS-CORE-001.
+
+#### SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 (NORMAL — Sprint 2)
+**GIVEN** smoke-test.sh runs with synthetic CTL parameter `auth-credential=Bearer ABCDEFGH12345678WXYZ`
+**WHEN** the TestNG report attachments + container log are produced
+**THEN** the literal substring `EFGH12345678WXYZ` (would-be-unmasked credential middle) does NOT appear anywhere in the artifacts
+**AND** the masked form (e.g. `Beare...mnop`) DOES appear (proving the filter ran rather than dropping the field entirely).
+*Maps to*: REQ-ETS-CLEANUP-003, NFR-ETS-08.
+
+#### SCENARIO-ETS-CLEANUP-DOCKERFILE-MULTISTAGE-001 (NORMAL — Sprint 2)
+**GIVEN** a fresh CI-style runner with NO `~/.m2` cache or mount available
+**WHEN** `docker build .` runs in the Sprint 2 close working tree
+**THEN** the build succeeds
+**AND** the resulting image runs as non-root (UID != 0)
+**AND** the final image size is ≤ 450MB (target 400MB).
+*Maps to*: REQ-ETS-TEAMENGINE-003 (modified), REQ-ETS-CLEANUP-004.
+
+#### SCENARIO-ETS-CLEANUP-CI-WORKFLOW-LIVE-001 (NORMAL — Sprint 2)
+**GIVEN** the Sprint 2 close HEAD on the new repo
+**WHEN** a developer inspects the GitHub Actions tab
+**THEN** at least one `workflow_run` exists for `.github/workflows/build.yml` triggered by a Sprint 2 push commit
+**AND** the workflow_run status is SUCCESS
+**OR** the absence is documented in ops/status.md as a deferred-with-rationale carryover (gh OAuth scope still missing).
+*Maps to*: REQ-ETS-SCAFFOLD-005, NFR-ETS-02.
+
+#### SCENARIO-ETS-CLEANUP-ADR-006-007-001 (NORMAL — Sprint 2)
+**GIVEN** the Sprint 2 close HEAD
+**WHEN** `ls _bmad/adrs/` runs
+**THEN** `ADR-006-jersey-3x-jakarta-port.md` exists with the standard ADR sections (Context, Decision, Status, Consequences, Alternatives Considered) and references the 6 Sprint 1 Jersey port commits by SHA
+**AND** `ADR-007-dockerfile-base-image-deviation.md` exists with the same standard sections, includes empirical evidence (Docker Hub tag enumeration + JDK 8 java -version + JDK 17 javap -v), and lists alternatives considered
+**AND** ADR-001 contains a cross-reference paragraph pointing to ADR-007.
+*Maps to*: REQ-ETS-SCAFFOLD-006.
 
 #### SCENARIO-ETS-WEBAPP-FREEZE-README-001 (NORMAL)
 **GIVEN** the `csapi_compliance` repo at HEAD `ab53658` plus the README reposition commit
