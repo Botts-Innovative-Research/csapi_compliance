@@ -109,9 +109,9 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 #### REQ-ETS-PART1-002: SystemFeatures Conformance Class (Sprint 2 target)
 - **Priority**: MUST
-- **Status**: SPECIFIED
-- **Description**: For each assertion in OGC 23-001 Annex A `/conf/system-features/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form (e.g. `OGC-23-001 /req/system-features/<assertion>`). The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.systemfeatures.SystemFeaturesTests` per design.md placeholder. Required behaviors: (a) `GET /systems` returns HTTP 200 with JSON body conforming to OGC API – Common collection shape (`type: "FeatureCollection"` or equivalent CS API collection wrapper, `features` or `items` array, `links`); (b) every item in the collection has `id` (string), `type` (string matching `System` or equivalent CS API type discriminator), `links` (array per REQ-ETS-CORE-004 base shape); (c) the SystemFeatures class declares TestNG suite-level dependency on Core via `dependsOnGroups="core"` so SystemFeatures @Tests SKIP gracefully if Core FAILs. Coverage scope (4-6 minimal vs 12-15 full) ratified by Architect prior to Generator implementation.
-- **Rationale**: SystemFeatures is the foundational CS API collection — every other CS API endpoint exposes `/systems` collections, so the patterns established here (collection shape, item shape, dependency-skip wiring) propagate to Subsystems, Procedures, Sampling, Properties, Deployments. GeoRobotix serves a non-empty `/systems` collection (verified by v1.0 web-app E2E history).
+- **Status**: IMPLEMENTED (Sprint 2 close, S-ETS-02-06; pending Quinn+Raze gate review)
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/system/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form `/req/system/<assertion>` (e.g. `OGC-23-001 .../req/system/resources-endpoint`). **URI form reconciled 2026-04-28T23:35Z**: design.md text and Sprint 2 contract used `/conf/system-features/` and `/req/system-features/<X>`; OGC `.adoc` canonical source uses `/conf/system` (singular, no `-features` suffix) and `/req/system/<X>`. The 5 sub-requirement `.adoc` files at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/` (HTTP-200-verified by Generator at S-ETS-02-06): `req_resources_endpoint.adoc`, `req_canonical_url.adoc`, `req_canonical_endpoint.adoc`, `req_collections.adoc`, `req_location_time.adoc`. The IUT (GeoRobotix) also declares `/conf/system` in `/conformance` — same form. v1.0 registry `csapi_compliance/src/engine/registry/system-features.ts` uses `/req/system/<X>`. Same drift class as S-ETS-02-03's `/req/core/*` → `/req/landing-page/*` correction. The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.systemfeatures.SystemFeaturesTests` per design.md placeholder. Required behaviors: (a) `GET /systems` returns HTTP 200 with JSON body containing a non-empty `items` array (per OGC API – Features clause 7.15.2-7.15.8 inherited via `/req/system/resources-endpoint`); (b) `GET /systems/{id}` returns the canonical single-item shape — `id` (string), `type` (string), `links` (array per REQ-ETS-CORE-004 base shape) — per `/req/system/canonical-endpoint`; (c) `/systems/{id}` `links` array contains `rel="canonical"` per `/req/system/canonical-url` — absence of `rel="self"` is NOT FAIL (carries v1.0 GH#3 fix policy from Core landing page; v1.0 audit at `system-features.ts:36-44`); (d) the SystemFeatures class declares TestNG suite-level dependency on Core via group dependency wiring (`<dependencies><group name="systemfeatures" depends-on="core"/>`) so SystemFeatures @Tests SKIP gracefully if Core FAILs. Coverage scope: Sprint-1-style minimal (4 @Tests) at Sprint 2 close per Architect ratification (design.md §"SystemFeatures conformance class scope"); Sprint 3 expansion adds `/req/system/collections` + `/req/system/location-time` + pagination/filter coverage.
+- **Rationale**: SystemFeatures is the foundational CS API collection — every other CS API endpoint exposes `/systems` collections, so the patterns established here (collection shape, item shape, dependency-skip wiring) propagate to Subsystems, Procedures, Sampling, Properties, Deployments. GeoRobotix serves a non-empty `/systems` collection (36 items confirmed at S-ETS-02-06 curl-verification 2026-04-28T23:30Z, Implementation Notes archive in `epics/stories/s-ets-02-06-systemfeatures-conformance-class.md`).
 - **Maps to**: PRD FR-ETS-12.
 
 #### REQ-ETS-PART1-003..013: Remaining Per-Class Conformance Suites
@@ -322,29 +322,31 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **AND** Core suite has PASSED (no dependency-skip triggered)
 **WHEN** the SystemFeatures suite executes `GET /systems`
 **THEN** the response is HTTP 200
-**AND** the body is a JSON collection (CS API system-features wrapper with `items` or `features` array)
-**AND** the body contains a non-empty `links` array.
-*Maps to*: REQ-ETS-PART1-002.
+**AND** the body is parseable JSON containing an `items` array (the CS API uses the `items` wrapper key per OGC API – Features clause 7.15.2-7.15.8 inherited via `/req/system/resources-endpoint`)
+**AND** the `items` array is non-empty (S-ETS-02-06 curl-verification confirmed 36 items).
+*Maps to*: REQ-ETS-PART1-002 (`/req/system/resources-endpoint`).
 
 #### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 2)
 **GIVEN** the Core suite produces at least one FAIL verdict for a target IUT
-**WHEN** the SystemFeatures suite (`/conf/system-features`) attempts to run
-**THEN** all `@Test` methods in SystemFeatures emit SKIP with reason referencing `dependency /conf/core not satisfied`
+**WHEN** the SystemFeatures suite (`/conf/system`) attempts to run
+**THEN** all `@Test` methods in SystemFeatures emit SKIP with reason referencing the unsatisfied `core` group dependency (TestNG group-dependency wiring `<dependencies><group name="systemfeatures" depends-on="core"/>` in `testng.xml`)
 **AND** no assertion in SystemFeatures is reported as FAIL or ERROR.
-*Maps to*: REQ-ETS-PART1-002. Closes SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 against SystemFeatures specifically.
+*Maps to*: REQ-ETS-PART1-002. Closes SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 against SystemFeatures specifically. Live verification deferred to Quinn/Raze gate (would require modifying GeoRobotix or pointing IUT at a 500-server); static verification at S-ETS-02-06 confirmed via TestNG XML output `depends-on-groups="core"` attribute on each of the 4 SystemFeatures @Tests.
 
 #### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-RESOURCE-SHAPE-001 (NORMAL — Sprint 2)
-**GIVEN** any item fetched from the `/systems` collection on the IUT
-**WHEN** the SystemFeatures suite asserts the item shape
-**THEN** the item has `id` (string), `type` (string matching `System` or the IUT's CS API type discriminator), and `links` (array of objects with `href`, `rel`).
-*Maps to*: REQ-ETS-PART1-002, REQ-ETS-CORE-004.
+**GIVEN** the first item in the `/systems` collection has been dereferenced via `GET /systems/{id}`
+**WHEN** the SystemFeatures suite asserts the canonical-endpoint single-item shape
+**THEN** the item has `id` (string), `type` (string), and `links` (array of objects with `href`, `rel`).
+*Note*: Operates on the **single-item endpoint** `/systems/{id}` per `/req/system/canonical-endpoint`, NOT the collection level. S-ETS-02-06 curl-verification proved that GeoRobotix `/systems` collection items are minimal GeoJSON Feature stubs without `links`; only the single-item canonical endpoint carries the load-bearing `links` array. v1.0 registry `system-features.ts:225-297` `testCanonicalEndpoint` uses the same single-item-endpoint pattern.
+*Maps to*: REQ-ETS-PART1-002 (`/req/system/canonical-endpoint`), REQ-ETS-CORE-004.
 
 #### SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001 (NORMAL — Sprint 2)
-**GIVEN** the `/systems` collection response on the IUT
+**GIVEN** the single-item `/systems/{id}` response on the IUT
 **WHEN** the SystemFeatures suite runs the links-discipline assertion
-**THEN** the collection-level `links` array contains entries with `rel=collection` AND/OR `rel=items` (per OGC API – Common collection link conventions)
-**AND** absence of `rel=self` is NOT a FAIL (consistent with the v1.0 GH#3 fix policy applied at the Core landing page).
-*Maps to*: REQ-ETS-PART1-002, REQ-ETS-CORE-002 (link-discipline policy carryover).
+**THEN** the `links` array contains an entry with `rel=canonical` (the load-bearing assertion per OGC 23-001 `/req/system/canonical-url` — the canonical URL discipline)
+**AND** absence of `rel=self` is NOT a FAIL (consistent with the v1.0 GH#3 fix policy applied at the Core landing page; v1.0 audit at `csapi_compliance/src/engine/registry/system-features.ts:36-44` + `:273-286` documents that OGC 23-001 `/req/system/canonical-url` mandates `rel="canonical"` only on **non-canonical** URLs and does NOT require `rel="self"` on `/systems/{id}`).
+*Note*: Adapted from design.md text (collection-level `rel=collection`/`rel=items`) per S-ETS-02-06 curl-verification: GeoRobotix `/systems` has only `items` (no collection-level `links`); the load-bearing link discipline lives on `/systems/{id}`.
+*Maps to*: REQ-ETS-PART1-002 (`/req/system/canonical-url`), REQ-ETS-CORE-002 (link-discipline policy carryover).
 
 #### SCENARIO-ETS-CLEANUP-URI-CANONICALIZATION-001 (CRITICAL — Sprint 2)
 **GIVEN** the spec.md REQ blocks for REQ-ETS-CORE-002..004 + the Java `static final String REQ_*` constants in `conformance/core/*.java`
@@ -447,6 +449,9 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - REQ-ETS-TEAMENGINE-005: `scripts/smoke-test.sh` end-to-end (commit `91308f7`). Bash, idempotent, exits 0 only on non-empty TestNG report + zero ERROR-level container logs during suite registration. End-to-end ~10s wall-clock (image cached); first run with TE image pull adds 5-10 min. Archived artifacts at `ops/test-results/s-ets-01-03-teamengine-{smoke,container}-2026-04-28.{xml,log}`.
 
 **Sprint 1 contract success_criteria walk after S-ETS-01-03**: **9/9 PASS** (per Dana's S-ETS-01-03 generator report) — all 5 critical scenarios PASS (SCAFFOLD-BUILD-001, CORE-LANDING-001, CORE-CONFORMANCE-001, TEAMENGINE-LOAD-001, CORE-SMOKE-001), all 5 normal scenarios PASS (SCAFFOLD-LAYOUT-001, SCAFFOLD-REPRODUCIBLE-001, CORE-RESOURCE-SHAPE-001, CORE-LINKS-NORMATIVE-001, CORE-API-DEF-FALLBACK-001). **Sprint 1 functionally complete pending Quinn+Raze gate close on S-ETS-01-03.**
+
+**Sub-deliverable 3 (cont.) — SystemFeatures conformance class** (REQ-ETS-PART1-002, Implemented S-ETS-02-06, pending Quinn+Raze):
+- REQ-ETS-PART1-002: `conformance.systemfeatures.SystemFeaturesTests` 4 @Test methods (Sprint-1-style minimal-then-expand per design.md ratification) all PASS against GeoRobotix at HEAD commit `3bd7fc6` (new repo). Smoke total = 16/16 (12 Core preserved + 4 SystemFeatures). 4 commits at new repo: `9847544` (SystemFeaturesTests + Core `groups = "core"` annotations), `d99665d`+`02796dd` (testng.xml dependency wiring; consolidated to single `<test>` block after empirical TestNG group-scope discovery), `3bd7fc6` (smoke artifact archive `ops/test-results/sprint-ets-02-systemfeatures-georobotix-smoke-2026-04-28.xml`). Reproducible build verified (sha256 `b51577cfb48535c6322cfc117514bd501e4d180b6c1435f8628b56d31a7a000a` byte-identical across two consecutive `mvn clean install -DskipTests`). All 4 SCENARIO-ETS-PART1-002-* satisfied: LANDING-001 + RESOURCE-SHAPE-001 + LINKS-NORMATIVE-001 PASS at runtime; DEPENDENCY-SKIP-001 PASS via TestNG XML output `depends-on-groups="core"` recorded on each of the 4 SystemFeatures @Tests (live break-Core verification deferred to Quinn/Raze gate). v1.0 GH#3 fix preserved at SystemFeatures level. URI form `/req/system/<X>` per OGC `.adoc` canonical (5 sub-requirement `.adoc` URLs HTTP-200-verified at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/`). Adapted from design.md table — collection-level GeoRobotix `/systems` has only `items` (no `links`); per-item entries are minimal stubs without `links`; the load-bearing `links` array lives on `/systems/{id}` (single-item canonical endpoint); `systemItemHasIdTypeLinks` and `systemsCollectionLinksDiscipline` operate on the single-item endpoint per `/req/system/canonical-endpoint` + `/req/system/canonical-url`. Full curl evidence + URI-form pivot rationale archived in `epics/stories/s-ets-02-06-systemfeatures-conformance-class.md` Implementation Notes.
 
 **Sub-deliverable 8 — Web-App Freeze**: REQ-ETS-WEBAPP-FREEZE-001 ✅ closed (commit `44c279e`, tag `v1.0-frozen` at `ab53658`). README.adoc reverse cross-link in new repo closes ADR-005 "both directions" requirement.
 
