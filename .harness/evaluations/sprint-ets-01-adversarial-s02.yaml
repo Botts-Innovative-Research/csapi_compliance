@@ -1,0 +1,584 @@
+sprint: ets-01
+story: S-ETS-01-02
+gate: 4
+agent: Raze (Adversarial Reviewer / Red Team)
+date: 2026-04-28
+new_repo_head: ea2c91f
+prior_review: ".harness/evaluations/sprint-ets-01-adversarial.yaml (S-ETS-01-01, GAPS_FOUND 0.84)"
+verdict: GAPS_FOUND
+confidence: 0.82
+overrides_evaluator: unknown  # Quinn ran in parallel; verdicts not coordinated
+user_request: |
+  Land Sprint 1 / S-ETS-01-02: implement CS API Core conformance class (LandingPageTests +
+  ConformanceTests + ResourceShapeTests) end-to-end against GeoRobotix at HEAD ea2c91f
+  (6 commits since S-ETS-01-01 close at 1323884), preserving v1.0 GH#3 fix + API-def
+  fallback, then run mandatory Gate 4 adversarial review.
+
+verdict_summary: |
+  Substantive engineering is sound. The layout refactor that closed CONCERN-3 from the prior
+  review is genuine: `level1/Capability1Tests` is gone, listener subpackage exists with
+  correct package decls, conformance/core subpackage exists with correct package decls. The
+  v1.0 GH#3 sentinel `landingPageDoesNotRequireSelfRel` (LandingPageTests:209) implements
+  the right semantic: it asserts both states (rel=self present OR absent) PASS — neither
+  the regression bug (asserting present) nor the over-correction (asserting absent) is
+  present. The api-def fallback `landingPageHasApiDefinitionLink` (LandingPageTests:179)
+  correctly asserts service-desc OR service-doc, FAIL only when both absent, matching
+  v1.0 SCENARIO-API-DEF-FALLBACK-001 exactly. Live IUT smoke artifact at
+  ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml records `total=12 passed=12
+  failed=0 skipped=0`; @Test method names cross-check against source. The 3 conformance
+  classes' .class files are in the AIO jar. Schema bundle still byte-identical
+  (diff -r empty). pom.xml YAML SHA pin from S-ETS-01-01 GAP-2 closure preserved at
+  3fd86c73. testng.xml correctly references the 3 new classes by FQCN; listener references
+  use the new listener subpackage. Independent reproducibility re-verified at ea2c91f:
+  two consecutive fresh-clone builds produce sha256
+  b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680 byte-identical;
+  user worktree rebuild reproduces same hash. spring-javaformat:validate passes.
+  No Part 2 leakage. No PRD-stale strings. mvn test 22/0/0/3.
+
+  THREE GAPS hold the verdict at GAPS_FOUND, not APPROVE:
+
+  (1) **Architect-must-constraint #9 violation — bare AssertionError used throughout, NOT
+  EtsAssert**. architect-handoff.yaml:124 says verbatim "Use EtsAssert with structured FAIL
+  messages including the /req/* URI; do not throw bare TestNG AssertionError." The 3 new
+  conformance core test classes (ConformanceTests, LandingPageTests, ResourceShapeTests)
+  contain 21 instances of `throw new AssertionError(...)` and zero EtsAssert calls. ETSAssert
+  utility class exists at src/main/java/.../ETSAssert.java and is used by the archetype
+  XML/Schematron paths, but the new REST Assured / JSON paths bypass it entirely. The
+  /req/* URI IS embedded in each AssertionError message, so the *intent* of the constraint
+  (URI traceability in failures) is partially honored. But the structural form requested by
+  the architect is not. This is a defensible-but-unilateral deviation — the architect did
+  not list a Sprint-1 escape hatch. GAPS_FOUND, not REJECT, because failure messages do
+  carry the /req/* URI.
+
+  (2) **URI-fidelity drift — Java cites `/req/core/root-success`, OGC's canonical form is
+  `/req/landing-page/root-success`**. Raze's prior 2026-04-17 sprint api-definition-service-doc-fallback
+  (Gate 4 verdict APPROVE 0.92) verified by upstream .adoc fetch that OGC 19-072's
+  canonical path is `/req/landing-page/root-success`. csapi_compliance/ops/known-issues.md
+  line 86 + ops/changelog.md line 197+289+317 all cite the canonical form. The Java port
+  uses a third form `/req/core/root-success` (different from BOTH the v1.0 TS slug
+  `/req/ogcapi-common/landing-page` AND OGC's canonical `/req/landing-page/root-success`).
+  csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/spec.md line 83 and
+  conformance-testing/spec.md line 18 also use `/req/core/root-success` — so the spec.md
+  text is the upstream cause. Sprint contract evaluation_focus #1 says "Did the Java port
+  preserve the URI-mapping fidelity from the TS registry?" The answer is partially; the
+  Java side has wandered to a third path slug rather than aligning with either the v1.0 TS
+  slug or OGC's known-canonical form. **A CITE SC reviewer who dereferences these URIs
+  against the OGC spec will get a 404.** GAPS_FOUND.
+
+  (3) **`ResourceShapeTests.REQ_OAS30_OAS_IMPL` cites `ogcapi-common-2/0.0/req/oas30/oas-impl`
+  — a different OGC standard (Common Part 2: Geospatial Data, OGC 20-024) that the IUT
+  may or may not declare conformance to**. Sprint 1 is supposed to be CS API Core only;
+  citing a Common Part 2 URI as the requirement source for a Sprint-1 ResourceShapeTests
+  assertion is a category error. The assertion logic itself (api-def link returns 200 +
+  non-empty body) is fine; the cited URI is not. GAPS_FOUND not REJECT because the test
+  PASSES against GeoRobotix and the assertion is structurally lax-enough to be defensible;
+  but the citation is wrong.
+
+  Plus three lower-severity concerns: (a) Dana's self-reported sha256
+  `c4a8029440a31a588308008fee7dc165b11207b02faae51d4f1c78b2bfc0b57a` is NOT the canonical
+  reproducible-build hash at HEAD ea2c91f — a fresh-clone independent build produces
+  `b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680`. The `c4a8029...` jar
+  was a stale build artifact in the user worktree from BEFORE HEAD reached ea2c91f (likely
+  from b249aa1 or earlier). After re-running `mvn clean install -DskipTests` on the user
+  worktree, the hash matches the fresh clone. Reproducibility is GENUINE; only the
+  reported number was sourced from a stale artifact (precisely the same class of
+  honesty-issue as S-ETS-01-01 GAP-1). (b) `ResourceShapeTests` is a deliberate Sprint-1
+  narrowing per design.md "single representative resource" — that's defensible but the
+  spec.md REQ-ETS-CORE-004 strict-shape (id/type/links per resource) is not yet covered;
+  Status reconciliation will need a PARTIAL note. (c) logback.xml + CredentialMaskingFilter
+  not present — architect-handoff lists this as `should`, not `must`, and Sprint 1 Core
+  doesn't authenticate (GeoRobotix is open), so absence is defensible-by-deferral; no
+  Authorization header logging risk in the smoke artifact (verified zero hits for
+  authorization/bearer/api-key in the XML).
+
+gaps:
+  - id: GAP-1
+    severity: medium
+    title: "Architect must-constraint violation: 21 bare `throw new AssertionError(...)` in conformance.core.* — should be EtsAssert.assert*"
+    description: |
+      architect-handoff.yaml line 124: "Use EtsAssert with structured FAIL messages
+      including the /req/* URI; do not throw bare TestNG AssertionError."
+
+      Verification:
+        grep -n 'throw new AssertionError\|EtsAssert\|ETSAssert' \
+          src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/*.java
+
+      Result:
+        - ConformanceTests.java: 6 `throw new AssertionError`, 0 EtsAssert calls
+        - LandingPageTests.java: 8 `throw new AssertionError`, 0 EtsAssert calls
+        - ResourceShapeTests.java: 7 `throw new AssertionError`, 0 EtsAssert calls
+        Total: 21 bare AssertionError throws across the 3 new conformance classes.
+
+      The ETSAssert utility class DOES exist
+      (src/main/java/org/opengis/cite/ogcapiconnectedsystems10/ETSAssert.java, 191 LOC)
+      and IS still used by the archetype-retained XML/Schematron paths
+      (assertQualifiedName, assertXPath, assertSchemaValid, assertSchematronValid,
+      assertExceptionReport, assertDescendantElementCount, assertExceptionReport). But
+      the new REST Assured / JSON-based test classes bypass it entirely.
+
+      Mitigating factor: every AssertionError message DOES embed the /req/* URI (e.g.
+      `throw new AssertionError(REQ_ROOT_SUCCESS + " — expected HTTP 200 ...")`). So
+      the *intent* of the architect's constraint (URI traceability in failure messages)
+      is achieved structurally; only the form (EtsAssert.assert* vs `throw new
+      AssertionError`) deviates. TestNG treats a bare AssertionError the same way it
+      treats Assert.fail — both are caught and reported as FAIL — so there's no
+      runtime semantic regression.
+
+      Aggravating factor: ETSAssert has no `assertHttpStatus`, `assertJsonHas`,
+      `assertJsonArrayNonEmpty` methods that would be the natural REST Assured-era
+      replacements. So Dana would have had to ADD those methods to ETSAssert before
+      she could use it from conformance.core.* — that's why she chose bare
+      AssertionError. This is a *design-level deferred refactor*, not a flat oversight.
+
+      But: the architect did not list a Sprint-1 escape hatch. design.md §"REST Assured
+      request lifecycle" line 184 explicitly shows `EtsAssert.assertStatus(resp, 200,
+      "/req/core/landing-page");` as the intended pattern. Dana wrote 21 bare-throws
+      where the design specified one EtsAssert call style; that's a deviation.
+    evidence: |
+      grep -c 'throw new AssertionError' src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/{ConformanceTests,LandingPageTests,ResourceShapeTests}.java
+        ConformanceTests.java: 6
+        LandingPageTests.java: 8
+        ResourceShapeTests.java: 7
+      grep -c 'EtsAssert\|ETSAssert' src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/*.java
+        zero hits.
+      ETSAssert.java exists at src/main/java/org/opengis/cite/ogcapiconnectedsystems10/ETSAssert.java (191 LOC, archetype-retained).
+      design.md line 184: "EtsAssert.assertStatus(resp, 200, ..."
+      architect-handoff.yaml line 124: "Use EtsAssert with structured FAIL messages... do not throw bare TestNG AssertionError"
+    recommended_fix: |
+      Two paths, choose one:
+      (a) Sprint-2 deferred refactor: add @Deprecated/Sprint-2-cleanup-tag to the 3 test
+          files at the top, document deferral in spec.md Implementation Status Deviations
+          section, file an issue/story for Sprint 2 to: (i) extend ETSAssert with
+          assertHttpStatus, assertJsonHas, assertJsonArrayNonEmpty, assertJsonObjectShape,
+          (ii) refactor the 21 bare-throws to ETSAssert calls. Cleanest long-term.
+      (b) Same-turn fix: add the 4 helper methods to ETSAssert and replace the 21 bare
+          throws across 3 files. ~150 LOC delta, low risk because failure messages already
+          carry the /req/* URI; the refactor only changes the throw mechanism.
+      Either is acceptable; (a) is more honest given the Sprint 1 contract is otherwise
+      green.
+    address_in_turn: optional (defer to Sprint 2 cleanup is defensible if documented)
+
+  - id: GAP-2
+    severity: medium
+    title: "URI-fidelity drift — Java cites `/req/core/root-success`; OGC 19-072 canonical form is `/req/landing-page/root-success`"
+    description: |
+      Sprint contract evaluation_focus #1: "Did the Java port preserve the URI-mapping
+      fidelity from the TS registry?"
+
+      The v1.0 TS registry uses path slug:
+        /req/ogcapi-common/landing-page (csapi_compliance/src/engine/registry/common.ts:21)
+
+      Raze's prior 2026-04-17 sprint api-definition-service-doc-fallback (Gate 4 verdict
+      APPROVE 0.92, .harness/evaluations/sprint-api-def-fallback-adversarial.yaml)
+      independently fetched
+      https://raw.githubusercontent.com/opengeospatial/ogcapi-common/master/19-072/requirements/landing-page/REQ_root-success.adoc
+      and verified the upstream canonical OGC form is:
+        /req/landing-page/root-success
+
+      The csapi_compliance/ops/known-issues.md "Requirement URIs Use Local Paths, Not
+      Canonical OGC URIs — RESOLVED" entry (line 80) explicitly notes:
+        "for OGC Common Part 1 (`/req/ogcapi-common/...`) and Features Part 1
+        (`/req/ogcapi-features/...`), the local paths are project-specific slugs that
+        don't exactly match OGC's canonical paths (e.g. 19-072 uses
+        `/req/landing-page/root-success`...). A full path-segment remap would require
+        per-URI OGC-spec lookup and is logged as a follow-up below."
+
+      The Java port chose YET A THIRD form:
+        /req/core/root-success (LandingPageTests:62, REQ_ROOT_SUCCESS)
+        /req/core/conformance-success (LandingPageTests:65, REQ_CONFORMANCE_SUCCESS)
+        /req/core/api-definition-success (LandingPageTests:68, REQ_API_DEFINITION_SUCCESS)
+
+      None of these three forms match the OGC-canonical `/req/landing-page/root-success`,
+      `/req/core/conformance-success` (this one happens to match), or
+      `/req/landing-page/api-definition-success` (Raze did not re-verify each separately;
+      `/req/landing-page/root-success` was the specifically-verified one).
+
+      Tracing the source: csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/
+      spec.md line 83 (REQ-ETS-CORE-002) and conformance-testing/spec.md line 18 BOTH cite
+      `/req/core/root-success`. So the Java port faithfully implements *what the spec
+      says*; it's the spec that uses the wrong path slug.
+
+      A CITE SC reviewer who dereferences `http://www.opengis.net/spec/ogcapi-common-1/
+      1.0/req/core/root-success` against the OGC normative document will get a 404
+      (the canonical path is `.../req/landing-page/root-success`).
+
+      Sprint contract success_criterion `uri_mapping_fidelity_preserved: true` is met
+      vacuously (the Java port faithfully reflects the spec strings) but the underlying
+      goal (URIs that dereference correctly to OGC normative requirements) is not.
+
+      This gap is upstream of Sprint 1 — it lives in the spec.md text + the
+      pre-existing csapi_compliance v1.0 known-issues entry that flagged this exact
+      mismatch as deferred. Dana correctly mirrored the spec; Sam (Scrum Master)
+      should reconcile the spec text + flag this for an upstream OGC-canonical
+      remap sprint.
+    evidence: |
+      grep -hoE 'http://www[^ "]*' src/main/java/.../conformance/core/*.java | sort -u
+      Returns 5 distinct canonical URIs, including:
+        http://www.opengis.net/spec/ogcapi-common-1/1.0/req/core/root-success
+        http://www.opengis.net/spec/ogcapi-common-1/1.0/req/core/conformance-success
+        http://www.opengis.net/spec/ogcapi-common-1/1.0/req/core/api-definition-success
+
+      grep -h "requirementUri" csapi_compliance/src/engine/registry/common.ts
+        Uses `/req/ogcapi-common/landing-page` form (project slug).
+
+      csapi_compliance/ops/known-issues.md:86 confirms OGC's canonical is
+      `/req/landing-page/root-success`.
+
+      csapi_compliance/.harness/evaluations/sprint-api-def-fallback-adversarial.yaml
+      records the upstream-adoc fetch verification (Raze 2026-04-17).
+    recommended_fix: |
+      Upstream-rooted fix (most correct):
+      (1) Sam reconciles csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/
+          spec.md REQ-ETS-CORE-002 to use `/req/landing-page/root-success` per the
+          known-issues catalog finding;
+      (2) Dana re-runs S-ETS-01-02 URI strings in LandingPageTests.java + ConformanceTests.java
+          + ResourceShapeTests.java to match the corrected spec;
+      (3) Note in spec.md Implementation Status Deviations that the URI form in test
+          descriptions changed from `/req/core/...` → `/req/landing-page/...` for
+          Common Part 1 URIs.
+
+      Same-turn alternative: leave Java as-is (matches current spec.md), document this
+      gap in Sprint 1 close-out as a tracked URI-canonicalization debt, schedule
+      "URI canonicalization sweep" as a Sprint 2 housekeeping story analogous to the
+      v1.0 sprint of the same name.
+
+      If neither happens: when the OGC SC reviews the ETS, the URIs in TestNG @Test
+      descriptions will not dereference. CITE submission risk.
+    address_in_turn: optional (Sam reconciliation is the right path; can be deferred to next planning cycle)
+
+  - id: GAP-3
+    severity: low-medium
+    title: "ResourceShapeTests cites an `ogcapi-common-2/0.0/req/oas30/oas-impl` URI — that's a different OGC standard (Common Part 2: Geospatial Data, OGC 20-024)"
+    description: |
+      ResourceShapeTests.java:55:
+        static final String REQ_OAS30_OAS_IMPL =
+          "http://www.opengis.net/spec/ogcapi-common-2/0.0/req/oas30/oas-impl";
+
+      `ogcapi-common-2` is OGC API – Common Part 2: Geospatial Data (OGC 20-024), a
+      separate specification from OGC API – Common Part 1 (19-072) which Sprint 1 Core
+      validates against. The `/req/oas30/oas-impl` requirement (if it exists in 20-024)
+      governs OpenAPI 3.0 implementation conformance, NOT a generic resource-shape check.
+
+      Sprint 1 Core scope per spec.md REQ-ETS-CORE-004 covers "Resource Base Shape" —
+      the assertion is "any resource discoverable from landing-page links includes id
+      (string), type (string), links (array)". The Java implementation deliberately
+      narrows to "api-definition link returns HTTP 200 with non-empty body" + "the
+      /conformance resource is a JSON object" — both perfectly defensible Sprint-1
+      narrowings per design.md (and spec.md Implementation Status will need a PARTIAL
+      note for that).
+
+      But the `REQ_OAS30_OAS_IMPL` URI is the WRONG citation for both narrowed checks.
+      The api-def-link-returns-content check should cite the same `/req/core/api-definition-
+      success` (or the canonical `/req/landing-page/api-definition-success`) URI that
+      LandingPageTests already uses; the /conformance-shape-is-object check should cite
+      `/req/core/conformance-success`. Citing `oas-impl` from a different OGC spec
+      conflates "API definition exists at the link" with "the API definition implements
+      OpenAPI 3.0 normatively" — different conformance levels, different tests, different
+      requirements.
+
+      This is not a false-positive (test passes against GeoRobotix) and not a
+      false-negative (the assertion logic is honest about being lax — non-empty body
+      check). It's a citation hygiene issue.
+
+      Adversarial-test consequence: a CITE SC reviewer mapping ATS assertions to ETS
+      tests would see ResourceShapeTests claiming to validate `/req/oas30/oas-impl` from
+      OGC 20-024 when in fact it validates a Common Part 1 link relation. Spec
+      traceability breaks.
+    evidence: |
+      ResourceShapeTests.java:55: REQ_OAS30_OAS_IMPL = "...ogcapi-common-2/0.0/req/oas30/oas-impl"
+      ResourceShapeTests.java:94 + 137: this URI used as @Test description prefix and in
+        AssertionError messages.
+      Smoke XML records "OGC-19-072 http://...ogcapi-common-2/0.0/req/oas30/oas-impl"
+        — the prefix says "OGC-19-072" (Common Part 1) but the URI says "ogcapi-common-2"
+        (Common Part 2). Internal contradiction in the same description string.
+    recommended_fix: |
+      Replace REQ_OAS30_OAS_IMPL with REQ_API_DEFINITION_SUCCESS (or whichever path slug
+      lands in GAP-2 reconciliation). Update both @Test methods. ~5 LOC change in
+      ResourceShapeTests.java.
+    address_in_turn: yes (low effort, high audit-clarity benefit)
+
+concerns:
+  - id: CONCERN-1
+    severity: low
+    title: Dana's self-reported sha256 c4a8029... is from a stale build artifact, not the HEAD ea2c91f canonical reproducible build
+    description: |
+      Dana's S-ETS-01-02 self-report claims:
+        "Reproducibility: sha256 c4a8029440a31a588308008fee7dc165b11207b02faae51d4f1c78b2bfc0b57a
+         for the main jar"
+
+      Raze verification:
+        - Fresh clone → /tmp/raze-fresh-checkout-s02 (HEAD ea2c91f)
+        - Build 1 (mvn clean install -DskipTests):
+            b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680
+        - Build 2 (rm -rf target; mvn clean install -DskipTests):
+            b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680
+        - Build 3 (mvn clean install -DskipTests, third invocation):
+            b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680
+        - User worktree (existing target/, NOT cleaned) before this run:
+            c4a8029440a31a588308008fee7dc165b11207b02faae51d4f1c78b2bfc0b57a
+        - User worktree, after `rm -rf target && mvn clean install -DskipTests`:
+            b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680
+            (matches fresh clone — reproducibility confirmed)
+
+      Diagnosis: the stale c4a8029 jar in the user worktree was from an earlier HEAD
+      (likely b249aa1 or earlier — committed BEFORE the smoke-test artifact landed at
+      ea2c91f). Dana captured `sha256sum target/*.jar` without first running
+      `mvn clean install`, so she got the cached pre-ea2c91f artifact. Same class of
+      honesty-issue as S-ETS-01-01 GAP-1 (Dana's `5021b1d3` was also a wrong number
+      that Raze caught). Reproducibility itself is GENUINE; the recorded number is
+      sourced from a stale artifact.
+
+      Pragmatic impact: low. The reproducibility plumbing (`<project.build.outputTimestamp>`
+      + `<Build-Time>` + .gitattributes) works correctly. Anyone running `mvn clean install`
+      at HEAD ea2c91f will get b1ffdc8... — the canonical number.
+
+      Audit impact: medium-low. If Dana's c4a8029 propagates to ops/status.md or the
+      sprint close-out summary (the way 5021b1d3 did in S-ETS-01-01), CITE SC reviewers
+      who try to reproduce will get a different number and (correctly) conclude the
+      build is not reproducible — when in fact reproducibility is fine, only the
+      reported reference is from a stale artifact.
+    recommended_fix: |
+      Same as S-ETS-01-01 GAP-1: replace any propagation of `c4a8029...` with
+      `b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680` in:
+        - ops/status.md (csapi_compliance) sprint close-out summary
+        - generator-handoff.yaml in .harness/handoffs/ (if recorded)
+        - any sprint-close commit message body
+      Procedural fix: Dana should run `mvn clean install -DskipTests` *before* recording
+      the reproducibility hash, not just `sha256sum target/*.jar` against whatever's
+      already there.
+    address_in_turn: yes (one-line text edit, no rebuild needed)
+
+  - id: CONCERN-2
+    severity: low
+    title: ResourceShapeTests is a Sprint-1 narrowing not yet reflected in spec.md Implementation Status Deviations
+    description: |
+      design.md line 141 explicitly authorizes the Sprint 1 narrowing: "Sprint 1 may
+      scope ResourceShapeTests to a single representative resource — likely /api or
+      /conformance itself — and expand to a true crawl in Sprint 2." Dana implemented
+      exactly this narrowing (2 @Test methods: api-def-resource-returns-content and
+      /conformance-shape-is-object) and added a clear in-Javadoc note (line 49) saying
+      "Documented divergence from spec.md REQ-ETS-CORE-004 strict-shape (id/type/links
+      per resource) is captured here as a Sprint-1-narrowing note. Spec Implementation
+      Status reflects this as PARTIAL per ops/changelog reconciliation."
+
+      However, csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/spec.md
+      Implementation Status section (last updated 2026-04-28 to reflect S-ETS-01-01
+      close) does not yet list S-ETS-01-02 outcomes. Whoever closes Sprint 1 must
+      reconcile spec.md to mark REQ-ETS-CORE-004 as PARTIAL with the Sprint-1-narrowing
+      rationale, otherwise CLAUDE.md Step 6 (Reconcile Specs) will be incomplete for
+      S-ETS-01-02 the same way it was for S-ETS-01-01 (Raze GAP-3 in prior review).
+    recommended_fix: |
+      At Sprint 1 / S-ETS-01-02 close-out: add to spec.md Implementation Status section
+      a "What's Built (Sprint ets-01 / S-ETS-01-02)" subsection listing:
+        - REQ-ETS-CORE-001..003: Implemented (LandingPageTests, ConformanceTests with
+          full @Test method coverage per design.md responsibilities table)
+        - REQ-ETS-CORE-004: PARTIAL — Sprint-1 narrowing per design.md line 141 (single
+          representative resource: api-def link content + /conformance shape). Full
+          link-crawl with id/type/links assertions deferred to Sprint 2 once Common is
+          implemented.
+      Plus update _bmad/traceability.md REQ-ETS-CORE-* rows to Implemented (-001..-003)
+      and PARTIAL (-004).
+    address_in_turn: optional (procedural at sprint close-out)
+
+  - id: CONCERN-3
+    severity: low
+    title: logback.xml + CredentialMaskingFilter not present; architect-handoff `should` constraint not addressed
+    description: |
+      architect-handoff.yaml line 146: "Use logback.xml configured to NEVER log
+      Authorization or X-API-Key headers (CredentialMaskingFilter pattern equivalent
+      to v1.0's CredentialMasker)."
+
+      Verification:
+        find src -name "logback*.xml" → no results
+        grep -rn "Authorization\|Bearer\|CredentialMasking" src/main/java src/main/resources
+          → only `Authorization` mentions are in /req/* URIs (not header logging)
+
+      Defensible-by-deferral: this is a `should` (not `must`) constraint. Sprint 1 Core
+      tests run unauthenticated against GeoRobotix (open API), so there are no
+      Authorization headers TO log. The smoke artifact at
+      ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml has zero hits for
+      authorization/bearer/api-key/password/secret (verified). No real credential
+      leak risk in Sprint 1.
+
+      Sprint 2+ when Part 1 conformance classes that do CRUD + auth land, this becomes
+      a `must`. Should be tagged for that sprint's contract.
+    recommended_fix: |
+      Tag a Sprint 2 (or earlier-cleanup) story to add:
+        - src/main/resources/logback.xml with <pattern> excluding Authorization, X-API-Key,
+          Cookie headers from log output;
+        - A REST Assured Filter implementing CredentialMaskingFilter (pattern equivalent
+          to csapi_compliance/src/engine/credential-masker.ts);
+        - Wire the filter into the SuiteFixtureListener's REST Assured baseline config.
+      Not a Sprint 1 blocker; flagged for visibility.
+    address_in_turn: no (defer to Sprint 2)
+
+sections_evaluated:
+  - section: §6.1 ADR adherence + architect must/must_not constraints (S-ETS-01-02-specific)
+    checks:
+      - "ADR-001 (TeamEngine SPI registration): META-INF/services file unchanged from S-ETS-01-01, single-line FQCN org.opengis.cite.ogcapiconnectedsystems10.TestNGController, exactly one entry in jar (verified by unzip -l). ✓"
+      - "ADR-002 (JSON Schema bundling): diff -r csapi_compliance/schemas/ vs src/main/resources/schemas/ returns empty. pom.xml `<connected-systems-yaml.sha>3fd86c73...</>` from S-ETS-01-01 GAP-2 closure preserved at HEAD ea2c91f. ✓"
+      - "ADR-003 (Java package naming): conformance.core.* package decls correct in all 3 new files (`package org.opengis.cite.ogcapiconnectedsystems10.conformance.core;`). listener.* package decls correct in all 4 listener files. ✓"
+      - "ADR-004 (Modernization checklist): no new modernization deltas in S-ETS-01-02 (focus is conformance test code, not toolchain). ✓"
+      - "ADR-005 (Cross-repo relationship): no cross-repo coupling introduced in S-ETS-01-02. ✓"
+      - "must constraint: 'Every @Test method ... description starts with OGC-23-001 /req/core/...': PARTIAL — descriptions start with `OGC-19-072` (Common Part 1) or `OGC-23-001` (CS Part 1) per the actual spec authority for each requirement, NOT all `OGC-23-001` as the constraint literally states. This is more semantically correct than the constraint text. APPROVE-with-note."
+      - "must constraint: 'Preserve v1.0 GH#3 fix: rel=self example-only, NOT mandatory. Add sentinel @Test landingPageDoesNotRequireSelfRel': SENTINEL EXISTS at LandingPageTests:209, asserts both states (present OR absent) PASS, includes regression-trip-wire docstring. ✓"
+      - "must constraint: 'Preserve v1.0 API-definition fallback: PASS when service-desc OR service-doc; FAIL only when both absent': landingPageHasApiDefinitionLink at LandingPageTests:179 implements `rels.contains(\"service-desc\") || rels.contains(\"service-doc\")` and FAILS only when both absent. ✓"
+      - "must constraint: 'Use EtsAssert with structured FAIL messages including the /req/* URI; do not throw bare TestNG AssertionError': ⚠️ VIOLATED (GAP-1) — 21 bare-throws across the 3 conformance classes."
+      - "must_not constraint: 'no Part 2 work': verified — zero hits on `OGC[ -]?23-?002`, `Datastream`, `ControlStream`, `swecommon`, `feasibility` in production Java code (excluding bundled schemas/). ✓"
+      - "must_not constraint: 'no PRD-stale strings (connectedsystems-1, ogcapi.cs10, ets-common:14, teamengine:5.5)': verified — zero hits in --include='*.xml' --include='*.java' --include='*.adoc' --include='*.md' --include='*.yml' (excluding the canonical OGC URI form `ogcapi-connectedsystems-1/1.0/conf/core` in ConformanceTests:46 which is the actual OGC standard URI, NOT a Pat coordinate). ✓"
+    findings: "Architect ADR adherence is strong. The must-constraint violation on EtsAssert (GAP-1) is the only material gap; the v1.0 GH#3 fix sentinel and the API-def fallback are both implemented faithfully and structurally correct."
+
+  - section: §6.2 Translation fidelity (TS web app → Java ETS) — URI cross-walk
+    checks:
+      - "v1.0 TS canonical URIs (Common Part 1, csapi_compliance/src/engine/registry/common.ts): 6 distinct (landing-page, landing-page-links, conformance, conformance-conformsTo, api-definition, json-content-type)."
+      - "v1.0 TS canonical URIs (CS Part 1 Core, csapi_compliance/src/engine/registry/csapi-core.ts): 3 distinct (resource-ids, resource-uids, datetime). Dana's self-report: 'these are deferred to Sprint 2'."
+      - "Java URIs (conformance.core.*): 5 distinct — REQ_ROOT_SUCCESS, REQ_CONFORMANCE_SUCCESS, REQ_API_DEFINITION_SUCCESS (LandingPageTests), CS_CORE_CONFORMANCE_URI (ConformanceTests), REQ_OAS30_OAS_IMPL (ResourceShapeTests)."
+      - "URI form drift: Java uses `/req/core/root-success`; v1.0 TS uses `/req/ogcapi-common/landing-page`; OGC canonical is `/req/landing-page/root-success`. Three different forms across three layers. ⚠️ GAP-2."
+      - "OAS30 URI from a different OGC standard: ResourceShapeTests cites `ogcapi-common-2/0.0/req/oas30/oas-impl` — Common Part 2 (OGC 20-024), not Common Part 1. ⚠️ GAP-3."
+      - "Sprint-2 deferred URIs honest: REQ_RESOURCE_IDS, REQ_RESOURCE_UIDS, REQ_DATETIME from csapi_compliance/src/engine/registry/csapi-core.ts are NOT in the new Java code, but they're not regressively missing — design.md explicitly defers them to Sprints 2+. ✓"
+      - "Translation completeness: 6 v1.0 TS Common URIs vs 5 Java URIs (3 of which are Common Part 1 + 1 CS Core conformance + 1 misattributed Common Part 2). Vacuous Sprint-1 URI coverage is OK because Sprint 1 only needs LandingPage + Conformance + minimal ResourceShape; the missing landing-page-links, conformance-conformsTo, json-content-type are folded into the existing 5 by combining assertions."
+    findings: "URI mapping has structural integrity (Java reflects spec.md authoritatively) but two specific drifts: (a) the path-slug (`/req/core/...`) doesn't match OGC's canonical or v1.0's project-slug, (b) one URI is from the wrong spec entirely. Both gaps are upstream of Sprint 1 (spec.md text was already wrong before Dana wrote a line of Java) but Sprint 1 propagates the error into the deliverable."
+
+  - section: §6.3 Build correctness + reproducibility (independent verification at HEAD ea2c91f)
+    checks:
+      - "Fresh clone /tmp/raze-fresh-checkout-s02 from github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10 at HEAD ea2c91fedd80ec398db72cb4ff7eda4734e2429a"
+      - "mvn -v: Apache Maven 3.9.9 + JDK 17.0.18 ✓"
+      - "Build 1: mvn clean install -DskipTests → BUILD SUCCESS, sha256 b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680"
+      - "Build 2: rm -rf target && mvn clean install -DskipTests → IDENTICAL sha256 ✓"
+      - "Build 3: rm -rf target && mvn clean install -DskipTests (third) → IDENTICAL sha256 ✓"
+      - "User worktree rebuild (rm -rf target then mvn clean install -DskipTests): IDENTICAL sha256 ✓ (the previously-cached c4a8029... was a STALE artifact from before HEAD ea2c91f)"
+      - "Dana's reported sha256 c4a8029...: ⚠️ from stale artifact, not from a current build at ea2c91f (CONCERN-1)"
+      - "mvn test (full suite, including the 3 new conformance test classes' compile + the 22 archetype unit tests): BUILD SUCCESS, 22 tests / 0 failures / 0 errors / 3 skipped ✓"
+      - "mvn spring-javaformat:validate: passes (zero output → no format violations) ✓"
+      - "AIO jar contents: org/opengis/cite/ogcapiconnectedsystems10/conformance/core/LandingPageTests.class (9064 bytes), ConformanceTests.class (7478 bytes), ResourceShapeTests.class (7444 bytes), listener/SuiteFixtureListener.class (5637 bytes) — all 3 new conformance classes + relocated listener present. ✓"
+      - "META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController: contains exactly the line `org.opengis.cite.ogcapiconnectedsystems10.TestNGController` (no whitespace, no extension). ✓"
+    findings: "Build reproducibility is GENUINE at HEAD ea2c91f. The canonical sha256 is b1ffdc8eee... not Dana's reported c4a8029... — same class of issue as S-ETS-01-01 GAP-1 (stale-artifact reporting). All 3 new conformance test classes compile cleanly and ship in the AIO jar."
+
+  - section: §6.4 Sprint contract compliance walk
+    checks:
+      - "all_critical_scenarios_pass: SCENARIO-ETS-CORE-LANDING-001 ✓ (12/12 PASS in smoke artifact, including 6 LandingPageTests). SCENARIO-ETS-CORE-CONFORMANCE-001 ✓ (4 ConformanceTests PASS). SCENARIO-ETS-TEAMENGINE-LOAD-001/SCENARIO-ETS-CORE-SMOKE-001 deferred to S-ETS-01-03."
+      - "normal_scenario_pass_rate >= 0.90: SCENARIO-ETS-CORE-RESOURCE-SHAPE-001 PARTIAL (Sprint-1 narrowing per design.md line 141, structurally honest). SCENARIO-ETS-CORE-LINKS-NORMATIVE-001 ✓ (sentinel landingPageDoesNotRequireSelfRel passes both with-self and without-self states). SCENARIO-ETS-CORE-API-DEF-FALLBACK-001 ✓ (landingPageHasApiDefinitionLink correctly implements OR semantics + ResourceShapeTests api-def-resource-returns-content honors the fallback). 2.5/3 = 83% — slightly below the 90% target but defensible-by-PARTIAL-deferral."
+      - "spec_updated: ⚠️ NOT YET (CONCERN-2 — S-ETS-01-02 outcomes not yet in spec.md Implementation Status; pending sprint close-out)"
+      - "no_regression: ✓ (csapi_compliance v1.0-frozen unchanged, sibling repo separate; S-ETS-01-01 deliverables intact — schemas byte-identical, pom.xml SHA pin preserved, META-INF/services unchanged)"
+      - "build_green_jdk17: ✓ (mvn clean install: BUILD SUCCESS at JDK 17.0.18 + Maven 3.9.9)"
+      - "reproducible_build: ✓ (3 consecutive fresh-clone builds + 1 user-worktree rebuild, all matching sha256 b1ffdc8eee...)"
+      - "teamengine_loads_ets_without_error: deferred to S-ETS-01-03"
+      - "smoke_test_green_against_georobotix: ✓ (TestNG XML 12/12 PASS in ops/test-results/, archived 2026-04-28)"
+      - "no_part2_work_in_sprint: ✓ (zero hits on Part 2 strings in production Java code)"
+      - "uri_mapping_fidelity_preserved: ⚠️ PARTIAL (GAP-2 — Java URIs have third-form drift from both v1.0 TS slug and OGC canonical) and ⚠️ GAP-3 (one URI from wrong spec entirely)"
+      - "spec_trap_fixtures_preserved: ✓ (epic-ets-06 references unchanged; Sprint 2+ scope)"
+      - "openapi_yaml_pinned_by_sha: ✓ (preserved from S-ETS-01-01 GAP-2 closure at commit 1323884)"
+    findings: "10/12 success criteria PASS, 2 PARTIAL/FAIL (spec_updated pending sprint close, uri_mapping_fidelity has GAP-2/GAP-3). Smoke against GeoRobotix is the gold deliverable — 12/12 PASS, including all 3 v1.0 fix sentinels."
+
+  - section: §6.5 CLAUDE.md mandatory step audit
+    checks:
+      - "Step 1 (Spec First): pre-existing spec.md REQ-ETS-CORE-001..004 cover the 3 new classes. Generator did not add new specs (existing ones suffice). ✓"
+      - "Step 2 (Write Tests): tests reference REQ-ETS-CORE-* and SCENARIO-ETS-CORE-* in @Test descriptions and Javadocs. Cross-walk: every @Test description names the SCENARIO it covers. ✓"
+      - "Step 3 (Implement): green build + 12/12 smoke PASS ✓"
+      - "Step 4 (Verify): mvn clean install passes; mvn test 22/0/0/3 ✓"
+      - "Step 5 (E2E Verify): smoke against GeoRobotix per ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml. 12 @Test methods ran live. ✓"
+      - "Step 6 (Reconcile Specs): NOT YET DONE for S-ETS-01-02 (CONCERN-2). spec.md still reflects S-ETS-01-01 close only."
+      - "Step 7 (Update Ops): ops/test-results/ artifact archived. ops/changelog.md updates pending (csapi_compliance has changelog; new repo does not require one for this sprint)."
+      - "Step 8 (Update _bmad): traceability.md REQ-ETS-CORE-* rows still 'Active' from S-ETS-01-01 close — should advance to Implemented (-001..-003) / PARTIAL (-004) at sprint close. (CONCERN-2 part 2)"
+    findings: "Steps 1-5 ✓. Step 6 + 8 pending sprint close-out reconciliation (CONCERN-2). E2E verification (Step 5) is genuine: the smoke artifact is real, dated, and cross-checks against source method names."
+
+  - section: §6.6 v1.0 known-issue preservation (GH#3 + API-def + Content-Type)
+    checks:
+      - "v1.0 GH#3 fix (rel=self example-only): SENTINEL TEST landingPageDoesNotRequireSelfRel at LandingPageTests:209. Logic: collects rels into a Set; asserts (selfPresent || selfAbsent) — i.e. PASS regardless of whether self is in the set. Defensive null-guard kept (logically unreachable). Trip-wire docstring at line 198-204 warns future contributors that 'future contributors who re-introduce a mandatory rel=self assertion will need to deliberately delete this test.' This is the v1.0 GH#3 fix, faithfully ported. ✓"
+      - "v1.0 API-def fallback (service-desc OR service-doc): landingPageHasApiDefinitionLink at LandingPageTests:179. Logic: `boolean hasApiDefLink = rels.contains(\"service-desc\") || rels.contains(\"service-doc\");` — FAIL only when BOTH absent. Failure message names both rels. Matches v1.0 SCENARIO-API-DEF-FALLBACK-001 exactly. Plus: ResourceShapeTests.apiDefinitionResourceReturnsContent (line 97) implements the same fallback at the resource-fetch layer with structural lax-by-design (HTTP 200 + non-empty body, NOT openapi-field-present which would regress on service-doc HTML). ✓"
+      - "v1.0 Content-Type tolerance (GeoRobotix `Content-Type: auto`): per csapi_compliance/ops/known-issues.md 2026-03-31 'Overly Strict Content-Type Check in Discovery (Fixed)' — v1.0 fix is 'Attempt JSON parsing first, log warning about non-standard Content-Type instead of aborting.' Java port: LandingPageTests.fetchLandingPage caches the response, attempts JSON parse via `landingResponse.jsonPath().getMap(\"$\")`, sets `landingBody = null` on parse-fail. landingPageReturnsJson asserts `landingBody != null` — i.e. parseable JSON. Content-Type header is logged in the failure message but NOT asserted. Same pattern in ConformanceTests. STRUCTURALLY MATCHES v1.0 behavior. ✓"
+    findings: "All three v1.0 known-issue fixes are faithfully preserved at the sentinel-test or structural-pattern level. The GH#3 sentinel even includes a regression trip-wire to prevent future re-introduction."
+
+  - section: §6.7 New-test-code adversarial audit
+    checks:
+      - "12/12 PASS smoke artifact integrity: ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml `<testng-results ignored=\"0\" total=\"12\" passed=\"12\" failed=\"0\" skipped=\"0\">`. ✓"
+      - "Smoke @Test method names cross-check: 12 method names extracted from XML (verifyIutSet + 4 Conformance tests + 2 ResourceShape tests + 5 LandingPage tests; +2 @BeforeClass config-methods reported in passed total). All match @Test methods declared in source files (cross-checked grep -hE 'public void' in 3 source files). ✓"
+      - "Smoke artifact provenance: testng-results timestamp 2026-04-28T12:50:40 EDT, suite name `ogcapi-connectedsystems10-georobotix-smoke`. Recent, well-formed, not hand-crafted. ✓"
+      - "Test-class .class files in AIO jar: confirmed (LandingPageTests 9064B, ConformanceTests 7478B, ResourceShapeTests 7444B). All 3 ship to TeamEngine via the AIO jar. ✓"
+      - "@Test method passes-by-default audit: spot-check landingPageDoesNotRequireSelfRel — assertion is `if (!(selfPresent || selfAbsent)) throw AssertionError`. (selfPresent || selfAbsent) is always true (set membership and its negation are mutually exhaustive). So this @Test method ALWAYS PASSES, regardless of IUT behavior. THAT IS BY DESIGN — it is a sentinel asserting the absence of a mandatory check. The risk is not that it spuriously passes; the risk is that future contributors regress the absence-of-check into a presence-of-check. Trip-wire docstring mitigates. ✓"
+      - "Layout refactor honesty: `ls src/main/java/.../level1/` returns 'No such file or directory'. Listener subpackage exists with 4 files (SuiteFixtureListener, TestRunListener, TestFailureListener, ReusableEntityFilter), all 4 with `package org.opengis.cite.ogcapiconnectedsystems10.listener;` correctly. Conformance/core subpackage exists with 3 files, all with `package org.opengis.cite.ogcapiconnectedsystems10.conformance.core;`. ✓"
+      - "testng.xml correctness: references the 3 new conformance classes by FQCN; references 3 listener classes via the new listener subpackage FQCN; no stale level1.Capability1Tests references; suite parameter `iut` declared. ✓"
+      - "ETSAssert vs bare AssertionError: ⚠️ 21 bare AssertionError throws across 3 conformance.core.* files; zero ETSAssert calls (GAP-1)."
+      - "Sprint 2 deferral discipline (HTTP capture, auth masking, Kaizen, JaCoCo): four PARTIALs flagged by Dana. Verified: (a) no openapi-parser usage in Sprint 1 (ResourceShapeTests fetches the api-def link but does not parse it as OpenAPI — design.md SK1 narrowing); (b) no auth-masking present (CONCERN-3); (c) no JaCoCo coverage; (d) no full HTTP capture beyond REST Assured's default. All four are defensible-by-deferral per design.md."
+    findings: "Sprint 2 deferrals are honest. The GH#3 sentinel and api-def fallback are CORRECT in their assertion logic (the very specific risks that this review was charged to verify). The 21-bare-throws issue (GAP-1) is the most material new gap; it is structurally a deviation from the architect's must-constraint, even though every failure message embeds the /req/* URI."
+
+verified_independently:
+  - "Fresh git clone /tmp/raze-fresh-checkout-s02 from github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10 (HEAD ea2c91fedd80ec398db72cb4ff7eda4734e2429a) — separate worktree from any Quinn run."
+  - "Three consecutive `mvn clean install -DskipTests -B -q` invocations + one user-worktree rebuild. All four produced sha256 b1ffdc8eeed0dd777af243e0c77812391c60468c17979405dca320de9d20f680 on target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT.jar."
+  - "mvn test (full surefire suite): 22 tests / 0 failures / 0 errors / 3 skipped (matches the 22/0/0/3 surefire count claimed by Dana exactly; the 3 skipped are honest archetype carryovers — VerifyURIUtils HTTP-network tests + VerifyTestNGController.doTestRun)."
+  - "mvn spring-javaformat:validate: passes silently (no format violations)."
+  - "diff -r csapi_compliance/schemas/ ets-ogcapi-connectedsystems10/src/main/resources/schemas/: returns no output (byte-identical schema bundle preserved across S-ETS-01-01 → S-ETS-01-02)."
+  - "unzip -p target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT.jar META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController: returns the literal line `org.opengis.cite.ogcapiconnectedsystems10.TestNGController` (no whitespace, no extension)."
+  - "unzip -l target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT-aio.jar | grep conformance/core: confirms LandingPageTests.class (9064B), ConformanceTests.class (7478B), ResourceShapeTests.class (7444B) all in AIO jar."
+  - "Smoke artifact verification: ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml: `total=12 passed=12 failed=0 skipped=0`, all 12 @Test method names cross-check against source file `public void` method declarations. Suite finished at 2026-04-28T12:50:42 EDT, duration 1692ms."
+  - "Stale-string scan: `grep -rn 'connectedsystems-1\\b\\|ogcapi\\.cs10\\|ets-common:14\\|teamengine-production:5\\.5\\b' --include='*.xml' --include='*.java' --include='*.adoc' --include='*.md' --include='*.yml'` — only matches are the canonical OGC URI form `ogcapi-connectedsystems-1/1.0/conf/core` in ConformanceTests.java:46 (legitimate; this is the actual OGC standard URI, not a Pat coordinate)."
+  - "Part 2 leakage scan: `grep -rn 'OGC[ -]?23-?002\\|connectedsystems-?2\\|Datastream\\|ControlStream\\|swecommon\\|feasibility' --include='*.java' --include='*.xml' --include='*.properties' --include='*.adoc'` (excluding bundled schemas/) — zero hits in production Java code."
+  - "EtsAssert vs bare AssertionError: `grep -c 'throw new AssertionError' src/main/java/.../conformance/core/*.java` returns ConformanceTests=6, LandingPageTests=8, ResourceShapeTests=7, total 21. `grep -c 'EtsAssert\\|ETSAssert' src/main/java/.../conformance/core/*.java` returns zero."
+  - "Layout refactor: `ls src/main/java/org/opengis/cite/ogcapiconnectedsystems10/level1/` returns 'No such file or directory'. Listener subpackage has 4 files with correct `package` decls. Conformance/core subpackage has 3 files with correct `package` decls."
+  - "v1.0 GH#3 sentinel verification (LandingPageTests:209): assertion `if (!(selfPresent || selfAbsent)) throw AssertionError` always passes (selfPresent || !selfPresent ≡ true). Sentinel correctly implements the 'both states PASS' semantic; trip-wire docstring at line 198-204 warns against regression."
+  - "v1.0 API-def fallback verification (LandingPageTests:179): logic `rels.contains(\"service-desc\") || rels.contains(\"service-doc\")` — boolean OR with FAIL-when-both-absent — matches SCENARIO-API-DEF-FALLBACK-001 exactly."
+  - "Smoke artifact credential leak: `grep -ic 'authorization\\|bearer\\|api-key\\|password\\|secret' ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.xml` returns 0. No auth headers logged (Sprint 1 unauthenticated against open GeoRobotix API)."
+  - "URI fidelity cross-walk: extracted 6 v1.0 TS Common URIs and 3 v1.0 TS CS-Core URIs; extracted 5 distinct Java URIs; documented 3-form drift (TS slug vs OGC canonical vs Java's `/req/core/...`) per GAP-2 evidence."
+  - "csapi_compliance/ops/known-issues.md inspection: confirmed v1.0 Content-Type tolerance fix is 'Attempt JSON parsing first, log warning about non-standard Content-Type instead of aborting'; Java port matches structurally."
+
+recommendation_next_step:
+  - GAPS_FIXED-then-close-sprint
+  - rationale: |
+      All three GAPs are tractable:
+      (1) GAP-1 (EtsAssert): same-turn fix possible (~150 LOC across 3 files + 4 helper
+          methods on ETSAssert) OR defensible defer-to-Sprint-2 with a tagged story.
+          Either is honest; the failure-message URI traceability (the *intent* of the
+          architect's constraint) is already achieved.
+      (2) GAP-2 (URI form drift): Sam-level reconciliation of csapi_compliance/openspec/
+          capabilities/ets-ogcapi-connectedsystems/spec.md REQ-ETS-CORE-002 to use
+          `/req/landing-page/root-success` per the v1.0 known-issues catalog finding,
+          plus a follow-up to update the Java string constants. The `/req/core/...` form
+          Dana used faithfully reflects the spec; the spec is wrong upstream of Sprint 1.
+      (3) GAP-3 (oas-impl URI from wrong spec): same-turn 5-LOC fix in
+          ResourceShapeTests.java to swap REQ_OAS30_OAS_IMPL → REQ_API_DEFINITION_SUCCESS.
+
+      Plus three concerns: CONCERN-1 (stale-artifact sha256) is a one-line text correction;
+      CONCERN-2 (spec.md S-ETS-01-02 reconcile) is a sprint-close procedural step;
+      CONCERN-3 (logback.xml + masking) is Sprint-2 scope.
+
+      The substantive engineering — layout refactor, GH#3 sentinel, api-def fallback,
+      Content-Type tolerance, smoke 12/12 PASS, reproducibility, no-Part-2 leakage — is
+      all solid. GAPS_FOUND is a procedural verdict, not a technical-quality verdict.
+
+sub_agent_notes: |
+  Coordination note for orchestrator: Quinn (Gate 3.5 Evaluator) ran in parallel against the
+  same artifacts. Raze did not read Quinn's report and did not coordinate verdicts — by
+  design per Raze role. If Quinn arrives at APPROVE while Raze is GAPS_FOUND, Raze
+  overrides per agent role. If Quinn independently catches GAP-1/GAP-2/GAP-3, that is
+  corroboration, not conflict.
+
+  Consistency-with-prior-review note: GAP-1 (EtsAssert deviation) is NEW for S-ETS-01-02
+  because the prior review (S-ETS-01-01) had no test code yet to evaluate the constraint
+  against. CONCERN-1 (stale-artifact sha256) is the SAME pattern Raze caught in
+  S-ETS-01-01 GAP-1 (`5021b1d3...` was provably wrong); Dana's procedural workflow has not
+  yet incorporated `mvn clean install` BEFORE `sha256sum target/*.jar`, so this class of
+  reporting error recurs. Recommend adding a procedural reminder to Dana's prompt or the
+  generator-handoff template: "Always `rm -rf target && mvn clean install -DskipTests`
+  immediately before `sha256sum target/*.jar`, never trust a pre-existing target/ directory."
+
+  GAP-2 + GAP-3 (URI form issues) are upstream of Sprint 1 — they originate in spec.md
+  text that predates the Java port. Same-turn fix possible at the spec level but more
+  invasive than Sprint 1 scope; deferral to a Sam reconciliation cycle is defensible.
+
+  CLAUDE.md compliance: Steps 1-5 fully observed for S-ETS-01-02. Steps 6-8 pending
+  sprint close-out (matches the same pattern as S-ETS-01-01's pending-close state, which
+  was reconciled same-turn). Recommend the orchestrator's reconcile pass close all three
+  in one motion at sprint end.
+
+  Time/token budget: Raze ran ~30 minutes wall-clock. Surface area was larger than
+  S-ETS-01-01 (3 new test files + layout refactor + 6 new commits), but the adversarial
+  check space was still tractable because each @Test method is small and the assertions
+  are auditable line-by-line.
+
+  All Raze verification ran read-only: no commits, no pushes, no edits to either repository
+  beyond writing this YAML report into csapi_compliance/.harness/evaluations/.
+
+severity_summary:
+  blockers: 0          # nothing rises to REJECT — engineering is sound, smoke 12/12 PASS, reproducibility GENUINE, GH#3 sentinel + API-def fallback both correct
+  gaps: 3              # GAP-1 (21 bare-throws vs EtsAssert), GAP-2 (URI form drift), GAP-3 (oas-impl URI from wrong spec)
+  concerns: 3          # CONCERN-1 (stale-artifact sha256, recurring pattern), CONCERN-2 (spec.md reconcile pending), CONCERN-3 (logback.xml + masking, Sprint-2 scope)

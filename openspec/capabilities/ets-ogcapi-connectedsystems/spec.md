@@ -343,23 +343,40 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - Live container loading test (REQ-ETS-TEAMENGINE-001/003) → S-ETS-01-03.
 - CTL wrapper at `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl` from archetype.
 
+**Sub-deliverable 3 — CS API Core conformance class** (REQ-ETS-CORE-001..004, Implemented S-ETS-01-02):
+- REQ-ETS-CORE-001: TestNG suite-fixture plumbing live in `CommonFixture` + `listener.SuiteFixtureListener` (commit `b6a9c12` in new repo). REST-Assured request/response capture wired via `getRequest()`/`getResponse()`; IUT URL stash via SuiteAttribute enum.
+- REQ-ETS-CORE-002: `LandingPageTests` (`conformance.core.LandingPageTests` in new repo, commit `990c850`) — 6 @Test methods. **v1.0 GH#3 fix preserved** via sentinel @Test `landingPageDoesNotRequireSelfRel` (LandingPageTests:204, asserts both presence and absence of `rel=self` are PASS — Raze independently verified the assertion logic). **API-definition fallback preserved** via `landingPageHasApiDefinitionLink` (LandingPageTests:179, PASSES on `service-desc` OR `service-doc`, FAILS only when both absent — Raze verified). All 6 PASS against GeoRobotix.
+- REQ-ETS-CORE-003: `ConformanceTests` (commit `ea59436`) — 4 @Test methods asserting GET /conformance HTTP 200 + JSON + non-empty `conformsTo` array + explicit declaration of `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/core`. All 4 PASS against GeoRobotix.
+- REQ-ETS-CORE-004: `ResourceShapeTests` Sprint-1-minimal (commit `b249aa1` + URI fix `1fdfe07`) — 2 @Test methods: api-definition link resolves to non-empty content + /conformance body shape is JSON object. Full id/type/links crawl deferred to Sprint 2 per design.md "single representative resource" pattern. **Note**: a copy-paste URI typo (`ogcapi-common-2/0.0/req/oas30/oas-impl` — Common Part 2, OGC 20-024) caught by Raze GAP-3 was corrected to `ogcapi-common-1/1.0/req/oas30/oas-impl` (Common Part 1, OGC 19-072 — the standard Sprint 1 actually targets) in commit `1fdfe07`.
+
+**Sub-deliverable 5 — TeamEngine Integration plumbing** (REQ-ETS-TEAMENGINE-001 partial — SPI registration only):
+- META-INF/services SPI registration file at exactly the right path with single-line FQCN `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`. Verified by Quinn via `unzip -p target/...jar` showing exactly 58 bytes / no whitespace / no extension.
+- Live container loading test (REQ-ETS-TEAMENGINE-001/003) → S-ETS-01-03.
+- CTL wrapper at `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl` from archetype.
+
 **Sub-deliverable 8 — Web-App Freeze**: REQ-ETS-WEBAPP-FREEZE-001 ✅ closed (commit `44c279e`, tag `v1.0-frozen` at `ab53658`). README.adoc reverse cross-link in new repo closes ADR-005 "both directions" requirement.
 
 ### Deviations from Spec
 - **Java root package, artifactId, ets-code, CTL filename, ets-common version, TeamEngine version**: spec text was reconciled to ADR-003/ADR-004/ADR-001 authority on 2026-04-28T14:42Z (commit `19003b1`). Spec now matches what Generator implemented.
-- **Layout PARTIAL**: archetype-flat retained for Sprint 1 instead of features10 java17Tomcat10TeamEngine6 subpackage refactor. Will close in S-ETS-01-02.
+- **Layout refactor closed in S-ETS-01-02**: archetype-flat layout retained through S-ETS-01-01; refactored to `conformance.core.*` + `listener.*` subpackages in S-ETS-01-02 commit `2dc4414`. Closes Quinn+Raze CONCERN-3 from S-ETS-01-01 gate close.
 - **Kaizen openapi-parser declared but not consumed in Sprint 1**: per architect-handoff `surfaced_risks_pat_missed.OPENAPI-PARSER-NOT-USED-IN-SPRINT-1`, Sprint 1 Core uses everit-json-schema (transitive via ets-common:17) directly. Kaizen is on the dep list for Sprint 2+ when richer Part 1 classes need OpenAPI-driven validation.
-- **GitHub Actions workflow staged at `ci/github-workflows-build.yml` not `.github/workflows/build.yml`**: gh OAuth token at commit time lacked `workflow` scope. One-line fix: `gh auth refresh -s workflow` then `git mv`. Tracked as Raze CONCERN-2.
+- **GitHub Actions workflow staged at `ci/github-workflows-build.yml` not `.github/workflows/build.yml`**: gh OAuth token at commit time lacked `workflow` scope. One-line fix: `gh auth refresh -s workflow` then `git mv`. Tracked as Raze CONCERN-2 (S-ETS-01-01 + S-ETS-01-02).
+- **Bare `throw new AssertionError(...)` instead of `EtsAssert` helper** (architect-handoff `must` constraint #9): 21 call sites across the 3 Core test classes use bare `throw new AssertionError(URI + " — message")` rather than an `EtsAssert.failWithUri(...)` helper. **Intent met** (every FAIL message includes the canonical `/req/*` URI as required); **form violated** (no helper used). The existing `ETSAssert.java` is XML/Schematron-only and Dana didn't extend it. Tracked as Quinn GAP-1 / Raze GAP-1 (both s02). **Sprint 2 cleanup**: extend `ETSAssert` with a `failWithUri(String message, String uri)` overload and refactor the 21 call sites mechanically.
+- **URI form drift between v1.0 TS, Java port, and OGC canonical** (Quinn GAP-2 / Raze GAP-2 in s02 reports): Java cites `/req/core/root-success`; v1.0 TS uses `/req/ogcapi-common/landing-page`; OGC's normative .adoc canonical (verified by Raze upstream-fetch 2026-04-17) is `/req/landing-page/root-success`. Three different forms all citing the same correct normative text, but a CITE SC reviewer dereferencing the @Test description URIs against the OGC normative document will get a 404. **Source is upstream of S-ETS-01-02** (spec.md text already used the `/req/core/<X>-success` form when Dana implemented). **Sprint 2 cleanup**: amend spec.md + traceability.md + Java @Test descriptions to the OGC canonical `.adoc` URI form; ~30-40 sites across both repos.
 
 ### Deferred
-- REQ-ETS-CORE-001..004 (CS API Core conformance class — LandingPageTests, ConformanceTests, ResourceShapeTests) → S-ETS-01-02.
-- REQ-ETS-TEAMENGINE-002..005 (Dockerfile, docker-compose, smoke-test.sh, container-load verification) → S-ETS-01-03.
+- REQ-ETS-TEAMENGINE-002..005 (Dockerfile, docker-compose, smoke-test.sh, container-load verification) → S-ETS-01-03 (final Sprint 1 story).
 - REQ-ETS-PART1-001..013 (per-class detail beyond Core) — drafted as placeholders; per-assertion FRs and SCENARIOs to be expanded in sprints 2..N.
 - REQ-ETS-PART2-001..014 (Part 2) — explicitly deferred per user gate 2026-04-27 ("Part 1 first, Part 2 follows").
 - REQ-ETS-FIXTURES-001..003 (spec-trap port from `csapi_compliance/tests/fixtures/spec-traps/`) → epic-ets-06 parallel sprint after Sprint 1 closes.
 - REQ-ETS-CITE-001..003 — calendar-bound, not sprint-bound. Beta milestone gates these.
 - REQ-ETS-SYNC-001 — CI script work, expected after Part 1 is feature-complete enough to make the diff meaningful.
+- HTTP request/response capture (full REST Assured logging-filter pattern) → Sprint 2.
+- Auth credential masking + `logback.xml` (architect-handoff `should` #3 — never log Authorization/X-API-Key) → Sprint 2 (no auth path exercised in Sprint 1; GeoRobotix is open).
+- JaCoCo ≥80% coverage instrumentation → Sprint 2.
 
 ### Gate verdicts (audit trail)
-- **Gate 3.5 (Quinn / Evaluator)**: APPROVE_WITH_GAPS confidence 0.88. Report at `.harness/evaluations/sprint-ets-01-evaluator.yaml`. 3 gaps + 4 concerns — all gaps closed same-turn 2026-04-28T16:30Z.
-- **Gate 4 (Raze / Adversarial)**: GAPS_FOUND confidence 0.84. Report at `.harness/evaluations/sprint-ets-01-adversarial.yaml`. 3 gaps + 3 concerns — same 3 gaps Quinn caught (cross-corroborating); GAP-1 (wrong sha256 propagated to ops/status.md), GAP-2 (pom.xml SHA pin missing), GAP-3 (this section). All closed same-turn.
+- **Gate 3.5 (Quinn / Evaluator) for S-ETS-01-01**: APPROVE_WITH_GAPS confidence 0.88. Report at `.harness/evaluations/sprint-ets-01-evaluator.yaml`. 3 gaps + 4 concerns — all gaps closed same-turn 2026-04-28T16:30Z.
+- **Gate 4 (Raze / Adversarial) for S-ETS-01-01**: GAPS_FOUND confidence 0.84. Report at `.harness/evaluations/sprint-ets-01-adversarial.yaml`. 3 gaps + 3 concerns — same 3 gaps Quinn caught (cross-corroborating). All closed same-turn.
+- **Gate 3.5 (Quinn / Evaluator) for S-ETS-01-02**: APPROVE_WITH_GAPS confidence 0.85. Report at `.harness/evaluations/sprint-ets-01-evaluator-s02.yaml`. 3 gaps + 4 concerns. GAP-3 (spec.md reconcile pending) closed by this commit; GAP-1 (EtsAssert) + GAP-2 (URI form drift) deferred to Sprint 2 cleanup with explicit notes above.
+- **Gate 4 (Raze / Adversarial) for S-ETS-01-02**: GAPS_FOUND confidence 0.82. Report at `.harness/evaluations/sprint-ets-01-adversarial-s02.yaml`. 3 gaps + 3 concerns — same 3 gaps Quinn caught (cross-corroborating, 2nd consecutive sprint). GAP-3 (Common Part 2 → Part 1 URI typo in `ResourceShapeTests`) closed by new repo commit `1fdfe07`. CONCERN-1 (Dana's reported sha256 `c4a80294...` was at HEAD `b249aa1`; canonical Sprint-1-close hash at `ea2c91f` is `b1ffdc8eee...` per Raze independent verification — buildnumber-maven-plugin embeds commit SHA in manifest, so per-commit hash variance is expected metadata-only) — narrative clarified in ops/status.md and ops/changelog.md this turn. CONCERN-3 (logback.xml + CredentialMaskingFilter) Sprint 2 scope.
