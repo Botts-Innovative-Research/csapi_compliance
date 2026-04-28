@@ -526,7 +526,7 @@ Register the filter in `SuiteFixtureListener.onStart()` alongside the existing R
 </configuration>
 ```
 
-The CredentialMaskingFilter does the actual masking BEFORE the request/response reaches the logger. Logback's pattern intentionally does NOT include `%X{*}` MDC dump — defense-in-depth in case any future code path bypasses the filter.
+**Implementation reality** (reconciled 2026-04-28T22:50Z post-Raze CONCERN-1 on Sprint 2 cleanup gate): the `CredentialMaskingFilter` does NOT mutate the outgoing REST-Assured request/response payloads (mutating Authorization headers in-flight would break authenticated IUT calls). Instead, it observes via REST-Assured's `Filter` SPI and emits a **parallel FINE-level masked log entry** alongside REST-Assured's built-in `RequestLoggingFilter` output. The filter's masking applies only to the parallel log entry; REST-Assured's own request/response logger (if attached) emits unmasked headers as a side effect. **Defense-in-depth**: logback's pattern intentionally omits `%X{*}` MDC dump, and the architect's `should` constraint #3 directs operators to attach the masking filter, NOT REST-Assured's `RequestLoggingFilter`, in any production-like configuration. **Sprint 3 hardening**: wrap or replace REST-Assured's `RequestLoggingFilter` with a masking variant so the unmasked side channel is closed; until then, the integration test (synthetic-credential smoke + zero-leak grep) is deferred and the logback pattern is the primary leak-prevention layer.
 
 #### Unit + integration test rules (per S-ETS-02-04 acceptance criteria)
 
