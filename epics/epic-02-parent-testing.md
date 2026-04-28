@@ -1,6 +1,6 @@
 # Epic 02: Parent Standard Conformance Testing
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. Superseded by `epic-ets-02-part1-classes` (Common + parent-standard logic ports as part of CS API Core suite). | Last updated: 2026-04-27
 
 ## Goal
 Implement conformance tests for the two parent standards that CS API Part 1 builds upon: OGC API Common Part 1 and OGC API Features Part 1 Core. These tests must pass before any CS API-specific tests can execute.

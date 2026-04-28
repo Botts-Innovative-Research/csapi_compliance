@@ -1,6 +1,6 @@
 # Epic 06: Result Reporting & Dashboard
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. TestNG/EARL HTML report rendering in TeamEngine supersedes. | Last updated: 2026-04-27
 
 ## Goal
 Present conformance assessment results in a structured, navigable dashboard with summary statistics, per-class breakdowns, per-test details with request/response links, and an explicit unofficial status disclaimer.

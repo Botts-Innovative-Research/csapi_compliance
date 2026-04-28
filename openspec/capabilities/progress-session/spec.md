@@ -1,6 +1,8 @@
 # Progress & Session Management — Specification
 
-> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16T18:55Z (SESS-LAND-001..006 reconciled to two-step Discover-then-Configure-then-Start flow per Task 1 Playwright run)
+> Version: 1.0 | Status: Frozen — v1.0 web app, superseded by ets-ogcapi-connectedsystems | Last updated: 2026-04-27
+>
+> **Frozen 2026-04-27.** TeamEngine owns session lifecycle in the new ETS; see `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`.
 
 ## Purpose
 

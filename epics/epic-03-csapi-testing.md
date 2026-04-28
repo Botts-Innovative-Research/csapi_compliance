@@ -1,6 +1,6 @@
 # Epic 03: CS API Part 1 Conformance Testing
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. Superseded by `epic-ets-02-part1-classes` (Java/TestNG port). | Last updated: 2026-04-27
 
 ## Goal
 Implement conformance tests for all 13 CS API Part 1 conformance classes defined in OGC 23-001, covering resource types (systems, deployments, procedures, sampling features, properties), hierarchical associations (subsystems, subdeployments), query filtering, write operations (CRUD, update), and encoding formats (GeoJSON, SensorML JSON).

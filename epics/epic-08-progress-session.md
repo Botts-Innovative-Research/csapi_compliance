@@ -1,6 +1,6 @@
 # Epic 08: Progress & Session Management
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. TeamEngine owns session management in the new ETS. | Last updated: 2026-04-27
 
 ## Goal
 Provide real-time progress visibility during assessment execution, allow graceful cancellation, persist results for 24-hour retrieval via unique URLs, and offer a simple login-free landing page as the application entry point.

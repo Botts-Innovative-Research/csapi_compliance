@@ -1,6 +1,6 @@
 # Epic 04: Test Engine Infrastructure
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. Superseded by TestNG + REST Assured + ets-common in `epic-ets-01-scaffold` and `epic-ets-04-teamengine-integration`. | Last updated: 2026-04-27
 
 ## Goal
 Build the core test engine that all conformance tests execute within. This includes test-to-requirement traceability, three-state result production, JSON schema validation, conformance class dependency ordering with cascade skip, pagination traversal, timeout enforcement, and graceful error handling.

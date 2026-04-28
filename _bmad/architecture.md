@@ -1,1059 +1,312 @@
-# Architecture — CS API Compliance Assessor
+# Architecture — OGC API Connected Systems ETS (TeamEngine)
 
-> Version: 1.0 | Status: Living Document | Last updated: 2026-03-31
-> **Last Reconciled: 2026-03-31** — Review required if >30 days stale
+> Version: 2.0 | Status: Living Document | Last reconciled: 2026-04-27
+> **Supersedes v1.0** (preserved verbatim at `_bmad/architecture-v1-frozen.md`).
+> v1.0 was web-app-shaped (Next.js + Node + browser UI). v2.0 reflects the user pivot
+> 2026-04-27 to a Java/TestNG Executable Test Suite for OGC TeamEngine.
+>
+> **Authority**: this document binds the Generator (Dana). Where the PRD or capability spec
+> conflicts with an ADR or with this file's section, the ADR is authoritative for the decision
+> in question and Sam (orchestrator) reconciles back to the PRD/spec at the next planning cycle.
 
 ---
 
-## 1. System Context
+## 1. Overview
+
+The deliverable is **`ets-ogcapi-connectedsystems10`** — a Java 17 / Maven 3.9 / TestNG / REST Assured Executable Test Suite that registers with OGC TeamEngine 5.6.x (and forward-compatibly with 6.0.0) via the `com.occamlab.te.spi.jaxrs.TestSuiteController` SPI. An OGC API – Connected Systems server implementer points TeamEngine at their landing page; TeamEngine invokes our suite, our suite issues HTTP requests against the IUT via REST Assured, validates responses against the bundled OGC JSON Schemas, and produces a TestNG XML report TeamEngine renders for the user. Coverage targets: OGC 23-001 Part 1 (14 conformance classes, Sprint 1 lands Core; sprints 2-N land the other 13) and OGC 23-002 Part 2 (14 conformance classes, deferred per user gate).
+
+This is **not a web application**. It has no browser UI, no REST endpoints we author, no session storage we own. TeamEngine owns the user-facing surface; we provide a jar that TeamEngine loads.
+
+## 2. Deployment topology
+
+The same jar runs in three contexts:
 
 ```
- +-------------------+         +---------------------------+
- |                   |  HTTPS  |                           |
- |   Browser User    +-------->+  CS API Compliance        |
- |  (Implementer,    |<--------+  Assessor                 |
- |   Integrator,     |  HTML/  |                           |
- |   QA Engineer)    |  SSE/   |  +---------------------+  |
- |                   |  JSON   |  | Next.js Frontend    |  |
- +-------------------+         |  | (SPA + SSR shell)   |  |
-                               |  +----------+----------+  |
-                               |             |              |
-                               |         REST/SSE           |
-                               |             |              |
-                               |  +----------v----------+  |
-                               |  | Node.js Backend     |  |
-                               |  | (Test Engine + API)  |  |
-                               |  +----------+----------+  |
-                               |             |              |
-                               +-------------|-------------+
-                                             |
-                                     HTTP/HTTPS requests
-                                             |
-                               +-------------v--------------+
-                               |  Implementation Under Test  |
-                               |  (CS API Server Endpoint)   |
-                               |  e.g. api.georobotix.io     |
-                               +-----------------------------+
-
-                               +-----------------------------+
-                               |  OGC GitHub Repository      |
-                               |  (OpenAPI definitions,      |
-                               |   JSON Schemas — bundled    |
-                               |   at build time)            |
-                               +-----------------------------+
++-----------------------------+   +--------------------------------+   +---------------------------------+
+|  Developer laptop           |   |  Our CI (GitHub Actions)        |   |  OGC validator (production)     |
+|                             |   |                                  |   |                                 |
+|  mvn clean install          |   |  - mvn -B verify                 |   |  cite.opengeospatial.org/       |
+|  mvn -P run-test (TestNG    |   |  - reproducible-build double-    |   |    teamengine/                  |
+|    direct against IUT)      |   |    diff job                      |   |  Runs ets-common parent's       |
+|  docker compose up          |   |  - smoke-test.sh inside Docker   |   |    teamengine-production:5.6.1  |
+|    (spins TeamEngine + jar) |   |    against api.georobotix.io     |   |  Loads ETS via Maven Central     |
+|                             |   |  - artifact: TestNG report XML   |   |    artifact (post-beta)         |
++-----------------------------+   +--------------------------------+   +---------------------------------+
+       |                                  |                                       |
+       |                                  |                                       |
+       +----------- same target/ets-ogcapi-connectedsystems10-<version>.jar ------+
 ```
 
-### External Actors & Systems
+**Local (developer)**:
+- `mvn clean install` produces `target/ets-ogcapi-connectedsystems10-<version>.jar` and `target/ets-ogcapi-connectedsystems10-<version>-aio.jar` (the all-in-one assembly).
+- `docker compose up` (Sprint 1 deliverable, REQ-ETS-TEAMENGINE-004) launches `ogccite/teamengine-production:5.6.1` with our jar mounted into `/usr/local/tomcat/webapps/teamengine/WEB-INF/lib/`. TeamEngine discovers our suite via `META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController` (ADR-001).
+- Developer browses `http://localhost:8081/teamengine/` and runs the Connected Systems suite from the CTL UI.
 
-| Actor / System | Role | Interface |
+**Our CI (GitHub Actions)**:
+- Build job: `mvn -B clean verify` on JDK 17. Matrix: ubuntu-latest, macos-latest, windows-latest (NFR-ETS-06).
+- Reproducible-build job: builds the same commit twice, diffs `target/*.jar` excluding META-INF timestamps. Empty diff is the pass condition (NFR-ETS-01, SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001).
+- Smoke-test job: `scripts/smoke-test.sh` builds the Docker image, launches TeamEngine + ETS, runs the Core suite against `https://api.georobotix.io/ogc/t18/api`, archives the TestNG XML report (SCENARIO-ETS-CORE-SMOKE-001).
+- Jenkinsfile is checked in but not wired to a live Jenkins (planner-handoff resolved-question CI-CD-TOPOLOGY).
+
+**OGC validator (production)** — post-beta milestone only:
+- `cite.opengeospatial.org/teamengine/` runs the OGC's `teamengine-production` Docker image. Once we publish to Maven Central (REQ-ETS-CITE-001), the OGC's `teamengine-production/pom.xml` adds `<ets-ogcapi-connectedsystems10.version>` and our jar is included in the next image rebuild.
+- We do not control the cadence of the OGC's image rebuilds; that is governance velocity (Mary's `TIMELINE-DOMINATED-BY-GOVERNANCE` flag).
+
+## 3. Component model
+
+```
++---------------------------------------------------------------------------------+
+|  TeamEngine 5.6.x (Tomcat web app, Java 11+)                                    |
+|                                                                                 |
+|  +-----------------------------+      +-------------------------------+         |
+|  | CTL UI (Saxon XSLT)         |----->| TestSuiteController SPI       |         |
+|  | renders form from           |      | (Java ServiceLoader scan of   |         |
+|  | ogcapi-connectedsystems10-  |      |  META-INF/services/)          |         |
+|  | suite.ctl                   |      +---------------+---------------+         |
+|  +-----------------------------+                      |                          |
+|                                                       v                          |
++-------------------------------------------------------|--------------------------+
+                                                        |
+                                                        | classloads
+                                                        v
++---------------------------------------------------------------------------------+
+|  ets-ogcapi-connectedsystems10.jar                                              |
+|                                                                                 |
+|  +------------------------------------------------------------+                 |
+|  |  org.opengis.cite.ogcapiconnectedsystems10.TestNGController|                 |
+|  |  (impl com.occamlab.te.spi.jaxrs.TestSuiteController)      |                 |
+|  |  - getCode(), getVersion(), getTitle()                     |                 |
+|  |  - doTestRun(Document) → delegates to TestNGExecutor       |                 |
+|  +-----------+--------------------------------+---------------+                 |
+|              |                                |                                 |
+|              v                                v                                 |
+|  +-----------+-------+        +---------------+-----------------+               |
+|  | testng.xml        |        | ets.properties (ets-code, etc.)|               |
+|  | (suite descriptor;|        +---------------------------------+               |
+|  | tests + listeners)|                                                          |
+|  +-----------+-------+                                                          |
+|              |                                                                  |
+|              v                                                                  |
+|  +-----------+-----------------------------------------------+                  |
+|  |  conformance.core.* (TestNG @Test classes; Sprint 1)      |                  |
+|  |  - LandingPageTests       (REQ-ETS-CORE-002)              |                  |
+|  |  - ConformanceTests       (REQ-ETS-CORE-003)              |                  |
+|  |  - ResourceShapeTests     (REQ-ETS-CORE-004)              |                  |
+|  |                                                            |                  |
+|  |  conformance.<class>.* (sprints 2..14; placeholders)      |                  |
+|  |  - SystemFeaturesTests, SubsystemsTests, ... (one per     |                  |
+|  |    Part 1 conformance class beyond Core)                  |                  |
+|  +--------------------------+--------------------------------+                  |
+|                             |                                                   |
+|                             v                                                   |
+|  +-------------+   +--------+--------+   +------------------+   +------------+ |
+|  | RestAssured |   | OpenAPI/Schema  |   | SuiteFixture     |   | Listener   | |
+|  | (HTTP DSL,  |   | Validator       |   | Listener         |   | + report   | |
+|  | response    |   | (Kaizen openapi-|   | (@BeforeSuite —  |   | hooks      | |
+|  | capture)    |   | parser + JSON   |   | landing/conform; |   |            | |
+|  |             |   | Schema)         |   | shares state via |   |            | |
+|  |             |   |                 |   | ITestContext)    |   |            | |
+|  +------+------+   +--------+--------+   +--------+---------+   +------------+ |
+|         |                   |                     |                              |
+|         |                   v                     v                              |
+|         |     +-------------+--------+    +-------+----------+                  |
+|         |     | src/main/resources/  |    | EtsAssert        |                  |
+|         |     |  schemas/ (126 OGC   |    | (fluent          |                  |
+|         |     |  JSON Schemas        |    | assertion utils, |                  |
+|         |     |  copied from         |    | structured       |                  |
+|         |     |  csapi_compliance)   |    | failure msgs     |                  |
+|         |     +----------------------+    | with /req/*      |                  |
+|         |                                 | URIs)            |                  |
+|         |                                 +------------------+                  |
+|         v                                                                       |
++---------|---------------------------------------------------------------------+
+          |
+          | HTTP/HTTPS (auth headers per user input)
+          v
+   +-------------------------+
+   | IUT — CS API server     |
+   | e.g. api.georobotix.io  |
+   +-------------------------+
+```
+
+### Component responsibilities
+
+| Component | FQCN / location | Responsibility |
 |---|---|---|
-| Browser User | Submits endpoint URL, configures assessment, reviews results, exports reports | HTTPS (HTML, JSON, SSE) |
-| Implementation Under Test (IUT) | The CS API server endpoint being assessed | HTTP/HTTPS (GET, POST, PUT, PATCH, DELETE) |
-| OGC GitHub Repository | Source of OpenAPI definitions and JSON schemas for CS API Part 1 and parent standards | Build-time fetch; schemas bundled into the application image |
+| **TestNGController** | `org.opengis.cite.ogcapiconnectedsystems10.TestNGController` | TeamEngine SPI entry point. Implements `TestSuiteController`. Delegates execution to `TestNGExecutor` (from `teamengine-spi`). 1:1 port of `ets-ogcapi-features10`'s controller (ADR-001). |
+| **testng.xml** | `src/main/resources/org/opengis/cite/ogcapiconnectedsystems10/testng.xml` | TestNG suite descriptor. Declares `<test name="Core">` with `<package>` entries for `conformance.core.*` plus listener block. Sprint 1 ships Core only; `<test>` blocks for sprints 2-N. |
+| **SuitePreconditions** | `org.opengis.cite.ogcapiconnectedsystems10.conformance.SuitePreconditions` | TestNG class run first via `<classes>` in testng.xml. Validates `iut` parameter is present and reachable. Pattern from features10. |
+| **SuiteFixtureListener** | `org.opengis.cite.ogcapiconnectedsystems10.listener.SuiteFixtureListener` | Implements `ISuiteListener.onStart`. Performs landing-page fetch + `/conformance` fetch, stashes results into `ISuite.getAttribute()` so all suites can read declared conformance classes. Equivalent of v1.0's two-step discovery flow. |
+| **TestRunListener / TestFailureListener / LoggingTestListener** | `org.opengis.cite.ogcapiconnectedsystems10.listener.*` | Standard ets-common pattern; mirror features10 listener set verbatim in Sprint 1 (minimal logging) and refine in Sprint 2. |
+| **CoreTests (multiple classes)** | `conformance.core.LandingPageTests`, `ConformanceTests`, `ResourceShapeTests` | Sprint 1 P0. Each `@Test` method's `description` attribute starts with the OGC requirement URI (e.g. `OGC-23-001 /req/core/landing-page`) per REQ-ETS-CORE-001. |
+| **OpenApi3Loader** | `conformance.openapi3.OpenApi3Loader` | Sprint 2+ helper that loads the OGC OpenAPI YAML via Kaizen `openapi-parser`. Sprint 1's Core class does not need this — Core asserts response shape via `everit-json-schema` (transitive from ets-common) against the bundled JSON Schemas at `src/main/resources/schemas/connected-systems-1/landing-page.json` etc. |
+| **EtsAssert** | `org.opengis.cite.ogcapiconnectedsystems10.util.EtsAssert` | Fluent assertion utilities. Wraps Hamcrest matchers + structured failure messages that include the OGC `/req/*` URI. Mirrors `org.opengis.cite.ogcapifeatures10.EtsAssert` pattern. |
+| **Schemas (resource bundle)** | `src/main/resources/schemas/{connected-systems-1, connected-systems-2, connected-systems-shared, external, fallback}/*.json` | 126 JSON Schema files copied verbatim from `csapi_compliance/schemas/` (ADR-002). Loaded at @BeforeSuite into a Kaizen schema registry; used by Schema Validator at @Test time. |
+| **CTL wrapper** | `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl` | XSLT 2.0 CTL package that exposes the suite to TeamEngine's CTL UI. Calls `tng:new($outputDir)` then `tng:doTestRun(...)`. Form fields: `iut-url` (required), `auth-type`, `auth-credential`. |
+| **SPI registration file** | `src/main/resources/META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController` | Single line: `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`. Discovered by TeamEngine's classloader scan (ADR-001). |
+| **ets.properties** | `src/main/resources/org/opengis/cite/ogcapiconnectedsystems10/ets.properties` | Maven-substituted properties: `ets-title`, `ets-version`, `ets-code` (`ogcapi-connectedsystems10`). |
 
----
+## 4. Build & dependencies
 
-## 2. Component Architecture
+Per ADR-004:
 
-### 2.1 Backend Components
+- **JDK**: 17 (mandatory, build fails on older)
+- **Maven**: 3.9+ (enforced by maven-enforcer)
+- **Parent POM**: `org.opengis.cite:ets-common:17` (release tag — NOT 18-SNAPSHOT)
+  - Pulls TeamEngine SPI 5.6.x artifacts via `<dependencyManagement>`
+  - Pulls Jersey 3.1.8, Jackson 2.18.0, JTS 1.19, proj4j 1.1.3, etc.
+- **Direct dependencies** (no `<version>` — versions inherited from ets-common):
+  - `org.opengis.cite.teamengine:teamengine-spi`
+  - `org.testng:testng`
+  - `io.rest-assured:rest-assured`
+  - `com.reprezen.kaizen:openapi-parser`
+  - `org.locationtech.jts:jts-core`, `org.locationtech.proj4j:proj4j`, `org.locationtech.jts.io:jts-io-common`
+  - `org.slf4j:slf4j-api`, `ch.qos.logback:logback-classic` (see §6 Logging)
+- **Build plugins**: maven-compiler-plugin 3.13.0, maven-surefire-plugin 3.5.x, maven-assembly-plugin (AIO jar with `mainClass=...TestNGController`), maven-jar-plugin
+- **Reproducibility**: `<project.build.outputTimestamp>2026-04-27T00:00:00Z</project.build.outputTimestamp>` (ADR-004 group C-5)
+
+`mvn clean install` produces:
+- `target/ets-ogcapi-connectedsystems10-<version>.jar` (thin)
+- `target/ets-ogcapi-connectedsystems10-<version>-aio.jar` (all-in-one with deps; for CLI use)
+- `target/ets-ogcapi-connectedsystems10-<version>-sources.jar` (per OGC convention)
+
+## 5. Test runtime model
+
+A test execution flows through these stages inside TeamEngine:
+
+1. **Suite registration** (TeamEngine startup, ~30 sec — NFR-ETS-04). Tomcat starts → web-app classloader scans `WEB-INF/lib/*.jar` for `META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController` files → instantiates each FQCN found. `TestNGController` constructor loads `ets.properties` and locates `testng.xml` on the classpath. `getCode()` returns `ogcapi-connectedsystems10`; TeamEngine renders the suite in the CTL list.
+2. **CTL form** (user flow). User clicks "Connected Systems API 1.0" → CTL Saxon engine renders the form from `ogcapi-connectedsystems10-suite.ctl` → user enters `iut-url` (CS API landing page) and optional auth → form POST → CTL function calls `tng:new($outputDir)` (constructs `TestNGController`) and `tng:doTestRun($controller, $testRunArgs)`.
+3. **TestNG launch**. `TestNGController.doTestRun(Document testRunArgs)` validates the args, builds a `Map<String,String>` of suite parameters (the `iut` URL is mandatory), and invokes `TestNGExecutor.execute(testRunArgs)`. `TestNGExecutor` (from teamengine-spi) wires up TestNG: parses `testng.xml`, registers listeners, runs.
+4. **@BeforeSuite phase**. `SuiteFixtureListener.onStart(ISuite)` reads the `iut` parameter, fetches the landing page, fetches `/conformance`, stashes both into `ISuite.setAttribute(...)`. `SuitePreconditions` (a TestNG class run first via `<classes>` block in testng.xml) re-validates these are present.
+5. **Per-suite execution** (Sprint 1 = Core only). TestNG runs `<test name="Core">` packages in declared order. For each `@Test` method:
+   - REST Assured constructs the HTTP request from the IUT base URL + relative path
+   - Auth header (if configured) is applied
+   - Request is sent; full request/response captured by REST Assured's `RequestLoggingFilter` and `ResponseLoggingFilter` (these are written into the TestNG report attachment per FR-ETS-25)
+   - Response body validated against the relevant JSON Schema via Kaizen / everit-json-schema
+   - `EtsAssert.assertXxx(...)` produces structured failure messages that include the OGC `/req/*` URI in case of FAIL
+6. **Dependency-skip semantics** (FR-ETS-24, sprints 2+). If Core's `@Test` produces a FAIL, downstream conformance class suites that `dependsOnGroups("core")` (TestNG's native dependency mechanism) auto-skip with reason `dependency /conf/core not satisfied`. Sprint 1's Core suite is dependency-free.
+7. **Report generation**. TestNG's `XmlReporter` writes `target/testng-results.xml`. TeamEngine's executor wraps this into the user-visible HTML report at `/teamengine/results/<run-id>/`.
+
+### Concurrency model
+
+Sprint 1 ships sequential test execution within Core (TestNG default — `parallel="false"`). Concurrency within a class can be enabled via `<test parallel="methods" thread-count="5">` in testng.xml in a future sprint. Across-class ordering uses TestNG `<test>` elements in declared order; cross-class dependency uses `dependsOnGroups`.
+
+## 6. Quality, assertions, and logging
+
+### Assertions
+
+`EtsAssert` wraps Hamcrest matchers and produces failure messages that **always include**:
+- The OGC requirement URI (e.g. `/req/core/landing-page`)
+- The IUT base URL
+- The HTTP request method + path
+- A truncated response excerpt (≤500 chars)
+
+Pattern (ports v1.0's `failureReason` discipline):
+```
+FAIL: /req/core/api-definition — IUT https://api.georobotix.io/ogc/t18/api landing-page
+response had no `service-desc` AND no `service-doc` link relation. At least one is required
+per OGC API Common Part 1 §7.4 (/req/core/api-definition). Excerpt: {"links":[{"rel":"self",...}]}.
+```
+
+### v1.0 fixes preserved (load-bearing)
+
+Two assertion behaviors from v1.0 must port verbatim — the Generator must NOT regress them:
+
+- **`rel=self` is example-only, not mandatory** (v1.0 GH#3 fix; SCENARIO-ETS-CORE-LINKS-NORMATIVE-001). The Core landing-page test must NOT fail when `self` is absent. Cite OGC API Common Part 1 — `self` appears as a sample value, not in a `/req/*` clause.
+- **`service-desc` OR `service-doc` is the API-definition fallback** (v1.0 SCENARIO-API-DEF-FALLBACK-001; SCENARIO-ETS-CORE-API-DEF-FALLBACK-001). PASS when either is present; FAIL only when both are absent.
+
+### Logging
+
+- **slf4j-api** facade (per ADR-004 dep list).
+- **logback-classic** binding (slf4j → SLF4J → logback). Pat's PRD NFR-ETS-10 calls for slf4j+logback; ets-common does not bind a backend, so we declare logback explicitly.
+- Logback configured via `src/main/resources/logback.xml` to: emit JSON-structured logs (logback-jackson encoder), default level INFO, NEVER log Authorization/api-key headers (configurable maskList), append to STDOUT only (TeamEngine captures container logs).
+- Credential masking: REST Assured logging filters configured to redact `Authorization`, `X-API-Key`, and any header in `auth-mask-headers` to `***MASKED***`. Pattern equivalent to v1.0's `CredentialMasker`.
+
+`ets-common`'s default is `java.util.logging` via `TestSuiteLogger`. We add slf4j+logback on top because: (a) PRD NFR-ETS-10 specifies it, (b) it gives structured logs that TeamEngine's container-orchestration consumers can parse, (c) RestAssured's logging is already slf4j-aware. **No conflict** with ets-common — both can coexist; `TestSuiteLogger` continues to be used by ets-common-supplied utilities, our code uses slf4j.
+
+## 7. Spec-trap fixtures port plan (high-level)
+
+The asymmetric `featureType`/`itemType` corpus from `csapi_compliance/tests/fixtures/spec-traps/` (~30-50 cases) ports as follows. Generator owns the detail; Architect sets the contract:
+
+- **Location**: `src/test/resources/fixtures/spec-traps/<group-name>/*.json` (mirrors PRD §4 resolution; the v1.0 layout structure is preserved).
+- **Loading**: a `org.opengis.cite.ogcapiconnectedsystems10.fixtures.SpecTrapFixtures` Java class reads the JSON files at @DataProvider time. Jackson deserializes them into typed POJOs that TestNG passes to `@Test(dataProvider=...)` methods.
+- **Case ID retention**: each fixture file has a top-level `caseId` field; the Java loader exposes it; failed @Test failure messages include `caseId` so a CITE reviewer can trace the fixture back to its v1.0 origin.
+- **Audit script**: `scripts/audit-fixture-port.sh` (REQ-ETS-FIXTURES-003) compares case-ID lists in TS source (`csapi_compliance/tests/fixtures/spec-traps/`) vs Java source (`src/test/resources/fixtures/spec-traps/`) and fails CI on unexplained drops.
+
+This is **not a Sprint 1 deliverable** (out_of_scope per Pat's contract). Sprint 1 must NOT delete the requirement; it must reference the corpus existence in `epic-ets-06-fixture-port.md`.
+
+## 8. Cross-repo integration
+
+Per ADR-005:
+
+- The frozen v1.0 repo (`csapi_compliance`) and the new ETS repo (`ets-ogcapi-connectedsystems10`) are **siblings**, not parent/child.
+- No git submodule, no symlink, no shared package. Each is independently buildable.
+- `csapi_compliance` README links to the new ETS as the certification deliverable; new ETS `README.adoc` links back to v1.0 as the dev pre-flight tool.
+- `csapi_compliance@ab53658` is tagged `v1.0-frozen`. Schemas were copied verbatim into the new ETS at that point (ADR-002).
+- URI-coverage diff (REQ-ETS-SYNC-001) is a CI script in the new ETS that clones `csapi_compliance@v1.0-frozen` into the workspace; deferred to post–Sprint-1.
+
+## 9. CITE submission pipeline
+
+This is governance, not code, but the architecture must acknowledge the calendar (Mary's `TIMELINE-DOMINATED-BY-GOVERNANCE`):
 
 ```
-+-----------------------------------------------------------------------+
-|  Node.js Backend (Express/Fastify)                                    |
-|                                                                       |
-|  +--------------------+    +--------------------+                     |
-|  | Assessment         |    | SSE Broadcaster    |                     |
-|  | Controller         +--->+ (EventEmitter +    |----> SSE stream     |
-|  | (REST API routes)  |    |  per-session)      |      to client      |
-|  +---------+----------+    +--------------------+                     |
-|            |                                                          |
-|            v                                                          |
-|  +--------------------+    +--------------------+                     |
-|  | Session Manager    |    | Export Engine       |                     |
-|  | (max 5 concurrent  |    | (JSON serializer + |----> JSON/PDF       |
-|  |  sessions, 24h TTL)|    |  PDFKit renderer)  |      downloads      |
-|  +---------+----------+    +--------------------+                     |
-|            |                         ^                                |
-|            v                         |                                |
-|  +--------------------+    +--------+-----------+                     |
-|  | Test Runner        |    | Result Store       |                     |
-|  | (orchestrator,     +--->+ (in-memory Map     |                     |
-|  |  concurrency ctrl, |    |  with 24h TTL,     |                     |
-|  |  dependency order) |    |  file-backed dump) |                     |
-|  +---------+----------+    +--------------------+                     |
-|            |                                                          |
-|            v                                                          |
-|  +--------------------+    +--------------------+                     |
-|  | Conformance Mapper |    | Schema Validator   |                     |
-|  | (URI -> requirement|    | (Ajv instance with |                     |
-|  |  sets, dependency  |    |  preloaded OGC     |                     |
-|  |  graph)            |    |  JSON Schemas)     |                     |
-|  +--------------------+    +---------+----------+                     |
-|                                      |                                |
-|            +-------------------------+                                |
-|            v                                                          |
-|  +--------------------+    +--------------------+                     |
-|  | HTTP Client        |    | SSRF Guard         |                     |
-|  | (undici/axios with |    | (URL validation,   |                     |
-|  |  interceptors for  |<---+  private IP block, |                     |
-|  |  req/res capture)  |    |  DNS rebind check) |                     |
-|  +---------+----------+    +--------------------+                     |
-|            |                                                          |
-|            v                                                          |
-|      Outbound HTTP to IUT                                             |
-+-----------------------------------------------------------------------+
+Sprint 1: scaffold + Core green vs GeoRobotix         [code: 1-2 sprints]
+Sprints 2-7: remaining Part 1 conformance classes     [code: 6-12 weeks]
+Sprint 8+: Part 2 conformance classes                 [code: 6-12 weeks]
+Beta gate: REQ-ETS-CITE-001..003                       [governance: weeks]
+  - Maven Central publish via OSSRH staging
+  - Outreach to OpenSensorHub + connected-systems-go
+  - File CITE SC ticket
+6-12 months in beta: gather 3 passing IUTs            [governance: quarters]
+CITE SC review → TC vote → official release           [governance: months]
 ```
 
-#### Component Responsibilities
+Total calendar from Sprint 1 to official release: **9-21 months**. Code-complete is a fraction of that.
 
-| Component | Responsibility | Key Interfaces |
+## 10. Constraints from OGC
+
+The Generator (Dana) MUST respect these or CITE SC review will reject the ETS:
+
+1. **No non-Java test runtime**. No shell-out to Node.js, Python, Go. Tests run in the JVM.
+2. **Use ets-common's idioms**. `EtsAssert`, listener naming, package layout, ets.properties, testng.xml location — all per the features10 reference. Innovation is permitted in the test logic, not in the framework wiring.
+3. **No new transitive dep without an ADR**. Adding a dependency that ets-common doesn't already manage requires an ADR justifying it (RAML in ADR-004 group B).
+4. **Maven Central publish is a release-only action**. SNAPSHOTs go to OSSRH staging; never promote SNAPSHOTs to Maven Central (REQ-ETS-CITE-001).
+5. **Reproducible builds**. `<project.build.outputTimestamp>` is set; CI verifies double-build byte-identical jars.
+6. **README is .adoc, not .md**. AsciiDoc per OGC convention. Top-level files: `README.adoc`, `LICENSE.txt`, `pom.xml`, `Jenkinsfile` (stub), `Dockerfile`, `docker-compose.yml`.
+7. **Respect the v1.0 GH#3 fix and API-def fallback**. See §6 Quality. Regressing these is a release-blocker.
+
+## 11. Open architectural risks (residual)
+
+1. **`teamengine-spi` 5.6 vs 6.0 SPI signature stability** (residual after ADR-001). The SPI interface has been stable across 5.x; TE 6.0.0 bumps Jersey/Jakarta and may rename packages. Mitigation: stay on ets-common:17 / TE 5.6 for Sprint 1; re-test on TE 6 at beta milestone.
+2. **OGC OpenAPI YAML structure for CS API is not yet finalized** (Mary's `SCHEMAS-MAY-DRIFT`). Sprint 1 sidesteps by validating Core responses directly against bundled JSON Schemas (Kaizen-loaded) rather than via the OpenAPI YAML. Sprint 2+ Part 1 classes that depend on the OpenAPI structure (e.g. operation-parameter validation) will need to revisit when SWG settles.
+3. **Spec-trap fixture port fidelity** (Mary's `SPEC-TRAP-FIXTURES-UNIQUE-IP`). Mitigation: REQ-ETS-FIXTURES-003 audit script enforces 1:1 case-ID mapping. Generator's epic-ets-06 work must not silently drop cases.
+4. **TestNG dependency-graph correctness** (sprints 2+). The 14 Part 1 conformance classes have a dependency DAG inherited from v1.0 `csapi_compliance/src/engine/registry/index.ts`. Translating that DAG into TestNG `<groups>` + `dependsOnGroups` is mechanical but error-prone. Mitigation: a unit test in the new ETS asserts the DAG matches the TS source, run as part of REQ-ETS-SYNC-001.
+5. **Reproducible builds on Windows**. `<project.build.outputTimestamp>` works on Windows, but git's autocrlf can introduce line-ending differences in resource files inside the jar. Mitigation: `.gitattributes` enforces LF for all `.json`, `.xml`, `.ctl`, `.properties` files at scaffold time.
+6. **Logback + ets-common's `java.util.logging`**. Both run in the JVM. If a CITE reviewer expects only ets-common's logging idiom, our slf4j+logback addition is justified by NFR-ETS-10 but is a deviation from the features10 baseline. Mitigation: documented in §6 above.
+
+## 12. Implementation phasing
+
+| Sprint | Stories | Output |
 |---|---|---|
-| **Assessment Controller** | Handles REST API routes (`POST /api/assessments`, `GET /api/assessments/:id`, etc.). Validates input, creates sessions, delegates to Test Runner, returns results. | Inbound: REST from frontend. Outbound: Session Manager, Test Runner, Export Engine. |
-| **Session Manager** | Manages assessment lifecycle. Enforces max 5 concurrent sessions (NFR-04). Assigns UUIDs. Tracks session state (`running`, `completed`, `cancelled`, `partial`). Evicts sessions older than 24 hours. | Inbound: Assessment Controller. Outbound: Result Store. |
-| **Test Runner** | Orchestrates test execution. Resolves dependency order (FR-28). Controls concurrency via a semaphore/pool (FR-08, default 5 concurrent requests). Emits progress events. Handles cancellation (FR-43). | Inbound: Session Manager. Outbound: Conformance Mapper, HTTP Client, Schema Validator, SSE Broadcaster, Result Store. |
-| **Conformance Mapper** | Maps conformance class URIs (from `/conformance`) to requirement sets defined in OGC 23-001 and parent standards. Builds a dependency DAG so classes execute in valid order. Identifies which classes are testable vs. declared-but-unsupported. | Inbound: Test Runner, Assessment Controller. Static data: requirement registry loaded at startup. |
-| **Schema Validator** | Wraps Ajv with precompiled JSON Schemas from the OGC OpenAPI definitions. Validates response bodies and returns structured validation errors. | Inbound: Test Runner (per-test invocation). Static data: bundled JSON schemas. |
-| **HTTP Client** | Wraps undici (preferred) or axios. Applies user-provided auth credentials to every request. Records full request/response details (method, URL, headers, body, status, timing) into a capture object (FR-30, FR-31). Respects configurable timeout (FR-08). | Inbound: Test Runner. Outbound: IUT over HTTP/HTTPS. Collaborator: SSRF Guard (pre-request). |
-| **SSRF Guard** | Validates target URLs before any HTTP request. Blocks private/reserved IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1, link-local). Performs DNS resolution pre-check to catch DNS rebinding. | Inbound: HTTP Client (pre-request hook). |
-| **Result Store** | In-memory `Map<string, AssessmentResult>` keyed by assessment ID. Stores full test results, progress state, and request/response captures. Runs a periodic cleanup (every 15 minutes) to evict entries older than 24 hours. Optionally writes completed results to a temp-file JSON dump for crash recovery. | Inbound: Test Runner (writes), Assessment Controller (reads), Export Engine (reads). |
-| **SSE Broadcaster** | Manages per-session SSE connections. Receives progress events from the Test Runner (via EventEmitter) and pushes them to connected clients. Event types: `test-started`, `test-completed`, `class-started`, `class-completed`, `assessment-completed`, `assessment-error`. Handles client disconnect gracefully. | Inbound: Test Runner (events). Outbound: SSE stream to frontend. |
-| **Export Engine** | Generates JSON and PDF reports from completed assessment results. JSON: serializes the full `AssessmentResult` with a versioned schema (v1). PDF: uses PDFKit to render summary, per-class results, and failed-test details with request/response excerpts. Masks credentials (FR-33). | Inbound: Assessment Controller. Data: Result Store. |
-
-### 2.2 Frontend Components
-
-```
-+-----------------------------------------------------------------------+
-|  Next.js Frontend (React + TypeScript + Tailwind + shadcn/ui)         |
-|                                                                       |
-|  +---------------------+      +---------------------+                |
-|  | App Shell           |      | i18n String Store   |                |
-|  | (Layout, Nav,       |      | (externalized       |                |
-|  |  Error Boundary,    |      |  user-facing text)  |                |
-|  |  Disclaimer Banner) |      +---------------------+                |
-|  +----------+----------+                                              |
-|             |                                                         |
-|  +----------v---------------------------------------------------+    |
-|  |                        Page Router                            |    |
-|  +---+---------------+----------------+----------------+--------+    |
-|      |               |                |                |              |
-|      v               v                v                v              |
-|  +--------+   +-------------+   +-----------+   +-----------+        |
-|  | Landing|   | Assessment  |   | Progress  |   | Results   |        |
-|  | Page   |   | Wizard      |   | View      |   | Dashboard |        |
-|  +--------+   +-------------+   +-----------+   +-----------+        |
-|  | URL    |   | Step 1:     |   | SSE       |   | Summary   |        |
-|  | input  |   |  Endpoint   |   | consumer  |   | cards     |        |
-|  | field  |   |  validation |   | Progress  |   | Class     |        |
-|  | Start  |   | Step 2:     |   | bar       |   | breakdown |        |
-|  | button |   |  Conformance|   | Current   |   | Test      |        |
-|  | Tool   |   |  class pick |   | test name |   | detail    |        |
-|  | desc.  |   | Step 3:     |   | Class     |   | panels    |        |
-|  +--------+   |  Auth       |   | progress  |   | Req/Res   |        |
-|               | Step 4:     |   | Cancel    |   | viewer    |        |
-|               |  Config &   |   | button    |   | Export    |        |
-|               |  confirm    |   +-----------+   | controls  |        |
-|               +-------------+                   +-----------+        |
-|                                                                       |
-|  +---------------------------+   +----------------------------+       |
-|  | API Client Service        |   | SSE Client Service         |       |
-|  | (fetch wrapper for REST)  |   | (EventSource wrapper)      |       |
-|  +---------------------------+   +----------------------------+       |
-+-----------------------------------------------------------------------+
-```
-
-#### Frontend Component Responsibilities
-
-| Component | Responsibility |
-|---|---|
-| **App Shell** | Global layout, navigation, error boundary, disclaimer banner (FR-38), responsive container. |
-| **Landing Page** | URL input field, "Start Assessment" button, brief tool description (FR-45). Validates URL format client-side before submission. |
-| **Assessment Wizard** | Multi-step form: (1) endpoint URL entry and validation, (2) conformance class selection with destructive-test warnings (FR-06, FR-20), (3) optional auth credential entry (FR-07), (4) run configuration (timeout, concurrency) and confirmation (FR-08). |
-| **Progress View** | Connects to SSE stream. Displays real-time progress: current class, current test, completed/total count, progress bar (FR-42). Cancel button (FR-43). |
-| **Results Dashboard** | Summary cards (pass/fail/skip counts, compliance percentage) (FR-34). Collapsible conformance class sections with per-requirement results (FR-35, FR-36, FR-37). Request/response detail viewer (FR-32). |
-| **Export Controls** | Download buttons for JSON and PDF export (FR-39, FR-40). Triggers backend export endpoints. |
-| **API Client Service** | Thin wrapper around `fetch` for REST calls to the backend. Handles error responses, JSON parsing. |
-| **SSE Client Service** | Wraps `EventSource`. Manages connection lifecycle, reconnection, and event parsing. Dispatches events to Progress View via React state/context. |
-| **i18n String Store** | All user-facing strings externalized into a JSON locale file (NFR-15). v1.0 ships `en` only. |
-
----
-
-## 3. Data Models
-
-### 3.1 Assessment Session
-
-```typescript
-interface AssessmentSession {
-  id: string;                          // UUID v4
-  status: 'pending' | 'running' | 'completed' | 'cancelled' | 'partial';
-  createdAt: string;                   // ISO 8601
-  completedAt?: string;                // ISO 8601
-  endpointUrl: string;                 // IUT landing page URL
-  auth?: AuthConfig;                   // In-memory only, never persisted
-  config: RunConfig;
-  conformanceClasses: ConformanceClassSelection[];
-  progress: AssessmentProgress;
-  results?: AssessmentResults;
-}
-
-interface AuthConfig {
-  type: 'bearer' | 'apikey' | 'basic';
-  token?: string;                      // bearer
-  headerName?: string;                 // apikey
-  headerValue?: string;                // apikey
-  username?: string;                   // basic
-  password?: string;                   // basic
-}
-
-interface RunConfig {
-  timeoutMs: number;                   // Default: 30000
-  concurrency: number;                 // Default: 5, max: 10
-}
-
-interface ConformanceClassSelection {
-  uri: string;                         // e.g. "http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system-features"
-  name: string;                        // Human-readable name
-  selected: boolean;
-  destructive: boolean;                // true for CRUD/Update classes
-  dependencies: string[];              // URIs of prerequisite classes
-}
-```
-
-### 3.2 Test Result
-
-```typescript
-interface AssessmentResults {
-  schemaVersion: 'v1';
-  endpointUrl: string;
-  assessmentId: string;
-  timestamp: string;                   // ISO 8601
-  disclaimer: string;
-  summary: ResultSummary;
-  classes: ConformanceClassResult[];
-}
-
-interface ResultSummary {
-  totalTests: number;
-  passed: number;
-  failed: number;
-  skipped: number;
-  compliancePercentage: number;        // passed / (passed + failed) * 100
-  durationMs: number;
-}
-
-interface ConformanceClassResult {
-  uri: string;
-  name: string;
-  status: 'pass' | 'fail' | 'skip';
-  tests: TestResult[];
-  summary: { passed: number; failed: number; skipped: number };
-}
-
-interface TestResult {
-  requirementId: string;               // e.g. "/req/system/canonical-url"
-  requirementUri: string;              // Full URI
-  testName: string;                    // Human-readable
-  status: 'pass' | 'fail' | 'skip';
-  failureReason?: string;             // Human-readable assertion message
-  skipReason?: string;
-  durationMs: number;
-  httpExchanges: HttpExchange[];       // One or more req/res pairs
-}
-
-interface HttpExchange {
-  request: {
-    method: string;
-    url: string;
-    headers: Record<string, string>;   // Credentials masked (FR-33)
-    body?: string;
-  };
-  response: {
-    statusCode: number;
-    headers: Record<string, string>;
-    body: string;
-    responseTimeMs: number;
-  };
-}
-```
-
-### 3.3 SSE Event Types
-
-```typescript
-type SSEEvent =
-  | { event: 'class-started';       data: { classUri: string; className: string } }
-  | { event: 'test-started';        data: { classUri: string; requirementId: string; testName: string } }
-  | { event: 'test-completed';      data: { classUri: string; requirementId: string; status: 'pass'|'fail'|'skip'; durationMs: number } }
-  | { event: 'class-completed';     data: { classUri: string; status: 'pass'|'fail'|'skip'; summary: object } }
-  | { event: 'progress';            data: { completedTests: number; totalTests: number; currentClass: string; currentTest: string } }
-  | { event: 'assessment-completed'; data: { assessmentId: string; status: 'completed'|'partial' } }
-  | { event: 'assessment-error';    data: { assessmentId: string; error: string } };
-```
-
----
-
-## 4. Data Flows
-
-### 4.1 Assessment Creation
-
-```
-Browser                Frontend               Backend                    IUT
-  |                       |                       |                       |
-  |  1. Enter URL,        |                       |                       |
-  |     click "Start"     |                       |                       |
-  |---------------------> |                       |                       |
-  |                       |  2. POST /api/assessments                     |
-  |                       |     { endpointUrl,     |                       |
-  |                       |       auth, config }   |                       |
-  |                       |---------------------> |                       |
-  |                       |                       |  3. SSRF Guard:       |
-  |                       |                       |     validate URL,     |
-  |                       |                       |     resolve DNS,      |
-  |                       |                       |     block private IPs |
-  |                       |                       |                       |
-  |                       |                       |  4. GET / (landing)   |
-  |                       |                       |---------------------> |
-  |                       |                       | <--------------------  |
-  |                       |                       |  5. GET /conformance  |
-  |                       |                       |---------------------> |
-  |                       |                       | <--------------------  |
-  |                       |                       |                       |
-  |                       |                       |  6. Conformance Mapper|
-  |                       |                       |     maps URIs to      |
-  |                       |                       |     requirement sets  |
-  |                       |                       |                       |
-  |                       |  7. Return { id,      |                       |
-  |                       |     detectedClasses,  |                       |
-  |                       |     status: "pending" }                       |
-  |                       | <--------------------  |                       |
-  |                       |                       |                       |
-  |  8. Show Wizard       |                       |                       |
-  |     Step 2: class     |                       |                       |
-  |     selection         |                       |                       |
-  | <-------------------  |                       |                       |
-  |                       |                       |                       |
-  |  9. Confirm classes,  |                       |                       |
-  |     auth, config      |                       |                       |
-  |---------------------> |                       |                       |
-  |                       | 10. POST /api/assessments/:id/start           |
-  |                       |     { selectedClasses, |                       |
-  |                       |       auth, config }   |                       |
-  |                       |---------------------> |                       |
-  |                       |                       | 11. Session Manager   |
-  |                       |                       |     checks capacity   |
-  |                       |                       |     (< 5 sessions)    |
-  |                       |  12. { status:        |                       |
-  |                       |     "running" }        |                       |
-  |                       | <--------------------  |                       |
-  | 13. Redirect to       |                       |                       |
-  |     Progress View     |                       |                       |
-  | <-------------------  |                       |                       |
-```
-
-**Note on the two-phase creation flow:** The assessment is created in two steps: (1) POST to create and discover conformance classes, returning them to the UI; (2) POST to start execution with the user's selected classes and configuration. This allows the wizard to display discovered classes for user selection before tests begin.
-
-### 4.2 Test Execution
-
-```
-Frontend               Backend (Test Runner)        IUT
-  |                       |                           |
-  |  1. Connect SSE       |                           |
-  |  GET /api/assessments |                           |
-  |      /:id/events      |                           |
-  |---------------------> |                           |
-  |  <-- SSE stream open  |                           |
-  |                       |                           |
-  |                       |  2. Resolve dependency    |
-  |                       |     DAG: topological sort |
-  |                       |     of selected classes   |
-  |                       |                           |
-  |  <-- class-started    |  3. For each class        |
-  |                       |     (in dependency order):|
-  |                       |                           |
-  |  <-- test-started     |  4. For each test in class|
-  |                       |     (with concurrency     |
-  |                       |      semaphore):          |
-  |                       |                           |
-  |                       |  5. HTTP Client sends     |
-  |                       |     request to IUT        |
-  |                       |     (with auth headers)   |
-  |                       |-------------------------> |
-  |                       | <------------------------  |
-  |                       |                           |
-  |                       |  6. Validate response:    |
-  |                       |     - Status code check   |
-  |                       |     - Header checks       |
-  |                       |     - Schema validation   |
-  |                       |       (Ajv)               |
-  |                       |     - Structural checks   |
-  |                       |                           |
-  |                       |  7. Record TestResult     |
-  |                       |     + HttpExchange in     |
-  |                       |     Result Store          |
-  |                       |                           |
-  |  <-- test-completed   |  8. Emit progress event   |
-  |  <-- progress         |                           |
-  |                       |                           |
-  |                       |  [If class A fails and    |
-  |                       |   class B depends on A:   |
-  |                       |   skip all B tests with   |
-  |                       |   reason "dependency      |
-  |                       |   not met"]               |
-  |                       |                           |
-  |  <-- class-completed  |  9. Class summary event   |
-  |                       |                           |
-  |  <-- assessment-      | 10. All classes done,     |
-  |      completed        |     final summary         |
-  |                       |                           |
-  |  SSE stream closes    |                           |
-```
-
-#### Concurrency Model
-
-Within a single conformance class, individual tests execute concurrently up to the configured concurrency limit (default: 5). A counting semaphore (e.g., `p-limit` or custom `AsyncSemaphore`) gates concurrent HTTP requests. Between classes, execution is sequential according to the dependency DAG to ensure prerequisite classes complete before dependent ones begin.
-
-```
-Class execution order (sequential, topological sort):
-  Common -> Features Core -> CS API Core -> System Features -> ...
-
-Within a class (concurrent, bounded by semaphore):
-  [test-1] [test-2] [test-3] [test-4] [test-5]  <-- 5 concurrent
-            [test-6] [test-7] ...                <-- next batch as slots free
-```
-
-### 4.3 Result Retrieval
-
-```
-Browser                Frontend               Backend
-  |                       |                       |
-  |  1. Navigate to       |                       |
-  |  /results/:id         |                       |
-  |---------------------> |                       |
-  |                       |  2. GET /api/          |
-  |                       |  assessments/:id       |
-  |                       |---------------------> |
-  |                       |                       | 3. Result Store
-  |                       |                       |    lookup by ID
-  |                       |  4. { id, status,     |
-  |                       |     results: {        |
-  |                       |       summary, classes,|
-  |                       |       tests[] } }      |
-  |                       | <--------------------  |
-  |                       |                       |
-  |  5. Render Results    |                       |
-  |     Dashboard         |                       |
-  | <-------------------  |                       |
-```
-
-### 4.4 Report Export
-
-```
-Browser                Frontend               Backend
-  |                       |                       |
-  |  1. Click "Export      |                       |
-  |     JSON" or "PDF"    |                       |
-  |---------------------> |                       |
-  |                       |  2. GET /api/          |
-  |                       |  assessments/:id/      |
-  |                       |  export?format=json    |
-  |                       |  (or format=pdf)       |
-  |                       |---------------------> |
-  |                       |                       | 3. Export Engine
-  |                       |                       |    reads from
-  |                       |                       |    Result Store
-  |                       |                       |
-  |                       |                       | 4a. JSON: serialize
-  |                       |                       |     AssessmentResults
-  |                       |                       |     with credential
-  |                       |                       |     masking
-  |                       |                       |
-  |                       |                       | 4b. PDF: render via
-  |                       |                       |     PDFKit with
-  |                       |                       |     summary tables,
-  |                       |                       |     class breakdowns,
-  |                       |                       |     failed test
-  |                       |                       |     details
-  |                       |                       |
-  |                       |  5. Content-Disposition|
-  |                       |     attachment         |
-  |                       |     + file bytes       |
-  |                       | <--------------------  |
-  |                       |                       |
-  |  6. Browser downloads |                       |
-  |     file              |                       |
-  | <-------------------  |                       |
-```
-
----
-
-## 5. API Contract Summary
-
-| Method | Endpoint | Purpose | Request Body | Response |
-|---|---|---|---|---|
-| `POST` | `/api/assessments` | Create assessment, discover conformance | `{ endpointUrl, auth?, config? }` | `{ id, status, detectedClasses[] }` |
-| `POST` | `/api/assessments/:id/start` | Start test execution | `{ selectedClasses[], auth?, config }` | `{ id, status: "running" }` |
-| `GET` | `/api/assessments/:id` | Get assessment status and results | — | `{ id, status, progress, results? }` |
-| `GET` | `/api/assessments/:id/events` | SSE progress stream | — | SSE event stream |
-| `POST` | `/api/assessments/:id/cancel` | Cancel running assessment | — | `{ id, status: "cancelled" }` |
-| `GET` | `/api/assessments/:id/export?format=json` | Export JSON report | — | `application/json` file download |
-| `GET` | `/api/assessments/:id/export?format=pdf` | Export PDF report | — | `application/pdf` file download |
-| `GET` | `/api/health` | Health check | — | `{ status: "ok" }` |
-
----
-
-## 6. Deployment Topology
-
-### 6.1 Container Architecture
-
-```
-+-------------------------------------------------------------+
-|  Host Machine (Docker)                                       |
-|                                                              |
-|  docker-compose.yml                                          |
-|                                                              |
-|  +-------------------------------+                           |
-|  |  csapi-app                    |                           |
-|  |  (Node.js 20 LTS)            |                           |
-|  |                               |                           |
-|  |  Next.js serves both:        |                           |
-|  |   - Frontend (SSR + static)  |                           |
-|  |   - Backend API routes       |                           |
-|  |     (via Next.js API routes  |                           |
-|  |      or custom server)       |                           |
-|  |                               |                           |
-|  |  Port: 3000 (internal)       |                           |
-|  |                               |                           |
-|  |  Volumes:                    |                           |
-|  |   - /app/tmp (result dumps)  |                           |
-|  |                               |                           |
-|  |  Environment:                |                           |
-|  |   - NODE_ENV=production      |                           |
-|  |   - MAX_SESSIONS=5           |                           |
-|  |   - RESULT_TTL_HOURS=24      |                           |
-|  |   - LOG_LEVEL=info           |                           |
-|  +---------------+---------------+                           |
-|                  |                                            |
-|  +---------------v---------------+                           |
-|  |  reverse-proxy (optional)     |                           |
-|  |  (Caddy or nginx)            |                           |
-|  |                               |                           |
-|  |  - TLS termination           |                           |
-|  |  - Port 443 -> 3000          |                           |
-|  |  - Rate limiting             |                           |
-|  |  - Request size limits       |                           |
-|  +-------------------------------+                           |
-|                                                              |
-+-------------------------------------------------------------+
-         |
-         | Port 443 (HTTPS) / Port 80 (redirect)
-         v
-     Internet
-```
-
-### 6.2 Docker Compose Definition (Logical)
-
-```yaml
-# docker-compose.yml (structural overview)
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - MAX_SESSIONS=5
-      - RESULT_TTL_HOURS=24
-      - LOG_LEVEL=info
-    volumes:
-      - result-data:/app/tmp
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  # Optional: TLS-terminating reverse proxy for production
-  caddy:
-    image: caddy:2-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy-data:/data
-    depends_on:
-      - app
-
-volumes:
-  result-data:
-  caddy-data:
-```
-
-### 6.3 Dockerfile Strategy
-
-```
-# Multi-stage build
-Stage 1: deps      — Install node_modules
-Stage 2: builder   — Build Next.js (frontend + backend)
-Stage 3: runner    — Minimal Node.js 20 alpine image, copy built artifacts
-
-Final image size target: < 250 MB
-```
-
-### 6.4 Development Environment
-
-```
-# Local development (no Docker required)
-npm run dev          # Next.js dev server with hot reload on port 3000
-npm run test         # Vitest unit tests
-npm run test:e2e     # Playwright E2E tests
-npm run lint         # ESLint + Prettier
-```
-
-### 6.5 Networking
-
-- The `app` container needs outbound HTTP/HTTPS access to reach IUT endpoints on the public internet.
-- No inter-container networking is needed beyond the optional `app <-> caddy` link.
-- No database container is required (in-memory store).
-- DNS resolution for IUT hostnames happens inside the `app` container, which is where the SSRF guard operates.
-
----
-
-## 7. Security Architecture
-
-### 7.1 SSRF Protection (NFR-06)
-
-The SSRF Guard module prevents the test engine from being used to probe internal networks:
-
-1. **URL validation**: Only `http://` and `https://` schemes are accepted. No `file://`, `ftp://`, `data://`, etc.
-2. **Private IP blocking**: Before making any HTTP request, the target hostname is resolved via DNS. The resolved IP is checked against blocked ranges:
-   - `127.0.0.0/8` (loopback)
-   - `10.0.0.0/8` (RFC 1918)
-   - `172.16.0.0/12` (RFC 1918)
-   - `192.168.0.0/16` (RFC 1918)
-   - `169.254.0.0/16` (link-local)
-   - `::1` (IPv6 loopback)
-   - `fc00::/7` (IPv6 unique local)
-   - `fe80::/10` (IPv6 link-local)
-3. **DNS rebinding protection**: DNS resolution is performed by the SSRF Guard before the HTTP client connects. The resolved IP is pinned for the request to prevent TOCTOU attacks where DNS re-resolves to an internal address.
-4. **Redirect following**: The SSRF Guard validates each redirect target before following it, applying the same IP checks.
-
-### 7.2 Credential Handling (NFR-05)
-
-- Credentials are accepted via the frontend wizard and transmitted to the backend over HTTPS (in production).
-- The backend stores credentials only in the `AssessmentSession` object in memory. They are never written to disk, logs, or the result store.
-- When the session completes or is evicted, credential references are nulled and garbage collected.
-- In exported reports and UI displays, credential values are masked: only the first 4 and last 4 characters are shown (FR-33). Credentials shorter than 12 characters show only `****`.
-- Log entries for assessment runs include the endpoint URL and timestamp but never include credential values (NFR-11).
-
-### 7.3 Input Validation
-
-- **URL**: Must be a valid HTTP(S) URL. Maximum length: 2048 characters. Validated against URL spec.
-- **Auth config**: Type must be one of `bearer`, `apikey`, `basic`. String fields are sanitized (trimmed, length-limited).
-- **Run config**: Timeout is clamped to 5000-120000 ms. Concurrency is clamped to 1-10.
-- **Conformance class URIs**: Must match known conformance class URI patterns from the requirement registry.
-- All inputs are validated server-side regardless of client-side validation.
-
-### 7.4 Transport Security
-
-- In production, all traffic between the browser and the application is encrypted via TLS (HTTPS), terminated at the reverse proxy (Caddy/nginx).
-- The application sets security headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Content-Security-Policy` (restrict script sources), `Strict-Transport-Security`.
-- Cookies (if any, e.g., for session affinity) are set with `Secure`, `HttpOnly`, `SameSite=Strict`.
-
-### 7.5 Rate Limiting
-
-- The reverse proxy applies rate limiting: max 10 assessment creation requests per IP per minute.
-- The Session Manager enforces a global cap of 5 concurrent running sessions (NFR-04). Requests that exceed this limit receive HTTP 429 with a `Retry-After` header.
-
----
-
-## 8. Conformance Mapper & Test Registry Design
-
-### 8.1 Requirement Registry
-
-The Conformance Mapper loads a static requirement registry at startup. This registry is a TypeScript data structure (not a database) that defines:
-
-```typescript
-interface RequirementRegistry {
-  conformanceClasses: ConformanceClassDefinition[];
-}
-
-interface ConformanceClassDefinition {
-  uri: string;                    // Conformance class URI from the standard
-  name: string;                   // Human-readable name
-  standardRef: string;            // "OGC 23-001" | "OGC API Common" | "OGC API Features"
-  destructive: boolean;           // Whether tests mutate IUT state
-  dependencies: string[];         // URIs of prerequisite classes
-  requirements: RequirementDefinition[];
-}
-
-interface RequirementDefinition {
-  id: string;                     // e.g. "/req/system/canonical-url"
-  uri: string;                    // Full requirement URI
-  testName: string;               // Human-readable test description
-  testFunction: string;           // Reference to the test implementation function
-}
-```
-
-### 8.2 Dependency Graph (14 Part 1 Classes + Parent Standards)
-
-```
-OGC API Common Part 1
-  |
-  v
-OGC API Features Part 1 Core
-  |
-  v
-CS API Core (/req/core)
-  |
-  +---> System Features (/req/system)
-  |       +---> Subsystems (/req/subsystem)
-  |
-  +---> Deployment Features (/req/deployment)
-  |       +---> Subdeployments (/req/subdeployment)
-  |
-  +---> Procedure Features (/req/procedure)
-  |
-  +---> Sampling Features (/req/sampling)
-  |
-  +---> Property Definitions (/req/property)
-  |
-  +---> Advanced Filtering (/req/advanced-filtering)
-  |
-  +---> Create/Replace/Delete (/req/crud)  [destructive]
-  |
-  +---> Update (/req/update)  [destructive, depends on CRUD]
-  |
-  +---> GeoJSON Format (/req/geojson)
-  |
-  +---> SensorML Format (/req/sensorml)
-```
-
-The Test Runner performs a topological sort of this DAG. If a user selects a class whose dependency is not selected, the dependency is auto-included. If a dependency class fails critically (majority of tests fail), dependent classes are skipped.
-
-### 8.3 Schema Source Strategy
-
-OGC publishes OpenAPI definitions for CS API Part 1 on GitHub:
-- `openapi-connectedsystems-1.yaml` (contains inline JSON schemas)
-
-At build time, the application:
-1. Fetches the OpenAPI YAML from the OGC GitHub repository (pinned to a specific commit/tag).
-2. Extracts JSON Schema definitions from the OpenAPI `components/schemas` section.
-3. Compiles them into standalone JSON Schema files and bundles them into the application image.
-4. The Schema Validator loads these compiled schemas at startup and creates precompiled Ajv validators.
-
-This approach avoids runtime dependency on GitHub availability and ensures consistent schema versions across deployments.
-
----
-
-## 9. Error Handling & Resilience
-
-### 9.1 Test-Level Resilience (NFR-10)
-
-Each test execution is wrapped in a try/catch. Possible failure modes and handling:
-
-| Failure Mode | Handling |
-|---|---|
-| Network timeout | Test fails with message "Request timed out after {n}ms for {method} {url}" |
-| DNS resolution failure | Test fails with message "Could not resolve hostname {host}" |
-| Connection refused | Test fails with message "Connection refused for {url}" |
-| HTTP error (4xx/5xx) | Depends on test expectation — may be a valid fail or an unexpected error |
-| Malformed response body | Test fails with message "Response body is not valid JSON" |
-| Schema validation error | Test fails with Ajv validation error details |
-| Unexpected exception | Test fails with message "Internal error: {error.message}"; logged as warning |
-
-No single test failure crashes the assessment. The Test Runner catches all errors and records them as test failures.
-
-### 9.2 Session-Level Resilience
-
-- If the SSE connection drops, the frontend reconnects using `EventSource` retry (with `Last-Event-ID`). The backend tracks the last emitted event ID per session so reconnected clients receive missed events.
-- If the backend process restarts, in-memory sessions are lost. The optional file-backed dump (written on completion) allows result retrieval for completed assessments. Running assessments are not recoverable and are marked as "partial" if the client reconnects.
-
-### 9.3 Logging (NFR-11)
-
-Structured JSON logging via a library like `pino`:
-
-```json
-{
-  "level": "info",
-  "timestamp": "2026-03-30T10:15:00.000Z",
-  "assessmentId": "abc-123",
-  "event": "assessment-started",
-  "endpointUrl": "https://api.georobotix.io/ogc/t18/api",
-  "selectedClasses": 14,
-  "msg": "Assessment started"
-}
-```
-
-Credentials are never included in log entries. Response bodies are not logged (they may be large and could contain sensitive data).
-
----
-
-## 10. Architectural Decision Records
-
-### ADR-001: Monorepo with Single Deployable Unit
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: The application has a Next.js frontend and a Node.js backend. We need to decide whether to use separate repositories/packages or a single monorepo, and whether to deploy them as separate services or a single unit.
-- **Decision**: Use a single repository with a single Next.js application that serves both the frontend (React pages) and the backend (API routes via Next.js Route Handlers or a custom Express server attached to Next.js). No monorepo tooling (Turborepo, Nx) is needed.
-- **Rationale**:
-  - The backend is tightly coupled to the frontend (same assessment IDs, SSE streams, export endpoints).
-  - A single deployable unit simplifies Docker deployment (one container, one port).
-  - Next.js API routes provide a natural backend layer; no separate server process is needed unless the test engine's long-running nature requires a custom server (see ADR-002).
-  - Shared TypeScript types between frontend and backend reduce duplication and type drift.
-  - The project is small enough (one team, one product) that monorepo tooling overhead is not justified.
-- **Consequences**:
-  - Frontend and backend scale together (acceptable given the 5-session concurrency target).
-  - If the backend needs independent scaling in the future, it would require extracting to a separate service.
-  - Shared `src/` directory with clear `src/app/` (frontend), `src/lib/` (shared), and `src/engine/` (backend test engine) boundaries.
-
-### ADR-002: Custom Node.js Server for Long-Running Test Execution
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: Next.js API routes (Route Handlers) are designed for request-response cycles and have execution time limits in some deployment environments. Test assessments can run for up to 5 minutes (NFR-03). SSE connections must remain open for the duration of the assessment. We need to decide whether standard Next.js API routes are sufficient or a custom server is needed.
-- **Decision**: Use a custom Node.js HTTP server (Express or Fastify) that hosts both the Next.js frontend (via `next()` middleware) and the backend API routes. This gives full control over SSE connections, long-running requests, and server lifecycle.
-- **Rationale**:
-  - Next.js API routes in serverless/edge environments enforce execution time limits (typically 10-60 seconds) that are incompatible with 5-minute assessments.
-  - SSE requires keeping an HTTP connection open indefinitely, which is better managed by a custom server than Next.js API routes.
-  - A custom server allows us to use Node.js `EventEmitter` directly for SSE broadcasting without framework abstractions.
-  - Even in a self-hosted Node.js environment, a custom server gives better control over graceful shutdown, health checks, and process management.
-- **Consequences**:
-  - Slightly more boilerplate than pure Next.js API routes.
-  - Cannot deploy to Vercel/Netlify serverless (not a concern — Docker deployment is the target).
-  - The custom server imports `next` and calls `app.prepare()` / `app.getRequestHandler()` to serve the frontend.
-
-### ADR-003: Server-Sent Events (SSE) over WebSocket
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: The frontend needs real-time progress updates during test execution. Options: Server-Sent Events (SSE) or WebSocket.
-- **Decision**: Use Server-Sent Events (SSE) for streaming progress from the backend to the frontend.
-- **Rationale**:
-  - Progress streaming is unidirectional (server to client). SSE is purpose-built for this pattern.
-  - SSE uses standard HTTP, works through HTTP/2, and is supported by all target browsers natively via `EventSource`.
-  - SSE has built-in reconnection with `Last-Event-ID`, which simplifies handling of dropped connections.
-  - WebSocket adds bidirectional complexity that is not needed. The only client-to-server action during execution is cancellation, which is handled by a separate REST endpoint (`POST /api/assessments/:id/cancel`).
-  - SSE is simpler to implement, debug (plain text over HTTP), and proxy (no upgrade handshake).
-  - No additional dependencies required (no `ws` or `socket.io` library needed).
-- **Consequences**:
-  - Limited to ~6 concurrent SSE connections per browser to the same domain (HTTP/1.1 limit). This is acceptable because a user will have at most 1-2 active assessment tabs. HTTP/2 multiplexing eliminates this limit entirely.
-  - If bidirectional communication is needed in the future (e.g., interactive test stepping), we would need to add WebSocket alongside SSE.
-
-### ADR-004: In-Memory Result Store with File-Backed Dump
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: Assessment results must persist for 24 hours (FR-44) to allow users to return to results via URL. We need to decide the storage mechanism. Options: in-memory store, SQLite, Redis, filesystem-only.
-- **Decision**: Use an in-memory `Map` as the primary store, with optional file-backed JSON dumps for completed assessments (crash recovery only). No persistent database.
-- **Rationale**:
-  - The data model is simple (assessments keyed by UUID) and the data volume is small (5 concurrent sessions, each ~1-5 MB of result data).
-  - In-memory access is the fastest possible read/write path, meeting the performance NFRs.
-  - A full database (SQLite, PostgreSQL, Redis) adds deployment complexity (additional container, migrations, connection management) that is disproportionate to the need.
-  - The 24-hour TTL means data is inherently ephemeral. Loss of data on container restart is acceptable for v1.0 (assessments can be re-run).
-  - File-backed JSON dumps (written to a Docker volume on assessment completion) provide crash recovery for completed results without database overhead. The server reads these on startup to repopulate the in-memory store.
-  - Memory consumption is bounded: 5 sessions * ~5 MB = ~25 MB maximum active data, plus historical data that is evicted after 24 hours.
-- **Consequences**:
-  - Data is lost on container restart for running assessments (acceptable for v1.0).
-  - Completed results survive restarts if file-backed dumps are enabled and the volume is persistent.
-  - Horizontal scaling (multiple app instances) would require a shared store like Redis. This is not needed for v1.0 (single instance handles 5 concurrent sessions).
-  - Memory usage grows linearly with stored results but is bounded by the 24-hour TTL eviction.
-
-### ADR-005: Bundled OpenAPI Schemas at Build Time
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: The test engine validates IUT responses against JSON schemas from the OGC CS API OpenAPI definitions. These schemas are published on GitHub. We need to decide how the application accesses them. Options: fetch at runtime from GitHub, bundle at build time, embed as code.
-- **Decision**: Fetch the OpenAPI YAML from the OGC GitHub repository at build time (pinned to a specific commit SHA or release tag), extract the JSON Schema components, compile them into standalone `.json` files, and bundle them into the Docker image.
-- **Rationale**:
-  - Runtime fetching from GitHub would make the application dependent on GitHub availability and introduce a cold-start delay.
-  - Bundling at build time ensures deterministic, reproducible test behavior — every deployment tests against the exact same schema version.
-  - Pinning to a commit SHA or tag (not `master` branch HEAD) prevents unexpected schema changes from breaking tests.
-  - Ajv can precompile bundled schemas at startup for maximum validation performance.
-  - Schema updates require a new build, which is intentional — schema changes should be reviewed and tests adjusted accordingly.
-- **Consequences**:
-  - When OGC updates the OpenAPI definitions, the application must be rebuilt with the new schema version.
-  - A build script (e.g., `scripts/fetch-schemas.ts`) is needed to automate the fetch-extract-compile pipeline.
-  - The bundled schemas add ~1-2 MB to the Docker image (negligible).
-
-### ADR-006: Test Execution Model — Concurrent Within Class, Sequential Across Classes
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: The test engine must execute 103+ tests efficiently while respecting dependency ordering between conformance classes (FR-28). We need to decide the execution model.
-- **Decision**: Execute conformance classes sequentially in dependency order (topological sort of the class DAG). Within each class, execute individual tests concurrently up to the configurable concurrency limit (default: 5).
-- **Rationale**:
-  - Sequential class execution is required by FR-28: if class A is a prerequisite for class B, all of A's tests must complete before B starts, so we can determine whether B should be skipped.
-  - Within a class, tests are typically independent (each tests a different requirement against the IUT). Concurrent execution speeds up the assessment significantly (NFR-02: 10+ tests/second).
-  - The configurable concurrency limit (default 5, max 10) prevents overwhelming the IUT with too many parallel requests, which could cause rate limiting or false failures.
-  - A counting semaphore (`p-limit` or similar) provides a simple, proven mechanism for bounding concurrency.
-  - This model is simple to reason about, debug, and test compared to fully parallel execution with complex dependency resolution.
-- **Consequences**:
-  - Total execution time is bounded by the sum of per-class times (sequential overhead). This is acceptable given the NFR-03 target of < 5 minutes for 103 tests.
-  - If tests within a class have interdependencies (rare), they must be explicitly ordered. The test implementation can use `await` to serialize specific tests within the concurrent batch.
-  - The concurrency limit is per-assessment. With 5 concurrent assessments, maximum outbound connections = 5 * 5 = 25. This is well within Node.js connection pool limits.
-
-### ADR-007: PDFKit for PDF Report Generation
-
-- **Status**: Accepted
-- **Date**: 2026-03-30
-- **Context**: The application must export compliance reports as PDF (FR-40). Options: PDFKit (programmatic PDF generation), Puppeteer (headless Chrome rendering of HTML to PDF), jsPDF (client-side).
-- **Decision**: Use PDFKit for server-side PDF generation.
-- **Rationale**:
-  - PDFKit is a lightweight, pure-JavaScript PDF generation library with no external dependencies (no headless browser required).
-  - Puppeteer requires a full Chromium installation (~400 MB), significantly increasing Docker image size and memory consumption.
-  - The compliance report is structured data (tables, lists, text) that is straightforward to render programmatically with PDFKit. It does not require complex HTML/CSS layout.
-  - PDFKit generates PDFs in a streaming fashion, which is memory-efficient for large reports.
-  - Generation time with PDFKit is typically < 1 second for structured reports, well within the NFR-14 target of < 10 seconds.
-- **Consequences**:
-  - Complex visual layouts (charts, graphs) would be more difficult with PDFKit than with HTML-to-PDF. The compliance report does not require these in v1.0.
-  - If the report design becomes visually complex in future versions, Puppeteer could be added as an alternative renderer.
-  - The PDF layout must be coded programmatically (coordinates, fonts, tables), which is more work than styling HTML. A helper utility for table rendering is recommended.
-
----
-
-## 11. Project Structure
-
-```
-csapi_compliance/
-+-- _bmad/                          # BMAD project management artifacts
-+-- docker-compose.yml              # Production deployment
-+-- Dockerfile                      # Multi-stage build
-+-- Caddyfile                       # Optional reverse proxy config
-+-- package.json                    # Root package (Next.js + backend)
-+-- tsconfig.json                   # TypeScript config
-+-- next.config.js                  # Next.js configuration
-+-- vitest.config.ts                # Vitest unit test config
-+-- playwright.config.ts            # Playwright E2E test config
-+-- scripts/
-|   +-- fetch-schemas.ts            # Build-time OGC schema fetcher
-|   +-- compile-schemas.ts          # JSON Schema extraction & compilation
-+-- schemas/                        # Bundled OGC JSON Schemas (generated)
-|   +-- connected-systems-1/
-|   +-- ogc-api-common/
-|   +-- ogc-api-features/
-+-- src/
-|   +-- app/                        # Next.js App Router (frontend pages)
-|   |   +-- layout.tsx              # Root layout (App Shell)
-|   |   +-- page.tsx                # Landing page (FR-45)
-|   |   +-- assess/
-|   |   |   +-- page.tsx            # Assessment Wizard
-|   |   +-- progress/
-|   |   |   +-- [id]/
-|   |   |       +-- page.tsx        # Progress View
-|   |   +-- results/
-|   |       +-- [id]/
-|   |           +-- page.tsx        # Results Dashboard
-|   +-- components/                 # Shared React components
-|   |   +-- ui/                     # shadcn/ui components
-|   |   +-- assessment-wizard/      # Wizard step components
-|   |   +-- progress/               # Progress display components
-|   |   +-- results/                # Result display components
-|   |   +-- export/                 # Export control components
-|   +-- lib/                        # Shared utilities (frontend + backend)
-|   |   +-- types.ts                # Shared TypeScript interfaces
-|   |   +-- constants.ts            # Shared constants
-|   |   +-- i18n/                   # Externalized strings (NFR-15)
-|   |       +-- en.json
-|   +-- services/                   # Frontend service layer
-|   |   +-- api-client.ts           # REST API client
-|   |   +-- sse-client.ts           # SSE EventSource wrapper
-|   +-- server/                     # Custom Node.js server
-|   |   +-- index.ts                # Server entry point
-|   |   +-- routes/                 # Express/Fastify route handlers
-|   |   |   +-- assessments.ts      # Assessment CRUD + export routes
-|   |   |   +-- health.ts           # Health check
-|   |   +-- middleware/
-|   |       +-- ssrf-guard.ts       # SSRF protection middleware
-|   |       +-- rate-limiter.ts     # Rate limiting
-|   |       +-- security-headers.ts # Security header middleware
-|   +-- engine/                     # Test engine (core backend logic)
-|   |   +-- test-runner.ts          # Orchestrator: dependency order, concurrency
-|   |   +-- conformance-mapper.ts   # URI -> requirement set mapping
-|   |   +-- schema-validator.ts     # Ajv wrapper with preloaded schemas
-|   |   +-- http-client.ts          # HTTP client with req/res capture
-|   |   +-- result-store.ts         # In-memory store with TTL eviction
-|   |   +-- sse-broadcaster.ts      # EventEmitter -> SSE bridge
-|   |   +-- export-engine.ts        # JSON + PDF export
-|   |   +-- session-manager.ts      # Session lifecycle, capacity enforcement
-|   |   +-- credential-masker.ts    # Credential masking utility
-|   |   +-- registry/               # Conformance class & requirement definitions
-|   |   |   +-- index.ts            # Registry loader
-|   |   |   +-- common.ts           # OGC API Common requirements
-|   |   |   +-- features-core.ts    # OGC API Features Core requirements
-|   |   |   +-- csapi-core.ts       # CS API Core requirements
-|   |   |   +-- system-features.ts  # System Features requirements
-|   |   |   +-- subsystems.ts       # Subsystems requirements
-|   |   |   +-- deployments.ts      # Deployment Features requirements
-|   |   |   +-- subdeployments.ts   # Subdeployments requirements
-|   |   |   +-- procedures.ts       # Procedure Features requirements
-|   |   |   +-- sampling.ts         # Sampling Features requirements
-|   |   |   +-- properties.ts       # Property Definitions requirements
-|   |   |   +-- filtering.ts        # Advanced Filtering requirements
-|   |   |   +-- crud.ts             # Create/Replace/Delete requirements
-|   |   |   +-- update.ts           # Update requirements
-|   |   |   +-- geojson.ts          # GeoJSON Format requirements
-|   |   |   +-- sensorml.ts         # SensorML Format requirements
-|   |   +-- tests/                  # Test implementations (one file per class)
-|   |       +-- common.test-impl.ts
-|   |       +-- features-core.test-impl.ts
-|   |       +-- csapi-core.test-impl.ts
-|   |       +-- system-features.test-impl.ts
-|   |       +-- ... (one per conformance class)
-|   +-- __tests__/                  # Unit and integration tests
-|       +-- engine/                 # Test engine unit tests
-|       +-- server/                 # API route tests
-|       +-- e2e/                    # Playwright E2E tests
-+-- public/                         # Static assets
-    +-- favicon.ico
-```
-
----
-
-## 12. Technology Stack Summary
-
-| Layer | Technology | Version | Purpose |
-|---|---|---|---|
-| Runtime | Node.js | 20 LTS | Server runtime |
-| Language | TypeScript | 5.x | Type safety across full stack |
-| Frontend Framework | Next.js | 14.x (App Router) | SSR, routing, React framework |
-| UI Library | React | 18.x | Component library |
-| CSS | Tailwind CSS | 3.x | Utility-first styling |
-| Component Library | shadcn/ui | latest | Accessible, composable UI components |
-| HTTP Server | Express or Fastify | 4.x / 4.x | Custom server for long-running ops |
-| HTTP Client | undici | 6.x | Outbound HTTP to IUT (fast, modern) |
-| Schema Validation | Ajv | 8.x | JSON Schema validation |
-| PDF Generation | PDFKit | 0.13.x+ | Server-side PDF export |
-| Unit Testing | Vitest | 1.x | Fast TypeScript-native test runner |
-| E2E Testing | Playwright | 1.x | Cross-browser E2E tests |
-| Linting | ESLint + Prettier | latest | Code quality and formatting |
-| Containerization | Docker + docker-compose | latest | Deployment packaging |
-| Reverse Proxy (optional) | Caddy | 2.x | TLS termination, rate limiting |
-
----
-
-## 13. Performance Considerations
-
-| Concern | Design Decision |
-|---|---|
-| **Discovery latency (NFR-01)** | Landing page and conformance requests are made sequentially (2 requests). With a responsive IUT, this completes in < 2 seconds. The 15-second timeout is generous. |
-| **Test throughput (NFR-02)** | With concurrency 5 and average IUT response time of 200ms, throughput is ~25 tests/second. Even with 500ms average response time, throughput is ~10 tests/second, meeting NFR-02. |
-| **Full assessment time (NFR-03)** | 103 tests at 10 tests/second = ~10 seconds of pure execution time. Sequential class overhead (16 classes) adds at most 16 * 200ms = 3.2 seconds. Well within 5 minutes. |
-| **Memory footprint** | 5 concurrent sessions * ~5 MB results = ~25 MB active. Plus historical results (up to 24h). With ~20 assessments/day, historical data is ~100 MB. Total memory footprint: < 200 MB. |
-| **Export performance (NFR-14)** | PDFKit generates PDFs from structured data in < 1 second. JSON serialization of a 5 MB result object is < 100ms. Both are well within 10 seconds. |
-| **SSE overhead** | SSE connections are lightweight (one HTTP connection per active assessment). 5 concurrent SSE streams add negligible overhead. |
-
----
-
-## 14. Future Considerations (Out of Scope for v1.0)
-
-These items are documented for architectural awareness but are not implemented in v1.0:
-
-- **Part 2 (Dynamic Data) testing**: The test engine architecture (registry, runner, mapper) is designed to be extensible. Adding Part 2 requires new registry entries and test implementations but no architectural changes.
-- **CI/CD API mode**: The REST API already supports headless operation. A CLI wrapper or GitHub Action could invoke the API without the frontend.
-- **Historical comparison**: Would require persistent storage (SQLite or PostgreSQL) to store results beyond 24 hours. ADR-004 documents this trade-off.
-- **Horizontal scaling**: Would require extracting the Result Store to Redis or a shared filesystem. The current in-memory architecture is intentionally simple for v1.0.
-- **OAuth2 authentication**: Would require adding an OAuth2 flow in the Assessment Wizard and a token refresh mechanism in the HTTP Client.
-- **Part 3 Pub/Sub testing**: Would require WebSocket and MQTT client capabilities in the test engine.
+| **Sprint 1 (current)** | S-ETS-01-01, -02, -03 | Archetype scaffold + JDK 17 modernized + Core suite + TeamEngine Docker smoke green vs GeoRobotix |
+| Sprint 2 | TBD per Pat | 2-3 of the remaining 13 Part 1 classes (likely `common`, `system-features`, `subsystems` — top of the dependency DAG) |
+| Sprints 3-6 | TBD | Remaining Part 1 classes; spec-trap fixture port (epic-ets-06 in parallel) |
+| Sprint 7 | TBD | URI-coverage diff CI (REQ-ETS-SYNC-001); README repositions; v1.0-frozen tag |
+| Sprint 8+ | TBD | Part 2 conformance classes (per OGC 23-002) |
+| Beta milestone (calendar) | non-sprint | Maven Central publish; outreach; CITE SC ticket |
+
+## 13. ADR index
+
+| ID | Title | Status |
+|---|---|---|
+| ADR-001 | TeamEngine SPI Registration Pattern | Accepted |
+| ADR-002 | JSON Schema Bundling Mechanism | Accepted |
+| ADR-003 | Java Package Naming and Maven Coordinates | Accepted |
+| ADR-004 | ets-archetype-testng:2.7 Modernization Checklist | Accepted |
+| ADR-005 | Cross-Repo Relationship with the Frozen v1.0 Web App | Accepted |
+
+(Future ADRs from sprints 2+ will append here.)
+
+## 14. Last reconciled
+
+**2026-04-27** — fresh as of this rewrite. Re-reconcile required if >30 days stale per CLAUDE.md.

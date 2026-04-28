@@ -2,6 +2,36 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T14:42Z — Pivot prep: Sprint ets-01 Gates 1–3 (Discovery + Planner + Architect) + post-Architect string reconciliation
+
+- **Trigger**: User instruction (recovery from interrupted session). Asked for an evaluator-phase status report and approved actions #1 (commit the planning/architecture work) and #2 (reconcile stale strings to ADR authority) from the assessment.
+- **Context**: On 2026-04-27 the project pivoted from the v1.0 Next.js web app (frozen at `ab53658`) to a Java/TestNG TeamEngine ETS, with Discovery/Planner/Architect run by the harness on 2026-04-27. Their outputs were uncommitted at session start; the Architect handoff also surfaced stale Maven/package/version strings in PRD/spec/contracts/epics/stories that ADR-003/ADR-004 had superseded ("Generator-uses-Pat-coordinates" high-severity risk).
+- **What landed in this commit**:
+  - **Gate 1 — Discovery (Mary)**: `.harness/handoffs/discovery-handoff.yaml` (greenfield-confirmed; OGC ETS catalog survey; archetype + TeamEngine + ets-common version research).
+  - **Gate 2 — Planner (Pat)**: full v1.1→v2.0 rewrites of `_bmad/prd.md`, `_bmad/project-brief.md`, `_bmad/product-brief.md`, `_bmad/traceability.md`. New capability `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` (32 REQ-ETS-* + 12 SCENARIO-ETS-*, 5 CRITICAL + 7 NORMAL). Seven ETS epics (`epic-ets-01`..`07`) and three Sprint-1 stories (`s-ets-01-01`..`-03`). Sprint contract `.harness/contracts/sprint-ets-01.yaml` (force_run Gate 4). Six v1.0 capability specs marked Frozen via frontmatter edit (conformance-testing, dynamic-data-testing, endpoint-discovery, export, progress-session, reporting; request-capture + test-engine likewise).
+  - **Gate 3 — Architect (Alex)**: `_bmad/architecture.md` v2.0 (full rewrite); `_bmad/architecture-v1-frozen.md` (verbatim v1.0 archive); `openspec/capabilities/ets-ogcapi-connectedsystems/design.md`; five ADRs in `_bmad/adrs/` — ADR-001 TeamEngine SPI registration pattern, ADR-002 JSON Schema bundling (verbatim copy), ADR-003 Java package naming + Maven coordinates, ADR-004 archetype JDK 17 modernization checklist (25 items, Groups A–E), ADR-005 cross-repo relationship with frozen v1.0. Architect confidence 0.83; readiness PASS for S-ETS-01-01 + S-ETS-01-02, CONCERNS for S-ETS-01-03 (TeamEngine version drift, META-INF/services pitfalls, CTL Saxon namespace typos, smoke-test artifact archival).
+- **Post-Architect reconciliation (per architect-handoff.surfaced_risks_pat_missed)**: ten string substitutions across 13 Pat-authored files (PRD, both briefs, traceability, capability spec, 4 epics, 3 stories, sprint contract). Strings updated to ADR authority:
+  - artifactId `ets-ogcapi-connectedsystems-1` → `ets-ogcapi-connectedsystems10` (ADR-003)
+  - Java root package `org.opengis.cite.ogcapi.cs10` → `org.opengis.cite.ogcapiconnectedsystems10` (ADR-003)
+  - resource path `org/opengis/cite/ogcapi/cs10/` → `org/opengis/cite/ogcapiconnectedsystems10/` (ADR-003)
+  - ets-code `ogcapi-cs10` → `ogcapi-connectedsystems10` (ADR-003)
+  - CTL filename `cs10.ctl` → `ogcapi-connectedsystems10-suite.ctl` (ADR-003)
+  - Docker image name `ets-ogcapi-cs10` → `ets-ogcapi-connectedsystems10`
+  - parent `ets-common:14` → `ets-common:17` (ADR-004)
+  - container image `ogccite/teamengine-production:5.5` → `:5.6.1` (ADR-001)
+  - prose `TeamEngine 5.5` → `TeamEngine 5.6.x (currently 5.6.1)` (Architecture §2)
+  - standalone `cs10` references (suite-listing, JaCoCo path, layout-diff) hand-fixed to context-appropriate full forms.
+- **Preserved (intentional)**: OGC spec URI slug `ogcapi-connectedsystems-1` in URL form (`http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/...`) is the OGC standard's official Part-1 namespace and is NOT a Maven artifactId — left untouched in `_bmad/ux-spec.md` and `_bmad/architecture-v1-frozen.md`. ADRs themselves preserved verbatim — they intentionally cite both the rejected and the accepted strings to record the contrast.
+- **Verification**: post-sed grep across the 13 reconciled files returns zero stale strings (`ets-ogcapi-connectedsystems-1[^0]`, `org.opengis.cite.ogcapi.cs10`, `ets-common:14`, `teamengine-production:5.5`, `TeamEngine 5.5`, `ogcapi-cs10`, `ets-ogcapi-cs10`, `cs10.ctl`, bare `\bcs10\b`); same patterns still appear (correctly) only in the four ADR files and the v1-frozen archive.
+- **What is NOT in this commit (deferred)**:
+  - **Generator (Dana) gate** — no Java code, no `pom.xml`. Sprint 1 stories S-ETS-01-01..03 not started.
+  - **New repo bootstrap** — `github.com/<org>/ets-ogcapi-connectedsystems10` does not yet exist; ADR-005 sibling-repo relationship is contract, not deployed.
+  - **REQ-ETS-WEBAPP-FREEZE-001** — annotated tag `v1.0-frozen` at `ab53658` not yet applied; that is a separate quick-win sprint (epic-ets-07) per architect-handoff guidance.
+  - **PRD §FR-ETS-26 clarification** — Sprint 1 uses `everit-json-schema` directly (not Kaizen `openapi-parser`) per design.md; PRD wording still implies Kaizen is the Sprint-1 validator. Architect flagged as low-severity Sam-amend item; out of scope for this reconciliation pass.
+- **Gates**: no code changes, no test/build/lint runs needed (planning artifacts only). v1.0 web-app gate state from `ed45643` unchanged.
+- **Scope**: ~15 new files added under `_bmad/`, `_bmad/adrs/`, `epics/`, `epics/stories/`, `openspec/capabilities/ets-ogcapi-connectedsystems/`, `.harness/contracts/`, `.harness/handoffs/`. Four modifications under `_bmad/` (PRD, both briefs, traceability) plus eight modifications under `openspec/capabilities/` (Frozen frontmatter on six v1.0 specs + the new ETS spec). Two ops files touched here (this entry, status.md update for pivot state).
+- **Next suggested**: user picks between (a) **REQ-ETS-WEBAPP-FREEZE-001** quick-win sprint — `git tag -a v1.0-frozen ab53658 -m "Frozen 2026-04-27 at user-pivot to Java/TestNG ETS"` + push + README cross-link; or (b) bootstrap the new sibling repo `ets-ogcapi-connectedsystems10` (`gh repo create`, then Generator on S-ETS-01-01 archetype scaffold + ADR-004 modernization Group A–D atomic commits). Both unblock S-ETS-01-03 smoke-test work later in the sprint.
+
 ## 2026-04-17T21:05Z — Sprint sess-prog-001-assertion-depth: last P1 traceability gap closed
 
 - **Trigger**: User instruction "Clean up all stale references first, and then do prog-001". First pass scrubbed stale `ops/status.md` and `ops/known-issues.md` headers/sections that claimed uncommitted work (HEAD has been `d5e2124` and clean since 2026-04-17T20:30Z). Second pass: SCENARIO-SESS-PROG-001, the sole remaining P1 assertion-depth item.

@@ -1,6 +1,6 @@
 # Epic 01: Endpoint Discovery & Configuration
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. Superseded by `epic-ets-04-teamengine-integration` (TeamEngine handles IUT discovery via CTL). | Last updated: 2026-04-27
 
 ## Goal
 Provide the entry point for all CS API compliance testing by accepting a user-supplied landing page URL, discovering the API's structure and declared conformance classes, and collecting the configuration (authentication, timeouts, concurrency) needed to execute test runs.

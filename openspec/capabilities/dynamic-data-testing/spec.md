@@ -1,6 +1,8 @@
 # Dynamic Data Testing — Specification
 
-> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
+> Version: 1.0 | Status: Frozen — v1.0 web app, superseded by ets-ogcapi-connectedsystems | Last updated: 2026-04-27
+>
+> **Frozen 2026-04-27.** Part 2 testing work continues in the new ETS at `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` (REQ-ETS-PART2-*).
 
 ## Purpose
 

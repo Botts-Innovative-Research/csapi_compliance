@@ -1,6 +1,6 @@
 # Epic 09: CS API Part 2 Dynamic Data Conformance Testing
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. Superseded by `epic-ets-03-part2-classes` (Java/TestNG port; deferred until Part 1 ETS lands per user gate 2026-04-27). | Last updated: 2026-04-27
 
 ## Goal
 Implement conformance tests for all 14 CS API Part 2 conformance classes (approximately 130 requirements) defined in OGC 23-002, covering datastreams, observations, control streams, commands, command feasibility, system events, system history, Part 2 advanced filtering, write operations, and Part 2 encodings (JSON, SWE Common JSON, SWE Common Text, SWE Common Binary).

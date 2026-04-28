@@ -1,6 +1,87 @@
 # Traceability Matrix -- CS API Compliance Assessor
 
-> Status: Living Document | Last updated: 2026-04-16
+> Status: Living Document | Last updated: 2026-04-27 (ETS pivot section added)
+
+---
+
+## Traceability v2.0 — ETS pivot (active)
+
+> **Active project**: certification-track Java/TestNG ETS for OGC TeamEngine.
+> **Capability**: `ets-ogcapi-connectedsystems` (`openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`).
+> **PRD**: `_bmad/prd.md` v2.0 (2026-04-27).
+> **Pivot trigger**: user instruction 2026-04-27, Discovery handoff (Mary 2026-04-27), Planner handoff (Pat 2026-04-27).
+
+### R-PIVOT-* → REQ-ETS-* → SCENARIO-ETS-* → Story → Status
+
+| Brief Req | PRD FR | OpenSpec REQ | OpenSpec SCENARIO | Epic | Story | Sprint | Status |
+|-----------|--------|--------------|-------------------|------|-------|--------|--------|
+| R-PIVOT-01 | FR-ETS-01 | REQ-ETS-SCAFFOLD-001 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-02 | REQ-ETS-SCAFFOLD-002 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-02 | FR-ETS-03 | REQ-ETS-SCAFFOLD-003 | SCENARIO-ETS-SCAFFOLD-LAYOUT-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-04 | REQ-ETS-SCAFFOLD-004 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-05 | REQ-ETS-SCAFFOLD-005 | SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-06 | REQ-ETS-SCAFFOLD-006 | (covered by ADR audit) | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-07 | REQ-ETS-SCAFFOLD-007 | (administrative) | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-001 | SCENARIO-ETS-CORE-LANDING-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-002 | SCENARIO-ETS-CORE-LANDING-001, LINKS-NORMATIVE-001, API-DEF-FALLBACK-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-003 | SCENARIO-ETS-CORE-CONFORMANCE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-004 | SCENARIO-ETS-CORE-RESOURCE-SHAPE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-11..23 | REQ-ETS-PART1-001..013 | SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 | epic-ets-02 | S-ETS-02-01..13 | post-ets-01 | Backlog (placeholders) |
+| R-PIVOT-04 | FR-ETS-30..43 | REQ-ETS-PART2-001..014 | (placeholders) | epic-ets-03 | S-ETS-03-01..14 | post-Part-1 | Deferred |
+| R-PIVOT-07 | FR-ETS-50 | REQ-ETS-TEAMENGINE-001 | SCENARIO-ETS-TEAMENGINE-LOAD-001 | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |
+| R-PIVOT-07 | FR-ETS-51 | REQ-ETS-TEAMENGINE-002 | (covered by smoke test) | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |
+| R-PIVOT-07 | FR-ETS-52 | REQ-ETS-TEAMENGINE-003 | SCENARIO-ETS-TEAMENGINE-LOAD-001 | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |
+| R-PIVOT-07 | FR-ETS-53 | REQ-ETS-TEAMENGINE-004 | (covered by smoke test) | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |
+| R-PIVOT-07 | FR-ETS-54 | REQ-ETS-TEAMENGINE-005 | SCENARIO-ETS-CORE-SMOKE-001 | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |
+| R-PIVOT-06 | FR-ETS-60..62 | REQ-ETS-FIXTURES-001..003 | SCENARIO-ETS-FIXTURES-PORT-COVERAGE-001 | epic-ets-06 | S-ETS-06-01..05 | post-ets-01 | Backlog |
+| R-PIVOT-08 | FR-ETS-70 | REQ-ETS-CITE-001 | (calendar-bound) | epic-ets-05 | S-ETS-05-01..02 | beta-milestone | Calendar-bound |
+| R-PIVOT-12 | FR-ETS-71 | REQ-ETS-CITE-002 | (calendar-bound) | epic-ets-05 | S-ETS-05-03..05 | beta-milestone | Calendar-bound |
+| R-PIVOT-12 | FR-ETS-72 | REQ-ETS-CITE-003 | (calendar-bound) | epic-ets-05 | S-ETS-05-06 | beta-milestone | Calendar-bound |
+| R-PIVOT-10 | FR-ETS-80 | REQ-ETS-WEBAPP-FREEZE-001 | SCENARIO-ETS-WEBAPP-FREEZE-README-001 | epic-ets-07 | S-ETS-07-01 | quick-win | Backlog |
+| R-PIVOT-11 | FR-ETS-90 | REQ-ETS-SYNC-001 | SCENARIO-ETS-SYNC-URI-DIFF-001 | (cross-epic) | TBD | post-Part-1 | Backlog |
+
+**Status legend**: Active = in current sprint (ets-01) | Backlog = defined but not yet sprinted | Deferred = explicitly out of scope per user gate | Calendar-bound = waits on milestone, not engineering | Done = implemented and evaluated.
+
+### NFR Verification (v2.0 ETS)
+
+| NFR | Verification Method | Status |
+|-----|---------------------|--------|
+| NFR-ETS-01 | Reproducible-build CI job (double-build diff) | Backlog (Sprint 1 acceptance) |
+| NFR-ETS-02 | mvn build green on JDK 17 | Backlog (Sprint 1 acceptance) |
+| NFR-ETS-03 | ≥95% pass rate against GeoRobotix | Pending Sprint 1 smoke test |
+| NFR-ETS-04 | TeamEngine container loads ETS within 30s | Backlog (Sprint 1 acceptance) |
+| NFR-ETS-05 | Full Part 1 suite < 10 min | Pending post-Sprint-1 (need all 14 classes) |
+| NFR-ETS-06 | CI on Linux/macOS/Windows-WSL2 | Backlog (post-Sprint-1) |
+| NFR-ETS-07 | OpenAPI YAML SHA pin reviewed quarterly | Process gate |
+| NFR-ETS-08 | Credential masker unit tests | Backlog (Sprint 1 within S-ETS-01-02) |
+| NFR-ETS-09 | Network-error resilience tests | Backlog |
+| NFR-ETS-10 | slf4j + logback structured logging | Backlog |
+| NFR-ETS-11 | docker-compose single-command up | Backlog (Sprint 1 acceptance via S-ETS-01-03) |
+| NFR-ETS-12 | JaCoCo ≥80% on src/main/java/.../ogcapiconnectedsystems10 | Backlog (Sprint 1 acceptance for Core suite only) |
+| NFR-ETS-13 | mvn site builds AsciiDoc | Backlog |
+| NFR-ETS-14 | mvn deploy to OSSRH staging | Beta-milestone-bound |
+| NFR-ETS-15 | Structural-diff vs ets-ogcapi-features10 | Backlog (Sprint 1 acceptance) |
+
+### Epic Dependency Graph (v2.0 ETS)
+
+```
+epic-ets-01-scaffold ─── foundation (Sprint 1)
+  ├── epic-ets-02-part1-classes (Sprint 1: CS API Core only; sprints N+1..N+13: other 13 classes)
+  │     ├── epic-ets-04-teamengine-integration (Sprint 1: smoke test)
+  │     │     └── epic-ets-05-cite-submission (post-Part-2 feature-complete)
+  │     ├── epic-ets-03-part2-classes (deferred until Part 1 lands)
+  │     │     └── epic-ets-05-cite-submission (also requires Part 2)
+  │     └── epic-ets-06-fixture-port (parallel after Core lands)
+  └── epic-ets-07-webapp-freeze (quick-win, can run any time)
+```
+
+---
+
+## Frozen — v1.0 web app (HEAD ab53658)
+
+> **Status**: Frozen 2026-04-27. The v1.0 web app is repositioned as a developer pre-flight tool, not certification-track. No further sprint investment. Capability specs at `openspec/capabilities/{endpoint-discovery,conformance-testing,dynamic-data-testing,test-engine,request-capture,reporting,export,progress-session}/spec.md` are marked `Status: Frozen — v1.0 web app, superseded by ets-ogcapi-connectedsystems`. Epics 01-09 are marked `Status: Closed`.
+>
+> The matrix below is authoritative for the v1.0 web app at HEAD `ab53658` and is preserved for historical reference. New work goes into the ETS section above.
 
 ## PRD -> OpenSpec -> Epic -> Implementation Status
 

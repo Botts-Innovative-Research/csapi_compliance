@@ -1,0 +1,190 @@
+agent: discovery
+status: complete
+timestamp: "2026-04-27T21:35:00Z"
+triggered_by: "User pivot from standalone web app to OGC TeamEngine ETS, 2026-04-27"
+supersedes: ".harness/handoffs/discovery-handoff.yaml (prior version, v1.x web-app framing)"
+
+outputs:
+  - path: "_bmad/product-brief.md"
+    type: "product-brief"
+    version: "2.0"
+    note: "Full rewrite. Recommends greenfield Java/TestNG ETS as certification-track deliverable; existing web app archived as developer pre-flight tool."
+
+summary: |
+  The user's pivot is correct. Direct evidence from the OGC GitHub org (April 2026) shows
+  no `ets-ogcapi-connectedsystems*` repository exists, and the Connected Systems SWG repo
+  does not list compliance testing as a workstream — confirming this is greenfield. OGC
+  certification per Policy 08-134r11 requires an Executable Test Suite executed by
+  TeamEngine and approved by the CITE SubCommittee, then voted by the Technical Committee.
+  A vendor-hosted web app, no matter how rigorous, has no pathway to that certification.
+
+  The recommended approach (Approach A in the brief) is a new sibling repository
+  `ets-ogcapi-connectedsystems-1` generated from the official Maven archetype
+  `org.opengis.cite:ets-archetype-testng:2.7`, mirroring the structure of
+  `opengeospatial/ets-ogcapi-features10`. Stack: JDK 17, Maven 3.9, TestNG, REST Assured,
+  Kaizen openapi-parser. The existing repository stays in place, marked as a developer
+  pre-flight tool, with no further sprint investment.
+
+  Approximately 5-15% of the v1.0 codebase ports as assets:
+    - All 126 bundled JSON Schemas port verbatim (language-agnostic).
+    - The 27 TypeScript registry modules port as spec-knowledge reference (URI mapping,
+      dependency DAG, spec-trap fixtures); the TS code itself does not port.
+    - Spec-trap fixtures (asymmetric featureType/itemType corpus, ~30-50 cases) are a
+      unique authored asset that should become TestNG `@DataProvider` inputs.
+    - The Next.js UI, SSE broadcaster, Express server, PDFKit exporter, SSRF guard,
+      session manager, and 1003 Vitest + 27 Playwright tests are throwaway in the ETS
+      context (TeamEngine provides equivalents).
+
+  Realistic certification timeline: 1-3 months for ETS skeleton (Part 1), 3-6 months for
+  Part 2, 6-12 months in beta to gather the three independent passing implementations
+  CITE policy requires (or 6-month-beta + CITE-SC-vote exception with 1-2). Total
+  calendar: 9-21 months from sprint kickoff to official release. Code-complete is a
+  fraction of that; the rest is OGC governance velocity.
+
+flags:
+  - id: PIVOT-MAGNITUDE-MAJOR
+    severity: high
+    message: |
+      This is not an incremental change. It is a language/toolchain/repo/governance pivot.
+      The existing TypeScript codebase informs but does not transfer. Pat should plan for
+      a fresh capability spec (suggested name `ets-ogcapi-connectedsystems`) and accept
+      that v1.0 of the web app is now a sunset asset, not a foundation.
+
+  - id: GREENFIELD-CONFIRMED
+    severity: info
+    message: |
+      No `ets-ogcapi-connectedsystems*` repo exists in the OGC GitHub org. Code search
+      and SWG repo inspection confirm no parallel effort is underway. We are not racing
+      another team. We are establishing the ETS that the SWG has not built.
+
+  - id: LANGUAGE-DECISION-LOCKED
+    severity: high
+    message: |
+      Java is not negotiable. TeamEngine SPI is Java; all 10 active `ets-ogcapi-*` repos
+      are Java; the `ets-common` utility library is Java. CTL is legacy (no new ETS since
+      ~2020). A non-Java ETS will not be accepted by CITE SC review and would not run in
+      TeamEngine without a fragile shim. Architect should not waste cycles considering
+      alternatives.
+
+  - id: TIMELINE-DOMINATED-BY-GOVERNANCE
+    severity: high
+    message: |
+      Code-complete is reachable in 1-2 quarters. Official release is reachable in 3-7
+      quarters because of three OGC governance gates (CITE SC review, TC vote, three-
+      implementation rule). The user should not expect this pivot to resolve on the same
+      cadence as the v1.0 web-app sprints (~weeks). Set expectations accordingly.
+
+  - id: ARCHETYPE-DATED
+    severity: medium
+    message: |
+      `ets-archetype-testng:2.7` was last published 2019. Generated scaffolds may need
+      manual dependency bumps and JDK 17 cleanups. Architect should plan a one-time
+      "modernize the scaffold" step in sprint 1 and possibly upstream a PR.
+
+  - id: SPEC-TRAP-FIXTURES-UNIQUE-IP
+    severity: medium
+    message: |
+      The asymmetric featureType/itemType spec-trap corpus (accumulated from live
+      GeoRobotix testing) is not in the OGC ATS verbatim. It is a unique asset of this
+      project. Generator must port these as TestNG `@DataProvider` inputs; do not let
+      them get lost in the rewrite.
+
+  - id: THREE-IMPL-RULE-RISK
+    severity: low-medium
+    status: candidates-identified-participation-not-secured
+    message: |
+      CITE policy requires three independent passing implementations. As of user gate
+      2026-04-27, three candidates are identified:
+        1. GeoRobotix demo server (api.georobotix.io/ogc/t18/api) — already used as IUT
+           for v1.0 web app, known to pass extensive subsets of Part 1 + Part 2.
+        2. OpenSensorHub — user-confirmed candidate.
+        3. SomethingCreativeStudios/connected-systems-go — user-confirmed candidate;
+           Go implementation, claims Part 1 + Part 2 conformance, active codebase.
+      Pat should track formal beta-participation outreach (especially to OSH and
+      connected-systems-go) as a calendar milestone, not a sprint deliverable. Severity
+      downgraded from medium to low-medium because the pool exists; residual risk is in
+      securing each candidate's willingness to be tested under CITE rules.
+
+  - id: SCHEMAS-MAY-DRIFT
+    severity: medium
+    message: |
+      SensorML and SWE Common are in active SWG update cycles inside the same
+      `opengeospatial/ogcapi-connected-systems` repo. The 126 schemas we bundled at v1.0
+      may not match the final state. Architect should pin to specific commit SHAs and
+      plan re-pinning as a periodic maintenance task.
+
+  - id: WEB-APP-FATE-USER-DECISION
+    severity: resolved
+    status: closed-2026-04-27
+    message: |
+      RESOLVED at user gate 2026-04-27: option (a) — freeze v1.0 at HEAD ab53658,
+      reposition README as "developer pre-flight tool, not certification-track,"
+      no further sprint investment on the TS web app. Pat does not need to plan any
+      maintenance or co-evolution work for the web app. R-PIVOT-10 (README reposition)
+      is the only web-app-touching deliverable in the new scope.
+
+  - id: DUAL-MAINTENANCE-PROCESS
+    severity: low
+    message: |
+      Even in the "freeze the web app" scenario, the JSON Schemas are shared. If the
+      ETS updates the schemas (which it will, as OGC publishes errata), the web app
+      will silently drift unless the schemas live in one place and are referenced by
+      both. Recommend extracting schemas into a small shared sub-package or a single
+      directory both repos consume by git submodule / symlink. Architect's call.
+
+user_decisions_2026_04_27:
+  repo_topology: "sibling-repo-our-org-first-propose-to-ogc-at-beta"
+  scope_first_cut: "part-1-first-then-part-2"
+  web_app_fate: "freeze-v1.0-reposition-readme-no-further-investment"
+  third_impl_candidates:
+    - id: "georobotix-testbed"
+      url: "https://api.georobotix.io/ogc/t18/api"
+      status: "live-IUT-passes-existing-suite"
+    - id: "opensensorhub"
+      status: "user-confirmed-outreach-pending"
+    - id: "connected-systems-go"
+      url: "https://github.com/SomethingCreativeStudios/connected-systems-go"
+      status: "user-confirmed-outreach-pending"
+      notes: "Go impl, GORM+PostGIS, claims Part 1 + Part 2 (cites IS 23-001, IS 24-008)"
+  open_questions_for_pat:
+    - "Part 2 doc number: brief uses OGC 23-002, connected-systems-go cites IS 24-008. Verify current IS designation."
+    - "CI/CD: GH Actions for dev + Jenkinsfile for OGC submission?"
+    - "Maven Central publish timing: beta vs official release?"
+    - "Test data hosting layout per ets-ogcapi-features10?"
+
+confidence: 0.85
+
+confidence_rationale: |
+  High confidence (0.85, not 0.95) because:
+    + (+) GitHub evidence is direct and unambiguous: no CS API ETS exists.
+    + (+) OGC governance documents are explicit about the certification path and policy
+          gates.
+    + (+) Reference ETSs (features10, processes10, edr10) provide concrete, recently
+          maintained templates whose pom.xml dependency profiles I inspected directly.
+    + (+) Existing-repo asset inventory (schemas, registry modules, fixtures) is grounded
+          in direct file listing.
+    - (-) Did not directly inspect the OGC Compliance Roadmap GitHub project board (#85)
+          due to gh-cli scope limitation. Possible but unlikely that an in-flight CS API
+          ETS effort exists there as a tracked-but-no-code item; recommend Pat or the
+          user double-check the project board before sprint kickoff.
+    - (-) CITE SC's actual review velocity in 2026 is not well documented; estimates
+          around 6-12 months of beta are based on policy norms, not observed cadence.
+    - (-) Did not estimate effort precisely in person-weeks; that is the Planner's and
+          Architect's job once the spec is decomposed.
+    - (-) The OpenSensorHub team's willingness to test against this ETS as one of the
+          required three implementations is assumed, not confirmed. User may need to
+          establish that relationship.
+
+next_agent: planner
+next_agent_inputs:
+  - "_bmad/product-brief.md (v2.0)"
+  - "_bmad/prd.md (v1.1, will become v2.0 — needs major rewrite to drop web-app FRs and add ETS R-PIVOT-* requirements)"
+  - "_bmad/architecture.md (v1.0, will become v2.0 — needs full architecture rewrite for the Java/TestNG/TeamEngine target)"
+  - "openspec/capabilities/ (existing capability specs are largely obsolete; new capability `ets-ogcapi-connectedsystems` should be created)"
+
+planner_recommendations:
+  - "Create new capability spec `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` mapping R-PIVOT-01 through R-PIVOT-12 to REQ-* IDs."
+  - "Mark existing capability specs (endpoint-discovery, conformance-testing, dynamic-data-testing, test-engine, request-capture, reporting, export, progress-session) as `Status: Frozen — v1.0 web app, not certification-track`."
+  - "Confirm with user before sprint commit: (a) repo topology (sibling repo vs subdirectory vs separate org), (b) Part 1 only first cut vs Part 1+2 parallel, (c) web app fate (freeze recommended)."
+  - "First sprint should be 'archetype scaffold + first conformance class (CS API Core) green against GeoRobotix' as the smallest end-to-end vertical slice. Do not try to port all 28 classes in one sprint."
+  - "Architect must produce a TeamEngine integration architecture before Generator starts; the SPI registration mechanism is non-trivial and not well documented."

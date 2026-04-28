@@ -1,6 +1,8 @@
 # Conformance Testing — Specification
 
-> Version: 1.0 | Status: Implemented | Last updated: 2026-04-16
+> Version: 1.0 | Status: Frozen — v1.0 web app, superseded by ets-ogcapi-connectedsystems | Last updated: 2026-04-27
+>
+> **Frozen 2026-04-27.** Project pivoted to a Java/TestNG TeamEngine ETS. This capability's REQs and SCENARIOs remain authoritative for the v1.0 web app at HEAD `ab53658` but are NOT the certification-track contract. All new conformance-testing work is in `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`.
 
 ## Purpose
 

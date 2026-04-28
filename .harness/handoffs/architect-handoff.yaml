@@ -1,0 +1,294 @@
+agent: architect
+status: complete
+timestamp: "2026-04-27T22:30:00Z"
+sprint_number: "ets-01"
+triggered_by: "Pat's planner-handoff naming Architect as next, deferring 4 architectural questions + archetype modernization plan"
+supersedes: "(no prior architect-handoff for this project — first invocation post-pivot)"
+
+next_agent: generator
+next_agent_rationale: |
+  Architecture v2.0, capability design.md, and 5 ADRs are complete. The four architectural
+  questions Pat deferred (SPI registration, schema bundling, Java package naming, archetype
+  modernization) are resolved with concrete patterns grounded in direct evidence from
+  ets-ogcapi-features10@master and ets-common@tag-17. Generator (Dana) has unambiguous
+  inputs to begin S-ETS-01-01 immediately.
+
+  Skipped Design (Sally): this is a server-side test suite with no user-facing UI surface
+  beyond TeamEngine's existing CTL form. The CTL form's HTML is part of REQ-ETS-TEAMENGINE-002
+  and follows the features10 reference verbatim — no UX design work needed.
+
+next_agent_inputs:
+  - "_bmad/architecture.md (v2.0 — fresh rewrite)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (new)"
+  - "_bmad/adrs/ADR-001-teamengine-spi-registration.md"
+  - "_bmad/adrs/ADR-002-json-schema-bundling.md"
+  - "_bmad/adrs/ADR-003-java-package-naming.md"
+  - "_bmad/adrs/ADR-004-archetype-jdk17-modernization-checklist.md"
+  - "_bmad/adrs/ADR-005-cross-repo-relationship-with-frozen-webapp.md"
+  - ".harness/contracts/sprint-ets-01.yaml"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
+  - "epics/stories/s-ets-01-01-archetype-jdk17-build.md"
+  - "epics/stories/s-ets-01-02-csapi-core-conformance-class.md"
+  - "epics/stories/s-ets-01-03-teamengine-docker-smoke.md"
+
+outputs:
+  - path: "_bmad/architecture.md"
+    type: "architecture"
+    version: "2.0"
+    note: |
+      Full rewrite. v1.0 web-app architecture preserved verbatim at _bmad/architecture-v1-frozen.md
+      with frozen frontmatter. Last Reconciled: 2026-04-27.
+  - path: "_bmad/architecture-v1-frozen.md"
+    type: "frozen-architecture"
+    note: "Verbatim copy of v1.0 architecture, marked FROZEN, retained for portable rationale (conformance-mapper, dependency-DAG, spec-trap fixture knowledge)."
+  - path: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md"
+    type: "design"
+    note: "New. Class structure, interface contracts, per-Sprint-1-story readiness verdicts, implementation constraints for Generator."
+  - path: "_bmad/adrs/ADR-001-teamengine-spi-registration.md"
+    type: "adr"
+    status: "accepted"
+  - path: "_bmad/adrs/ADR-002-json-schema-bundling.md"
+    type: "adr"
+    status: "accepted"
+  - path: "_bmad/adrs/ADR-003-java-package-naming.md"
+    type: "adr"
+    status: "accepted"
+  - path: "_bmad/adrs/ADR-004-archetype-jdk17-modernization-checklist.md"
+    type: "adr"
+    status: "accepted"
+  - path: "_bmad/adrs/ADR-005-cross-repo-relationship-with-frozen-webapp.md"
+    type: "adr"
+    status: "accepted"
+
+readiness: "PASS-with-one-concerns"
+readiness_per_story:
+  S-ETS-01-01:
+    verdict: "PASS"
+    rationale: "Maven coordinates, Java package, modernization checklist (25 items) all fully specified. Generator follows ADR-003 + ADR-004."
+  S-ETS-01-02:
+    verdict: "PASS"
+    rationale: "Three test classes specified with concrete @Test method names. v1.0 GH#3 fix and API-def fallback explicitly preserved at design level."
+  S-ETS-01-03:
+    verdict: "CONCERNS"
+    rationale: "SPI registration pattern is fully specified (ADR-001) but four implementation pitfalls require Quinn verification: (1) TeamEngine 5.6.1 vs spec's 5.5 deployment mismatch; (2) META-INF/services/ filename literal-correctness; (3) CTL Saxon namespace package-name typo can be silent; (4) Smoke-test artifact archival is the E2E gate."
+
+adrs:
+  - id: "ADR-001"
+    title: "TeamEngine SPI Registration Pattern"
+    decision: |
+      Five artifacts mirror ets-ogcapi-features10@master verbatim: META-INF/services file with
+      single FQCN line, TestNGController class implementing TestSuiteController, ets.properties,
+      testng.xml, CTL wrapper. SPI = Java ServiceLoader scan.
+  - id: "ADR-002"
+    title: "JSON Schema Bundling Mechanism"
+    decision: |
+      Verbatim copy of csapi_compliance/schemas/ → src/main/resources/schemas/ in the new repo
+      at scaffold time. Pin upstream OGC SHA in pom.xml comment block. v1.0 web app frozen,
+      so drift between the two schema copies is acceptable. No git submodule, no symlink, no
+      shared third repo (reconsider option 3 at beta milestone).
+  - id: "ADR-003"
+    title: "Java Package Naming and Maven Coordinates"
+    decision: |
+      Use org.opengis.cite.ogcapiconnectedsystems10 (run-together, no .ogcapi. infix), artifactId
+      ets-ogcapi-connectedsystems10, ets-code ogcapi-connectedsystems10. Rejects Pat's PRD
+      proposal of org.opengis.cite.ogcapi.cs10 / artifactId ets-ogcapi-connectedsystems-1
+      because the proposed forms violate the convention used by all 10 active ets-ogcapi-* repos.
+      Sam: PRD §FR-ETS-01 and capability spec §REQ-ETS-SCAFFOLD-001 strings need updating at next
+      planning cycle.
+  - id: "ADR-004"
+    title: "ets-archetype-testng:2.7 Modernization Checklist (JDK 17 + TeamEngine 5.6.x)"
+    decision: |
+      25-item modernization checklist (Groups A-D) applied as atomic commits after archetype
+      generation. Parent ets-common:17 (NOT 14 as PRD says — 14 is stale; NOT 18-SNAPSHOT —
+      not reproducible). JDK 17 source/target/release. <project.build.outputTimestamp> for
+      reproducibility. Group E lists items deferred from Sprint 1 (TE 6.0 migration, mvn site,
+      OSSRH GPG, scm-publish).
+  - id: "ADR-005"
+    title: "Cross-Repo Relationship with the Frozen v1.0 Web App"
+    decision: |
+      Sibling repos with no code-level coupling. README cross-links both directions. v1.0-frozen
+      tag at HEAD ab53658. Schemas verbatim-copied (per ADR-002), drift acceptable. URI-coverage
+      diff (REQ-ETS-SYNC-001) is a CI script in the new ETS that clones csapi_compliance@v1.0-frozen,
+      deferred until Part 1 feature-complete.
+
+constraints_for_generator:
+  must:
+    - "Use Maven groupId/artifactId/coordinates per ADR-003 (NOT the PRD strings — superseded)."
+    - "Use Java root package org.opengis.cite.ogcapiconnectedsystems10 (NOT org.opengis.cite.ogcapi.cs10)."
+    - "Apply ADR-004 modernization checklist Groups A-D items as separate atomic commits, each commit message citing the ADR row (e.g. 'S-ETS-01-01: pom.xml parent → ets-common:17 (ADR-004 A-1)')."
+    - "Use ets-common:17 release tag as parent (NOT version 14 — stale in PRD; NOT 18-SNAPSHOT — not reproducible)."
+    - "Place META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController as a single line containing only the TestNGController FQCN, no extension, no whitespace."
+    - "Every @Test method in CoreTests classes has description attribute starting with 'OGC-23-001 /req/core/...'."
+    - "Preserve v1.0 GH#3 fix: rel=self on landing page is example-only, NOT mandatory. Add a sentinel @Test landingPageDoesNotRequireSelfRel that asserts the PASS case."
+    - "Preserve v1.0 API-definition fallback: PASS when service-desc OR service-doc is present; FAIL only when both absent."
+    - "Use EtsAssert with structured FAIL messages including the /req/* URI; do not throw bare TestNG AssertionError."
+    - "Smoke test (scripts/smoke-test.sh) is bash, archived TestNG XML report is the E2E artifact, exits 0 only on non-empty report + zero ERROR-level container logs during suite registration."
+    - "Set <project.build.outputTimestamp>2026-04-27T00:00:00Z</project.build.outputTimestamp> in pom.xml properties for reproducible builds."
+    - "Add .gitattributes enforcing LF line endings on .json, .xml, .ctl, .properties files (Windows reproducibility)."
+    - "Copy the 126 JSON Schemas from csapi_compliance/schemas/ → src/main/resources/schemas/ at scaffold time. Record the source HEAD SHA (ab53658) plus the upstream OGC ogcapi-connected-systems SHA in ops/server.md of the new repo."
+    - "Tag csapi_compliance@HEAD as v1.0-frozen via annotated tag with message 'Frozen 2026-04-27 at user-pivot to Java/TestNG ETS' — but this tag is REQ-ETS-WEBAPP-FREEZE-001 scope, separate sprint, NOT Sprint 1. Note in ops/changelog.md that scaffold work assumes this tag exists."
+
+  must_not:
+    - "Implement any Part 2 functionality (REQ-ETS-PART2-*). User gate explicitly excludes Part 2 from Sprint 1; Pat's contract enforces this; Quinn rejects on violation."
+    - "Implement REQ-ETS-FIXTURES-* (spec-trap port). Out of Sprint 1 scope; epic-ets-06 in a parallel sprint."
+    - "Implement REQ-ETS-CITE-* (Maven Central publish, OSSRH, GPG). Calendar-bound; beta milestone."
+    - "Modify csapi_compliance/ repo files. The freeze applies. README reposition is a separate quick-win sprint."
+    - "Override ets-common-managed transitive dep versions (everit-json-schema, jackson, jersey, jts) without an ADR explaining why ets-common's pin is wrong."
+    - "Add a non-ets-common-managed transitive dependency without an ADR."
+    - "Use ets-common:14 (stale) or ets-common:18-SNAPSHOT (non-reproducible). The pin is :17."
+    - "Use Pat's spec/PRD strings 'ets-ogcapi-connectedsystems-1' or 'org.opengis.cite.ogcapi.cs10' — ADR-003 supersedes these. Use 'ets-ogcapi-connectedsystems10' and 'org.opengis.cite.ogcapiconnectedsystems10'."
+    - "Try to use Kaizen openapi-parser to drive Sprint 1 Core schema validation. Sprint 1 uses everit-json-schema (transitive from ets-common) directly because the OGC CS API OpenAPI YAML is not yet structurally stable. Kaizen's openapi-parser is on the dep list for sprints 2+."
+    - "Re-introduce a strict rel=self mandatory assertion on landing page. That regresses the v1.0 GH#3 fix."
+
+  should:
+    - "After scaffold lands, run a structural-diff against ets-ogcapi-features10@master and document divergences in REQ-ETS-SCAFFOLD-003 implementation notes (file basenames, package names, ets-code substrings)."
+    - "After Core tests land, run scripts/smoke-test.sh locally and archive the TestNG report into ops/test-results.md before pushing."
+    - "Use logback.xml configured to NEVER log Authorization or X-API-Key headers (CredentialMaskingFilter pattern equivalent to v1.0's CredentialMasker)."
+    - "When in doubt, copy from ets-ogcapi-features10@master verbatim and rename. The pattern is well-trodden; innovation here is anti-value."
+
+risks_for_generator:
+  highest:
+    - id: "GENERATOR-USES-PAT-COORDINATES"
+      severity: high
+      description: |
+        Pat's PRD §FR-ETS-01 and capability spec §REQ-ETS-SCAFFOLD-001 reference coordinates
+        ('ets-ogcapi-connectedsystems-1', 'org.opengis.cite.ogcapi.cs10') that ADR-003 has
+        superseded. If Generator reads only PRD/spec and skips ADRs, the artifactId will be
+        wrong and downstream files (CTL wrapper, META-INF/services line) will mismatch the
+        Java root package.
+      mitigation: |
+        constraints_for_generator.must explicitly directs to ADR-003. Sprint contract should
+        enforce. Quinn verifies against ADR-003 string in S-ETS-01-01 review.
+
+    - id: "TEAMENGINE-VERSION-DRIFT"
+      severity: medium-high
+      description: |
+        Spec/PRD says TeamEngine 5.5; teamengine-production master pins 5.6.1; ets-common:17
+        targets 5.6.x; teamengine-docker has 5.7 and 6.0.0 tagged but production master is 5.6.1.
+        Generator must use the same TE version locally that the OGC validator runs.
+      mitigation: |
+        Architecture §2 specifies 5.6.1; ADR-001 references 5.6.1; design.md S-ETS-01-03
+        readiness verdict CONCERNS calls this out. Generator pulls ogccite/teamengine-production:5.6.1
+        in Dockerfile.
+
+    - id: "REPRODUCIBLE-BUILD-WINDOWS"
+      severity: medium
+      description: |
+        On Windows, git autocrlf can change line endings inside resource files in the jar,
+        breaking byte-equality. NFR-ETS-01 + SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 require pass.
+      mitigation: |
+        ADR-004 group D-1 mandates .gitattributes with LF on json/xml/ctl/properties.
+
+    - id: "META-INF-SERVICES-FILENAME"
+      severity: medium
+      description: |
+        Common Generator failure: creates the file with .txt extension or splits the FQCN
+        across multiple files. TeamEngine then silently fails to discover the suite.
+      mitigation: |
+        S-ETS-01-03 readiness CONCERNS lists this as a Quinn check. Quinn runs
+        `unzip -l target/*.jar | grep META-INF/services/` and counts entries.
+
+  medium:
+    - id: "ets-common-not-on-maven-central"
+      severity: medium
+      description: |
+        ets-common:17 is published to OSSRH, not Maven Central directly. Generator's local
+        ~/.m2/settings.xml must include the OGC OSSRH repo (snapshot + release).
+      mitigation: |
+        Document the prereq in ops/server.md at scaffold time; ADR-004 §Risks notes this.
+
+  low:
+    - id: "documentation-asciidoc-vs-markdown"
+      severity: low
+      description: |
+        OGC convention is README.adoc (AsciiDoc). Generator may default to README.md.
+      mitigation: |
+        Architecture §10 constraint #6 mandates .adoc. Quinn flags any README.md as a regression.
+
+architectural_questions_resolved:
+  - id: "TEAMENGINE-SPI"
+    question: "How does the ETS register with TeamEngine? testng-essentials docs are incomplete."
+    resolution: "Java ServiceLoader scan of META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController files. Pattern verified at github.com/opengeospatial/ets-ogcapi-features10@master. Captured in ADR-001."
+  - id: "JSON-SCHEMA-BUNDLING"
+    question: "Submodule, symlink, third repo, or verbatim copy?"
+    resolution: "Verbatim copy from csapi_compliance/schemas/ → new repo's src/main/resources/schemas/. Captured in ADR-002. Reconsider option 3 (third repo cs-api-schemas) at beta milestone."
+  - id: "JAVA-PACKAGE-NAMING"
+    question: "Pat proposed org.opengis.cite.ogcapi.cs10. Does this match OGC convention?"
+    resolution: "No. Convention is run-together, no .ogcapi. infix, full spec name. Use org.opengis.cite.ogcapiconnectedsystems10 + artifactId ets-ogcapi-connectedsystems10. Captured in ADR-003."
+  - id: "LOGGING-STACK"
+    question: "slf4j+logback or ets-common defaults?"
+    resolution: "Add slf4j-api + logback-classic on top of ets-common's java.util.logging. PRD NFR-ETS-10 requires structured slf4j; ets-common does not bind a backend; both coexist. Captured in Architecture §6 (no separate ADR per Pat's lower-stakes call)."
+  - id: "ARCHETYPE-MODERNIZATION"
+    question: "How aggressively to modernize ets-archetype-testng:2.7 (2019)?"
+    resolution: "25-item checklist across Groups A-D, applied as atomic commits. Stay on TeamEngine 5.6.x / ets-common:17 for Sprint 1 (live OGC validator's deployment). Defer TE 6.0 to beta. Captured in ADR-004."
+
+surfaced_risks_pat_missed:
+  - id: "PRD-ARTIFACTID-STALE"
+    severity: medium
+    description: |
+      PRD §FR-ETS-01 and capability spec §REQ-ETS-SCAFFOLD-001 reference
+      'ets-ogcapi-connectedsystems-1' as the artifactId, but every active OGC ETS in the
+      catalog uses two-digit version concatenation (features10, edr10, processes10, etc.) — never
+      a single-digit '-1' Part suffix. ADR-003 supersedes the PRD string.
+    action: "Sam: amend PRD §FR-ETS-01 and capability spec §REQ-ETS-SCAFFOLD-001 at next planning cycle. Until amended, ADRs are authoritative for Generator."
+
+  - id: "ETS-COMMON-VERSION-STALE"
+    severity: medium
+    description: |
+      PRD §FR-ETS-04 and §REQ-ETS-SCAFFOLD-004 reference 'ets-common:14' but the latest released
+      tag is 17 (master is 18-SNAPSHOT). ets-common:14 still works (features10 master uses it)
+      but :17 has updated TE.version=6.0.0, current Jersey 3.1.8, current Jackson 2.18, etc.
+      We pin :17 for the modernization upside without taking the SNAPSHOT risk.
+    action: "Sam: amend PRD §FR-ETS-04 and capability spec §REQ-ETS-SCAFFOLD-004 to 'ets-common:17'. Until amended, ADR-004 is authoritative."
+
+  - id: "TEAMENGINE-VERSION-CITED-IS-5.5-DEPLOYED-IS-5.6.1"
+    severity: medium
+    description: |
+      PRD/spec consistently cite TeamEngine 5.5 (per Mary's discovery referencing the December 2025
+      blog post). The actual production-docker master pins 5.6.1; tags 5.7 and 6.0.0 also exist.
+      The OGC validator at cite.opengeospatial.org/teamengine/ runs whatever the production
+      image's master produces — currently 5.6.1.
+    action: "Sam: amend PRD/spec references to 'TeamEngine 5.6.x (currently 5.6.1)'. Until amended, Architecture §2 + ADR-001 + Dockerfile pin 5.6.1."
+
+  - id: "OPENAPI-PARSER-NOT-USED-IN-SPRINT-1"
+    severity: low
+    description: |
+      PRD's FR-ETS-26 specifies 'Schema validation SHALL use com.reprezen.kaizen:openapi-parser
+      against the OGC OpenAPI YAML pinned by commit SHA in pom.xml.' For Sprint 1 Core, this is
+      NOT what the design uses — Core uses everit-json-schema directly against bundled JSON
+      Schemas. Reason: the OGC CS API OpenAPI YAML is not yet structurally stable enough to
+      drive operation-level validation (Mary's SCHEMAS-MAY-DRIFT). Kaizen openapi-parser stays
+      on the dep list for Sprint 2+ when richer Part 1 classes need it.
+    action: |
+      design.md §"JSON Schema validation" documents this Sprint-1 split. Quinn must NOT flag
+      this as a spec deviation; it is a deliberate, ADR-aware narrowing for Sprint 1 only.
+      Sam: clarify FR-ETS-26 at the next planning cycle to acknowledge per-sprint validator
+      strategy (everit for Core; Kaizen for OpenAPI-driven classes).
+
+confidence: 0.83
+confidence_rationale: |
+  High confidence (0.83, not 0.95) because:
+    + (+) Direct evidence from ets-ogcapi-features10@master grounds ADR-001 verbatim — the SPI
+          pattern is not theoretical; it is a copy-paste port.
+    + (+) ets-common pom.xml inspection confirmed dep versions, parent semantics, TE version pin.
+    + (+) Concrete classes named and contracts specified (LandingPageTests, ConformanceTests,
+          ResourceShapeTests, EtsAssert, SuiteFixtureListener, TestNGController).
+    + (+) v1.0 GH#3 fix and API-def fallback explicitly preserved at design level + sentinel
+          test names suggested.
+    + (+) Cross-repo coupling rejected (ADR-005); no surprises for CITE SC reviewers.
+    - (-) The PRD strings (artifactId 'connectedsystems-1', package 'cs10', parent ':14') are
+          stale and ADR-003/-004 supersede them. Sam must reconcile at next planning cycle;
+          if Sam misses this, Generator may follow PRD verbatim and produce wrong coordinates.
+          Mitigation: constraints_for_generator.must explicitly directs to ADRs; surfaced_risks
+          calls this out.
+    - (-) TeamEngine 5.6.1 vs spec's 5.5 — same reconciliation gap. Could cause Quinn to flag
+          a passing build as 'not on the spec'd version' if Quinn reads only the spec.
+    - (-) Did not validate the SPI pattern against an actual TeamEngine 5.6.1 Docker pull on
+          this host. The pattern is grounded in source-repo evidence, not runtime evidence.
+          Generator's S-ETS-01-03 smoke test is the runtime validation.
+    - (-) Sprint 1 design.md describes Kaizen openapi-parser as a Sprint-2+ artifact while PRD
+          FR-ETS-26 says it's the Sprint-1 validator. Deliberate but creates a Sam reconcile-
+          job at next planning cycle.
+
+residual_questions: []
+blockers: []

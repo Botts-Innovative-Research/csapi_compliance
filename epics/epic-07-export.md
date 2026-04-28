@@ -1,6 +1,6 @@
 # Epic 07: Export & Sharing
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. TeamEngine export (HTML/EARL) supersedes. | Last updated: 2026-04-27
 
 ## Goal
 Enable users to export assessment results as portable JSON (machine-readable, versioned schema) and PDF (human-readable) documents for archival, sharing, and integration with external tooling.

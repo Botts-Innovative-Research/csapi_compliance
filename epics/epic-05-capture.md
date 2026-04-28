@@ -1,6 +1,6 @@
 # Epic 05: Request/Response Capture
 
-> Status: Done | Last updated: 2026-03-31
+> Status: Closed — v1.0 web app shipped at HEAD ab53658, no further sprints. TestNG report attachments cover HTTP capture in the new ETS. | Last updated: 2026-04-27
 
 ## Goal
 Capture every HTTP request and response exchanged during a conformance assessment, providing full observability for debugging failures and generating evidence for export. Ensure sensitive credentials are masked in all user-facing displays and exports.

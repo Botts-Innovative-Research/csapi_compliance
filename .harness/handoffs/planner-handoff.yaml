@@ -1,0 +1,301 @@
+agent: planner
+status: complete
+timestamp: "2026-04-27T22:00:00Z"
+sprint_number: "ets-01"
+sprint_name: "scaffold-plus-csapi-core-plus-teamengine-smoke"
+contract_path: ".harness/contracts/sprint-ets-01.yaml"
+triggered_by: "User pivot from Next.js web app to Java/TestNG TeamEngine ETS, 2026-04-27, post-Discovery-handoff"
+supersedes: "(no prior planner-handoff for this project — first invocation post-pivot)"
+
+next_agent: architect
+next_agent_rationale: |
+  Architect (Alex) MUST land before Generator (Dana). Sprint 1 has four open architectural
+  questions whose resolution is gating any code:
+    1. TeamEngine SPI registration mechanics — testng-essentials docs are incomplete
+    2. Java package naming convention — proposed org.opengis.cite.ogcapi.cs10
+    3. JSON Schema bundling mechanism — symlink, submodule, or copy from csapi_compliance/schemas/
+    4. Archetype modernization plan — which 2019-vintage dependencies need bumping, how aggressively
+
+  Architect produces _bmad/architecture.md v2.0 plus the ADRs that S-ETS-01-01 references.
+  Architect does NOT decompose stories further (Pat owns that); architecture work feeds the
+  Sprint 1 contract by ratifying these four questions.
+
+next_agent_inputs:
+  - "_bmad/product-brief.md (v2.0)"
+  - "_bmad/prd.md (v2.0 — Pat just rewrote)"
+  - "_bmad/project-brief.md (v2.0 — Pat just rewrote)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (v1.0 Draft — Pat just authored)"
+  - ".harness/contracts/sprint-ets-01.yaml (Pat just authored)"
+  - ".harness/handoffs/discovery-handoff.yaml (Mary 2026-04-27)"
+  - "_bmad/architecture.md (v1.0 — frozen for web app; Alex rewrites to v2.0 for ETS)"
+  - "Reference ETSs: github.com/opengeospatial/ets-ogcapi-features10, ets-ogcapi-processes10, ets-ogcapi-edr10"
+
+outputs:
+  - path: "_bmad/prd.md"
+    type: "prd"
+    note: "Full rewrite v1.1 → v2.0. Drops 59 web-app FRs and 15 NFRs; replaces with 30+ ETS-shaped FRs and 15 ETS-shaped NFRs. Resolves Part 2 doc-number question (OGC 23-002 confirmed via docs.ogc.org)."
+  - path: "_bmad/project-brief.md"
+    type: "project-brief"
+    note: "Full rewrite v1.1 → v2.0. Repositions project as Java/TestNG ETS for OGC TeamEngine certification track."
+  - path: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
+    type: "spec"
+    note: "New capability spec. 32 REQ-ETS-* (Specified or Placeholder) + 12 SCENARIO-ETS-* (5 CRITICAL, 7 NORMAL)."
+  - path: "openspec/capabilities/conformance-testing/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen — v1.0 web app, superseded by ets-ogcapi-connectedsystems."
+  - path: "openspec/capabilities/dynamic-data-testing/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/endpoint-discovery/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/export/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/progress-session/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/reporting/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/request-capture/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "openspec/capabilities/test-engine/spec.md"
+    type: "spec-frontmatter-edit"
+    note: "Marked Frozen."
+  - path: "epics/epic-ets-01-scaffold.md"
+    type: "epic"
+    note: "New ETS scaffold epic — Sprint 1."
+  - path: "epics/epic-ets-02-part1-classes.md"
+    type: "epic"
+    note: "New ETS Part 1 epic — Sprint 1 (Core only) + post-Sprint-1 (other 13 classes)."
+  - path: "epics/epic-ets-03-part2-classes.md"
+    type: "epic"
+    note: "New ETS Part 2 epic — deferred per user gate 2026-04-27."
+  - path: "epics/epic-ets-04-teamengine-integration.md"
+    type: "epic"
+    note: "New TeamEngine integration epic — Sprint 1 (smoke test) + post-Sprint-1."
+  - path: "epics/epic-ets-05-cite-submission.md"
+    type: "epic"
+    note: "New CITE submission epic — calendar-bound, beta-milestone."
+  - path: "epics/epic-ets-06-fixture-port.md"
+    type: "epic"
+    note: "New spec-trap fixture port epic — parallel after Sprint 1."
+  - path: "epics/epic-ets-07-webapp-freeze.md"
+    type: "epic"
+    note: "New webapp-freeze epic — quick-win, single story."
+  - path: "epics/epic-01-discovery.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed — v1.0 web app shipped, no further sprints."
+  - path: "epics/epic-02-parent-testing.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-03-csapi-testing.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-04-test-engine.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-05-capture.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-06-reporting.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-07-export.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-08-progress-session.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/epic-09-dynamic-data-testing.md"
+    type: "epic-frontmatter-edit"
+    note: "Marked Closed."
+  - path: "epics/stories/s-ets-01-01-archetype-jdk17-build.md"
+    type: "story"
+    note: "Sprint 1 P0: archetype generation, JDK 17 modernization, first green build."
+  - path: "epics/stories/s-ets-01-02-csapi-core-conformance-class.md"
+    type: "story"
+    note: "Sprint 1 P0: implement CS API Core conformance class against GeoRobotix."
+  - path: "epics/stories/s-ets-01-03-teamengine-docker-smoke.md"
+    type: "story"
+    note: "Sprint 1 P0: TeamEngine 5.5 Docker smoke test runs Core suite end-to-end."
+  - path: ".harness/contracts/sprint-ets-01.yaml"
+    type: "contract"
+    note: "Sprint 1 contract. Critical scenarios: 5. Normal scenarios: 5. Gate 4 (Raze) required."
+  - path: "_bmad/traceability.md"
+    type: "matrix-edit"
+    note: "Prepended new Traceability v2.0 ETS section. Old v1.0 section marked Frozen."
+
+summary: |
+  Translated the user's 2026-04-27 pivot (Next.js web app → Java/TestNG TeamEngine ETS) into a
+  full planning artifact set. Drafted 32 REQ-ETS-* across the new capability
+  `ets-ogcapi-connectedsystems` (8 sub-deliverables: scaffold, Core, Part 1, Part 2 placeholders,
+  TeamEngine integration, fixtures, CITE submission, webapp freeze, sync), 12 SCENARIO-ETS-*
+  (5 CRITICAL gating Sprint 1), 7 new ETS epics, 3 Sprint 1 story files, 1 Sprint 1 contract,
+  and updated the PRD + project-brief + traceability. Marked all 8 v1.0 capability specs
+  Frozen and all 9 v1.0 epics Closed (frontmatter edits only — no content deleted).
+
+  Sprint 1 is the smallest possible end-to-end vertical slice: archetype scaffold + JDK 17
+  modernization (S-ETS-01-01) + CS API Core conformance class (S-ETS-01-02) + TeamEngine 5.5
+  Docker smoke test against GeoRobotix (S-ETS-01-03). Critical evaluation focus: did the Java
+  port preserve the v1.0 GH#3 fix (rel=self example-only) and the API-definition fallback
+  (service-desc OR service-doc)? Is the OpenAPI YAML pinned by SHA? Is the smoke test green
+  end-to-end?
+
+  Part 2 work is explicitly excluded from Sprint 1 per user gate. Part 2 placeholder REQ-* IDs
+  (REQ-ETS-PART2-001..014) are in the spec for traceability but carry no implementation detail
+  yet. Detailed per-class FRs/SCENARIOs for Part 2 will be drafted in a future planning cycle.
+
+spec_changes:
+  new_capabilities:
+    - "ets-ogcapi-connectedsystems"
+  frozen_capabilities:
+    - "endpoint-discovery"
+    - "conformance-testing"
+    - "dynamic-data-testing"
+    - "test-engine"
+    - "request-capture"
+    - "reporting"
+    - "export"
+    - "progress-session"
+  new_reqs:
+    # Specified (Sprint 1 actively implements REQ-ETS-SCAFFOLD-* + REQ-ETS-CORE-* + REQ-ETS-TEAMENGINE-*)
+    - "REQ-ETS-SCAFFOLD-001"
+    - "REQ-ETS-SCAFFOLD-002"
+    - "REQ-ETS-SCAFFOLD-003"
+    - "REQ-ETS-SCAFFOLD-004"
+    - "REQ-ETS-SCAFFOLD-005"
+    - "REQ-ETS-SCAFFOLD-006"
+    - "REQ-ETS-SCAFFOLD-007"
+    - "REQ-ETS-CORE-001"
+    - "REQ-ETS-CORE-002"
+    - "REQ-ETS-CORE-003"
+    - "REQ-ETS-CORE-004"
+    - "REQ-ETS-TEAMENGINE-001"
+    - "REQ-ETS-TEAMENGINE-002"
+    - "REQ-ETS-TEAMENGINE-003"
+    - "REQ-ETS-TEAMENGINE-004"
+    - "REQ-ETS-TEAMENGINE-005"
+    - "REQ-ETS-FIXTURES-001"
+    - "REQ-ETS-FIXTURES-002"
+    - "REQ-ETS-FIXTURES-003"
+    - "REQ-ETS-CITE-001"
+    - "REQ-ETS-CITE-002"
+    - "REQ-ETS-CITE-003"
+    - "REQ-ETS-WEBAPP-FREEZE-001"
+    - "REQ-ETS-SYNC-001"
+    # Placeholders (per-class REQ-* deferred; surface enumerated for traceability)
+    - "REQ-ETS-PART1-001"
+    - "REQ-ETS-PART1-002"
+    - "REQ-ETS-PART1-003"
+    - "REQ-ETS-PART1-004"
+    - "REQ-ETS-PART1-005"
+    - "REQ-ETS-PART1-006"
+    - "REQ-ETS-PART1-007"
+    - "REQ-ETS-PART1-008"
+    - "REQ-ETS-PART1-009"
+    - "REQ-ETS-PART1-010"
+    - "REQ-ETS-PART1-011"
+    - "REQ-ETS-PART1-012"
+    - "REQ-ETS-PART1-013"
+    - "REQ-ETS-PART2-001"
+    - "REQ-ETS-PART2-002"
+    - "REQ-ETS-PART2-003"
+    - "REQ-ETS-PART2-004"
+    - "REQ-ETS-PART2-005"
+    - "REQ-ETS-PART2-006"
+    - "REQ-ETS-PART2-007"
+    - "REQ-ETS-PART2-008"
+    - "REQ-ETS-PART2-009"
+    - "REQ-ETS-PART2-010"
+    - "REQ-ETS-PART2-011"
+    - "REQ-ETS-PART2-012"
+    - "REQ-ETS-PART2-013"
+    - "REQ-ETS-PART2-014"
+  modified_reqs: []
+  new_scenarios:
+    critical:
+      - "SCENARIO-ETS-SCAFFOLD-BUILD-001"
+      - "SCENARIO-ETS-CORE-LANDING-001"
+      - "SCENARIO-ETS-CORE-CONFORMANCE-001"
+      - "SCENARIO-ETS-TEAMENGINE-LOAD-001"
+      - "SCENARIO-ETS-CORE-SMOKE-001"
+    normal:
+      - "SCENARIO-ETS-SCAFFOLD-LAYOUT-001"
+      - "SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001"
+      - "SCENARIO-ETS-CORE-RESOURCE-SHAPE-001"
+      - "SCENARIO-ETS-CORE-LINKS-NORMATIVE-001"
+      - "SCENARIO-ETS-CORE-API-DEF-FALLBACK-001"
+      - "SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001"
+      - "SCENARIO-ETS-FIXTURES-PORT-COVERAGE-001"
+      - "SCENARIO-ETS-WEBAPP-FREEZE-README-001"
+      - "SCENARIO-ETS-SYNC-URI-DIFF-001"
+
+resolved_open_questions:
+  - id: "PART2-DOC-NUMBER"
+    question: "Brief uses OGC 23-002, connected-systems-go cites IS 24-008. Which is current?"
+    resolution: "OGC 23-002 is authoritative. Confirmed via docs.ogc.org/is/23-002/23-002.html (approved 2025-06-02, published 2025-07-16, status Approved). Confirmed via docs.ogc.org/is/24-008/24-008.html returning HTTP 404. The connected-systems-go README's IS 24-008 string is incorrect; their CS API Part 2 implementation references the wrong document number."
+    citation: "https://docs.ogc.org/is/23-002/23-002.html (verified 2026-04-27)"
+  - id: "CI-CD-TOPOLOGY"
+    question: "Jenkinsfile (OGC convention) or GitHub Actions (our setup)?"
+    resolution: "Both. GH Actions for our active CI (build, test, smoke). Jenkinsfile checked in as a stub mirroring ets-ogcapi-features10's Jenkinsfile for OGC submission compatibility — not wired to a live Jenkins instance. Architect to ratify the exact stub content."
+  - id: "MAVEN-CENTRAL-PUBLISH-TIMING"
+    question: "When do we publish to OSSRH/Maven Central?"
+    resolution: "Beta milestone only. Pre-beta sprints publish SNAPSHOTs to OSSRH staging only. Avoids polluting Maven Central with pre-beta noise. Captured as REQ-ETS-CITE-001."
+  - id: "TEST-DATA-LAYOUT"
+    question: "Where do test fixtures and sample SensorML/SWE Common payloads live?"
+    resolution: "src/main/resources/data/ for shipped sample data (mirroring ets-ogcapi-features10), src/test/resources/fixtures/spec-traps/ for the ported spec-trap corpus. Architect to confirm during ADR."
+
+deferred_to_architect:
+  - "TeamEngine SPI registration mechanics (testng-essentials docs are incomplete; copy pattern from ets-ogcapi-features10)"
+  - "JSON Schema bundling mechanism — symlink, submodule, or copy from csapi_compliance/schemas/?"
+  - "Java package naming — propose org.opengis.cite.ogcapi.cs10; Architect ratifies"
+  - "Logging framework choice — slf4j+logback assumed; Architect confirms vs ets-common defaults"
+  - "Schema-validation invocation pattern — Kaizen openapi-parser load timing (BeforeSuite vs lazy)"
+  - "Reproducible-build mechanics — what META-INF entries to strip for byte-identical jars"
+
+deferred_to_future_sprints:
+  - "Per-class REQ-* and SCENARIO-* for Part 1 classes 2..14 (REQ-ETS-PART1-001..013) — drafted as placeholders in the spec; expand in sprint-by-sprint planning"
+  - "Per-class REQ-* and SCENARIO-* for all 14 Part 2 classes (REQ-ETS-PART2-001..014) — explicitly excluded from Sprint 1 per user gate"
+  - "REQ-ETS-FIXTURES-* implementation (epic-ets-06) — runs in parallel with Part 1 once Core is green"
+  - "REQ-ETS-CITE-* (epic-ets-05) — calendar-bound, beta milestone"
+  - "REQ-ETS-WEBAPP-FREEZE-001 (epic-ets-07) — quick-win, can land any time but not blocking"
+  - "REQ-ETS-SYNC-001 (TS↔Java URI diff) — needs Part 1 feature-complete"
+
+biggest_sprint_1_risks:
+  - id: "TEAMENGINE-SPI-DOCS-INCOMPLETE"
+    severity: high
+    description: "TeamEngine 5.5 testng-essentials docs defer SPI registration details to a Part 2 page that is not yet linked. If the SPI registration pattern from ets-ogcapi-features10 is incompatible with TeamEngine 5.5's current API, S-ETS-01-03 cannot land."
+    mitigation: "Architect must validate the SPI pattern works against the actual TeamEngine 5.5 Docker image before Generator starts code. ADR captures the pattern and any deviations."
+  - id: "ARCHETYPE-DATED"
+    severity: medium
+    description: "ets-archetype-testng:2.7 is from 2019. JDK 17 + 2026-vintage transitive dependencies may collide with archetype defaults."
+    mitigation: "Budget 30-50% of S-ETS-01-01 for archetype modernization; ADR each delta."
+  - id: "JVM-TOOLCHAIN-LEARNING-CURVE"
+    severity: medium
+    description: "Team's demonstrated proficiency is TypeScript. Maven + TestNG + REST Assured + Kaizen is new."
+    mitigation: "Heavy reuse of ets-ogcapi-features10 patterns. Architect produces an idiomatic-Java cookbook in the architecture doc."
+
+confidence: 0.82
+confidence_rationale: |
+  High confidence (0.82) because:
+    + (+) The user resolved all three of Mary's gating questions explicitly.
+    + (+) The Part 2 doc-number question is resolved authoritatively (docs.ogc.org confirms 23-002).
+    + (+) Reference ETSs (features10, processes10, edr10) provide a known-good template.
+    + (+) The Sprint 1 vertical slice is the smallest possible end-to-end proof; if it lands, the
+          pattern extends mechanically to the remaining 13 Part 1 classes.
+    + (+) Spec-trap fixtures (the most valuable IP from v1.0) are explicitly captured as a port
+          target with REQs and a CI-enforced diff script (REQ-ETS-FIXTURES-* + REQ-ETS-SYNC-001).
+    - (-) TeamEngine SPI registration mechanics are not fully documented; risk of integration
+          friction in S-ETS-01-03 is real and could derail the Sprint 1 capstone.
+    - (-) JVM toolchain proficiency is the team's largest unknown.
+    - (-) Architect has not yet ratified the four open architectural questions (SPI mechanics,
+          schema bundling, package naming, modernization scope); my plan assumes their resolution
+          but does not foreclose Architect's choices.
+    - (-) The placeholder REQ-* shape for Part 1 classes 2..14 and all of Part 2 trades depth for
+          breadth; per-class detail is necessary before each future sprint and could surface
+          contradictions with the Sprint 1 design.
+
+blockers: []

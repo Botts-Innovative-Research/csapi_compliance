@@ -1,246 +1,272 @@
-# Product Requirements Document — CS API Compliance Assessor
+# Product Requirements Document — OGC API CS API TeamEngine ETS
 
-> Version: 1.1 | Status: Living Document | Last updated: 2026-03-31
+> Version: 2.0 | Status: Living Document | Last updated: 2026-04-27
+>
+> **Supersedes v1.1 (2026-03-31).** v1.1 framed the deliverable as a Next.js/TypeScript web application
+> for ad-hoc CS API conformance assessment. The user pivoted on 2026-04-27 to a certification-track
+> Executable Test Suite (ETS) for OGC TeamEngine. v1.0 of the web app shipped at HEAD `ab53658`
+> (1003 Vitest unit tests, 9 epics, 39 stories, P0/P1 closed) and is **frozen** — no further sprint
+> investment, README repositioned as a developer pre-flight tool. v2.0 of this PRD reflects the new
+> primary deliverable. Discovery rationale is in `_bmad/product-brief.md` v2.0.
+>
+> **Doc-number resolution (Pat, 2026-04-27).** Part 1 = **OGC 23-001** (Feature Resources, approved
+> 2025-06-02, published 2025-07-16). Part 2 = **OGC 23-002** (Dynamic Data, approved 2025-06-02,
+> published 2025-07-16). Verified via `https://docs.ogc.org/is/23-002/23-002.html` and
+> `https://docs.ogc.org/is/23-001/23-001.html`. The "IS 24-008" string in the
+> `SomethingCreativeStudios/connected-systems-go` README is **incorrect**; the OGC docs portal
+> returns 404 for `/is/24-008/`. All Part 2 REQ-* IDs in this PRD reference OGC 23-002.
+
+---
+
+## Product Vision
+
+A Java/TestNG Executable Test Suite that an OGC API – Connected Systems server implementer can
+run inside TeamEngine 5.6.x (currently 5.6.1) (locally via Docker, or on `cite.opengeospatial.org/teamengine/`) to
+obtain a per-conformance-class pass/fail verdict with full HTTP request/response traces, a
+machine-readable EARL/JSON report, and — via the OGC CITE governance process — eventually an
+OGC compliance badge. The ETS is the certification deliverable; the v1.0 web app remains as a
+shift-left developer pre-flight tool.
+
+## Stakeholders
+
+| Role | Interest |
+|------|----------|
+| CS API server implementers (OpenSensorHub, GeoRobotix, connected-systems-go, vendor stacks) | Pass an OGC-recognised compliance test as evidence of conformance |
+| OGC CITE SubCommittee | Review and approve the ETS as a Compliance Test Package (CTP) |
+| OGC Connected Systems SWG | Reference implementation of their abstract test suite, validating the standard's clarity |
+| TeamEngine maintainers | Reduce per-ETS integration friction; this ETS is greenfield, not migration |
+| Project sponsor | Establish credibility in the OGC ecosystem; ship the first CS API ETS |
+
+## Success Criteria
+
+| ID | Criterion | Measure |
+|----|-----------|---------|
+| SC-1 | Maven archetype scaffold builds green | `mvn clean install` exits 0 on a fresh JDK 17 / Maven 3.9 environment |
+| SC-2 | All 14 OGC 23-001 (Part 1) conformance classes have at least one TestNG test method per ATS assertion | TestNG report shows ≥1 `@Test` per `/conf/<class>/<assertion>` URI from Annex A |
+| SC-3 | All 14 OGC 23-002 (Part 2) conformance classes have at least one TestNG test method per ATS assertion | Same, against Part 2 Annex A |
+| SC-4 | ETS loads in TeamEngine 5.6.x (currently 5.6.1) Docker image without registration error | `docker run ogccite/teamengine-production:5.6.1` plus the ETS jar shows the suite in the suites list |
+| SC-5 | Full Part 1 + Part 2 suite passes against GeoRobotix demo server | All `@Test` methods that target conformance classes the IUT declares pass; conformance classes the IUT does not declare are SKIPPED, not FAILED |
+| SC-6 | Three independent passing implementations identified | GeoRobotix + OpenSensorHub + `connected-systems-go` participate in beta testing, each producing a TeamEngine pass record |
+| SC-7 | ETS submitted to OGC CITE SC for beta status | CITE SC ticket open; ETS jar published to OSSRH/Maven Central |
+| SC-8 | URI-mapping fidelity preserved from TS web app | Every canonical OGC requirement URI in `csapi_compliance/src/engine/registry/*.ts` has a Java `@Test` method whose `description` attribute or `requirement-uri` annotation contains the same URI |
+| SC-9 | Spec-trap fixtures preserved | The asymmetric `featureType`/`itemType` corpus (~30-50 cases) ports as TestNG `@DataProvider` inputs, exercised by at least one `@Test` per fixture |
+| SC-10 | OGC OpenAPI YAML pinned by commit SHA | `pom.xml` references the OGC `ogcapi-connected-systems` repo at a specific commit, not `master`; pin recorded in `ops/server.md` |
+
+## Constraints
+
+- **Language and toolchain are not negotiable**. JDK 17 + Maven 3.9 + TestNG + REST Assured + Kaizen `openapi-parser` + `org.opengis.cite:ets-common:17`. CTL is legacy, rejected. Non-Java (Node, Go, Python) is rejected — TeamEngine SPI is Java.
+- **Repository topology**. New sibling repo `ets-ogcapi-connectedsystems10` (Part 1) lives in our org first; propose contribution to OGC at beta milestone (R-PIVOT-01 user gate 2026-04-27). Part 2 may be a second sibling repo `ets-ogcapi-connectedsystems-2` per OGC convention (see `ets-ogcapi-features10-part2`).
+- **First-cut scope is Part 1**. Sprint 1 implements archetype scaffold + CS API Core conformance class only. Part 2 work is explicitly deferred to a later sprint cluster (R-PIVOT-04 placeholder REQs only).
+- **Web app is frozen**. The csapi_compliance repo at HEAD `ab53658` ships unchanged except for a README reposition (R-PIVOT-10). No new features, no maintenance sprints. JSON Schemas may be updated when CS API errata land; that is a maintenance task, not a feature.
+- **OGC governance is out of our control**. CITE SC review velocity, TC voting cycles, and the three-implementation rule are external dependencies. Code-complete ETS is reachable in 1-2 quarters; official release is 3-7 quarters out.
+- **No persistent server state**. The ETS is a stateless test-suite jar. State (test runs, results, reports) is owned by TeamEngine. We do not build a database, an Express server, or a UI.
 
 ## Functional Requirements
 
-### Endpoint Discovery & Configuration
+> **Capability mapping**: all FRs below map to a single new capability `ets-ogcapi-connectedsystems`
+> at `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`. Existing v1.0 capabilities
+> (endpoint-discovery, conformance-testing, dynamic-data-testing, test-engine, request-capture,
+> reporting, export, progress-session) are **frozen** and do not gain new FRs.
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-01 | The application shall accept a CS API landing page URL from the user and validate that it is a reachable HTTP(S) endpoint. | `endpoint-input` |
-| FR-02 | The application shall fetch the landing page (`/`) and extract all `links` entries, identifying links to conformance, API definition, and resource collections. | `landing-page-discovery` |
-| FR-03 | The application shall fetch the conformance declaration (`/conformance`) and extract all declared conformance class URIs. | `conformance-detection` |
-| FR-04 | The application shall map each declared conformance class URI to the corresponding set of requirements defined in OGC 23-001 (Part 1), OGC 23-002 (Part 2), and the parent standards (OGC API Common Part 1, OGC API Features Part 1). | `conformance-mapping` |
-| FR-05 | The application shall display the list of detected conformance classes to the user, indicating which are testable and which are declared but not yet supported by the test engine. | `conformance-display` |
-| FR-06 | The application shall allow the user to select which conformance classes to include in the assessment run, defaulting to all detected-and-testable classes. | `class-selection` |
-| FR-07 | The application shall accept optional authentication credentials from the user: Bearer token, API key (header name + value), or Basic auth (username + password). Credentials are sent with every request to the IUT. | `auth-config` |
-| FR-08 | The application shall allow the user to configure a request timeout (default 30 seconds) and maximum number of concurrent requests (default 5). | `run-config` |
+### Sub-deliverable 1: Maven Archetype Scaffold (R-PIVOT-01, R-PIVOT-02)
 
-### Conformance Test Execution
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-01 | The deliverable SHALL be a Maven project generated from `org.opengis.cite:ets-archetype-testng:2.7` with `groupId=org.opengis.cite`, `artifactId=ets-ogcapi-connectedsystems10`, `ets-code=ogcapi-connectedsystems10`, `ets-title='OGC API - Connected Systems Part 1'`. | REQ-ETS-SCAFFOLD-001 |
+| FR-ETS-02 | The generated `pom.xml` SHALL declare JDK 17 source/target compatibility (`maven.compiler.source=17`, `maven.compiler.target=17`) and Maven 3.9+ as the build minimum. | REQ-ETS-SCAFFOLD-002 |
+| FR-ETS-03 | The project layout SHALL mirror `opengeospatial/ets-ogcapi-features10`: TestNG suite XML at `src/main/resources/org/opengis/cite/ogcapiconnectedsystems10/testng.xml`, CTL wrapper at `src/main/scripts/ctl/`, AsciiDoc site documentation at `src/site/`, `Dockerfile` and `Jenkinsfile` at repo root. | REQ-ETS-SCAFFOLD-003 |
+| FR-ETS-04 | Dependencies SHALL include: `org.opengis.cite:ets-common:17`, `org.opengis.cite.teamengine:teamengine-spi`, `org.testng:testng`, `io.rest-assured:rest-assured`, `com.reprezen.kaizen:openapi-parser`, `org.locationtech.jts:jts-core`, `org.locationtech.proj4j:proj4j`. Versions SHALL be pinned to specific releases; no `RELEASE` or `LATEST` ranges. | REQ-ETS-SCAFFOLD-004 |
+| FR-ETS-05 | `mvn clean install` SHALL exit 0 on a clean checkout against JDK 17. The build SHALL be reproducible: two builds from the same commit produce byte-identical jars (excluding timestamps in `META-INF/`). | REQ-ETS-SCAFFOLD-005 |
+| FR-ETS-06 | The archetype-generated scaffold SHALL be modernized: any 2019-era dependency versions known to have security advisories or JDK-17 incompatibilities SHALL be bumped, with each bump documented as an ADR. | REQ-ETS-SCAFFOLD-006 |
+| FR-ETS-07 | The repository SHALL be hosted in our org first at `github.com/<org>/ets-ogcapi-connectedsystems10`. A draft contribution proposal to OGC SHALL be prepared at the beta milestone but NOT before. | REQ-ETS-SCAFFOLD-007 |
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-09 | The application shall execute tests for the **OGC API Common Part 1** conformance class, covering: landing page structure, conformance endpoint, JSON encoding, and OpenAPI 3.0 definition link. | `test-common` |
-| FR-10 | The application shall execute tests for the **OGC API Features Part 1 Core** conformance class, covering: collections endpoint, single collection access, items endpoint with `limit` parameter, single feature access, and GeoJSON response structure. | `test-features-core` |
-| FR-11 | The application shall execute tests for the **CS API Core** conformance class, covering: resource endpoint availability, link relations, and base response structures as defined in OGC 23-001 requirements class `/req/core`. | `test-csapi-core` |
-| FR-12 | The application shall execute tests for the **System Features** conformance class (`/req/system`), covering: system collection availability, canonical system URL, system schema validation, system links (deployments, subsystems, sampling features, datastreams, controls). | `test-system-features` |
-| FR-13 | The application shall execute tests for the **Subsystems** conformance class (`/req/subsystem`), covering: subsystem association link from parent system, subsystem collection endpoint, subsystem response structure. | `test-subsystems` |
-| FR-14 | The application shall execute tests for the **Deployment Features** conformance class (`/req/deployment`), covering: deployment collection availability, canonical deployment URL, deployment schema validation, deployment links (deployed systems, subdeployments). | `test-deployment-features` |
-| FR-15 | The application shall execute tests for the **Subdeployments** conformance class (`/req/subdeployment`), covering: subdeployment association link, subdeployment collection endpoint, subdeployment response structure. | `test-subdeployments` |
-| FR-16 | The application shall execute tests for the **Procedure Features** conformance class (`/req/procedure`), covering: procedure collection availability, canonical procedure URL, procedure schema validation, procedure links. | `test-procedure-features` |
-| FR-17 | The application shall execute tests for the **Sampling Features** conformance class (`/req/sampling`), covering: sampling feature collection availability, canonical URL, schema validation, parent system association. | `test-sampling-features` |
-| FR-18 | The application shall execute tests for the **Property Definitions** conformance class (`/req/property`), covering: property collection availability, canonical URL, property schema validation. | `test-property-definitions` |
-| FR-19 | The application shall execute tests for the **Advanced Filtering** conformance class (`/req/advanced-filtering`), covering: temporal filters (`datetime`), spatial filters (`bbox`), property filters (`q`), and any CS-API-specific query parameters. | `test-advanced-filtering` |
-| FR-20 | The application shall execute tests for the **Create/Replace/Delete** conformance class (`/req/crud`), covering: POST to create resources, PUT to replace resources, DELETE to remove resources, and correct HTTP status codes (201, 200, 204, 404). The user must explicitly opt-in to these tests via the class selection UI, and a warning must be displayed that these tests mutate data on the target endpoint. | `test-crud` |
-| FR-21 | The application shall execute tests for the **Update** conformance class (`/req/update`), covering: PATCH to partially update resources and correct HTTP status codes. The same opt-in and warning requirements as FR-20 apply. | `test-update` |
-| FR-22 | The application shall execute tests for the **GeoJSON Format** conformance class (`/req/geojson`), covering: `Content-Type: application/geo+json` response header, GeoJSON Feature and FeatureCollection structure validation, required GeoJSON members (`type`, `geometry`, `properties`, `id`). | `test-geojson-format` |
-| FR-23 | The application shall execute tests for the **SensorML JSON Format** conformance class (`/req/sensorml`), covering: `Content-Type: application/sml+json` response header, SensorML JSON structure validation against the SensorML JSON schema. | `test-sensorml-format` |
+### Sub-deliverable 2: CS API Part 1 Conformance Classes (R-PIVOT-03, OGC 23-001)
 
-### CS API Part 2 Conformance Testing
+The 14 OGC 23-001 conformance classes (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27):
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-46 | The application shall execute tests for the **Part 2 Common** conformance class (`/conf/api-common`), covering: Part 2 landing page links, conformance declaration for Part 2 classes, and base response structures as defined in OGC 23-002. | `test-dynamic-data` |
-| FR-47 | The application shall execute tests for the **Datastreams & Observations** conformance class (`/conf/datastream`), covering: datastream collection endpoints (`/datastreams`, `/systems/{id}/datastreams`), datastream schema endpoint (`/datastreams/{id}/schema`), observation collection endpoints (`/observations`, `/datastreams/{id}/observations`), single observation access, and `phenomenonTime`, `resultTime`, `foi`, `observedProperty` query parameters. | `test-dynamic-data` |
-| FR-48 | The application shall execute tests for the **Control Streams & Commands** conformance class (`/conf/controlstream`), covering: control stream collection endpoints (`/controlstreams`, `/systems/{id}/controlstreams`), control stream schema endpoint (`/controlstreams/{id}/schema`), command collection endpoints (`/commands`, `/controlstreams/{id}/commands`), single command access, command status (`/commands/{id}/status`), command result (`/commands/{id}/result`), and `issueTime`, `executionTime`, `sender`, `statusCode`, `controlledProperty` query parameters. | `test-dynamic-data` |
-| FR-49 | The application shall execute tests for the **Command Feasibility** conformance class (`/conf/feasibility`), covering: feasibility request submission and feasibility result validation. | `test-dynamic-data` |
-| FR-50 | The application shall execute tests for the **System Events** conformance class (`/conf/system-event`), covering: system event collection endpoints (`/systemEvents`, `/systems/{id}/events`), event schema validation, and `eventType` query parameter. | `test-dynamic-data` |
-| FR-51 | The application shall execute tests for the **System History** conformance class (`/conf/system-history`), covering: system history endpoint (`/systems/{id}/history`), historical revision access, and temporal ordering of revisions. | `test-dynamic-data` |
-| FR-52 | The application shall execute tests for the **Part 2 Advanced Filtering** conformance class (`/conf/advanced-filtering`), covering: temporal filters (`phenomenonTime`, `resultTime`, `issueTime`, `executionTime`), property filters (`observedProperty`, `controlledProperty`, `foi`), and format negotiation parameters (`obsFormat`, `cmdFormat`). | `test-dynamic-data` |
-| FR-53 | The application shall execute tests for the **Part 2 Create/Replace/Delete** conformance class (`/conf/create-replace-delete`), covering: POST to create datastreams, observations, control streams, commands, and related resources; PUT to replace; DELETE to remove; and correct HTTP status codes. The user must explicitly opt-in to these tests via the class selection UI, and a warning must be displayed that these tests mutate data on the target endpoint. | `test-dynamic-data` |
-| FR-54 | The application shall execute tests for the **Part 2 Update** conformance class (`/conf/update`), covering: PATCH to partially update Part 2 resources and correct HTTP status codes. The same opt-in and warning requirements as FR-53 apply. | `test-dynamic-data` |
-| FR-55 | The application shall execute tests for the **JSON Encoding** conformance class (`/conf/json`), covering: `Content-Type: application/json` and `application/geo+json` response headers, and JSON structure validation for Part 2 resource types. | `test-dynamic-data` |
-| FR-56 | The application shall execute tests for the **SWE Common JSON** conformance class (`/conf/swecommon-json`), covering: `Content-Type: application/swe+json` response header and SWE Common JSON encoding validation for observation and command data. | `test-dynamic-data` |
-| FR-57 | The application shall execute tests for the **SWE Common Text** conformance class (`/conf/swecommon-text`), covering: `Content-Type: application/swe+text` response header and SWE Common text/CSV encoding validation for observation and command data. | `test-dynamic-data` |
-| FR-58 | The application shall execute tests for the **SWE Common Binary** conformance class (`/conf/swecommon-binary`), covering: `Content-Type: application/swe+binary` response header and SWE Common binary encoding validation for observation and command data. | `test-dynamic-data` |
-| FR-59 | The test engine shall validate Part 2 responses against JSON schemas derived from the CS API Part 2 OpenAPI definition (OGC 23-002 OpenAPI YAML) using a JSON Schema validator. | `test-dynamic-data` |
+| Conformance class URI | FR | OpenSpec REQ |
+|---|---|---|
+| `/conf/core` (CS API Core — landing page, conformance, base resource shape) | FR-ETS-10 | REQ-ETS-CORE-001 |
+| `/conf/common` (CS API Common — link relations, content negotiation) | FR-ETS-11 | REQ-ETS-PART1-001 |
+| `/conf/system-features` | FR-ETS-12 | REQ-ETS-PART1-002 |
+| `/conf/subsystems` | FR-ETS-13 | REQ-ETS-PART1-003 |
+| `/conf/deployment-features` | FR-ETS-14 | REQ-ETS-PART1-004 |
+| `/conf/subdeployments` | FR-ETS-15 | REQ-ETS-PART1-005 |
+| `/conf/procedure-features` | FR-ETS-16 | REQ-ETS-PART1-006 |
+| `/conf/sampling-features` | FR-ETS-17 | REQ-ETS-PART1-007 |
+| `/conf/property-definitions` | FR-ETS-18 | REQ-ETS-PART1-008 |
+| `/conf/advanced-filtering` | FR-ETS-19 | REQ-ETS-PART1-009 |
+| `/conf/create-replace-delete` | FR-ETS-20 | REQ-ETS-PART1-010 |
+| `/conf/update` | FR-ETS-21 | REQ-ETS-PART1-011 |
+| `/conf/geojson` | FR-ETS-22 | REQ-ETS-PART1-012 |
+| `/conf/sensorml` | FR-ETS-23 | REQ-ETS-PART1-013 |
 
-### Test Mechanics
+| ID | Requirement |
+|----|-------------|
+| FR-ETS-10 | Each `@Test` method in the `core` suite SHALL have a `description` attribute of the form `OGC-23-001 /req/core/<assertion>` and SHALL produce one of: pass (assertion satisfied), fail (assertion violated, with a structured failure message naming the requirement URI and the IUT response excerpt), skip (declared not-conformant by the IUT's `/conformance` declaration, OR a prerequisite class failed). |
+| FR-ETS-11..23 | Each Part 1 conformance class beyond Core SHALL be implemented as a separate TestNG suite class, structured per FR-ETS-10. Suite ordering follows the dependency DAG inherited from `csapi_compliance/src/engine/registry/index.ts`. |
+| FR-ETS-24 | If a conformance class B depends on class A and class A produces any FAIL verdict, class B's `@BeforeSuite` SHALL throw `SkipException` and B's tests SHALL emit `SKIP — dependency /conf/<A> not satisfied`. |
+| FR-ETS-25 | Each test SHALL capture full HTTP request and response (method, URL, headers, body, status, response time) in the TestNG report attachments. Authentication credentials SHALL be masked per the v1.0 web app's `CredentialMasker` semantics (first 4 + last 4 characters only). |
+| FR-ETS-26 | Schema validation SHALL use `com.reprezen.kaizen:openapi-parser` against the OGC OpenAPI YAML pinned by commit SHA in `pom.xml`. Bundled JSON Schemas at `csapi_compliance/schemas/` SHALL be reused verbatim, copied into `src/main/resources/schemas/` of the new repo. |
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-24 | Each executable test shall correspond to exactly one abstract test (requirement) identified by its canonical URI (e.g., `/conf/system/canonical-url` tests `/req/system/canonical-url`). | `test-traceability` |
-| FR-25 | Each test shall produce one of three results: **pass** (requirement satisfied), **fail** (requirement violated, with a specific failure reason), or **skip** (test could not be executed because a prerequisite was not met or the conformance class was not declared). | `test-result-status` |
-| FR-26 | Each test shall record the failure reason as a human-readable message referencing the specific assertion that failed (e.g., "Expected status 200 but received 404 for GET /collections/systems/{id}"). | `test-failure-detail` |
-| FR-27 | The test engine shall validate response bodies against JSON schemas derived from the CS API OpenAPI definition (OGC 23-001 OpenAPI YAML) using a JSON Schema validator. | `schema-validation` |
-| FR-28 | The test engine shall respect dependency ordering: if conformance class B depends on class A, class A tests run first. If class A fails critically, class B tests are skipped with reason "dependency not met". | `test-dependency-order` |
-| FR-29 | The test engine shall support pagination: when a collection endpoint returns paginated results, tests shall follow `next` links to retrieve subsequent pages as needed for validation. | `pagination-support` |
+### Sub-deliverable 3: CS API Part 2 Conformance Classes (R-PIVOT-04, OGC 23-002)
 
-### Request/Response Capture
+> **Sprint 1 EXCLUDES Part 2.** REQ-ETS-PART2-* are placeholders allowing the spec to enumerate
+> the certification surface. Per-class FRs and SCENARIOs will be drafted in a later sprint cluster.
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-30 | For every HTTP request made during testing, the application shall capture and store: HTTP method, full URL (including query parameters), request headers, and request body (if any). | `request-capture` |
-| FR-31 | For every HTTP response received during testing, the application shall capture and store: HTTP status code, response headers, response body, and response time in milliseconds. | `response-capture` |
-| FR-32 | The user shall be able to view the captured request and response details for any individual test in the results UI. | `request-response-view` |
-| FR-33 | Captured authentication credentials (Bearer tokens, API keys, passwords) shall be masked in the UI display and in exported reports, showing only the first 4 and last 4 characters. | `credential-masking` |
+| Conformance class URI (per OGC 23-002 Annex A — names follow v1.0 PRD FR-46..59) | FR | OpenSpec REQ |
+|---|---|---|
+| `/conf/api-common` (Part 2 Common) | FR-ETS-30 | REQ-ETS-PART2-001 |
+| `/conf/datastream` (Datastreams & Observations) | FR-ETS-31 | REQ-ETS-PART2-002 |
+| `/conf/controlstream` (Control Streams & Commands) | FR-ETS-32 | REQ-ETS-PART2-003 |
+| `/conf/feasibility` (Command Feasibility) | FR-ETS-33 | REQ-ETS-PART2-004 |
+| `/conf/system-event` (System Events) | FR-ETS-34 | REQ-ETS-PART2-005 |
+| `/conf/system-history` (System History) | FR-ETS-35 | REQ-ETS-PART2-006 |
+| `/conf/advanced-filtering` (Part 2) | FR-ETS-36 | REQ-ETS-PART2-007 |
+| `/conf/create-replace-delete` (Part 2) | FR-ETS-37 | REQ-ETS-PART2-008 |
+| `/conf/update` (Part 2) | FR-ETS-38 | REQ-ETS-PART2-009 |
+| `/conf/json` (Part 2 JSON encoding) | FR-ETS-39 | REQ-ETS-PART2-010 |
+| `/conf/swecommon-json` | FR-ETS-40 | REQ-ETS-PART2-011 |
+| `/conf/swecommon-text` | FR-ETS-41 | REQ-ETS-PART2-012 |
+| `/conf/swecommon-binary` | FR-ETS-42 | REQ-ETS-PART2-013 |
+| `/conf/observation-binding` (cross-class — Observation body schema derives from Datastream schema, per v1.0 GH#7) | FR-ETS-43 | REQ-ETS-PART2-014 |
 
-### Result Reporting
+| ID | Requirement |
+|----|-------------|
+| FR-ETS-30..43 | Same shape as FR-ETS-10..23 (TestNG suite class per conformance class, `description` attribute carries the OGC requirement URI, dependency-aware skip semantics, captured HTTP traces, schema validation via Kaizen). Detailed per-assertion FRs to be drafted in a future sprint cluster. |
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-34 | The application shall display a summary dashboard showing: total tests run, total passed, total failed, total skipped, overall compliance percentage, and a per-conformance-class breakdown. | `result-summary` |
-| FR-35 | The application shall display results organized by conformance class, with each class expandable to show individual requirement test results. | `result-by-class` |
-| FR-36 | Each conformance class in the results shall show: class name, class URI, number of tests passed/failed/skipped, and a pass/fail badge. A class passes only if all its requirements pass. | `class-result-detail` |
-| FR-37 | Each individual test result shall display: requirement ID, requirement URI, test name, result status (pass/fail/skip), failure reason (if failed), skip reason (if skipped), and a link to view the request/response exchange. | `test-result-detail` |
-| FR-38 | The results page shall include a disclaimer stating: "This assessment is unofficial and does not constitute OGC certification. Results are based on automated testing against the OGC 23-001 and OGC 23-002 standards and may not cover all edge cases." | `compliance-disclaimer` |
+### Sub-deliverable 4: TeamEngine Integration (R-PIVOT-07)
 
-### Export
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-50 | The ETS SHALL register with TeamEngine 5.6.x (currently 5.6.1) via the TestNG SPI (`org.opengis.cite.teamengine.spi.TestSuite` plus `META-INF/services/` registration). | REQ-ETS-TEAMENGINE-001 |
+| FR-ETS-51 | A CTL wrapper at `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl` SHALL expose the suite to TeamEngine's CTL UI, accepting `iut-url` (CS API landing page) and optional `auth` parameters. | REQ-ETS-TEAMENGINE-002 |
+| FR-ETS-52 | A `Dockerfile` SHALL produce an image based on `ogccite/teamengine-production:5.6.1` with the ETS jar pre-installed at `/opt/teamengine/webapps/teamengine/WEB-INF/lib/`. | REQ-ETS-TEAMENGINE-003 |
+| FR-ETS-53 | A `docker-compose.yml` snippet SHALL bring up TeamEngine + this ETS at `http://localhost:8081/teamengine/` with no additional host dependencies. | REQ-ETS-TEAMENGINE-004 |
+| FR-ETS-54 | The TeamEngine integration SHALL be verifiable via a smoke test: a single-command Docker invocation against GeoRobotix that produces a non-empty TestNG report and zero suite-registration errors. | REQ-ETS-TEAMENGINE-005 |
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-39 | The application shall export the full compliance report as a JSON document containing: endpoint URL, assessment timestamp, conformance classes tested, and per-requirement results with request/response traces. | `export-json` |
-| FR-40 | The application shall export the compliance report as a PDF document containing: summary dashboard, per-class results, and failed-test details with request/response excerpts. | `export-pdf` |
-| FR-41 | The JSON export format shall use a stable, versioned schema (starting at v1) so that downstream tools can parse results programmatically. | `export-schema-versioning` |
+### Sub-deliverable 5: Spec-Trap Fixture Port (R-PIVOT-06)
 
-### Progress & Session Management
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-60 | The asymmetric `featureType`/`itemType` corpus from `csapi_compliance/tests/fixtures/spec-traps/` (~30-50 cases) SHALL be ported into Java classes implementing `org.testng.annotations.DataProvider`. Each fixture SHALL retain its original case ID and rationale comment. | REQ-ETS-FIXTURES-001 |
+| FR-ETS-61 | At least one `@Test` per Part 1 conformance class that has a corresponding spec-trap fixture SHALL be parameterized with that `@DataProvider`. | REQ-ETS-FIXTURES-002 |
+| FR-ETS-62 | The fixture port SHALL be verifiable via a comparison script that diffs the case-ID list in TS source vs Java source and reports any case dropped during the port. | REQ-ETS-FIXTURES-003 |
 
-| ID | Requirement | OpenSpec Capability |
-|----|-------------|---------------------|
-| FR-42 | During test execution, the application shall display real-time progress: current conformance class being tested, current test name, number of tests completed out of total, and a progress bar. | `progress-display` |
-| FR-43 | The user shall be able to cancel a running assessment. Cancellation stops further test execution and presents results collected so far, clearly marked as "partial". | `cancel-assessment` |
-| FR-44 | Completed assessment results shall be persisted on the server for at least 24 hours, allowing the user to return to the results page via a unique URL. | `result-persistence` |
-| FR-45 | The landing page of the application shall display a brief explanation of what the tool does, a URL input field, and a "Start Assessment" button. No account creation or login is required. | `app-landing-page` |
+### Sub-deliverable 6: CITE Submission Process (R-PIVOT-08, R-PIVOT-12)
+
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-70 | The Maven artifact SHALL be published to OSSRH/Maven Central as `org.opengis.cite:ets-ogcapi-connectedsystems10:<version>` at the beta milestone (NOT before). GPG signing keys are recorded in `ops/server.md`. | REQ-ETS-CITE-001 |
+| FR-ETS-71 | At the beta milestone, an outreach package SHALL be produced for OpenSensorHub and `SomethingCreativeStudios/connected-systems-go` requesting participation in CITE three-implementation testing. The package contains: a Docker quickstart, a sample report from GeoRobotix, and the OGC CITE governance reference (Policy 08-134r11). | REQ-ETS-CITE-002 |
+| FR-ETS-72 | A CITE SubCommittee submission ticket SHALL be filed at `github.com/opengeospatial/cite/issues` referencing the published Maven artifact, the three-implementation roster, and the requested beta-status milestone. | REQ-ETS-CITE-003 |
+
+### Sub-deliverable 7: Web-App Freeze (R-PIVOT-10)
+
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-80 | The `csapi_compliance` README SHALL be repositioned to describe the project as a "developer pre-flight tool, not certification-track," with a prominent link to the new ETS repo. The v1.0 release SHALL be tagged `v1.0-frozen` at HEAD `ab53658`. | REQ-ETS-WEBAPP-FREEZE-001 |
+
+### Sub-deliverable 8: Spec-Knowledge Sync (R-PIVOT-11)
+
+| ID | Requirement | OpenSpec REQ |
+|----|-------------|--------------|
+| FR-ETS-90 | A diff script SHALL exist that lists every canonical OGC requirement URI in `csapi_compliance/src/engine/registry/*.ts` and compares it against the URI list extracted from Java `@Test` `description` attributes in the new ETS. CI SHALL fail if any URI is in TS but not in Java (or vice versa) without an explicit allowlist entry. | REQ-ETS-SYNC-001 |
 
 ## Non-Functional Requirements
 
 | ID | Requirement | Target |
 |----|-------------|--------|
-| NFR-01 | **Response time (endpoint discovery)**: Landing page fetch, conformance fetch, and collection discovery shall complete within 15 seconds for a responsive IUT. | < 15 seconds for discovery phase |
-| NFR-02 | **Test execution throughput**: The test engine shall execute at least 10 individual tests per second against a responsive IUT with default concurrency settings. | >= 10 tests/second |
-| NFR-03 | **Full assessment time**: A full Part 1 + Part 2 assessment (233 requirements) shall complete within 10 minutes against a responsive IUT. | < 10 minutes |
-| NFR-04 | **Concurrent users**: The application shall support at least 5 concurrent assessment sessions without degradation. | >= 5 concurrent sessions |
-| NFR-05 | **Credential security**: User-provided authentication credentials shall be transmitted only over HTTPS (when deployed in production), stored only in server memory for the duration of the assessment, and never written to persistent storage or logs. | Zero credential persistence; HTTPS-only in production |
-| NFR-06 | **Input validation**: All user inputs (URL, credentials, configuration) shall be validated and sanitized to prevent SSRF, injection, and XSS attacks. The URL input shall reject private/internal IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1) to prevent SSRF. | All inputs validated; SSRF protection active |
-| NFR-07 | **Accessibility**: The web UI shall meet WCAG 2.1 Level AA. All interactive elements shall be keyboard-navigable. Color shall not be the only indicator of pass/fail status (use icons/text alongside color). | WCAG 2.1 AA compliance |
-| NFR-08 | **Browser support**: The application shall work in the latest two major versions of Chrome, Firefox, Edge, and Safari. | 4 browsers, latest 2 versions each |
-| NFR-09 | **Availability**: The application shall have an uptime target of 99% (allowing approximately 7 hours downtime per month for a hosted deployment). | 99% uptime |
-| NFR-10 | **Error resilience**: If an individual test encounters a network error or unexpected response, it shall fail gracefully with a descriptive error message and not crash the entire assessment run. | Zero cascading failures; all tests produce a result |
-| NFR-11 | **Logging**: The backend shall log all assessment runs (endpoint URL, timestamp, result summary) for operational monitoring. Logs shall not contain authentication credentials or full response bodies. | Structured logging; no credential leakage |
-| NFR-12 | **Docker deployment**: The application shall be deployable via a single `docker-compose up` command with no additional host dependencies. | Single-command deployment |
-| NFR-13 | **Code quality**: The codebase shall maintain at least 80% unit test coverage for the test engine module (where each test function has its own unit test). | >= 80% test engine unit coverage |
-| NFR-14 | **Report export performance**: JSON and PDF report generation shall complete within 10 seconds for a full assessment report. | < 10 seconds per export |
-| NFR-15 | **Localization readiness**: All user-facing strings shall be externalized (not hardcoded) to support future internationalization (i18n), though v1.0 ships English-only. | Externalized strings |
+| NFR-ETS-01 | Build reproducibility | `mvn clean install` produces byte-identical jars from the same commit, ignoring `META-INF/` timestamps. Verified by a CI job that builds twice and diffs. |
+| NFR-ETS-02 | JDK 17 compatibility | Source compiles cleanly with JDK 17; no JDK 11 / JDK 8 fallback. |
+| NFR-ETS-03 | Test pass rate against GeoRobotix | ≥95% of `@Test` methods targeting GeoRobotix-declared conformance classes pass; the residual ≤5% have documented IUT-side issues filed against GeoRobotix. |
+| NFR-ETS-04 | TeamEngine load time | The ETS jar registers with TeamEngine 5.6.x (currently 5.6.1) and is selectable in the suite list within 30 seconds of container start. |
+| NFR-ETS-05 | Test execution throughput | The full Part 1 suite completes within 10 minutes against a responsive IUT (parity with v1.0 NFR-03 measured baseline of ~0.1 min). |
+| NFR-ETS-06 | Reproducible across environments | `mvn clean install` succeeds on Linux (Ubuntu 22.04 / Debian 12), macOS (latest), and Windows (via WSL2). CI runs all three. |
+| NFR-ETS-07 | Schema pin freshness | The OGC OpenAPI YAML commit SHA pin SHALL be reviewed quarterly; pin updates SHALL be ADR-tracked. |
+| NFR-ETS-08 | Credential security | Auth credentials passed via TeamEngine UI are held only in test-method-scope memory; never logged, never written to TestNG reports unmasked. Equivalent to v1.0 NFR-05. |
+| NFR-ETS-09 | Error resilience | An individual test that hits a network error or unexpected response SHALL fail with a structured message and not abort the suite. Equivalent to v1.0 NFR-10. |
+| NFR-ETS-10 | Logging | Suite execution emits structured logs (slf4j + logback) with no credential leakage. Equivalent to v1.0 NFR-11. |
+| NFR-ETS-11 | Docker single-command deployment | `docker-compose up` brings TeamEngine + the ETS to a working state with no additional host dependencies. |
+| NFR-ETS-12 | Code coverage (Java) | ≥80% line coverage on `src/main/java/org/opengis/cite/ogcapiconnectedsystems10/` measured by JaCoCo. Parity with v1.0 NFR-13. |
+| NFR-ETS-13 | Asciidoc site documentation builds | `mvn site` produces a navigable HTML site at `target/site/` with at least: overview, conformance class list, how-to-run-locally, how-to-submit-a-bug. |
+| NFR-ETS-14 | Maven Central publish readiness | `mvn deploy -P release` succeeds against a sandbox staging repository at the beta milestone. |
+| NFR-ETS-15 | OGC convention conformance | Repository structure matches `opengeospatial/ets-ogcapi-features10` to within the diff that the difference in spec subject naturally requires. Verified by a structural-diff checklist. |
 
 ## Interface Contracts
 
 | Interface | Protocol | Notes |
 |-----------|----------|-------|
-| User to Frontend | HTTPS (browser) | Single-page application served over HTTPS. User interacts via forms, buttons, and result views. |
-| Frontend to Backend API | REST over HTTPS | Frontend calls backend endpoints to create assessment runs, poll/stream progress, and retrieve results. JSON request/response bodies. |
-| Backend to IUT | HTTP/HTTPS | Test engine makes HTTP requests to the Implementation Under Test. Supports GET, POST, PUT, PATCH, DELETE. Carries user-provided auth credentials. |
-| Progress streaming | Server-Sent Events (SSE) | Backend streams test progress events to the frontend: `test-started`, `test-completed`, `class-started`, `class-completed`, `assessment-completed`. |
-| Backend API: POST /api/assessments | REST | Create a new assessment run. Request body: `{ "endpointUrl": string, "conformanceClasses": string[], "auth": { "type": "bearer"|"apikey"|"basic", ... }, "config": { "timeout": number, "concurrency": number } }`. Returns: `{ "id": string, "status": "running" }`. |
-| Backend API: GET /api/assessments/:id | REST | Retrieve assessment status and results. Returns: `{ "id": string, "status": "running"|"completed"|"cancelled"|"partial", "progress": { ... }, "results": { ... } }`. |
-| Backend API: GET /api/assessments/:id/events | SSE | Stream real-time progress events for a running assessment. |
-| Backend API: POST /api/assessments/:id/cancel | REST | Cancel a running assessment. Returns: `{ "id": string, "status": "cancelled" }`. |
-| Backend API: GET /api/assessments/:id/export?format=json | REST | Download the full report as JSON. Returns `Content-Type: application/json`. |
-| Backend API: GET /api/assessments/:id/export?format=pdf | REST | Download the full report as PDF. Returns `Content-Type: application/pdf`. |
-| Backend API: GET /api/health | REST | Health check endpoint. Returns `{ "status": "ok" }`. |
+| TeamEngine ↔ ETS | Java SPI (`org.opengis.cite.teamengine.spi`) | TeamEngine loads the ETS jar at startup, discovers suites via `META-INF/services/`, exposes them in the CTL UI. |
+| TeamEngine ↔ User | HTTP (CTL form + REST) | TeamEngine renders the CTL form; user supplies `iut-url`, optional auth. ETS receives those as TestNG suite parameters. |
+| ETS ↔ IUT | HTTP/HTTPS via REST Assured | Test methods issue GET/POST/PUT/PATCH/DELETE against the IUT, carrying user-provided auth. |
+| ETS ↔ JSON Schemas | File-system (classpath) | Schemas bundled at `src/main/resources/schemas/` are loaded by Kaizen `openapi-parser` and used for response-body validation. |
+| ETS ↔ OpenAPI YAML | Git submodule OR Maven dependency on a YAML-only artifact | Pinned to a specific OGC `ogcapi-connected-systems` commit SHA. Pin recorded in `pom.xml` and `ops/server.md`. |
+| Build pipeline ↔ Maven Central | OSSRH staging via `mvn deploy` | At beta milestone only; requires GPG signing key and OSSRH credentials in CI secrets. |
+| CI ↔ TeamEngine 5.6.x (currently 5.6.1) Docker | Docker `ogccite/teamengine-production:5.6.1` | Smoke-test job pulls the image, mounts the ETS jar, runs the suite against GeoRobotix, archives the report. |
 
 ## OpenSpec Capability Mapping
 
-### Epic 1: Endpoint Discovery & Configuration
+The new capability is `ets-ogcapi-connectedsystems` at `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`.
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-01 | `endpoint-input` | Epic 1 |
-| FR-02 | `landing-page-discovery` | Epic 1 |
-| FR-03 | `conformance-detection` | Epic 1 |
-| FR-04 | `conformance-mapping` | Epic 1 |
-| FR-05 | `conformance-display` | Epic 1 |
-| FR-06 | `class-selection` | Epic 1 |
-| FR-07 | `auth-config` | Epic 1 |
-| FR-08 | `run-config` | Epic 1 |
+| Sub-deliverable | OpenSpec REQ-* range |
+|---|---|
+| Scaffold | REQ-ETS-SCAFFOLD-001..007 |
+| Part 1 Core | REQ-ETS-CORE-001..004 |
+| Part 1 (other 13 classes) | REQ-ETS-PART1-001..013 |
+| Part 2 (14 classes — placeholders) | REQ-ETS-PART2-001..014 |
+| TeamEngine integration | REQ-ETS-TEAMENGINE-001..005 |
+| Spec-trap fixture port | REQ-ETS-FIXTURES-001..003 |
+| CITE submission | REQ-ETS-CITE-001..003 |
+| Web-app freeze | REQ-ETS-WEBAPP-FREEZE-001 |
+| Spec-knowledge sync | REQ-ETS-SYNC-001 |
 
-### Epic 2: Parent Standard Conformance Testing
+### v1.0 Web-App Capability Status
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-09 | `test-common` | Epic 2 |
-| FR-10 | `test-features-core` | Epic 2 |
+| Capability | Status | Notes |
+|---|---|---|
+| `endpoint-discovery` | Frozen v1.0 | Web-app only; no ETS counterpart needed (TeamEngine handles IUT input). |
+| `conformance-testing` | Frozen v1.0 | Logic ports as design reference; superseded by `ets-ogcapi-connectedsystems`. |
+| `dynamic-data-testing` | Frozen v1.0 | Same — design reference for Part 2 ETS classes. |
+| `test-engine` | Frozen v1.0 | Web-app only; superseded by TestNG in the ETS. |
+| `request-capture` | Frozen v1.0 | Web-app only; TeamEngine + TestNG attachments cover this. |
+| `reporting` | Frozen v1.0 | Web-app only; superseded by TestNG/EARL output. |
+| `export` | Frozen v1.0 | Web-app only; TeamEngine HTML/EARL export covers this. |
+| `progress-session` | Frozen v1.0 | Web-app only; TeamEngine session model supersedes. |
 
-### Epic 3: CS API Part 1 Conformance Testing
+## Epic Decomposition
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-11 | `test-csapi-core` | Epic 3 |
-| FR-12 | `test-system-features` | Epic 3 |
-| FR-13 | `test-subsystems` | Epic 3 |
-| FR-14 | `test-deployment-features` | Epic 3 |
-| FR-15 | `test-subdeployments` | Epic 3 |
-| FR-16 | `test-procedure-features` | Epic 3 |
-| FR-17 | `test-sampling-features` | Epic 3 |
-| FR-18 | `test-property-definitions` | Epic 3 |
-| FR-19 | `test-advanced-filtering` | Epic 3 |
-| FR-20 | `test-crud` | Epic 3 |
-| FR-21 | `test-update` | Epic 3 |
-| FR-22 | `test-geojson-format` | Epic 3 |
-| FR-23 | `test-sensorml-format` | Epic 3 |
+| Epic | Goal | Scope |
+|---|---|---|
+| `epic-ets-01-scaffold` | Generate archetype, modernize to JDK 17, build green | REQ-ETS-SCAFFOLD-001..007, NFR-ETS-01,02,06 |
+| `epic-ets-02-part1-classes` | Implement all 14 Part 1 conformance classes | REQ-ETS-CORE-001..004, REQ-ETS-PART1-001..013 |
+| `epic-ets-03-part2-classes` | Implement all 14 Part 2 conformance classes | REQ-ETS-PART2-001..014 |
+| `epic-ets-04-teamengine-integration` | SPI + CTL + Docker | REQ-ETS-TEAMENGINE-001..005 |
+| `epic-ets-05-cite-submission` | Beta submission, three-impl outreach | REQ-ETS-CITE-001..003 |
+| `epic-ets-06-fixture-port` | Port spec-trap corpus to `@DataProvider` | REQ-ETS-FIXTURES-001..003 |
+| `epic-ets-07-webapp-freeze` | README reposition, freeze tag | REQ-ETS-WEBAPP-FREEZE-001 |
 
-### Epic 4: Test Engine Infrastructure
+The v1.0 epics 01-09 are **closed** — see each epic file's status header. They map to the v1.1 PRD in
+the matrix at the bottom of `_bmad/traceability.md` (v1.0 frozen section).
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-24 | `test-traceability` | Epic 4 |
-| FR-25 | `test-result-status` | Epic 4 |
-| FR-26 | `test-failure-detail` | Epic 4 |
-| FR-27 | `schema-validation` | Epic 4 |
-| FR-28 | `test-dependency-order` | Epic 4 |
-| FR-29 | `pagination-support` | Epic 4 |
+## Open Questions Resolved by Pat (2026-04-27)
 
-### Epic 5: Request/Response Capture & Debugging
+1. **Part 2 doc number**: **OGC 23-002** confirmed authoritative. The `connected-systems-go` README's "IS 24-008" is incorrect (docs.ogc.org returns 404 for 24-008). All Part 2 REQs reference 23-002.
+2. **CI/CD topology**: **GitHub Actions for our development; Jenkinsfile checked in as a stub for OGC submission compatibility.** The Jenkinsfile is configured but not wired to an active Jenkins instance; it is a structural requirement of OGC convention (see `ets-ogcapi-features10/Jenkinsfile`). Architect to confirm at design time.
+3. **Maven Central publish timing**: **Beta milestone (R-PIVOT-08).** Local snapshots and OSSRH staging are sufficient for sprints 1..N; production Maven Central publishes only when the ETS is ready for CITE SC submission. Avoids the "pollute Maven Central with pre-beta noise" failure mode.
+4. **Test data hosting layout**: **`src/main/resources/data/`** for sample SensorML + SWE Common payloads, mirroring `ets-ogcapi-features10`. Spec-trap fixtures live alongside test code at `src/test/resources/fixtures/spec-traps/`. Architect to confirm during ADR.
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-30 | `request-capture` | Epic 5 |
-| FR-31 | `response-capture` | Epic 5 |
-| FR-32 | `request-response-view` | Epic 5 |
-| FR-33 | `credential-masking` | Epic 5 |
+## Deferred to Architect (Alex)
 
-### Epic 6: Result Reporting & Dashboard
+- TeamEngine SPI registration mechanics (the testng-essentials docs defer details to a "Part 2" that is not yet linked).
+- Whether to symlink, submodule, or fork the JSON Schemas from `csapi_compliance/schemas/` into the new repo.
+- Java package naming: candidate `org.opengis.cite.ogcapiconnectedsystems10` per `org.opengis.cite.ogcapi.features10` precedent. Architect ratifies.
+- Logging/reporting framework choice (slf4j + logback assumed; Architect confirms vs `ets-common`'s defaults).
 
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-34 | `result-summary` | Epic 6 |
-| FR-35 | `result-by-class` | Epic 6 |
-| FR-36 | `class-result-detail` | Epic 6 |
-| FR-37 | `test-result-detail` | Epic 6 |
-| FR-38 | `compliance-disclaimer` | Epic 6 |
+## Change Control
 
-### Epic 7: Export & Sharing
-
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-39 | `export-json` | Epic 7 |
-| FR-40 | `export-pdf` | Epic 7 |
-| FR-41 | `export-schema-versioning` | Epic 7 |
-
-### Epic 8: Progress & Session Management
-
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-42 | `progress-display` | Epic 8 |
-| FR-43 | `cancel-assessment` | Epic 8 |
-| FR-44 | `result-persistence` | Epic 8 |
-| FR-45 | `app-landing-page` | Epic 8 |
-
-### Epic 9: CS API Part 2 Conformance Testing
-
-| PRD Requirement | OpenSpec Capability | Epic |
-|-----------------|---------------------|------|
-| FR-46 | `test-dynamic-data` | Epic 9 |
-| FR-47 | `test-dynamic-data` | Epic 9 |
-| FR-48 | `test-dynamic-data` | Epic 9 |
-| FR-49 | `test-dynamic-data` | Epic 9 |
-| FR-50 | `test-dynamic-data` | Epic 9 |
-| FR-51 | `test-dynamic-data` | Epic 9 |
-| FR-52 | `test-dynamic-data` | Epic 9 |
-| FR-53 | `test-dynamic-data` | Epic 9 |
-| FR-54 | `test-dynamic-data` | Epic 9 |
-| FR-55 | `test-dynamic-data` | Epic 9 |
-| FR-56 | `test-dynamic-data` | Epic 9 |
-| FR-57 | `test-dynamic-data` | Epic 9 |
-| FR-58 | `test-dynamic-data` | Epic 9 |
-| FR-59 | `test-dynamic-data` | Epic 9 |
+| Date | Version | Change | Trigger |
+|---|---|---|---|
+| 2026-03-31 | 1.0 | Initial PRD: Next.js/TypeScript web app, 9 epics | Project kickoff |
+| 2026-03-31 | 1.1 | Added Epic 09 (Part 2 dynamic data), 14 new FRs | Mid-project scope expansion |
+| 2026-04-27 | 2.0 | Full rewrite: pivot from web app to Java/TestNG TeamEngine ETS. v1.0 web app frozen. New capability `ets-ogcapi-connectedsystems`. | User pivot 2026-04-27, Discovery handoff 2026-04-27 |

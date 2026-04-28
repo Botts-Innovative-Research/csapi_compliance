@@ -1,12 +1,65 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-17T22:10Z | Working tree clean. Sprint `sess-prog-001-assertion-depth` pushed as `ab53658` (Raze APPROVE 0.92 round 2). All P0 and P1 items closed. Next action: user picks P2 #9 (hosted deploy) or P2 #10 (fixture mock server).
+> Last updated: 2026-04-28T14:42Z | **Project pivoted 2026-04-27 from Next.js v1.0 web app → Java/TestNG TeamEngine ETS.** v1.0 frozen at `ab53658` (last gate-clean commit `ed45643`). Sprint `ets-01` Gates 1–3 complete (Discovery + Planner + Architect outputs + post-Architect string reconciliation captured in this commit). Generator (Dana) gate not yet started — no Java code, no `pom.xml`, new sibling repo `ets-ogcapi-connectedsystems10` not yet bootstrapped. Next action: user picks (a) REQ-ETS-WEBAPP-FREEZE-001 quick-win (tag `v1.0-frozen`) or (b) bootstrap new repo + Generator on S-ETS-01-01.
 
 ## ▶ Fresh-Session Entry Point
 
-Read this file first. It is the single authoritative "where are we" doc. Everything below is enough to pick up work without reading other files. The trails you'll need are in `_bmad/`, `openspec/capabilities/`, and `.harness/evaluations/`.
+Read this file first. It is the single authoritative "where are we" doc. The pivot trails: `_bmad/architecture.md` (v2.0 ETS), `_bmad/architecture-v1-frozen.md` (v1.0 archive), `_bmad/adrs/ADR-001..005`, `openspec/capabilities/ets-ogcapi-connectedsystems/{spec.md,design.md}`, `.harness/contracts/sprint-ets-01.yaml`, `.harness/handoffs/{discovery,planner,architect}-handoff.yaml`, and `epics/epic-ets-01..07-*.md` + `epics/stories/s-ets-01-0{1,2,3}-*.md`.
 
-## Current State (2026-04-17T22:10Z)
+## Current State (2026-04-28T14:42Z)
+
+### Pivot summary
+
+- **What changed**: from a TypeScript/Next.js single-page web app (v1.0, the deliverable through 2026-04-17) to an OGC-compliant Java/TestNG Executable Test Suite that integrates with TeamEngine 5.6.x (currently 5.6.1) for CITE-track certification. User-gated 2026-04-27.
+- **Why**: TeamEngine SPI is Java-only; the OGC certification path requires a Java ETS in the `org.opengis.cite:ets-*` lineage. The v1.0 web app is repositioned as a "developer pre-flight tool, not certification-track" and frozen.
+- **Frozen artifacts**: v1.0 architecture archived at `_bmad/architecture-v1-frozen.md`. Six v1.0 capability specs marked Frozen via frontmatter (conformance-testing, dynamic-data-testing, endpoint-discovery, export, progress-session, reporting; request-capture + test-engine likewise).
+- **New target repo**: `github.com/<org>/ets-ogcapi-connectedsystems10` (per ADR-003 — note: NOT `connectedsystems-1`, see ADR for rejection rationale). Sibling repo with no code-level coupling to `csapi_compliance/` (ADR-005). Schemas verbatim-copied at scaffold time (ADR-002).
+
+### Sprint `ets-01` gate progress
+
+| BMAD Gate | Agent | Status | Authoritative artifact |
+|-----------|-------|--------|------------------------|
+| Gate 1 — Discovery | Mary | ✅ Complete 2026-04-27 | `.harness/handoffs/discovery-handoff.yaml` |
+| Gate 2 — Planner | Pat | ✅ Complete 2026-04-27 (post-reconciliation 2026-04-28) | `.harness/handoffs/planner-handoff.yaml`, `.harness/contracts/sprint-ets-01.yaml`, `_bmad/prd.md` v2.0, `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` |
+| Gate 3 — Architect | Alex | ✅ Complete 2026-04-27 (confidence 0.83) | `.harness/handoffs/architect-handoff.yaml`, `_bmad/architecture.md` v2.0, `_bmad/adrs/ADR-001..005`, `openspec/capabilities/ets-ogcapi-connectedsystems/design.md` |
+| **Generator** | Dana | ❌ Not started | (will write `pom.xml`, Java sources, CTL wrapper, Dockerfile, smoke-test.sh in the new repo) |
+| Gate 3.5 — Evaluator | Quinn | n/a | (fires after Generator output exists) |
+| Gate 4 — Adversarial | Raze | n/a (`gate_4_required: true, force_run: true` per contract) | (fires after Quinn) |
+
+### Architecture v2.0 — concrete decisions
+
+- **Toolchain**: JDK 17 + Maven 3.9 + TestNG + REST Assured + Kaizen `openapi-parser` (Sprint 2+) + everit-json-schema (Sprint 1 Core, transitive via ets-common) + `org.opengis.cite:ets-common:17` parent + `slf4j-api` + `logback-classic`.
+- **Maven coordinates** (ADR-003 — supersedes Pat's PRD strings): groupId `org.opengis.cite`, artifactId `ets-ogcapi-connectedsystems10`, ets-code `ogcapi-connectedsystems10`, Java root `org.opengis.cite.ogcapiconnectedsystems10`.
+- **TeamEngine SPI** (ADR-001): five artifacts mirror `ets-ogcapi-features10@master` verbatim — `META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController` (single FQCN line), `TestNGController`, `ets.properties`, `testng.xml`, CTL wrapper `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl`.
+- **JSON Schema bundling** (ADR-002): verbatim copy from `csapi_compliance/schemas/` → new repo's `src/main/resources/schemas/` at scaffold time. No submodule, no symlink. Pin upstream OGC SHA in `pom.xml` comment block. Drift between the two copies acceptable (v1.0 is frozen).
+- **Archetype modernization** (ADR-004): 25-item checklist Groups A–D applied as atomic commits after archetype generation; Group E lists items deferred from Sprint 1 (TE 6.0 migration, mvn site, OSSRH GPG, scm-publish).
+- **Cross-repo relationship** (ADR-005): sibling repos, README cross-links both directions, v1.0-frozen tag at HEAD `ab53658`. URI-coverage diff (REQ-ETS-SYNC-001) is a CI script in the new ETS, deferred until Part 1 feature-complete.
+
+### Sprint 1 stories (post-reconciliation)
+
+| Story | Priority | Complexity | Architect readiness |
+|-------|----------|------------|---------------------|
+| **S-ETS-01-01** Generate archetype, modernize to JDK 17, first green build | P0 | M | PASS |
+| **S-ETS-01-02** Implement CS API Core conformance class end-to-end against GeoRobotix | P0 | M | PASS |
+| **S-ETS-01-03** TeamEngine 5.6.1 Docker smoke test runs Core suite against GeoRobotix | P0 | M | CONCERNS (TeamEngine version drift, META-INF/services filename pitfalls, CTL Saxon namespace typos, smoke-test artifact archival — Quinn check items) |
+
+### Suggested Next Action — User picks one
+
+**Option A — REQ-ETS-WEBAPP-FREEZE-001 quick-win** (~15 min). `git tag -a v1.0-frozen ab53658 -m "Frozen 2026-04-27 at user-pivot to Java/TestNG ETS"; git push origin v1.0-frozen` plus a one-line README banner pointing forward to the new ETS repo. Closes the assumption ADR-005 makes about the tag's existence.
+
+**Option B — Bootstrap new repo + start Generator on S-ETS-01-01** (~half-day). `gh repo create <org>/ets-ogcapi-connectedsystems10 --public --description "OGC API - Connected Systems Part 1 ETS for TeamEngine"`, then `mvn archetype:generate -DarchetypeGroupId=org.opengis.cite -DarchetypeArtifactId=ets-archetype-testng -DarchetypeVersion=2.7 ...` per ADR-003 strings, then ADR-004 Group A–D as 25 atomic commits. Output: green `mvn clean install` on JDK 17, byte-reproducible jars.
+
+Recommendation: **Option A first** — it's cheap, removes the dangling assumption, and makes the next session's "where are we" cleaner. Option B is the next substantive sprint after that.
+
+## v1.0 Frozen State (snapshot for reference)
+
+The v1.0 deliverable remains useful as a developer pre-flight tool. Frozen at `ab53658` on `origin/main`.
+
+- **Gates at freeze**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 0 warnings** · Playwright chromium **22/0/3** · firefox **22/0/3**.
+- **Scope at freeze**: 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
+- **Last v1.0 sprint**: `sess-prog-001-assertion-depth` (Raze APPROVE 0.92 round 2). All P0 and P1 items were closed at freeze.
+
+## Current State (legacy v1.0 details — superseded by pivot, retained for v1.0 maintenance reference)
 
 - **Gates**: `npx vitest run` → **1003/1003** PASS (52 files) · `npx tsc --noEmit` → **0 errors** · `npx eslint .` → **0 errors, 0 warnings** · Playwright chromium **22/0/3** · firefox **22/0/3** (TC-E2E-007 added for SESS-PROG-001).
 - **v1.0 scope**: all 9 epics, 39 stories, 59 FRs implemented. Part 1 (OGC 23-001, 14 classes) + Part 2 (OGC 23-002, 14 classes). 27 registered conformance-test modules. 126 OGC schemas bundled.
