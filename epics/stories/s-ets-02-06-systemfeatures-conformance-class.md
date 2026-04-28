@@ -51,14 +51,122 @@ First additional Part 1 conformance class beyond Core. This story proves that th
 - Provides foundation for: Sprint 3 onwards (the next 12 Part 1 classes follow this pattern; per design.md they are mechanical extensions)
 
 ## Implementation Notes
-<!-- Fill after implementation -->
-- **GeoRobotix `/systems` shape archive**: TBD (Generator captures via curl)
-- **v1.0 tolerance reference**: `csapi_compliance/src/engine/registry/csapi-system-features.ts`
-- **Coverage scope (Architect-deferred)**: Pat recommends Sprint-1-style minimal-then-expand (4-6 @Tests covering 2-3 highest-priority assertions; PARTIAL-with-deferral notes for the rest) for risk control on first pattern extension
-- **Dependency-skip pattern reference**: existing `SuitePreconditions.java` shows the pre-suite skip mechanism; testng.xml `dependsOnGroups` is the per-class skip mechanism
-- **Spec-trap fixture port deferred**: `asymmetric-feature-type/` from v1.0 → epic-ets-06 (NOT in this story)
-- **Architect deferred**: full per-assertion coverage scope (see Sprint 2 contract `deferred_to_architect` item 5)
-- **Deviations**: TBD
+
+### Architect's first-step constraint — `/systems` curl evidence (2026-04-28T23:30Z, Dana)
+
+Per architect-handoff `must` constraint #13 (curl `/systems` BEFORE writing test code; PIVOT if empty/404).
+
+```bash
+$ curl -sL -w "\nHTTP_STATUS: %{http_code}\n" https://api.georobotix.io/ogc/t18/api/systems | head -200
+HTTP_STATUS: 200
+```
+
+**Top-level shape**:
+```
+top-level keys: ['items']               # ONLY items — no top-level `links` array
+items length: 36                        # NON-EMPTY (no PIVOT needed)
+```
+
+**Item shape (representative item)**:
+```json
+{
+  "type": "Feature",
+  "id": "0mqcvdnfoca0",
+  "geometry": null,
+  "properties": {
+    "uid": "urn:osh:sensor:uas:predator001-RT",
+    "featureType": "http://www.w3.org/ns/sosa/System",
+    "name": "Predator UAV (MISB simulated RT)",
+    "validTime": ["2023-05-14T15:22:00Z", "now"]
+  }
+}
+```
+
+Items in the collection are **GeoJSON `Feature`** objects with `type:"Feature"`, `id` (string), `geometry` (nullable), `properties` (object containing `uid`, `featureType`, `name`, optional `validTime`). **Items in the collection do NOT carry a `links` array** (collection-level items are minimal feature stubs).
+
+**Single-item shape (`/systems/{id}`)** DOES carry `links`:
+```bash
+$ curl -sL https://api.georobotix.io/ogc/t18/api/systems/0mqcvdnfoca0
+{
+  "type":"Feature","id":"0mqcvdnfoca0",...,
+  "links":[
+    {"rel":"canonical","href":"https://api.georobotix.io/ogc/t18/api/systems/0mqcvdnfoca0"},
+    {"rel":"alternate","title":"This system resource in SensorML format","href":".../?f=sml3"},
+    {"rel":"alternate","title":"This system resource in HTML format","href":".../?f=html"},
+    {"rel":"samplingFeatures","title":"List of system sampling features","href":".../samplingFeatures?f=geojson"},
+    {"rel":"datastreams","title":"List of system datastreams","href":".../datastreams?f=json"}
+  ]
+}
+```
+
+**Conformance declaration (`/conformance` from same IUT)**:
+```
+http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/system     # SINGULAR (not "system-features")
+http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/sf         # separate "sf" class
+```
+
+### Canonical URI form pivot vs design.md text
+
+**design.md §"SystemFeatures conformance class scope" specified `/req/system-features/<X>`** but OGC `.adoc` source + IUT conformsTo + v1.0 registry all use `/req/system/<X>` (singular, no `-features` suffix). Curl-verification (2026-04-28T23:35Z) of OGC canonical:
+
+```bash
+$ curl -sI https://raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/req_resources_endpoint.adoc
+HTTP/2 200
+$ curl -s .../requirements/system/requirements_class_system_features.adoc | head -10
+[requirement,model=ogc]
+====
+[%metadata]
+type:: class
+identifier:: /req/system           # CLASS identifier — singular
+requirement:: /req/system/location-time
+requirement:: /req/system/canonical-url
+requirement:: /req/system/resources-endpoint
+requirement:: /req/system/canonical-endpoint
+requirement:: /req/system/collections
+====
+```
+
+5 sub-requirements verified HTTP 200 against OGC canonical:
+- `/req/system/resources-endpoint` (`req_resources_endpoint.adoc`)
+- `/req/system/canonical-url` (`req_canonical_url.adoc`)
+- `/req/system/canonical-endpoint` (`req_canonical_endpoint.adoc`)
+- `/req/system/collections` (`req_collections.adoc`)
+- `/req/system/location-time` (`req_location_time.adoc`)
+
+Generator uses `/req/system/<X>` form per the OGC canonical (NOT design.md's `/req/system-features/<X>`). This is a documentation-text-vs-canonical drift — same class as the Sprint 2 `/req/core/...` → `/req/landing-page/...` correction in S-ETS-02-03. Architect's design.md text used a directory-name-style placeholder; the canonical `.adoc` source uses `/req/system/`. Generator follows OGC canonical per Sprint 2 contract `must_not.no-new-wrong-URIs` and `must.use-OGC-canonical-form`.
+
+### Coverage scope (Sprint-1-style minimal — 4 @Tests per design.md ratification)
+
+Per design.md §"SystemFeatures conformance class scope" table, mapped to OGC canonical URIs:
+
+| @Test method | Asserts | OGC URI | Scenario closed |
+|---|---|---|---|
+| `systemsCollectionReturns200` | `GET /systems` → status 200 | `/req/system/resources-endpoint` | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001 (CRITICAL) |
+| `systemsCollectionHasItemsArray` | body has array `items`; non-empty (curl confirmed: 36 items) | `/req/system/resources-endpoint` | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001 (CRITICAL) |
+| `systemItemHasIdTypeLinks` | first **single-item** fetch (`GET /systems/{id}`) has string `id`, string `type`, array `links` | `/req/system/canonical-endpoint` | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-RESOURCE-SHAPE-001 (NORMAL) |
+| `systemsCollectionLinksDiscipline` | absence of `rel=self` is NOT FAIL (carries v1.0 GH#3 fix policy); checks the `/systems/{id}` link discipline; collection-level has no `links` so the check operates on the item endpoint | `/req/system/canonical-url` | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001 (NORMAL) |
+
+**Key adaptation from design.md table**: design.md predicted collection-level `links` with `rel=collection`/`rel=items`. **Curl-verification proved this incorrect for GeoRobotix**: the `/systems` collection-level response has only `items`, no `links`. Adapted: `systemItemHasIdTypeLinks` and `systemsCollectionLinksDiscipline` both operate on the single-item endpoint `/systems/{id}` (where `links` array is real and includes `rel=canonical`, `rel=alternate`, `rel=samplingFeatures`, `rel=datastreams`). v1.0 registry (`csapi_compliance/src/engine/registry/system-features.ts:225-297` `testCanonicalEndpoint`) uses the same single-item-endpoint pattern. This adaptation matches OGC canonical: `/req/system/canonical-endpoint` mandates the items endpoint, `/req/system/canonical-url` mandates the single-item link discipline.
+
+### v1.0 known-issue carried forward
+
+Per `csapi_compliance/src/engine/registry/system-features.ts:36-44` audit comment: the v1.0 GH#3 precedent downgrades missing `rel="self"` on `/systems/{id}` from FAIL to SKIP-with-reason, because OGC 23-001 `/req/system/canonical-url` only requires `rel="canonical"` on **non-canonical** URLs (it does NOT require `rel="self"` on `/systems/{id}`). `systemsCollectionLinksDiscipline` preserves this policy: PASS if the canonical URL has `rel="canonical"` (verified GeoRobotix delivers it); absence of `rel="self"` is NOT FAIL.
+
+### Dependency-skip wiring
+
+`testng.xml` updated with Core's `<groups>` declaration (group `core`) and a new `<test name="SystemFeatures">` block declaring `dependsOnGroups="core"` semantics via TestNG's group-dependency mechanism. Verified by inspection (no live break-Core test executed — would require modifying GeoRobotix or pointing IUT at a 500-server; SuitePreconditions already provides pre-suite skip mechanism; SystemFeatures `@BeforeClass` adds an in-class precondition fetch that throws SkipException if `iut` attribute is missing or `/systems` is non-200).
+
+### Spec-trap fixture port deferred
+
+`asymmetric-feature-type/` from `csapi_compliance/tests/fixtures/spec-traps/` is REQ-ETS-FIXTURES-* / epic-ets-06 scope per design.md §"What NOT to ship in Sprint 2". NOT included in this story.
+
+### Deviations from spec/design.md
+
+| Deviation | Rationale | Spec/design follow-up |
+|---|---|---|
+| URI form `/req/system/<X>` (NOT `/req/system-features/<X>` per design.md) | OGC `.adoc` canonical uses `/req/system/`; verified via 5×HTTP-200 fetches; matches v1.0 registry + IUT conformsTo `/conf/system` | Spec.md REQ-ETS-PART1-002 description text amended this turn to use `/req/system/<X>` form |
+| `systemsCollectionLinksDiscipline` operates on `/systems/{id}` not `/systems` | Curl-verified `/systems` has no top-level `links`; `/systems/{id}` has links per `/req/system/canonical-url` | Spec.md SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001 amended to clarify |
+| Coverage = 4 @Tests (no expansion to 5+ for `/req/system/collections` or `/req/system/location-time`) | Sprint-1-style minimal-then-expand per design.md ratification; `/req/system/collections` requires `/collections` endpoint discovery and `/req/system/location-time` is MAY priority | Sprint 3 expansion roadmap captured in design.md §"Coverage scope rationale" |
 
 ## Definition of Done
 - [ ] All acceptance criteria checked
