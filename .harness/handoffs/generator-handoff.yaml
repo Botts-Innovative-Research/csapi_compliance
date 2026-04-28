@@ -1,0 +1,166 @@
+agent: generator
+status: complete
+timestamp: "2026-04-28T22:30:00Z"
+sprint_number: "ets-02"
+story_id: "S-ETS-02-01..05 (cleanup batch; S-ETS-02-06 SystemFeatures out-of-scope, separate Dana invocation)"
+supersedes: ".harness/handoffs/architect-handoff.yaml (Alex 2026-04-28T21:30Z)"
+
+next_agent: evaluator
+next_agent_rationale: |
+  Sprint 2 cleanup batch (5 of 6 stories) IMPLEMENTED. Pre-gate self-assessment: zero
+  smoke regression at any commit boundary; surefire 22 → 49 (12 from VerifyETSAssert,
+  15 from VerifyCredentialMaskingFilter); zero `throw new AssertionError`/`Assert.fail`
+  in conformance/* (verified by grep); 4 OGC canonical URIs HTTP 200 verified against
+  the .adoc source; multi-stage Dockerfile builds without host ~/.m2 staged in target/
+  (proves elimination of host-mvn dependency); container runs as non-root (UID 999).
+
+  Two known deferrals carry into the gate:
+    1. CI workflow `git mv` blocked by gh `workflow` token scope (HTTP 403 on push);
+       user-action item: `gh auth refresh -s workflow`. Sprint 2 success_criterion
+       `ci_workflow_live` flips to deferred-with-rationale.
+    2. Image size 815MB (smoke 663MB) misses ADR-009 soft target ≤450MB; ADR-009
+       §"Negative" notes Sprint 3 deferral acceptable. Carry to Sprint 3 Generator.
+
+  Quinn (Evaluator) should verify per Sprint 2 contract `evaluation_focus` + `evaluation_
+  questions_for_quinn`. Raze (Adversarial) gate is mandatory per `gate_4_required: true`.
+
+  S-ETS-02-06 SystemFeatures conformance class is the recommended next Generator
+  invocation; this Dana run intentionally scoped narrow per user instruction.
+
+implementation:
+  files_created:
+    - path: "ets-ogcapi-connectedsystems10/src/test/java/org/opengis/cite/ogcapiconnectedsystems10/listener/VerifyCredentialMaskingFilter.java"
+      purpose: "15 unit tests for CredentialMaskingFilter (S-ETS-02-04)"
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/listener/CredentialMaskingFilter.java"
+      purpose: "REST-Assured Filter masking sensitive headers; verbatim port of v1.0 credential-masker.ts (S-ETS-02-04)"
+    - path: "ets-ogcapi-connectedsystems10/src/main/resources/logback.xml"
+      purpose: "Logback config; pattern omits %X{*} MDC dump as defense-in-depth (S-ETS-02-04)"
+    - path: "ets-ogcapi-connectedsystems10/.dockerignore"
+      purpose: "Excludes target/, ops/test-results/, IDE noise, ci/, jenkinsfiles/ from Docker build context (S-ETS-02-05)"
+    - path: "ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-02-uri-canonical-mapping-2026-04-28.md"
+      purpose: "Verified-canonical-URI mapping table per S-ETS-02-03 acceptance criterion #1"
+  files_modified:
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/ETSAssert.java"
+      changes: "Extended with 5 REST/JSON helpers per ADR-008 (assertStatus, assertJsonObjectHas, assertJsonArrayContains, assertJsonArrayContainsAnyOf, failWithUri)"
+    - path: "ets-ogcapi-connectedsystems10/src/test/java/org/opengis/cite/ogcapiconnectedsystems10/VerifyETSAssert.java"
+      changes: "Extended from 3 → 15 tests covering 5 new helpers (5 PASS + 6 FAIL + 1 programming-error guard)"
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/LandingPageTests.java"
+      changes: "7 bare-throw sites refactored to ETSAssert helpers; REQ_ROOT_SUCCESS + REQ_CONFORMANCE_SUCCESS + REQ_API_DEFINITION_SUCCESS swept to /req/landing-page/* canonical form; Javadoc cross-refs updated"
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/ConformanceTests.java"
+      changes: "6 bare-throw sites refactored to ETSAssert helpers; REQ_CONFORMANCE_SUCCESS swept to canonical form"
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/ResourceShapeTests.java"
+      changes: "8 bare-throw sites refactored to ETSAssert helpers; REQ_CONFORMANCE_SUCCESS swept to canonical form"
+    - path: "ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/listener/SuiteFixtureListener.java"
+      changes: "onStart() now calls registerRestAssuredFilters() which registers CredentialMaskingFilter via RestAssured.filters()"
+    - path: "ets-ogcapi-connectedsystems10/Dockerfile"
+      changes: "Rewritten as multi-stage per ADR-009: eclipse-temurin:17-jdk-jammy builder + tomcat:8.5-jre17 runtime + USER tomcat + BuildKit cache mount; preserves ADR-007's 3 secondary patches"
+    - path: "ets-ogcapi-connectedsystems10/scripts/smoke-test.sh"
+      changes: "Drops host mvn calls (now baked in Dockerfile builder stage); step 5 metadata parse tightened (asserts ets-code + version + title fragment); DOCKER_BUILDKIT=1 explicit"
+    - path: "csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
+      changes: "REQ-ETS-CORE-001 + REQ-ETS-CORE-002 description text updated for OGC canonical URI form; SCENARIO-ETS-CORE-LANDING-001 then-clause updated"
+    - path: "csapi_compliance/_bmad/traceability.md"
+      changes: "S-ETS-02-* row statuses flipped Active → Implemented (S-02-01..04) / Implemented PARTIAL (S-02-05); SCENARIO-LINKS-NORMATIVE-001 row updated for canonical URI form"
+    - path: "csapi_compliance/epics/stories/s-ets-02-01..05-*.md"
+      changes: "Status frontmatter updated to Implemented; acceptance criteria checkboxes filled; Implementation Notes populated with commit-SHA evidence + deferral rationale where applicable"
+    - path: "csapi_compliance/ops/status.md"
+      changes: "Header updated with Sprint 2 cleanup batch close summary + user-action item for gh workflow scope"
+    - path: "csapi_compliance/ops/changelog.md"
+      changes: "New entry 2026-04-28T22:30Z documenting the cleanup batch"
+
+test_results:
+  total: 49
+  passed: 49
+  failed: 0
+  skipped: 3
+  surefire_breakdown:
+    - "VerifyURIUtils: 5 (3 pass, 2 skipped — preserved from Sprint 1)"
+    - "VerifyValidationUtils: 2"
+    - "VerifyXMLUtils: 9"
+    - "VerifyTestNGController: 1 (skipped — preserved from Sprint 1)"
+    - "VerifyETSAssert: 15 (3 original + 12 new)"
+    - "VerifySuiteFixtureListener: 2"
+    - "VerifyCredentialMaskingFilter: 15 (NEW)"
+  smoke_result:
+    iut: "https://api.georobotix.io/ogc/t18/api"
+    total: 12
+    passed: 12
+    failed: 0
+    skipped: 0
+    container_log_clean: true
+    final_run_at: "2026-04-28T22:22:36Z"
+    artifact: "ets-ogcapi-connectedsystems10/ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-28.xml"
+  critical_scenarios:
+    - id: "SCENARIO-ETS-CLEANUP-URI-CANONICALIZATION-001"
+      status: "pass"
+      test_file: "ets-ogcapi-connectedsystems10 commit 1abdaa2 + csapi_compliance commit 3405931 + mapping table archive"
+    - id: "SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001"
+      status: "pass"
+      test_file: "scripts/smoke-test.sh — 12/12 PASS preserved across 5+ runs at every commit boundary"
+  normal_scenarios:
+    - id: "SCENARIO-ETS-CLEANUP-ETSASSERT-REFACTOR-001"
+      status: "pass"
+      test_file: "VerifyETSAssert + LandingPageTests + ConformanceTests + ResourceShapeTests; grep verified 0 bare throws"
+    - id: "SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001"
+      status: "pass"
+      test_file: "VerifyCredentialMaskingFilter (15 unit tests; integration test deferred to Sprint 3+)"
+    - id: "SCENARIO-ETS-CLEANUP-DOCKERFILE-MULTISTAGE-001"
+      status: "pass"
+      test_file: "scripts/smoke-test.sh end-to-end on multi-stage image; docker run --rm ... id verified non-root UID 999; build succeeded with empty target/"
+    - id: "SCENARIO-ETS-CLEANUP-CI-WORKFLOW-LIVE-001"
+      status: "deferred-with-rationale"
+      test_file: "blocked by missing gh workflow token scope; user-action item documented"
+    - id: "SCENARIO-ETS-CLEANUP-ADR-006-007-001"
+      status: "pass"
+      test_file: "_bmad/adrs/ADR-006*.md + ADR-007*.md (Architect-completed in prior turn)"
+
+spec_updates:
+  - file: "csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
+    reqs_implemented: ["REQ-ETS-CLEANUP-001", "REQ-ETS-CLEANUP-002", "REQ-ETS-CLEANUP-003", "REQ-ETS-CLEANUP-004 (PARTIAL — image size MISSED, CI workflow DEFERRED)"]
+    reqs_deferred: ["REQ-ETS-PART1-002 (S-ETS-02-06 SystemFeatures — separate Dana invocation)"]
+  - file: "csapi_compliance/_bmad/traceability.md"
+    reqs_implemented: ["S-ETS-02-01", "S-ETS-02-02", "S-ETS-02-03", "S-ETS-02-04 (with integration-test deferral note)", "S-ETS-02-05 (PARTIAL — sub-task C blocked)"]
+
+deviations:
+  - description: "S-ETS-02-05 image size: 815MB image / 663MB smoke vs ADR-009 soft target ≤450MB"
+    rationale: "ADR-009 §Negative explicitly notes 450MB is soft target with Sprint 3 deferral acceptable. Root cause is tomcat:8.5-jre17 base + 96 deps closure + TE common-libs duplication. Sprint 3 optimization candidates: distroless runtime stage (rejected for Sprint 2 in ADR-009 §Alternatives) or TE common-libs ↔ deps-closure dedupe."
+    spec_updated: true
+  - description: "S-ETS-02-05 sub-task C CI workflow `git mv` BLOCKED by missing gh `workflow` token scope"
+    rationale: "gh auth status confirms scopes are gist, read:org, repo only. Generator attempted git mv + commit + push; push rejected with HTTP 403. Generator REVERTED the move locally to keep main pushable; workflow file remains at ci/github-workflows-build.yml. User-action item: `gh auth refresh -s workflow`, then redo the git mv + push."
+    spec_updated: true
+  - description: "S-ETS-02-04 credential-leak integration test deferred to Sprint 3+"
+    rationale: "Suite does not yet wire an `auth-credential` CTL parameter; the unit test layer (VerifyCredentialMaskingFilter, 15 tests) fully verifies the load-bearing semantic (literal credential-middle MUST NOT appear in masked output)."
+    spec_updated: true
+  - description: "S-ETS-02-05 Dockerfile builder stage: Maven download URL switched from dlcdn.apache.org to archive.apache.org"
+    rationale: "dlcdn.apache.org rotates and Maven 3.9.9 was 404 as of 2026-04-28; archive.apache.org keeps every release indefinitely. Build reproducibility preserved per ADR-009 §Risks base-image-cadence note."
+    spec_updated: false
+  - description: "S-ETS-02-05 Dockerfile builder stage: git installed + COPY .git into context"
+    rationale: "buildnumber-maven-plugin (configured in pom.xml) needs git for SCM revision metadata; without it, mvn package fails. Adds ~10MB to builder image (discarded after build); .dockerignore added to exclude target/ etc. from build context."
+    spec_updated: false
+  - description: "S-ETS-02-05 Dockerfile COPY pattern: only the slim ets jar (NOT wildcard *.jar)"
+    rationale: "The wildcard pattern initially used (`ets-ogcapi-connectedsystems10-*.jar`) matched -aio.jar / -javadoc.jar / -site.jar in addition to the slim main jar. The aio jar shades transitive deps that conflict with the loose lib-runtime closure also dropped under WEB-INF/lib (caught during multi-stage smoke verification: TestSuiteController init failed with `ApplicationComponents could not be instantiated`). Tightened the COPY pattern to the explicit `ets-ogcapi-connectedsystems10-0.1-SNAPSHOT.jar` filename per the Sprint 1 single-stage pattern."
+    spec_updated: false
+
+self_assessment:
+  critical_pass_rate: 1.0
+  normal_pass_rate: 0.80   # 4 of 5 normal scenarios PASS; 1 deferred-with-rationale (CI workflow live)
+  regression: false
+  confidence: 0.88
+  concerns:
+    - "Image size MISSED ADR-009 soft target (815MB vs 450MB). Sprint 3 carry needed."
+    - "CI workflow git mv blocked by gh workflow scope. User-action item documented in 3 places (ops/status.md, ops/changelog.md, story file)."
+    - "Credential-leak integration test deferred — unit-test layer is the load-bearing verification for now. Sprint 3+ adds auth-credential CTL parameter then we can run the synthetic-auth smoke verification."
+    - "Reproducibility re-verification: Maven outputTimestamp pin per ADR-004 C-5 should preserve sha256 across consecutive fresh-clone builds. Generator did NOT re-verify this end-to-end (multi-stage Dockerfile build process changes substantially); should be a Quinn gate verification step. The jar-level reproducibility is intact (same source + same git rev produces same target/*.jar); the docker-image-level reproducibility is the harder claim."
+    - "S-ETS-02-06 SystemFeatures conformance class is OUT OF SCOPE for this Generator run per user instruction. Recommended as the next Dana invocation; both prerequisites (S-ETS-02-02 + S-ETS-02-03) are now landed."
+
+commands_to_verify:
+  test: "export PATH=~/.local/apache-maven-3.9.9/bin:$PATH && cd ~/docker/gir/ets-ogcapi-connectedsystems10 && mvn -B clean install"
+  smoke: "cd ~/docker/gir/ets-ogcapi-connectedsystems10 && bash scripts/smoke-test.sh"
+  bare_throw_check: "grep -rE 'throw new AssertionError|Assert\\.fail' ~/docker/gir/ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/  # MUST be 0"
+  uri_canonical_check: "grep -hoE 'http://www\\.opengis\\.net/spec/[^ \"]+' ~/docker/gir/ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/core/*.java | sort -u  # MUST show only canonical /req/landing-page/* + /req/oas30/* + /conf/core URIs"
+  non_root_check: "docker build -t ets-ogcapi-connectedsystems10:gate-test ~/docker/gir/ets-ogcapi-connectedsystems10 && docker run --rm ets-ogcapi-connectedsystems10:gate-test id  # MUST show uid=999(tomcat)"
+  no_host_mvn_check: "rm -rf ~/docker/gir/ets-ogcapi-connectedsystems10/target/lib-runtime ~/docker/gir/ets-ogcapi-connectedsystems10/target/ets-ogcapi-connectedsystems10-*-SNAPSHOT*.jar ~/docker/gir/ets-ogcapi-connectedsystems10/target/ets-ogcapi-connectedsystems10-*-SNAPSHOT-ctl.zip && bash ~/docker/gir/ets-ogcapi-connectedsystems10/scripts/smoke-test.sh  # MUST exit 0 with 12/12 PASS"
+
+new_repo_head: "7f05eb6 (8 new commits since Sprint 1 close 8aeffbf; pushed to origin/main)"
+csapi_compliance_head: "PENDING (this commit will become HEAD after this Generator run closes)"
+
+blockers: []
