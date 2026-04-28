@@ -73,14 +73,14 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 #### REQ-ETS-CORE-001: Test Method Per ATS Assertion
 - **Priority**: MUST
 - **Status**: SPECIFIED
-- **Description**: For each assertion in OGC 23-001 Annex A `/conf/core/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC requirement URI (e.g. `OGC-23-001 /req/core/landing-page`). Each `@Test` SHALL produce exactly one of: PASS, FAIL (with structured message), SKIP (with reason).
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/core/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical requirement URI (e.g. `OGC-19-072 /req/landing-page/root-success` for landing-page assertions inherited from OGC API Common Part 1, or `OGC-23-001 /req/<class>/<X>` for CS API assertions). The URI form SHALL match the canonical `.adoc` source under `https://raw.githubusercontent.com/opengeospatial/ogcapi-common/master/19-072/requirements/<class>/REQ_<X>.adoc` (or the OGC 23-001 equivalent for CS API requirements). Each `@Test` SHALL produce exactly one of: PASS, FAIL (with structured message), SKIP (with reason).
 - **Rationale**: Spec traceability; CITE reviewers map ATS to ETS by URI.
 - **Maps to**: PRD FR-ETS-10, SC-2, SC-8.
 
 #### REQ-ETS-CORE-002: Landing-Page Assertions
 - **Priority**: MUST
 - **Status**: SPECIFIED
-- **Description**: The Core suite SHALL assert: (a) `GET /` returns HTTP 200 with `Content-Type` containing `application/json`; (b) the body has `title`, `description`, and `links` (array); (c) `links` contains entries with `rel=conformance` AND (`rel=service-desc` OR `rel=service-doc`) — citation: OGC API Common Part 1 (19-072) `/req/core/root-success`. Absence of BOTH `service-desc` and `service-doc` is the FAIL condition; absence of only one PASSES via fallback. The `rel=self` relation is example-only and SHALL NOT be asserted as mandatory (this preserves the v1.0 GH#3 fix).
+- **Description**: The Core suite SHALL assert: (a) `GET /` returns HTTP 200 with `Content-Type` containing `application/json`; (b) the body has `title`, `description`, and `links` (array); (c) `links` contains entries with `rel=conformance` AND (`rel=service-desc` OR `rel=service-doc`) — citation: OGC API Common Part 1 (19-072) `/req/landing-page/root-success`, `/req/landing-page/conformance-success`, `/req/landing-page/api-definition-success` (canonical `.adoc` URIs verified 2026-04-28 per S-ETS-02-03). Absence of BOTH `service-desc` and `service-doc` is the FAIL condition; absence of only one PASSES via fallback. The `rel=self` relation is example-only and SHALL NOT be asserted as mandatory (this preserves the v1.0 GH#3 fix).
 - **Rationale**: Preserves the link-relation fix landed in v1.0 sprint user-testing-round-01. Re-introducing a strict `self` requirement would regress against real-world conformant servers.
 - **Maps to**: PRD FR-ETS-10. Direct port of v1.0 `REQ-TEST-001` and `REQ-TEST-CITE-002`.
 
@@ -242,7 +242,7 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
 **AND** the Core suite is loaded in TeamEngine
 **WHEN** the Core suite executes `landing-page` tests
-**THEN** the `@Test` for `OGC-23-001 /req/core/landing-page` PASSES
+**THEN** the `@Test` for `OGC-19-072 /req/landing-page/root-success` PASSES (canonical OGC `.adoc` form per S-ETS-02-03 sweep)
 **AND** the captured HTTP response shows `Content-Type` containing `application/json`
 **AND** the body has `title`, `description`, and `links`
 **AND** `links` contains both `rel=conformance` AND (`rel=service-desc` OR `rel=service-doc`).
