@@ -22,10 +22,10 @@
 | R-PIVOT-01 | FR-ETS-05 | REQ-ETS-SCAFFOLD-005 | SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (sha256 `fe1c90c5...` verified across 7 independent builds Quinn+Raze) |
 | R-PIVOT-01 | FR-ETS-06 | REQ-ETS-SCAFFOLD-006 | (covered by ADR audit) | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (5 ADRs ADR-001..005; 16/28 commits cite ADR rows; ADR-006 for Jersey port suggested by Raze CONCERN-1, deferred to Sprint 2) |
 | R-PIVOT-01 | FR-ETS-07 | REQ-ETS-SCAFFOLD-007 | (administrative) | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (admin) — repo at `Botts-Innovative-Research/ets-ogcapi-connectedsystems10` per ADR-005 "our org first" gate |
-| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-001 | SCENARIO-ETS-CORE-LANDING-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
-| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-002 | SCENARIO-ETS-CORE-LANDING-001, LINKS-NORMATIVE-001, API-DEF-FALLBACK-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
-| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-003 | SCENARIO-ETS-CORE-CONFORMANCE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
-| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-004 | SCENARIO-ETS-CORE-RESOURCE-SHAPE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-001 | SCENARIO-ETS-CORE-LANDING-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | **Implemented (pending Quinn+Raze)** — suite-fixture plumbing live (commit `b6a9c12`); Generator complete; Gates 3.5/4 not yet run for S-ETS-01-02 |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-002 | SCENARIO-ETS-CORE-LANDING-001, LINKS-NORMATIVE-001, API-DEF-FALLBACK-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | **Implemented (pending Quinn+Raze)** — `LandingPageTests` 6 @Tests PASS against GeoRobotix; v1.0 GH#3 + service-doc-fallback sentinels live (commit `990c850`) |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-003 | SCENARIO-ETS-CORE-CONFORMANCE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | **Implemented (pending Quinn+Raze)** — `ConformanceTests` 4 @Tests PASS (commit `ea59436`) |
+| R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-004 | SCENARIO-ETS-CORE-RESOURCE-SHAPE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | **Implemented (PARTIAL, pending Quinn+Raze)** — `ResourceShapeTests` Sprint-1-minimal (api-def link + /conformance shape); full crawl Sprint 2 per design.md (commit `b249aa1`) |
 | R-PIVOT-03 | FR-ETS-11..23 | REQ-ETS-PART1-001..013 | SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 | epic-ets-02 | S-ETS-02-01..13 | post-ets-01 | Backlog (placeholders) |
 | R-PIVOT-04 | FR-ETS-30..43 | REQ-ETS-PART2-001..014 | (placeholders) | epic-ets-03 | S-ETS-03-01..14 | post-Part-1 | Deferred |
 | R-PIVOT-07 | FR-ETS-50 | REQ-ETS-TEAMENGINE-001 | SCENARIO-ETS-TEAMENGINE-LOAD-001 | epic-ets-04 | S-ETS-01-03 | ets-01 | Active |

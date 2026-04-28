@@ -2,6 +2,42 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T16:53Z — Sprint ets-01 / S-ETS-01-02 PASS: Generator (Dana) implemented Core conformance class — 12/12 PASS against GeoRobotix (HEAD `ea2c91f`)
+
+- **Trigger**: User instruction "Continue" (approving the next BMAD step after S-ETS-01-01 close — implementing CS API Core conformance class).
+- **Sub-agent**: Generator (Dana) again, fresh context (general-purpose, opus). 222,558 tokens / 17m 38s wall-clock / 99 tool uses; agentId `afc6e0c97f8b30ec2`. Well under the 45-90 min budget.
+- **Deliverables (5 atomic commits + 1 ops commit pushed to `origin/main` of new repo, HEAD `ea2c91f`)**:
+  - `2dc4414` — **layout refactor** closing Quinn+Raze CONCERN-3: deleted `level1/Capability1Tests` archetype scaffold; created `org.opengis.cite.ogcapiconnectedsystems10.conformance.core` and `.listener` subpackages per ADR-003 + design.md; moved 4 listener classes (SuiteFixtureListener, TestRunListener, TestFailureListener, ReusableEntityFilter) into `listener/`; updated `testng.xml` and `src/site/asciidoc/index.adoc`.
+  - `b6a9c12` — **suite-fixture plumbing** (REQ-ETS-CORE-001): CommonFixture extended with `getRequest()`/`getResponse()` for REST-Assured request/response capture; SuiteAttribute enum extended with `IUT` for IUT-URL stash; SuitePreconditions `@BeforeSuite` → `@BeforeTest` (TestNG suite-context lifecycle); listener/SuiteFixtureListener stashes IUT URL + tolerates CS API JSON Content-Type variance (Content-Type: `auto` vs `application/json` — preserves v1.0 known-issue 2026-03-31 fix).
+  - `990c850` — **LandingPageTests** (REQ-ETS-CORE-002, SCENARIO-ETS-CORE-LANDING-001 + LINKS-NORMATIVE-001 + API-DEF-FALLBACK-001): 6 @Test methods including the **`landingPageDoesNotRequireSelfRel` sentinel** (preserves v1.0 GH#3 fix that `rel=self` is example-only) and **`landingPageHasApiDefinitionLink`** (preserves v1.0 service-desc OR service-doc fallback). All @Test descriptions cite OGC document number + canonical `/req/core/...` URI.
+  - `ea59436` — **ConformanceTests** (REQ-ETS-CORE-003, SCENARIO-ETS-CORE-CONFORMANCE-001): 4 @Test methods asserting GET /conformance HTTP 200 + JSON + non-empty `conformsTo` array + explicit declaration of `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/core`.
+  - `b249aa1` — **ResourceShapeTests** (REQ-ETS-CORE-004, SCENARIO-ETS-CORE-RESOURCE-SHAPE-001): 2 @Test methods (api-definition link resolves to non-empty content; /conformance body shape is JSON object). Sprint 1 minimal scope per design.md "Sprint 1 may scope ResourceShapeTests to a single representative resource — likely `/api` or `/conformance` itself — and expand to a true crawl in Sprint 2 once Common is implemented."
+  - `ea2c91f` — **archived TestNG smoke report** at `ops/test-results/s-ets-01-02-georobotix-smoke-2026-04-28.{xml,html}` per sprint contract `evaluation_artifacts_required`.
+- **Live IUT smoke result**: `total="12" passed="12" failed="0" skipped="0"` against `https://api.georobotix.io/ogc/t18/api`. All 5 Sprint 1 contract scenarios in S-ETS-01-02 scope verified PASS.
+- **`mvn clean install` final state at `b249aa1`**: BUILD SUCCESS in 24s; surefire 22/0/0/3 (down 4 from prior 26 — 4 unit tests deleted with `level1.VerifyCapability1Tests` removal; archetype scaffold-only tests, no semantic loss).
+- **Reproducibility re-verified**: new sha256 at `b249aa1` is `c4a8029440a31a588308008fee7dc165b11207b02faae51d4f1c78b2bfc0b57a` (different from S-ETS-01-01's `fe1c90c5...` — expected since new Java code landed). Two consecutive `mvn clean install -DskipTests` builds at the same HEAD produce byte-identical jars. `outputTimestamp` plumbing intact.
+- **Orchestrator-side trust-but-verify (per CLAUDE.md)**: `git rev-parse origin/main` = `ea2c91f` ✅; 6 commits since `1323884` (5 functional + 1 ops archive) ✅; `level1/` directory deleted ✅; `conformance/core/` + `listener/` subpackages exist ✅; `mvn clean install -q` from fresh shell = BUILD SUCCESS ✅; `target/...jar` sha256 = `c4a8029440a31a588308008fee7dc165b11207b02faae51d4f1c78b2bfc0b57a` (matches Dana's claim) ✅; `/tmp/testng-output/testng-results.xml` = `total="12" passed="12" failed="0" skipped="0" ignored="0"` ✅.
+- **URI fidelity (architect-handoff `evaluation_focus` #1)**: Dana's report includes a 6-URI cross-walk between `csapi_compliance/src/engine/registry/{common,csapi-core}.ts` and the Java @Test descriptions. Java port uses canonical `/req/core/<x>` form (matches features10 + OGC CITE expectation) — supersedes v1.0's interim `/req/ogcapi-common/<x>` form (which was a 2026-04-17 prefix-only canonicalization). No URI coverage regression; if anything more granular per OGC ATS structure.
+- **v1.0 GH#3 fix preservation**: explicitly verified via two sentinel @Tests:
+  - `landingPageDoesNotRequireSelfRel` (LandingPageTests.java:204) — PASSES whether `rel=self` is present or absent.
+  - `landingPageHasApiDefinitionLink` (LandingPageTests.java:179) — PASSES on `service-desc` OR `service-doc`; FAILS only when both absent.
+  - JSON Content-Type tolerance (CommonFixture / SuiteFixtureListener) — accepts `application/json` OR `auto` (GeoRobotix's non-IANA value), preserves v1.0 2026-03-31 fix.
+- **PARTIAL items Dana self-flagged**:
+  - HTTP request/response capture: TestFailureListener attaches via Jakarta JAX-RS path, but full REST Assured logging-filter pattern is Sprint 2 work per design.md.
+  - Auth credential masking: deferred — Sprint 1 Core uses GeoRobotix (open IUT), no auth path exercised. CredentialMaskingFilter is Sprint 2 scope.
+  - Kaizen openapi-parser schema validation: deferred per architect-handoff `surfaced_risks_pat_missed.OPENAPI-PARSER-NOT-USED-IN-SPRINT-1` (deliberate Sprint-1 narrowing; Sprint 2+ when richer Part 1 classes need OpenAPI-driven validation).
+  - JaCoCo ≥80% coverage: deferred (JaCoCo not yet wired in pom.xml; design.md "Sprints 2+").
+- **Sprint 1 contract success_criteria walk after S-ETS-01-02** (was 12/12 for S-ETS-01-01 closure; now S-ETS-01-02 adds the Core scenarios):
+  - SCENARIO-ETS-CORE-LANDING-001 (CRITICAL) ✅ — 5 @Tests PASS against GeoRobotix
+  - SCENARIO-ETS-CORE-CONFORMANCE-001 (CRITICAL) ✅ — 4 @Tests PASS
+  - SCENARIO-ETS-CORE-RESOURCE-SHAPE-001 (NORMAL) ✅ — 2 @Tests PASS (Sprint-1-minimal scope)
+  - SCENARIO-ETS-CORE-LINKS-NORMATIVE-001 (NORMAL) ✅ — sentinel @Test
+  - SCENARIO-ETS-CORE-API-DEF-FALLBACK-001 (NORMAL) ✅ — service-desc/service-doc fallback @Test
+  - SCENARIO-ETS-TEAMENGINE-LOAD-001 + SCENARIO-ETS-CORE-SMOKE-001: STILL deferred to S-ETS-01-03 (TeamEngine Docker smoke).
+- **Scope (csapi_compliance, this orchestrator turn)**: this changelog entry + status.md header rewrite + spec.md Implementation Status section update + traceability.md REQ-ETS-CORE-* row flips (Active → Implemented) + metrics.md turn 59. New repo's archived TestNG report is in the new repo, not csapi_compliance.
+- **Push state**: new repo at `origin/main = ea2c91f` ✅. csapi_compliance ops update committed + pushed by this commit.
+- **Next suggested**: spawn **Quinn (Gate 3.5)** + **Raze (Gate 4)** in parallel for S-ETS-01-02 — same pattern as the S-ETS-01-01 close. Quinn's `evaluation_questions_for_quinn` Q1 (URI mapping fidelity diff vs `csapi-core.ts` and `common.ts`) is now answerable concretely; Q2 (smoke-test artifact archived in CI) → archived but not yet via CI workflow (CI workflow git-mv still pending `gh auth refresh -s workflow`); Q3 (reproducible build) → re-verified at `b249aa1`; Q4 (v1.0 known-issues preserved) → 3 sentinels in place. After both gates close, S-ETS-01-03 (TeamEngine Docker smoke) is the final S-1 story.
+
 ## 2026-04-28T16:30Z — Sprint ets-01 / S-ETS-01-01 Gates 3.5 + 4 closed: Quinn APPROVE_WITH_GAPS 0.88 + Raze GAPS_FOUND 0.84 → 3 gaps closed same-turn
 
 - **Trigger**: User instruction "Quinn + Raze" approving parallel-spawn of both gate sub-agents.
