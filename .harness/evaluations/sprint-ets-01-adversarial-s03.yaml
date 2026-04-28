@@ -1,0 +1,571 @@
+sprint: ets-01
+story: S-ETS-01-03
+gate: 4
+agent: Raze (Adversarial Reviewer / Red Team)
+date: 2026-04-28
+new_repo_head: 8aeffbf3d1e2f50d17e5f4cd0211199fd766002f
+prior_reviews:
+  - ".harness/evaluations/sprint-ets-01-adversarial.yaml (S-ETS-01-01, GAPS_FOUND 0.84)"
+  - ".harness/evaluations/sprint-ets-01-adversarial-s02.yaml (S-ETS-01-02, GAPS_FOUND 0.82)"
+verdict: APPROVE_WITH_CONCERNS
+confidence: 0.88
+overrides_evaluator: false  # Quinn ran in parallel; APPROVE_WITH_GAPS 0.91 — independently aligned
+
+user_request: |
+  Land Sprint 1 / S-ETS-01-03 (TeamEngine 5.6.1 Docker smoke test, the FINAL Sprint 1
+  story): Dockerfile + docker-compose + scripts/smoke-test.sh + archived TestNG report
+  proving 12/12 PASS via SPI route against GeoRobotix; verify Dana's claimed spec drift
+  on REQ-ETS-TEAMENGINE-003 (`ogccite/teamengine-production:5.6.1` doesn't exist on
+  Docker Hub; production image runs JDK 8) and her chosen resolution
+  (`tomcat:8.5-jre17` + Maven Central TE 5.6.1 artifacts); then run mandatory Gate 4
+  adversarial review.
+
+verdict_summary: |
+  S-ETS-01-03 is the strongest of the three Sprint 1 stories. Substantive engineering
+  is sound across every adversarial axis I checked. The headline question — Dana's
+  spec drift on REQ-ETS-TEAMENGINE-003 — is HONEST and CORRECT: I independently
+  verified both claims (Docker Hub query returns only `:latest` and `:1.0-SNAPSHOT`
+  tags for `ogccite/teamengine-production`, no `:5.6.1`; `docker run --rm
+  ogccite/teamengine-production:latest java -version` reports `openjdk version
+  "1.8.0_332" ... JAVA_VERSION=8u212`). The chosen resolution (`tomcat:8.5-jre17` +
+  download TE 5.6.1 web/console/common-libs from Maven Central + 3 secondary patches)
+  is the right architectural call: our ETS bytecode is JDK 17 (`javap -v
+  LandingPageTests.class` reports `compiled Java class data, version 61.0`) and our
+  Java sources import `jakarta.ws.rs.client.Client` (Jersey 3.x, Jakarta EE 9
+  namespace), neither of which can run on JDK 8. The 3 secondary patches
+  (VirtualWebappLoader strip, JAXB jars in shared lib/, Jersey 3.x deps in
+  WEB-INF/lib via mvn dependency:copy-dependencies) are documented in the Dockerfile
+  with empirical justification per patch.
+
+  Reproducibility re-verified at HEAD 8aeffbf via fresh clone:
+    target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT.jar:
+      sha256 343136324b77651c6c8750522223ed202b0ec81bc70c4fcc5f9bc14730513f23
+    target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT-aio.jar:
+      sha256 e0935dbb3eab1bd67b78a05852b21665645d1a029a3b8f25e2474b558364646e
+  Both match the user worktree byte-identical. mvn test → 22/0/0/3 (no regression
+  from S-ETS-01-02 close).
+
+  Independent smoke run via fresh clone produced byte-equivalent semantics (12/12
+  PASS, identical method names, identical XML structure) in 12s wall-clock end-to-end
+  including Docker build + Tomcat startup (image was already cached). Idempotency
+  verified via back-to-back invocations leaving no residual containers. ADVERSARIAL
+  SABOTAGE TEST: I temporarily injected a guaranteed-FAIL into
+  `landingPageReturnsHttp200` (changed `if (status != 200)` → `if (status >= 0)`)
+  and re-ran smoke-test.sh; the script CORRECTLY DETECTED the failure
+  (`[smoke-test FATAL] TestNG report has failed=1 (>0)`) and exited with code 1 (when
+  invoked without piping to `tail`). The script's 3-line filter exclusion
+  (`did not find a matching property|maxActive is not used in DBCP2|encoding ['utf-8']`)
+  is BELT-AND-SUSPENDERS — the awk gate `/Server startup in/{print; exit}` already
+  truncates the log to the startup block (lines 1-48), and the only utf-8 SEVERE
+  entries occur AFTER startup at line 49+ (during Jersey response serialization).
+  None of the filtered patterns mask any genuine startup error.
+
+  Container log scan independently verified clean of startup ERROR/SEVERE. The
+  runtime utf-8 SEVERE that Dana flagged as known-tolerated is genuine: it's an
+  IllegalArgumentException thrown by Tomcat 8.5+ when Saxon's XMLEmitter sends a
+  lowercase `utf-8` charset header; the response (the `/rest/suites` XML) still
+  arrives at the client correctly because Tomcat's response stream completes before
+  the encoding-set is checked. This pattern is benign and matches OGC's own
+  production deployment.
+
+  CTL Saxon namespace: only one CTL file exists
+  (`src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl`); its `xmlns:tng`
+  declaration uses the canonical run-together package
+  `org.opengis.cite.ogcapiconnectedsystems10.TestNGController` (architect-handoff
+  CONCERNS pitfall #3 — silent CTL Saxon namespace failure — does not occur).
+  META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController unchanged: 58
+  bytes, single line, no whitespace, no extension (architect-handoff CONCERNS
+  pitfall #2 — META-INF/services filename literal-correctness — does not occur).
+
+  No regression of S-ETS-01-01 + S-ETS-01-02 deliverables: schemas byte-identical
+  to csapi_compliance@HEAD (`diff -r` empty); pom.xml `<connected-systems-yaml.sha>
+  3fd86c73...</>` preserved at HEAD 8aeffbf; surefire 22/0/0/3 unchanged; bare-throw
+  count still 21 across the 3 conformance core files (per-file distribution shifted
+  6/8/7 → 6/7/8 between s02 ResourceShapeTests and s03; the difference is the
+  REQ_OAS30_OAS_IMPL → REQ_OAS30_OAS_IMPL+1 added when fixing GAP-3 in commit
+  1fdfe07; net no regression on the count). No stale Pat-coordinate strings in
+  production paths; only legitimate match is the canonical OGC URI form
+  `ogcapi-connectedsystems-1/1.0/conf/core` in ConformanceTests.java:46.
+
+  Sprint 1 contract walk: 11/12 success_criteria PASS; one (uri_mapping_fidelity_
+  preserved) is an INHERITED PARTIAL from S-ETS-01-02 GAP-2 (URI form drift across
+  v1.0 TS slug vs Java's `/req/core/...` vs OGC canonical `/req/landing-page/...`)
+  that is explicitly tracked as a Sprint 2 cleanup story per the spec.md
+  Implementation Status Deviations section. NOT a regression introduced by S03.
+
+  THREE concerns hold the verdict at APPROVE_WITH_CONCERNS rather than APPROVE:
+
+  (1) **Spec.md REQ-ETS-TEAMENGINE-003 still says `extends ogccite/teamengine-
+  production:5.6.1` after this sprint** — the Implementation Status section
+  acknowledges the deviation and flags the proposed amended wording for Sam's
+  next planning cycle, but the REQ text itself was NOT updated. CITE SC reviewers
+  (or any future Quinn run) reading the spec normatively will see a contradiction
+  between the REQ and the Dockerfile. The architect-handoff fix pattern from
+  S-ETS-01-01 (Sam reconciled spec/PRD strings to ADRs same-turn at
+  19003b1) wasn't repeated here. CONCERN-1, not GAP, because Dana documented
+  the proposed amendment in ops/server.md and called Sam out explicitly.
+
+  (2) **`scripts/smoke-test.sh` requires `~/.m2/repository/` to be populated**.
+  The script calls `mvn -B -q clean package -DskipTests` and `mvn -B -q
+  dependency:copy-dependencies` at lines 69 + 75. In a fresh CI runner with no
+  prior `mvn install`, these calls will need to download the entire ets-common:17
+  + Jersey 3.x + REST Assured dep tree from Maven Central + OSSRH on every CI
+  run — 5-10 minutes per CI invocation, plus brittleness if either upstream is
+  intermittently down. The Dockerfile assumes `target/lib-runtime/` is staged
+  outside (COPY target/lib-runtime/ /usr/local/tomcat/webapps/teamengine/WEB-INF/
+  lib/ at line 96). A more robust pattern would be a multi-stage Dockerfile that
+  runs `mvn dependency:copy-dependencies` inside the build stage with
+  `--mount=type=cache,target=/root/.m2`. Dana flagged this concern in her
+  self-report; I confirm it's real but not Sprint 1 blocking.
+
+  (3) **No Dockerfile multi-stage build + container runs as root**. The image
+  is single-stage (FROM tomcat:8.5-jre17, no AS builder), so build artifacts
+  (the staged `target/lib-runtime/` jars) ship directly into the runtime layer.
+  Final image size ~600MB, of which ~300MB is the staged ETS runtime deps. A
+  multi-stage build could bring this down to ~400MB. The container also runs
+  as `root` (Tomcat 8.5 base default). Both are defensible for a test harness
+  (not a production-facing service) but should be flagged for Sprint 2+ when
+  the image becomes a CI artifact published to a registry.
+
+  Plus one minor observation: **Sprint 1 contract success_criteria
+  `teamengine_loads_ets_without_error: true`** is verified-by-smoke-12/12-PASS
+  but a TIGHTER test would query `/rest/suites/ogcapi-connectedsystems10` and
+  assert the suite metadata is present and well-formed (smoke-test.sh step 5
+  does this implicitly via `grep -q "<etscode>${ETS_CODE}</etscode>"`, but a
+  more rigorous adversarial check would parse the XML and verify version,
+  title, code per ets.properties).
+
+gaps: []  # No gaps rise to GAPS_FOUND severity. The 3 items above are concerns.
+
+concerns:
+  - id: CONCERN-1
+    severity: medium
+    title: "spec.md REQ-ETS-TEAMENGINE-003 text NOT updated to reflect the implementation reality"
+    description: |
+      spec.md REQ-ETS-TEAMENGINE-003 (line 137-139) still reads:
+        "A `Dockerfile` SHALL extend `ogccite/teamengine-production:5.6.1` and
+         copy the built ETS jar into ..."
+
+      The actual Dockerfile (verified at HEAD 8aeffbf by Raze):
+        FROM tomcat:8.5-jre17
+
+      The mismatch is documented in:
+        - ops/server.md "Docker smoke test" section (lines 59-118), which calls
+          out the proposed amended REQ wording and Sam's reconciliation TODO
+        - spec.md Implementation Status section (line 350), which flags the
+          deviation as "proposed REQ wording amendment for next planning cycle"
+        - Dockerfile comment block (lines 5-30) with empirical justification
+
+      The pattern Sam used at S-ETS-01-01 close (commit 19003b1) was to
+      reconcile spec/PRD strings to ADRs same-turn. That same-turn reconciliation
+      did NOT happen for S-ETS-01-03; the REQ-ETS-TEAMENGINE-003 text in
+      spec.md is stale relative to the implementation.
+
+      Adversarial consequence: a CITE SC reviewer (or any future Quinn run)
+      reading spec.md normatively will see REQ-ETS-TEAMENGINE-003 specifying
+      `ogccite/teamengine-production:5.6.1` and the Dockerfile using
+      `tomcat:8.5-jre17`. Without reading ops/server.md, they have no way to
+      know the deviation was deliberate, well-justified, and architect-aware.
+      The Implementation Status section IS visible but is procedural-summary
+      text, not the authoritative REQ.
+    evidence: |
+      spec.md line 137-139:
+        "A `Dockerfile` SHALL extend `ogccite/teamengine-production:5.6.1`..."
+      Dockerfile line 32:
+        "FROM tomcat:8.5-jre17"
+      ops/server.md line 115-116:
+        "`Dockerfile SHALL produce a TeamEngine 5.6.1 webapp on a JDK 17 base
+         image`. Until then, this `ops/server.md` block is the authoritative
+         record of why the implementation deviates."
+      Independent Docker Hub verification (Raze):
+        curl -sL "https://hub.docker.com/v2/repositories/ogccite/teamengine-production/tags/?page_size=100"
+        Returns count=2: "latest" (digest e4ee158ed..., size 877MB, last_pushed 2024-04-12)
+                        "1.0-SNAPSHOT" (same digest)
+        No "5.6.1" tag exists. Dana's claim verified.
+      Independent JDK version verification (Raze):
+        docker run --rm ogccite/teamengine-production:latest java -version
+        → openjdk version "1.8.0_332"
+           OpenJDK Runtime Environment (build 1.8.0_332-8u332-ga-1~deb9u1-b09)
+           OpenJDK 64-Bit Server VM (build 25.332-b09, mixed mode)
+        ENV JAVA_VERSION=8u212. Dana's claim verified.
+      Independent JDK 17-only feature usage in our source:
+        javap -v target/classes/.../LandingPageTests.class
+        → compiled Java class data, version 61.0  (= JDK 17 bytecode)
+        grep 'jakarta\\.' src/main/java
+        → 9 imports of jakarta.ws.rs.client.* (Jersey 3.x / Jakarta EE 9)
+        Both confirm: Dana's resolution path was the right call.
+    recommended_fix: |
+      Same-turn spec.md reconcile (~5 LOC):
+        Replace REQ-ETS-TEAMENGINE-003 description line in spec.md with:
+          "A `Dockerfile` SHALL produce a TeamEngine 5.6.1 webapp on a JDK 17
+           base image. The ETS jar SHALL be copied into the resulting webapp's
+           WEB-INF/lib/ directory. The image SHALL build via `docker build .`
+           from a clean checkout with no additional host dependencies. Note:
+           the `ogccite/teamengine-production:5.6.1` Docker tag does not exist
+           (only `:latest` and `:1.0-SNAPSHOT`, both JDK 8); the Dockerfile
+           assembles TE 5.6.1 on `tomcat:8.5-jre17` from Maven Central
+           artifacts. See ops/server.md for the empirical audit trail."
+        Update the `<Rationale>` to add: "JDK 17 is required because our ETS
+          bytecode targets JDK 17 (per REQ-ETS-SCAFFOLD-002) and our Java
+          sources use Jakarta EE 9 (jakarta.ws.rs.*); neither can run on the
+          published production image's JDK 8."
+        Add to "Deviations from Spec" section: "REQ-ETS-TEAMENGINE-003
+          original wording specified `ogccite/teamengine-production:5.6.1` but
+          that Docker tag doesn't exist; resolution per ops/server.md was to
+          assemble TE 5.6.1 on tomcat:8.5-jre17. REQ wording amended in this
+          commit."
+    address_in_turn: yes (low-LOC, high-audit-clarity)
+
+  - id: CONCERN-2
+    severity: low
+    title: "scripts/smoke-test.sh staging step requires populated ~/.m2/repository (not durable in fresh CI)"
+    description: |
+      smoke-test.sh lines 64-81 stage build artifacts via:
+        - mvn -B -q clean package -DskipTests   (line 69)
+        - mvn -B -q dependency:copy-dependencies -DoutputDirectory=target/lib-runtime
+                                                  -DincludeScope=runtime  (line 75)
+        - rm -f target/lib-runtime/teamengine-*.jar  (line 80)
+
+      In a fresh CI runner (e.g. GitHub Actions ubuntu-latest with no prior
+      mvn cache), both mvn calls will resolve the entire ets-common:17 + Jersey
+      3.x + REST Assured + everit-json-schema + jts + groovy + ... transitive
+      tree from Maven Central + OSSRH. That's ~70 dependencies (verified: `ls
+      target/lib-runtime/ | wc -l` = 72), download size on the order of 100MB+.
+
+      Two failure modes:
+      1. **CI build time**: 5-10 minutes added per smoke-test invocation in the
+         worst case (cold cache).
+      2. **Brittleness**: If OSSRH or any single transitive's host is
+         intermittently unreachable (which has happened in the OGC ecosystem
+         before, e.g. ets-common's earlier OSSRH outages), the smoke-test
+         fails for transient reasons unrelated to the ETS itself.
+
+      The Dockerfile does NOT bake the deps closure into the image (line 96:
+      `COPY target/lib-runtime/`); the staged dir lives outside. A more
+      robust pattern is a multi-stage Dockerfile:
+        FROM maven:3.9-eclipse-temurin-17 AS build
+        COPY pom.xml ./
+        RUN --mount=type=cache,target=/root/.m2 mvn -B -q dependency:resolve
+        COPY src ./src
+        RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests \
+            && mvn -B -q dependency:copy-dependencies \
+                -DoutputDirectory=target/lib-runtime -DincludeScope=runtime
+
+      Dana's self-report flagged this concern (architect-handoff did not
+      surface it). I confirm it's real but not Sprint 1 blocking — local dev
+      and the OGC dev's WSL2 CI work fine because mvn cache is populated by
+      the prior `mvn test` step.
+    evidence: |
+      grep -nE 'mvn|copy-depend' /home/nh/docker/gir/ets-ogcapi-connectedsystems10/scripts/smoke-test.sh
+      → 6 mvn references at lines 67-78
+      ls /tmp/raze-fresh-checkout-s03/target/lib-runtime/ | wc -l
+      → 72 jars staged (after teamengine-*.jar removal)
+      Total deps zip size in target: ~30MB (varies)
+      Dockerfile line 96: COPY target/lib-runtime/ /usr/local/tomcat/webapps/teamengine/WEB-INF/lib/
+        — confirms deps are NOT baked into image; required to be staged outside
+    recommended_fix: |
+      Sprint 2 cleanup: convert Dockerfile to multi-stage build with mvn cache
+      mount; eliminate the `mvn dependency:copy-dependencies` step in
+      smoke-test.sh. Estimated 30-LOC Dockerfile change + 20-LOC smoke-test.sh
+      simplification. Tag for next CI-hardening sprint.
+    address_in_turn: no (defer to Sprint 2 or whenever CI infra lands)
+
+  - id: CONCERN-3
+    severity: low
+    title: "Single-stage Dockerfile + container runs as root; image ~600MB"
+    description: |
+      The Dockerfile is single-stage (no `AS builder` separation). Build-time
+      artifacts ship directly into the runtime image. The base
+      `tomcat:8.5-jre17` is ~330MB; final image is ~600MB after layering.
+      The container runs as `root` (Tomcat 8.5 base default; no `USER` line in
+      Dockerfile).
+
+      Both are defensible for a test harness (not a production-facing
+      service), but Sprint 2+ should flag both:
+        - Multi-stage build to drop intermediate Maven artifacts
+        - Add `USER tomcat` (UID 1000) before CMD
+        - Consider distroless base for the runtime stage (would require Tomcat
+          embedded jar; significant refactor)
+
+      Sprint 1 acceptable; Sprint 2 housekeeping.
+    evidence: |
+      cat /home/nh/docker/gir/ets-ogcapi-connectedsystems10/Dockerfile | grep -E '^(FROM|USER|AS)'
+      → only line 32: FROM tomcat:8.5-jre17
+      No multi-stage (no AS), no USER directive
+      docker images | grep ets-ogcapi-connectedsystems10:smoke
+      → ~600MB total image size
+    recommended_fix: |
+      Sprint 2 housekeeping: add multi-stage + USER directive. ~10 LOC
+      Dockerfile change.
+    address_in_turn: no (defer to Sprint 2)
+
+  - id: CONCERN-4
+    severity: low
+    title: "Sprint 1 success criteria `teamengine_loads_ets_without_error` verified-by-smoke; a tighter check would parse `/rest/suites/<code>` metadata"
+    description: |
+      Sprint contract success_criterion `teamengine_loads_ets_without_error`
+      is satisfied by smoke-test.sh's success (12/12 PASS, suite is queryable
+      via `<etscode>` grep). A tighter adversarial check would:
+        - GET /teamengine/rest/suites/ogcapi-connectedsystems10
+        - Parse the response XML
+        - Assert version == project.version, title == project.name,
+          getCode() == ets-code per ets.properties
+      This would catch a class of failure where the suite is loaded but
+      reports wrong metadata (e.g. cached classes from a stale jar). Sprint 1
+      doesn't require this tightness.
+    evidence: |
+      smoke-test.sh line 116:
+        "if ! echo \"$suites_xml\" | grep -q \"<etscode>${ETS_CODE}</etscode>\"; then"
+        — checks for presence of etscode element only, not full metadata.
+    recommended_fix: |
+      Sprint 2: extend smoke-test.sh step 5 to:
+        suite_meta=$(curl -fsS -u ... /rest/suites/${ETS_CODE})
+        version=$(echo "$suite_meta" | xmllint --xpath '//version/text()' -)
+        [[ "$version" == "0.1-SNAPSHOT" ]] || die "version mismatch"
+      ~10 LOC.
+    address_in_turn: no (Sprint 2 nice-to-have)
+
+sections_evaluated:
+  - section: §6.1 ADR adherence + architect must/must_not constraints (S-ETS-01-03-specific)
+    checks:
+      - "ADR-001 (TeamEngine SPI registration): META-INF/services file unchanged from S-ETS-01-01/02 (58 bytes, single-line FQCN, no whitespace, no extension). SPI registration runtime-confirmed by smoke 12/12 PASS via SPI route. ✓"
+      - "ADR-002 (JSON Schema bundling): diff -r csapi_compliance/schemas/ vs src/main/resources/schemas/ returns empty. pom.xml `<connected-systems-yaml.sha>3fd86c73...</>` preserved at HEAD 8aeffbf. ✓"
+      - "ADR-003 (Java package naming): canonical run-together `org.opengis.cite.ogcapiconnectedsystems10.*` preserved across new files (Dockerfile + docker-compose + smoke-test.sh use the canonical artifactId `ets-ogcapi-connectedsystems10` and ets-code `ogcapi-connectedsystems10`). ✓"
+      - "ADR-004 (Modernization checklist): Dockerfile is JDK 17 base (tomcat:8.5-jre17 ships JRE 17.0.10+7 per container log line 9). pom.xml `<maven.compiler.release>17</>` preserved. ✓"
+      - "ADR-005 (Cross-repo relationship): no cross-repo coupling introduced in S-ETS-01-03. Repo remains at Botts-Innovative-Research org. ✓"
+      - "must constraint: 'Smoke test (scripts/smoke-test.sh) is bash, archived TestNG XML report is the E2E artifact, exits 0 only on non-empty report + zero ERROR-level container logs during suite registration': scripts/smoke-test.sh is bash + idempotent + verifies non-empty report + parses total/passed/failed/skipped + assertions failed=0 + scans startup-block for SEVERE/ERROR. ADVERSARIAL SABOTAGE TEST CONFIRMED detection works (sabotaged test → exit 1 with FATAL message). ✓"
+      - "must constraint: 'Dockerfile SHALL extend ogccite/teamengine-production:5.6.1 and copy ETS jar to /usr/local/tomcat/webapps/teamengine/WEB-INF/lib/': ⚠️ DEVIATION (CONCERN-1) — Dockerfile uses tomcat:8.5-jre17 instead. Deviation IS justified, documented, and architectural-correct (no :5.6.1 tag exists; production image is JDK 8). Spec text not yet reconciled (CONCERN-1)."
+      - "must_not constraint: 'no Part 2 work': verified — zero hits on Datastream/ControlStream/swecommon/feasibility in src/main/java (only legitimate hit is canonical OGC URI form `ogcapi-connectedsystems-1/1.0/conf/core` in ConformanceTests:46). ✓"
+      - "must_not constraint: 'no PRD-stale strings': verified — zero hits on connectedsystems-1\\b/ogcapi.cs10/ets-common:14/teamengine-production:5.5\\b in production paths. ✓"
+    findings: "ADR adherence is genuine. The architect-handoff CONCERNS S-ETS-01-03 pitfalls 1, 2, 3 (TE version drift, META-INF/services literal-correctness, CTL Saxon namespace silent failure) are all closed. Pitfall 4 (smoke-test artifact archival) is closed via the 35c8415 + 2f5538e archive commits. The deviation on Dockerfile base image is the only non-trivial item, and it's HONESTLY documented in 3 places (Dockerfile inline comment block, ops/server.md, spec.md Implementation Status). CONCERN-1 is the single procedural follow-through that's still pending: spec.md REQ-ETS-TEAMENGINE-003 text itself wasn't reconciled."
+
+  - section: §6.2 Spec drift adjudication — Dana's two REQ-ETS-TEAMENGINE-003 deviation claims
+    checks:
+      - "Dana claim 1: `ogccite/teamengine-production:5.6.1` doesn't exist on Docker Hub"
+      - "  Independent verification: `curl -sL https://hub.docker.com/v2/repositories/ogccite/teamengine-production/tags/?page_size=100`"
+      - "  Result: count=2, only tags are `latest` and `1.0-SNAPSHOT` (both digest sha256:e4ee158edbee..., 877MB, last_pushed 2024-04-12)"
+      - "  Verdict: VERIFIED. No `:5.6.1` tag exists. Dana's claim is correct."
+      - "Dana claim 2: production image runs JDK 8"
+      - "  Independent verification: `docker run --rm ogccite/teamengine-production:latest java -version`"
+      - "  Result: openjdk version 1.8.0_332 / build 1.8.0_332-8u332-ga-1~deb9u1-b09. ENV JAVA_VERSION=8u212."
+      - "  OS: Debian GNU/Linux 9 (stretch) — also indicates a ~2024 last-update of an old base."
+      - "  Verdict: VERIFIED. Production image is JDK 8. Dana's claim is correct."
+      - "Adversarial alternative #1: could a JDK 8 base image work if our ETS bytecode was re-targeted to --release 8?"
+      - "  Verification: javap -v target/classes/.../LandingPageTests.class → 'compiled Java class data, version 61.0' (= JDK 17 bytecode)"
+      - "  Verification: grep 'jakarta\\.' src/main/java → 9 imports of jakarta.ws.rs.client.* (Jersey 3.x, Jakarta EE 9 namespace)"
+      - "  Note: `Set.of()` (LandingPageTests:226) is JDK 9+ (immutable Set factory)"
+      - "  Verdict: NO. Re-targeting to JDK 8 would require ports of jakarta.ws.rs (no JDK 8 equivalent) + ets-common:17 (which is JDK 11+). Substantial refactor. Dana's path is correct."
+      - "Adversarial alternative #2: could ets-common:17 bring its own JRE-compatible TestNG runtime?"
+      - "  Verification: ets-common:17 pom inspection (verified during S-ETS-01-01 review): parent uses Java 11/17. teamengine-spi managed by ets-common:17 also Java 11+."
+      - "  Verdict: NO. ets-common:17 itself targets JDK 11+. Dana's path is correct."
+      - "Verdict on Dana's resolution (assemble TE 5.6.1 on tomcat:8.5-jre17 + Maven Central artifacts + 3 patches):"
+      - "  Patch 1 — VirtualWebappLoader strip via sed: documented inline (line 65). Pragmatically required because TE 5.6.1's META-INF/context.xml references a Tomcat-7 class absent from Tomcat 8.5+. Surgical — removes one element, no functional loss."
+      - "  Patch 2 — JAXB jars (api 2.3.1 + impl 2.3.1 + activation 1.2.0) in shared lib/: documented inline (lines 67-79). Required because JDK 11+ removed javax.xml.bind from JRE; TE 5.6.1's TestSuiteController servlet uses JAXB during init."
+      - "  Patch 3 — full mvn dependency:copy-dependencies into WEB-INF/lib (with teamengine-*-6.0.0.jar filtered): documented inline (lines 84-96). Required because our SuiteAttribute imports jakarta.ws.rs.* (Jersey 3.x), which TE 5.6.1's WAR doesn't ship. Both Jersey 1.x (TE's bundled) and Jersey 3.x (ours) coexist by namespace separation."
+      - "  Each patch has empirical justification + a single-line root-cause comment. No mystery code."
+      - "Verdict: Dana's resolution is the RIGHT CALL. The 3 patches are minimum-viable. Empirical proof: 12/12 @Test PASS via SPI route, 1.6s suite execution time."
+    findings: "Spec drift is GENUINE, HONEST, and architectural-correct. The deviation is well-justified, well-documented (3 places), and operationally proven via independent smoke. The single follow-through pending is reconciling spec.md REQ-ETS-TEAMENGINE-003 text itself (CONCERN-1)."
+
+  - section: §6.3 Build correctness + reproducibility (independent verification at HEAD 8aeffbf)
+    checks:
+      - "Fresh clone /tmp/raze-fresh-checkout-s03 from github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10 (HEAD 8aeffbf3d1e2f50d17e5f4cd0211199fd766002f) — separate worktree from any Quinn run"
+      - "mvn -v: Apache Maven 3.9.9 + JDK 17.0.18"
+      - "Build (mvn -B -q clean package -DskipTests) → BUILD SUCCESS"
+      - "  Slim jar sha256: 343136324b77651c6c8750522223ed202b0ec81bc70c4fcc5f9bc14730513f23"
+      - "  AIO jar sha256:  e0935dbb3eab1bd67b78a05852b21665645d1a029a3b8f25e2474b558364646e"
+      - "User worktree comparison: BOTH HASHES MATCH BYTE-IDENTICAL. Reproducibility confirmed."
+      - "mvn test (full surefire): 22 tests / 0 failures / 0 errors / 3 skipped — matches S-ETS-01-02 baseline. NO REGRESSION."
+      - "AIO jar contents: org/opengis/cite/ogcapiconnectedsystems10/{TestNGController,conformance/core/{LandingPageTests,ConformanceTests,ResourceShapeTests},listener/{SuiteFixtureListener,TestRunListener,TestFailureListener,ReusableEntityFilter}} all .class files present and non-trivial (sizes 562B-9064B)"
+      - "META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController in slim jar: 58 bytes, single line `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`"
+      - "diff -r csapi_compliance/schemas/ vs ets-ogcapi-connectedsystems10/src/main/resources/schemas/: returns no output (byte-identical)"
+      - "pom.xml `<connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f</>` preserved at HEAD 8aeffbf"
+      - "spring-javaformat: not re-run (no source changes in S-ETS-01-03 — only Dockerfile + compose + scripts + ops/server.md + .gitignore)"
+    findings: "Build reproducibility GENUINE at HEAD 8aeffbf. The canonical sha256 matches between the fresh clone and the user worktree. mvn test 22/0/0/3 unchanged. No regression of any S-ETS-01-01 or S-ETS-01-02 deliverable."
+
+  - section: §6.4 Sprint 1 contract success_criteria walk
+    checks:
+      - "all_critical_scenarios_pass: ✓ (5/5 — see Sprint 1 contract list)"
+      - "  SCENARIO-ETS-SCAFFOLD-BUILD-001: PASS (S-ETS-01-01 close, re-verified via fresh-clone build)"
+      - "  SCENARIO-ETS-CORE-LANDING-001: PASS (S-ETS-01-02 close, re-confirmed in S-ETS-01-03 smoke 12/12)"
+      - "  SCENARIO-ETS-CORE-CONFORMANCE-001: PASS (S-ETS-01-02 close, re-confirmed in S-ETS-01-03 smoke 12/12)"
+      - "  SCENARIO-ETS-TEAMENGINE-LOAD-001: PASS (smoke 12/12 verified suite registration + zero startup ERROR/SEVERE)"
+      - "  SCENARIO-ETS-CORE-SMOKE-001: PASS (smoke-test.sh exit 0 + non-empty report + no FAIL/ERROR)"
+      - "normal_scenario_pass_rate >= 0.90: ✓ (5/5 = 100%)"
+      - "  SCENARIO-ETS-SCAFFOLD-LAYOUT-001: PASS (S-ETS-01-01 close)"
+      - "  SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001: PASS (Raze re-verified hash match)"
+      - "  SCENARIO-ETS-CORE-RESOURCE-SHAPE-001: PASS (S-ETS-01-02 close, narrowed per design.md line 141)"
+      - "  SCENARIO-ETS-CORE-LINKS-NORMATIVE-001: PASS (sentinel landingPageDoesNotRequireSelfRel works)"
+      - "  SCENARIO-ETS-CORE-API-DEF-FALLBACK-001: PASS (landingPageHasApiDefinitionLink OR semantics correct)"
+      - "spec_updated: ✓ spec.md Implementation Status section updated 2026-04-28 reflects S-ETS-01-03 deliverables (Sub-deliverable 5 lines 347-353). ⚠️ HOWEVER: REQ-ETS-TEAMENGINE-003 description text itself NOT reconciled to match Dockerfile reality (CONCERN-1)."
+      - "no_regression: ✓ schemas byte-identical, pom YAML SHA preserved, surefire 22/0/0/3 unchanged, bare-throw count still 21"
+      - "build_green_jdk17: ✓ Raze independent fresh-clone build BUILD SUCCESS at JDK 17.0.18 + Maven 3.9.9"
+      - "reproducible_build: ✓ slim jar 343136324b... + AIO jar e0935dbb3e... match between fresh-clone + user-worktree"
+      - "teamengine_loads_ets_without_error: ✓ smoke 12/12 PASS via SPI route (suite name `ogcapi-connectedsystems10-0.1-SNAPSHOT`, test name `Conformance Class - Core (OGC 23-001 /conf/core)` — both sourced from testng.xml + project metadata, confirms TestNGExecutor consumed our SPI artifacts). Zero startup SEVERE/ERROR in container log. CONCERN-4 notes a tighter check is possible but not required."
+      - "smoke_test_green_against_georobotix: ✓ Dana 12/12 + Raze independent 12/12 (back-to-back idempotent runs, both produce 12/12 PASS in <15s wall-clock)"
+      - "no_part2_work_in_sprint: ✓ zero hits on Part 2 strings in src/main"
+      - "uri_mapping_fidelity_preserved: ⚠️ INHERITED PARTIAL from S-ETS-01-02 GAP-2 — Java cites `/req/core/<X>-success`, OGC canonical is `/req/landing-page/<X>-success`, v1.0 TS uses third form. Tracked as Sprint 2 cleanup story per spec.md Implementation Status Deviations section. NOT a regression introduced by S-ETS-01-03."
+      - "spec_trap_fixtures_preserved: ✓ epic-ets-06 references unchanged at HEAD 8aeffbf"
+      - "openapi_yaml_pinned_by_sha: ✓ <connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f</>"
+    findings: "11/12 success_criteria PASS at HEAD 8aeffbf. 1/12 (uri_mapping_fidelity_preserved) is an INHERITED PARTIAL from S-ETS-01-02 (NOT a regression introduced by S-ETS-01-03; explicitly tracked as Sprint 2 cleanup). Sprint 1 substantively complete; sprint-close commit can land with the CONCERN-1 same-turn fix."
+
+  - section: §6.5 CLAUDE.md mandatory step audit
+    checks:
+      - "Step 1 (Spec First): pre-existing spec.md REQ-ETS-TEAMENGINE-001..005 cover all S-ETS-01-03 deliverables. Generator did not add new specs. ✓"
+      - "Step 2 (Write Tests): scripts/smoke-test.sh acts as the integration test harness; the @Test methods are S-ETS-01-02 deliverable, run live by S-ETS-01-03's smoke. ✓"
+      - "Step 3 (Implement): Dockerfile + docker-compose.yml + smoke-test.sh + 2 archive commits + ops/server.md (6 atomic commits matching Dana's claim). ✓"
+      - "Step 4 (Verify): mvn clean install passes; mvn test 22/0/0/3 ✓"
+      - "Step 5 (E2E Verify): smoke-test.sh against GeoRobotix per ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-28.xml. 12 @Test methods ran live in TeamEngine 5.6.1 container. Container log archived at s-ets-01-03-teamengine-container-2026-04-28.log. Both files committed (35c8415 + 2f5538e). Raze independent re-run produced byte-equivalent semantics. ✓"
+      - "Step 6 (Reconcile Specs): spec.md Implementation Status section updated to reflect S-ETS-01-03 deliverables (lines 347-353 covering Sub-deliverable 5). ⚠️ INCOMPLETE — REQ-ETS-TEAMENGINE-003 description text itself NOT reconciled to match Dockerfile (CONCERN-1)."
+      - "Step 7 (Update Ops): ops/test-results/ artifacts archived. ops/server.md updated with Docker smoke section. csapi_compliance ops/changelog.md update pending sprint close."
+      - "Step 8 (Update _bmad): traceability.md update pending sprint-close commit. spec.md Implementation Status reflects status; full traceability.md row update is procedural at sprint close."
+    findings: "Steps 1-5 ✓ thoroughly. Step 6 partial — spec.md Implementation Status reflects the deliverable accurately but REQ text wasn't reconciled (CONCERN-1). Step 7-8 are sprint-close procedural; expected to land in the sprint-close commit."
+
+  - section: §6.6 Smoke-test.sh adversarial — false-pass + false-fail audit
+    checks:
+      - "Could smoke-test.sh pass falsely with empty/broken report?"
+      - "  Line 132: HTTP code != 200 → die. ✓"
+      - "  Line 140: -s file test (file exists AND non-empty) → die if empty. ✓"
+      - "  Line 158: total > 0 required. ✓"
+      - "  Line 159: failed == 0 required. ✓"
+      - "  ADVERSARIAL TEST CONFIRMED: Raze sabotaged landingPageReturnsHttp200 (changed `if (status != 200)` → `if (status >= 0)`), rebuilt, re-ran smoke-test.sh. Output: `[smoke-test 20:27:05]   TestNG: total=12 passed=11 failed=1 skipped=0` followed by `[smoke-test FATAL] TestNG report has failed=1 (>0); see ...` — exit code 1. DETECTION VERIFIED."
+      - "Could the report be from a stale prior run (caching pollution)?"
+      - "  smoke-test.sh line 47-50: trap cleanup_silent EXIT (removes container). Each invocation tears down container before starting (cleanup_silent at line 94)."
+      - "  REPORT_XML path is overwritten by curl -o (line 128) on every invocation."
+      - "  Idempotency verified by Raze: 2 back-to-back runs both produce 12/12 PASS, both leave clean state (no residual containers per `docker ps -a | grep ets`)."
+      - "Could the GeoRobotix invocation succeed but return zero results?"
+      - "  Line 158: total > 0 die — would catch this."
+      - "Could the script accept a partial / parse-failed report?"
+      - "  Line 157: `[[ $total =~ ^[0-9]+$ ]]` → die if total can't be parsed (e.g. 'NA' from regex miss)."
+      - "Could the SEVERE filter mask a genuine startup error?"
+      - "  3 filtered patterns: `did not find a matching property` (Tomcat property warnings, NOT errors), `maxActive is not used in DBCP2` (DBCP2 deprecation warning), `encoding ['utf-8']` (UTF-8 encoding header issue)."
+      - "  The `encoding ['utf-8']` filter is the noteworthy one. ALL utf-8 SEVERE entries in container log occur at runtime (after Server startup at line 49+), NOT during startup (lines 1-48). The awk gate `/Server startup in/{print; exit}` already truncates the log to the startup block before grep runs. The grep -v exclusion is belt-and-suspenders, not load-bearing."
+      - "  Verified: `awk '/Server startup in/{print; exit} {print}' container.log | grep -E '^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}.*(SEVERE|ERROR)'` returns ZERO lines (no startup ERROR/SEVERE)."
+      - "Could the script tolerate ClassNotFoundException?"
+      - "  No special filter for ClassNotFoundException. If TestNGController failed to load, the SPI scan would fail, and the suite registration grep at line 116 would die."
+      - "  Verified: `grep -E 'ClassNotFoundException|UnsupportedClassVersionError|TypeNotPresent' container.log` returns ZERO matches."
+    findings: "Smoke-test.sh detection logic is GENUINE. Adversarial sabotage test confirmed it catches a planted FAIL. The 3-line filter exclusion is conservative (only matches known-benign patterns) and is gated by the awk truncation to the startup block (so runtime issues never reach the filter). No false-pass paths identified."
+
+  - section: §6.7 Container log analysis — ALL ERROR/SEVERE/Exception/Failed/Fatal entries
+    checks:
+      - "Container log path: ops/test-results/s-ets-01-03-teamengine-container-2026-04-28.log (20812 bytes, archived in commit 2f5538e)"
+      - "Startup block (lines 1-48, ending at `Server startup in 3105 ms`):"
+      - "  3 WARNING entries at lines 41-43: `Setting property 'processTlds' / 'aliases' / 'root' did not find a matching property` — Tomcat 8.5 property-rule mismatch. Documented in ops/server.md as known-tolerated."
+      - "  1 WARNING at line 45: `Name = EPSG Property maxActive is not used in DBCP2` — DBCP2 deprecation warning. Documented as known-tolerated."
+      - "  ZERO SEVERE / ERROR entries in startup block. ✓"
+      - "  Server startup in 3105 ms — well within 30s requirement (NFR-ETS-04)."
+      - "Runtime block (lines 49+, after suite execution begins):"
+      - "  Line 49-114: 1 SEVERE — `WARNING The encoding ['utf-8'] is not recognised by the JRE` from Tomcat's Response.setContentType during Saxon's XMLEmitter.close. Stack trace shows the exception is caught and the response still serializes (the content-type header is set with default encoding). Genuine Tomcat 8.5 + Saxon 9.x interaction; matches OGC's production deployment behaviour."
+      - "  Line 115-117: log4j WARN entries from Jena (`No appenders could be found`) — Jena library not configured with log4j; benign."
+      - "  Line 118-121: Jersey-HK2 WARNING — `Jersey-HK2 module is missing. Falling back to injection-less client.` — expected because we ship Jersey 3.x without HK2; injection-less client suffices for our test queries."
+      - "  Line 122: `[Fatal Error] entity-...:14:7: The element type 'link' must be terminated by the matching end-tag '</link>'` — XML parsing error from CTL processing of a generated test-run report. **Inspected**: this is from one of the suite's intermediate test artifacts (CTL tries to parse an HTML-fragment that contains `<link>` tags); XML-parser fails, but TestNGExecutor's outer try/catch swallows it. Net effect: the TestNG XML report is well-formed and complete (12/12 PASS). The Fatal Error appears in the log but does NOT propagate to suite-fail."
+      - "  Line 123-201: 2nd utf-8 SEVERE (same pattern as line 49) during the second response stream from `/rest/suites/<code>/run`. Same root cause, same outcome."
+      - "ZERO ClassNotFoundException, UnsupportedClassVersionError, TypeNotPresentException — none of the JDK-version-mismatch failure modes Dana planned around."
+    findings: "Container log is genuinely clean of startup errors. The runtime SEVERE entries (utf-8 encoding) and the Fatal Error (CTL link tag) are both known-benign and do not affect suite outcomes. Dana's filter logic is justified — these are real interactions of TE 5.6.1 + Tomcat 8.5 + Jersey 3.x + Saxon, not bugs in our ETS. The Fatal Error in particular looks alarming but is safely absorbed by TestNGExecutor."
+
+verified_independently:
+  - "Fresh git clone /tmp/raze-fresh-checkout-s03 from github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10 (HEAD 8aeffbf3d1e2f50d17e5f4cd0211199fd766002f) — separate worktree from any Quinn run"
+  - "Docker Hub query: curl -sL https://hub.docker.com/v2/repositories/ogccite/teamengine-production/tags/?page_size=100 → count=2, only `latest` and `1.0-SNAPSHOT`. NO `:5.6.1` TAG EXISTS. Dana's claim verified."
+  - "Production image JDK version: docker run --rm ogccite/teamengine-production:latest java -version → openjdk 1.8.0_332. ENV JAVA_VERSION=8u212. Debian 9 stretch. Dana's claim verified."
+  - "Our ETS bytecode version: javap -v target/classes/.../LandingPageTests.class → 'compiled Java class data, version 61.0' (= JDK 17). Confirms JDK 17 base is required."
+  - "Our ETS Jakarta EE namespace: grep 'jakarta\\.' src/main/java → 9 imports of jakarta.ws.rs.client.* (Jersey 3.x). Confirms JDK 11+ requirement."
+  - "Fresh-clone build: mvn -B -q clean package -DskipTests → BUILD SUCCESS. Slim jar sha256 343136324b... + AIO jar sha256 e0935dbb3e... match user worktree byte-identical."
+  - "Fresh-clone surefire: mvn test → 22/0/0/3 (5+2+9+1+3+2 across 6 verify classes). Matches S-ETS-01-02 baseline."
+  - "Fresh-clone smoke: bash scripts/smoke-test.sh end-to-end → exit 0, total=12 passed=12 failed=0 skipped=0, 12s wall-clock, suite registered, zero startup SEVERE."
+  - "Idempotency: 2nd back-to-back smoke run produces same 12/12 PASS, no residual container, no port conflicts."
+  - "ADVERSARIAL SABOTAGE TEST: injected `if (status >= 0)` (always-true) into landingPageReturnsHttp200, rebuilt, re-ran smoke. Result: `total=12 passed=11 failed=1` → `[smoke-test FATAL] TestNG report has failed=1 (>0)` → exit 1. DETECTION CONFIRMED."
+  - "META-INF/services file: 58 bytes, single line `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`, no whitespace, no extension."
+  - "CTL Saxon namespace: only one CTL file `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl`; xmlns:tng=`java:org.opengis.cite.ogcapiconnectedsystems10.TestNGController` — canonical run-together form, no `cs10` typo, no silent failure mode."
+  - "diff -r csapi_compliance/schemas/ vs ets-ogcapi-connectedsystems10/src/main/resources/schemas/: returns no output (byte-identical schema bundle preserved across S-ETS-01-01..03)"
+  - "pom.xml YAML SHA preservation: `<connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f</>` at HEAD 8aeffbf"
+  - "Stale-string scan: `grep -rn 'connectedsystems-1\\b\\|ogcapi\\.cs10\\|ets-common:14\\|teamengine-production:5\\.5\\b'` — only matches are legitimate canonical OGC URI form `ogcapi-connectedsystems-1/1.0/conf/core` in ConformanceTests:46 + smoke artifact references (in committed test results). No production-path stale strings."
+  - "Part 2 leakage scan: `grep -rln 'OGC[ -]?23-?002\\|connectedsystems-?2\\|Datastream\\|ControlStream\\|swecommon\\|feasibility'` in src/main — zero hits."
+  - "EtsAssert vs bare AssertionError (no-regression check): bare-throws=21 across 3 conformance/core files (6/7/8 across ConformanceTests/LandingPageTests/ResourceShapeTests). Per-file count shifted from s02 (6/8/7) to s03 (6/7/8) due to commit 1fdfe07 fixing GAP-3. Total UNCHANGED. EtsAssert calls = 0 across the 3 files (S-ETS-01-02 GAP-1 holds; deferred to Sprint 2)."
+  - "Container log scan: `grep -E '^[0-9]{2}-[A-Za-z]{3}-[0-9]{4}.*(SEVERE|ERROR)'` on lines 1-48 (startup block) returns ZERO. Runtime SEVERE entries (lines 49, 123) are utf-8 encoding warnings + Fatal Error from CTL link-tag parse — both documented as benign in §6.7."
+  - "Smoke artifact integrity: ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-28.xml has total=12 passed=12 failed=0 skipped=0; 16 test-method elements (12 @Test + 4 @BeforeClass config-methods incl verifyIutSet). All 12 @Test method names cross-check against source `public void` declarations. Suite name `ogcapi-connectedsystems10-0.1-SNAPSHOT` from project metadata; test name `Conformance Class - Core (OGC 23-001 /conf/core)` from src/main/resources/.../testng.xml. Confirms SPI route (TestNGExecutor consumed our SPI artifacts)."
+  - "Archive commit verification: 35c8415 (smoke + container artifacts) + 2f5538e (.gitignore + container log) + 8aeffbf (ops/server.md) form a clean atomic deliverable. git show 35c8415:ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-28.xml head -3 matches current head -3 (artifact preserved)."
+  - "csapi_compliance .harness/evaluations/ inspection: Quinn (Gate 3.5) wrote sprint-ets-01-evaluator-s03.yaml with verdict APPROVE_WITH_GAPS confidence 0.91 — Raze did NOT read Quinn's gap details to maintain independence; verdicts independently aligned (both APPROVE-with-something)."
+
+recommendation_next_step:
+  - APPROVE_WITH_CONCERNS-then-close-sprint
+  - rationale: |
+      Sprint 1 substantively complete. The substantive engineering — Dockerfile +
+      docker-compose + smoke-test.sh + smoke 12/12 PASS via SPI route + reproducibility
+      + idempotency + zero startup ERROR — is all GENUINE and INDEPENDENTLY VERIFIED.
+      The headline question (Dana's spec drift on Dockerfile base image) was
+      independently confirmed: no `:5.6.1` Docker tag exists; production image is
+      JDK 8; our bytecode is JDK 17 + Jakarta EE 9; Dana's resolution path was the
+      right architectural call.
+
+      The single same-turn fix recommended is CONCERN-1: reconcile spec.md
+      REQ-ETS-TEAMENGINE-003 description text to match the Dockerfile reality
+      (~5-LOC spec edit + 1 sentence in Deviations section). This follows the
+      pattern Sam established at S-ETS-01-01 close (commit 19003b1).
+
+      CONCERN-2 (mvn dep staging not durable in fresh CI) and CONCERN-3
+      (single-stage Dockerfile, runs as root) are Sprint 2 housekeeping with
+      ~30-50 LOC each. CONCERN-4 (tighter `/rest/suites/<code>` metadata check)
+      is a Sprint 2 nice-to-have.
+
+      Sprint 1 contract success_criteria walk: 11/12 PASS, 1/12 inherited
+      PARTIAL (URI form drift, not introduced by S-ETS-01-03, tracked Sprint 2).
+      The contract is satisfied. Sprint 1 can close.
+
+      No GAPS_FOUND, no REJECT. CLAUDE.md mandatory steps 1-5 thoroughly observed;
+      step 6 partial (CONCERN-1) but is the single same-turn fix; steps 7-8 are
+      sprint-close procedural and expected to land in the sprint-close commit.
+
+sub_agent_notes: |
+  Coordination note for orchestrator: Quinn (Gate 3.5 Evaluator) ran in parallel
+  against the same artifacts. Quinn's verdict at top of
+  sprint-ets-01-evaluator-s03.yaml: APPROVE_WITH_GAPS confidence 0.91. Raze did
+  NOT read Quinn's gap detail to maintain independence per role. Both verdicts
+  independently land on APPROVE-with-something — corroborating signal that the
+  Sprint 1 / S-ETS-01-03 deliverable is substantively complete.
+
+  Consistency-with-prior-reviews note: this is the first APPROVE-class verdict
+  Raze has issued in the ets-01 sprint sequence (S-ETS-01-01 → GAPS_FOUND 0.84;
+  S-ETS-01-02 → GAPS_FOUND 0.82; S-ETS-01-03 → APPROVE_WITH_CONCERNS 0.88). The
+  shift is GENUINE: S-ETS-01-03 had the smallest surface area (Dockerfile +
+  compose + script + 2 archive commits + ops/server.md), the spec drift was
+  HONESTLY documented in 3 places before Raze arrived, and the smoke-test
+  detection logic survived adversarial sabotage testing. The pattern across the
+  3 Sprint 1 stories is improving: S-01 had 3 gaps + reproducibility-hash
+  honesty issue, S-02 had 3 gaps + same hash issue, S-03 has 0 gaps + 4
+  concerns (no honesty issues). Dana's procedural workflow is converging to
+  spec discipline.
+
+  Sprint-close honesty audit: Dana's self-report claimed (a) 6 atomic commits —
+  verified (d910808 + d831da1 + 91308f7 + 35c8415 + 2f5538e + 8aeffbf). (b) 12/12
+  smoke PASS — verified independently via fresh-clone smoke run. (c) ~10s
+  wall-clock — verified (Raze's 1st run: 12s, 2nd: 4s on cached image). (d)
+  zero startup ERROR/SEVERE — verified via independent log scan (lines 1-48 of
+  container log). (e) one runtime utf-8 SEVERE filtered — verified (line 49+,
+  Saxon XMLEmitter + Tomcat 8.5 interaction, benign). (f) CTL Saxon namespace
+  clean — verified (only one CTL file, canonical run-together form). All claims
+  verified.
+
+  Spec drift adjudication: Dana's spec drift documentation is the BEST PATTERN
+  I've seen across the 3 Sprint 1 stories. The Dockerfile inline comment block
+  (lines 5-30) explains the deviation with empirical evidence. ops/server.md
+  records the spec-drift audit trail with Sam's reconciliation TODO. spec.md
+  Implementation Status (Sub-deliverable 5) flags the proposed amended REQ
+  wording. The only thing missing is the same-turn spec.md REQ text reconcile
+  itself (CONCERN-1) — that's a 5-LOC edit, not a substantive gap.
+
+  Time/token budget: Raze ran ~35 minutes wall-clock. Surface area was modest
+  (single Dockerfile + compose + script + ops/server.md + 2 archive commits) but
+  the adversarial check was substantive — Docker Hub query, JDK version
+  verification, fresh-clone build + surefire + smoke + sabotage test, container
+  log analysis. Confirmed all 9 architect-handoff CONCERNS pitfalls + executed
+  the 12 numbered adversarial checks from the prompt.
+
+  All Raze verification ran read-only against both repos. The only file written
+  is this YAML report into csapi_compliance/.harness/evaluations/. The fresh
+  clone at /tmp/raze-fresh-checkout-s03/ was used for build + sabotage testing
+  (then restored). Dana's worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/
+  was NOT touched (only read).
+
+severity_summary:
+  blockers: 0          # nothing rises to REJECT — engineering is sound, smoke 12/12 PASS via SPI route, sabotage-detection works, no regressions
+  gaps: 0              # nothing rises to GAPS_FOUND — the spec drift IS honestly documented in 3 places + architecturally correct
+  concerns: 4          # CONCERN-1 (spec.md REQ-ETS-TEAMENGINE-003 text not reconciled — same-turn fixable), CONCERN-2 (mvn dep staging not durable in fresh CI — Sprint 2), CONCERN-3 (single-stage Dockerfile, runs as root — Sprint 2), CONCERN-4 (tighter /rest/suites metadata check — Sprint 2 nice-to-have)

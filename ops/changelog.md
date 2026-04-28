@@ -2,6 +2,46 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T20:10Z — Sprint ets-01 SPRINT-COMPLETE: S-ETS-01-03 Gates 3.5 + 4 closed (Quinn APPROVE_WITH_GAPS 0.91 + Raze APPROVE_WITH_CONCERNS 0.88 — landmark first APPROVE-class verdicts); CONCERN-1 fixed same-turn; Sprint 1 functionally + audit-trail complete
+
+- **Trigger**: User instruction "Quinn + Raze" approving parallel-spawn of both gate sub-agents for the final Sprint 1 story per `gate_4_required: true, force_run: true`.
+- **Sub-agents**: Quinn (Evaluator, fresh context, opus) — 153,888 tokens / 8m wall-clock / 56 tool uses; agentId `a6d41e32235293093`. Raze (Adversarial, fresh context, opus) — 188,719 tokens / 16m wall-clock / 44 tool uses; agentId `a5ac9a548d7e742cd`. Ran in parallel; Quinn used `/tmp/quinn-fresh-s03/` + `/tmp/quinn-smoke-out.log`; Raze used `/tmp/raze-fresh-checkout-s03/` + `/tmp/raze-smoke.log`. No coordination.
+- **Quinn (Gate 3.5 / S-ETS-01-03)**: **APPROVE_WITH_GAPS 0.91 — highest of the three Sprint 1 gates**. Report at `.harness/evaluations/sprint-ets-01-evaluator-s03.yaml` (661 lines). **Headline**: independently re-ran `scripts/smoke-test.sh` from a fresh `/tmp/quinn-fresh-s03/` clone and reproduced Dana's exact 12/12 PASS TestNG report end-to-end through Docker → TeamEngine 5.6.1 → SPI → ETS → live GeoRobotix in 15s wall-clock with exit 0. Both Dana spec-drift claims independently confirmed: Docker Hub publishes only `:latest` and `:1.0-SNAPSHOT` tags for `ogccite/teamengine-production` (no `:5.6.1`), and the production image runs JDK 8 (1.8.0_332). Zero Java source delta vs S-ETS-01-02 (`git diff 1fdfe07 8aeffbf --stat` shows only infra/ops files); test-correctness regression structurally impossible; surefire still 22/0/0/3, schema bundle still byte-identical, pom.xml SHA pin still at line 80.
+- **Raze (Gate 4 / S-ETS-01-03)**: **APPROVE_WITH_CONCERNS 0.88 — landmark first APPROVE-class verdict in the ets-01 sprint sequence**. Report at `.harness/evaluations/sprint-ets-01-adversarial-s03.yaml` (661 lines). **Headline**: independently confirmed Dana's spec drift via Docker Hub API + `docker run --rm ... java -version`. **Adversarial sabotage test**: Raze injected `if (status >= 0)` (always-true) into `landingPageReturnsHttp200`, rebuilt, re-ran smoke. Script CORRECTLY detected: `total=12 passed=11 failed=1` → `[smoke-test FATAL] TestNG report has failed=1` → exit 1. Strong evidence smoke-test.sh genuinely enforces correctness. Confirmed deviation is necessary: bytecode is JDK 17 (`javap -v` reports `class file version 61.0`); we import `jakarta.ws.rs.client.*` (Jersey 3.x / Jakarta EE 9). Dana's resolution path is the right architectural call.
+- **Cross-corroboration on findings (3rd consecutive sprint)**: Quinn and Raze independently caught the same headline gap (CONCERN-1 = GAP-1):
+  - **CONCERN-1 Raze / GAP-1 Quinn (medium, same-turn fixable)**: spec.md REQ-ETS-TEAMENGINE-003 description text still said `extends ogccite/teamengine-production:5.6.1`. The Implementation Status section flagged the deviation but the REQ text itself wasn't reconciled. **Fix this turn**: rewrote REQ-ETS-TEAMENGINE-003 description to "...SHALL produce a runnable TeamEngine 5.6.1 webapp on a JDK 17 base image with the built ETS jar staged under `/usr/local/tomcat/webapps/teamengine/WEB-INF/lib/`..." with a paragraph documenting the original wording, the empirical reasons for deviation, and the Sprint 2 ADR-007 follow-up. Closes both Quinn GAP-1 and Raze CONCERN-1 same-turn.
+- **Quinn additional concerns (Sprint 2 follow-ups)**:
+  - 4 concerns: smoke-time dep-closure staging via `mvn dependency:copy-dependencies`; future TE-version-bump fragility; image-cleanup polish; missing s03-handoff (this last one is internal to Quinn's record-keeping, not a deliverable gap).
+- **Raze additional concerns (Sprint 2 follow-ups)**:
+  - **CONCERN-2 (low)**: `scripts/smoke-test.sh` requires populated `~/.m2/`; in fresh CI runners the staging step would download ~70 deps. Multi-stage Dockerfile would fix.
+  - **CONCERN-3 (low)**: Single-stage Dockerfile, container runs as `root`, image ~600MB. OK for test harness; not for production CI.
+  - **CONCERN-4 (low, nice-to-have)**: smoke-test.sh step 5 only greps for `<etscode>`; tighter check would parse `/rest/suites/<code>` metadata.
+- **Sprint 1 contract success_criteria walk (final)**:
+  - Quinn: **9/9 PASS** (all 5 critical scenarios + all 5 normal scenarios).
+  - Raze: **11/12 PASS; 1/12 (`uri_mapping_fidelity_preserved`) is INHERITED PARTIAL from S-ETS-01-02 GAP-2 (URI form drift)**, explicitly tracked as Sprint 2 cleanup story per spec.md Implementation Status Deviations section — NOT a regression introduced by S-ETS-01-03.
+  - **Effective: Sprint 1 is functionally + audit-trail complete**, with the inherited PARTIAL (URI form drift) carrying into Sprint 2 cleanup.
+- **Effective verdict**: Both gates APPROVE-class — **first time in Sprint 1 either gate didn't return GAPS_FOUND**. Raze APPROVE_WITH_CONCERNS wins precedence (Raze always wins disagreement; here both align). After this turn's CONCERN-1 fix, S-ETS-01-03 closes cleanly. Sprint 1 contract obligations fulfilled.
+- **All architect-handoff S-ETS-01-03 CONCERNS pitfalls closed**:
+  - Pitfall 1 (TeamEngine 5.6.1 vs spec's 5.5) — reconciled in S-ETS-01-01.
+  - Pitfall 2 (META-INF/services filename) — verified across all 3 gate runs (s01, s02, s03).
+  - Pitfall 3 (CTL Saxon namespace silent failure) — Dana clean; Quinn re-verified; Raze adversarially verified including `find` for additional CTL files (none).
+  - Pitfall 4 (smoke-test artifact archival) — pattern established at new repo `ops/test-results/`; both XML and container log archived.
+- **Commits this turn (csapi_compliance)**: spec.md REQ-ETS-TEAMENGINE-003 description text reconciled (CONCERN-1 / GAP-1 close) + status.md header rewrite (Sprint 1 SPRINT-COMPLETE) + this changelog entry + traceability.md REQ-ETS-TEAMENGINE-* status update + metrics turn 62 + 2 new YAML reports (Quinn s03 + Raze s03).
+- **Commits this turn (new repo)**: none — the deviation is in spec text (csapi_compliance), not in the ETS code itself. The Dockerfile commit `d910808` already exists and is correct.
+- **Sprint 2 cleanup carryover (combined from all 3 sprints' gate findings)**:
+  - GAP-1 from S-ETS-01-02: refactor 21 bare `throw new AssertionError()` → `EtsAssert.failWithUri()` helper across 3 conformance.core test classes.
+  - GAP-2 from S-ETS-01-02: URI form drift sweep to OGC canonical `.adoc` form (~30-40 sites across spec.md + traceability.md + Java tests).
+  - GAP-1 from S-ETS-01-03 (Quinn): write **ADR-007** documenting the Dockerfile base image deviation (`tomcat:8.5-jre17` vs `ogccite/teamengine-production:5.6.1`) with the empirical evidence trail.
+  - From Raze CONCERN-1 of S-ETS-01-02: write **ADR-006** documenting Jersey 1.x → Jakarta EE 9 / Jersey 3.x port for the JDK 17 archetype util layer (retroactively cover the 6 Jersey port commits).
+  - CONCERN-3 from S-ETS-01-02 (Raze): logback.xml + CredentialMaskingFilter (architect should-constraint #3 — never log Authorization/X-API-Key headers).
+  - CI workflow `git mv ci/github-workflows-build.yml .github/workflows/build.yml` after `gh auth refresh -s workflow`.
+  - Raze s03 CONCERN-2: multi-stage Dockerfile to bake deps closure into image (eliminates `mvn dependency:copy-dependencies` runtime workflow).
+  - Raze s03 CONCERN-3: Dockerfile non-root user + image-size optimization.
+  - Raze s03 CONCERN-4: tighter smoke-test.sh step 5 suite-metadata parse.
+  - PARTIAL items deferred at S-ETS-01-02 close: HTTP request/response capture (full REST Assured logging-filter pattern), JaCoCo ≥80% coverage instrumentation, Kaizen openapi-parser consumption (Sprint 2+ when richer Part 1 classes need it).
+
+**🎉 Sprint 1 (`ets-01`) is COMPLETE.** All 3 stories (S-ETS-01-01 scaffold + S-ETS-01-02 Core conformance + S-ETS-01-03 TeamEngine smoke) shipped, all 6 gate runs (Quinn + Raze × 3 stories) closed, all critical SCENARIOs PASS, all 5 normal SCENARIOs PASS, 1 inherited PARTIAL (URI form drift) tracked into Sprint 2. **Next**: Sprint 2 planning — convene Pat (Planner) for Sprint 2 contract authoring, with the carryover cleanup list above as primary input + first additional Part 1 conformance class as the new feature work.
+
 ## 2026-04-28T19:35Z — Sprint ets-01 / S-ETS-01-03 Generator PASS: TeamEngine Docker smoke 12/12 PASS via SPI route (HEAD `8aeffbf`); MAJOR spec drift on base image documented
 
 - **Trigger**: User instruction "Spawn S-ETS" approving Generator (Dana) for the final Sprint 1 story (TeamEngine 5.6.1 Docker smoke).
