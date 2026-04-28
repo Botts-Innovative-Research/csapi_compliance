@@ -2,6 +2,36 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T15:35Z — Sprint ets-01 / S-ETS-01-01 partial: new repo bootstrapped + 8 ADR-004 modernization commits (BLOCKED on Jersey 1.x → 3.x port)
+
+- **Trigger**: User instruction "Do it" (selecting Option B: bootstrap new repo + Generator on S-ETS-01-01 from prior turn).
+- **What landed (in the new sibling repo, not in csapi_compliance)**:
+  - Apache Maven 3.9.9 installed locally to `~/.local/apache-maven-3.9.9/` (non-sudo).
+  - **GitHub repo created**: `https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10` (public; description names OGC 23-001 + sibling-repo relationship).
+  - **Local clone bootstrapped**: `~/docker/gir/ets-ogcapi-connectedsystems10/` (sibling to `csapi_compliance/` per ADR-005 layout).
+  - **Maven archetype scaffold generated**: `mvn archetype:generate -B -DarchetypeGroupId=org.opengis.cite -DarchetypeArtifactId=ets-archetype-testng -DarchetypeVersion=2.7 -DgroupId=org.opengis.cite -DartifactId=ets-ogcapi-connectedsystems10 -Dversion=0.1-SNAPSHOT -Dpackage=org.opengis.cite.ogcapiconnectedsystems10 -Dets-code=ogcapi-connectedsystems10 "-Dets-title=OGC API - Connected Systems Part 1" "-Dets-description=Executable Test Suite for OGC API - Connected Systems Part 1 (OGC 23-001)"` — 78 files, raw output committed as commit 1 on the new repo's main branch.
+  - **8 atomic ADR-004 modernization commits** pushed to `origin/main` (full audit trail at `https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10/commits/main`):
+    - `92f23cf` — pom.xml parent → ets-common:17 (ADR-004 A-1)
+    - `19a765a` — JDK 17 compiler properties + UTF-8 (ADR-004 A-2/A-3/A-4)
+    - `3fbdfea` — rewrite SCM/URL/organization/developer metadata for Botts-Innovative-Research
+    - `ca55902` — docker.teamengine.version 5.4 → 5.6.1 (ADR-001)
+    - `ce23f95` — distribution-management site SCM URL → Botts-Innovative-Research
+    - `5313352` — dependency overhaul: declare per ADR-004 Group B (no versions); add testng/rest-assured/openapi-parser/jts-core/proj4j/jts-io-common/slf4j-api/logback-classic; remove Jersey 1.x + schema-utils
+    - `ed2d77d` — pin logback-classic 1.5.18 (not managed by ets-common:17)
+    - `c11d4ef` — mvn spring-javaformat:apply — conform 29 archetype Java sources to Spring code style (ets-common:17 ships spring-javaformat as a mandatory validate-phase plugin)
+- **Verification**: `mvn validate` ✅ BUILD SUCCESS at HEAD `c11d4ef`. `mvn compile` ❌ BUILD FAILURE — 10 files in archetype's bundled core (`ClientUtils`, `URIUtils`, `ValidationUtils`, `SuiteAttribute`, `ReusableEntityFilter`, `ETSAssert`, `SuiteFixtureListener`, `TestFailureListener`, `CommonFixture`, `level1/Capability1Tests`) reference Jersey 1.x APIs (`com.sun.jersey.api.client.Client`, `WebResource`, `ClientResponse`, `MediaType`, `HttpMethod`) that don't exist in Jersey 3.x. The 2019 archetype predates the Jakarta EE 9 split.
+- **Blocker — Jersey 1.x → Jersey 3.x port (~30-60 min of code work)**: ets-common:17 transitively brings Glassfish Jersey 3.1.8 (`jakarta.ws.rs.client.Client`, `org.glassfish.jersey.apache.connector.ApacheConnectorProvider`). The archetype's bundled util classes need their imports + API usage ported. Reference port exists: `opengeospatial/ets-ogcapi-features10@java17Tomcat10TeamEngine6` branch did this work and follows the same archetype lineage. Per ADR-004 "When in doubt, copy from features10 verbatim and rename" — this is the canonical pattern; `master` of features10 is still on Jersey 1.x but the `java17` branch is the OGC's in-progress JDK 17 + TomCat 10 + TeamEngine 6 port.
+- **NOT yet done in S-ETS-01-01** (waiting on Jersey port to unblock):
+  - ADR-004 Group C plugin pins (C-1 maven-compiler-plugin 3.13.0, C-2 maven-surefire-plugin 3.5.x, C-3 maven-assembly verify, C-4 maven-jar manifest, C-5 reproducible-build outputTimestamp).
+  - ADR-004 Group D files (D-1 .gitignore, D-2 .github/workflows/build.yml, D-3 Jenkinsfile already exists ✓, D-4 README.adoc cross-link back to csapi_compliance, D-5 LICENSE.txt already exists ✓).
+  - .gitattributes (LF line-endings on .json/.xml/.ctl/.properties per architect-handoff constraints).
+  - Schema copy: 126 JSON Schemas from `csapi_compliance/schemas/` → `src/main/resources/schemas/` per ADR-002 verbatim copy.
+  - `mvn clean install` green verification.
+  - SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001: double-build byte-identical jar verification.
+  - ADR-005 reverse cross-link: ETS README → csapi_compliance.
+- **Recommendation**: spawn Generator (Dana) sub-agent for the remaining S-ETS-01-01 work — it's exactly the "fresh-context-per-story" use case BMAD specifies. The Jersey port + remaining items + verification fits the Generator's scope. Alternatively continue inline — full context already loaded, but turn-clock-time is real.
+- **Scope**: 9 commits in the new repo; nothing committed in `csapi_compliance/` yet for this turn — will commit ops updates in csapi_compliance separately.
+
 ## 2026-04-28T15:08Z — REQ-ETS-WEBAPP-FREEZE-001: v1.0-frozen tag + README reposition (epic-ets-07 quick-win)
 
 - **Trigger**: User instruction "A" (Option A from prior turn's recommendation), authorizing the freeze + README reposition + tag push.
