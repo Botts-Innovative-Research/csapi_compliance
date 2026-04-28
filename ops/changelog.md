@@ -2,6 +2,38 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T21:36Z — Sprint ets-02 ARCHITECTED: Alex ratified all 5 Pat-deferred decisions + 2 surfaced questions; 4 new ADRs (006-009) + design.md Sprint 2 ratifications + architecture v2.0.1; next_agent generator confidence 0.89
+
+- **Trigger**: Autonomous-loop dynamic continuation after Sprint 2 planning. Per BMAD pipeline, Pat deferred 5 architectural decisions + 2 surfaced questions to Alex; this turn ratifies them.
+- **Sub-agent**: Alex (Architect, fresh context, opus). 247,827 tokens / ~17m wall-clock / 51 tool uses; agentId `af9cd295452242bd8`. Slightly over the 150-220K token budget; produced 2,043 lines authored across 7 files.
+- **4 new ADRs** in `_bmad/adrs/`:
+  - **ADR-006** — Jersey 1.x → Jakarta EE 9 / Jersey 3.x port (retro-doc covering 6 Sprint 1 commits `8e031ef`, `3979709`, `9ca229f`, `87c6fe2`, `9b42cb7`, `d01c187`). Status: Accepted (post-hoc).
+  - **ADR-007** — Dockerfile `tomcat:8.5-jre17` deviation retro-doc with empirical-evidence table (Quinn s03 + Raze s03 verified that `ogccite/teamengine-production:5.6.1` tag doesn't exist + production image runs JDK 8 → `UnsupportedClassVersionError`). Status: Accepted (post-hoc).
+  - **ADR-008** — EtsAssert REST/JSON helper API surface. Specifies **5 helpers** (Pat originally proposed 4; Alex added `assertJsonArrayContainsAnyOf` for the OR-fallback pattern Sprint 1 used at LandingPageTests:179-184 for `service-desc OR service-doc`). Bound for new test code; refactor target for the 21 bare-throw sites in S-ETS-02-02.
+  - **ADR-009** — multi-stage Dockerfile pattern. Picks **Pat option (a)**: `eclipse-temurin:17-jdk-jammy` build stage with BuildKit cache mount + `tomcat:8.5-jre17` runtime stage preserving ADR-007's secondary patches. `scripts/smoke-test.sh` simplifies to drop host-mvn dependency.
+- **ADR-001 amended** (option (i) lightest-touch footnote cross-referencing ADR-007). Original ADR-001 text preserved; added a footnote noting ADR-007 supersedes the "production image" reference.
+- **design.md extended** with "## Sprint 2 Ratifications" section covering 4 sub-sections:
+  - EtsAssert helper API (with examples for the 21 refactor sites)
+  - Dockerfile multi-stage build (build-stage + runtime-stage layout, COPY rules, USER directive, layer ordering)
+  - SystemFeatures conformance class scope decision (see below)
+  - CredentialMaskingFilter wiring (architect's resolution to surfaced question (a))
+- **Architecture v2.0.1** — `_bmad/architecture.md` bumped to v2.0.1 with §14 addendum (7 sub-sections cross-referencing each Sprint 2 ratification back to original architecture sections). NOT a full rewrite — just an append + Last Reconciled date bump.
+- **Surfaced questions resolved**:
+  - **(a) CredentialMaskingFilter** → NO separate ADR. design.md inline is sufficient. Implementation is wire-the-OGC-pattern-verbatim from v1.0 `credential-masker.ts`; NFR-ETS-08 + the SCENARIO carry the audit weight.
+  - **(b) ADR-001 cross-reference amendment** → option (i) lightest touch (footnote, NOT ADR-001v2 supersede).
+- **SystemFeatures coverage scope** (Pat's question #5): **Sprint-1-style minimal — 4 @Test methods**, one per Pat-enumerated SCENARIO:
+  - `systemsCollectionReturns200`
+  - `systemsCollectionHasItemsArray`
+  - `systemItemHasIdTypeLinks`
+  - `systemsCollectionLinksDiscipline`
+  - Sprint 3 expansion roadmap captured in design.md.
+- **EtsAssert helper API surface** (Pat's question #3): 5 helpers ratified — Pat proposed 4; Alex added `assertJsonArrayContainsAnyOf` for the OR-fallback pattern S-ETS-01-02 already needed (preserves the v1.0 GH#3 + service-desc/service-doc fallback pattern at LandingPageTests:179-184 in a structured way).
+- **New surfaced risk for Generator** (Alex flagged during ratification): **`SCOPE-CONFLICT-INSIDE-CONFORMANCE-CORE-RACE`** (medium severity). S-ETS-02-02 (EtsAssert refactor of 21 bare-throw sites) and S-ETS-02-03 (URI canonicalization sweep) both touch the same 3 conformance/core test files (`LandingPageTests.java`, `ConformanceTests.java`, `ResourceShapeTests.java`). **Mitigation**: mandatory sequential ordering S-ETS-02-02 → S-ETS-02-03 (the reverse order doubles the URI-sweep diff size since URIs would shift between bare-throw refactor and message-string updates). No contract change needed — Pat's `dependency_order` already implies this sequence; Alex made it explicit in the architect-handoff.
+- **Architect-handoff** (`.harness/handoffs/architect-handoff.yaml` overwritten; Sprint 1 handoff preserved in git history). `next_agent: generator` with confidence 0.89 (vs Sprint 1's 0.83 — higher because all 5 decisions have direct empirical grounding from Sprint 1 evidence; the 6 stories map cleanly to deliverables; no scope-rewrite signals surfaced).
+- **Verification (orchestrator-side, post-Alex, trust-but-verify per CLAUDE.md)**: 4 new ADR files present at `_bmad/adrs/ADR-00{6,7,8,9}*.md` ✅; `_bmad/architecture.md` modified (v2.0.1 bump + addendum) ✅; `_bmad/adrs/ADR-001-*.md` modified (footnote amendment) ✅; `openspec/capabilities/ets-ogcapi-connectedsystems/design.md` modified (Sprint 2 Ratifications section) ✅; `.harness/handoffs/architect-handoff.yaml` updated with `sprint_number: ets-02` + `next_agent: generator` + confidence 0.89 ✅.
+- **Commits this turn (csapi_compliance)**: this changelog entry + status.md header rewrite (Sprint 2 ARCHITECTED + next-action Generator) + metrics turn 64 + Alex's 7 modified/new files (4 new ADRs + ADR-001 amend + architecture.md + design.md + architect-handoff.yaml).
+- **Next iteration (autonomous loop)**: spawn **Generator (Dana)** for Sprint 2 stories. Per Alex's surfaced risk + Pat's dependency_order, suggested sequence: (1) S-ETS-02-01 ADR backfill (already done by Alex this turn — REDUNDANT? Need to check; Pat's S-ETS-02-01 was about Generator authoring the ADRs but Alex did them as part of his architectural ratification. May need to mark S-ETS-02-01 as already-complete or pivot it to a different cleanup task); (2) S-ETS-02-02 EtsAssert refactor; (3) S-ETS-02-03 URI canonicalization sweep (sequential after -02 per SCOPE-CONFLICT mitigation); (4) S-ETS-02-04 logback+CredentialMaskingFilter; (5) S-ETS-02-05 Dockerfile multi-stage + non-root + smoke tightening + CI workflow git mv; (6) S-ETS-02-06 SystemFeatures conformance class. May batch -01..05 as one Generator run (cleanup theme) or do -06 first since it's higher-value new feature work and -01 is redundant.
+
 ## 2026-04-28T21:05Z — Sprint ets-02 PLANNED: Pat (Planner) authored contract `cleanup-plus-systemfeatures` (6 stories: 5 cleanup + 1 SystemFeatures); next_agent architect with 5 deferred questions
 
 - **Trigger**: Autonomous-loop dynamic continuation after Sprint 1 close. Per BMAD pipeline, Planner (Pat) authors Sprint 2 contract from the 6 Sprint 1 gate reports + carryover cleanup list.

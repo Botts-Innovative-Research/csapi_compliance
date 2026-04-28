@@ -1,6 +1,6 @@
 # Architecture — OGC API Connected Systems ETS (TeamEngine)
 
-> Version: 2.0 | Status: Living Document | Last reconciled: 2026-04-27
+> Version: 2.0.1 | Status: Living Document | Last reconciled: 2026-04-28 (Sprint 2 ratifications appended at §14)
 > **Supersedes v1.0** (preserved verbatim at `_bmad/architecture-v1-frozen.md`).
 > v1.0 was web-app-shaped (Next.js + Node + browser UI). v2.0 reflects the user pivot
 > 2026-04-27 to a Java/TestNG Executable Test Suite for OGC TeamEngine.
@@ -299,14 +299,48 @@ The Generator (Dana) MUST respect these or CITE SC review will reject the ETS:
 
 | ID | Title | Status |
 |---|---|---|
-| ADR-001 | TeamEngine SPI Registration Pattern | Accepted |
+| ADR-001 | TeamEngine SPI Registration Pattern | Accepted (Sprint 2 cross-ref to ADR-007 added) |
 | ADR-002 | JSON Schema Bundling Mechanism | Accepted |
 | ADR-003 | Java Package Naming and Maven Coordinates | Accepted |
-| ADR-004 | ets-archetype-testng:2.7 Modernization Checklist | Accepted |
+| ADR-004 | ets-archetype-testng:2.7 Modernization Checklist | Accepted (extended via ADR-006 Group F retro-row) |
 | ADR-005 | Cross-Repo Relationship with the Frozen v1.0 Web App | Accepted |
+| ADR-006 | Jersey 1.x → Jakarta EE 9 / Jersey 3.x Port (Archetype Util Layer) | Accepted (post-hoc, Sprint 2) |
+| ADR-007 | Dockerfile Base Image Deviation: `tomcat:8.5-jre17` + Manual TE 5.6.1 Assembly | Accepted (post-hoc, Sprint 2) |
+| ADR-008 | EtsAssert REST/JSON Helper API Surface | Accepted (forward-looking, Sprint 2) |
+| ADR-009 | Multi-Stage Dockerfile Pattern | Accepted (forward-looking, Sprint 2) |
 
-(Future ADRs from sprints 2+ will append here.)
+## 14. Architecture v2.0.1 — Sprint 2 ratifications (2026-04-28)
 
-## 14. Last reconciled
+This section appends to v2.0 (which remains the canonical baseline). Sprint 2 ets-02 ratified 4 deferred decisions and 2 surfaced questions. Cross-references to original architecture sections are included for navigation.
 
-**2026-04-27** — fresh as of this rewrite. Re-reconcile required if >30 days stale per CLAUDE.md.
+### 14.1 ADR-006 — Jersey 1.x → Jakarta EE 9 / Jersey 3.x port (post-hoc)
+
+Cross-references **§4 Build & dependencies** (Jersey 3.1.8 transitive via ets-common:17 → teamengine-spi → jersey-core 3.1.8). Sprint 1 archetype-supplied util layer (8 source files: ClientUtils, URIUtils, ReusableEntityFilter, CommonFixture, TestFailureListener, ETSAssert, SuiteAttribute, SuiteFixtureListener + VerifySuiteFixtureListener test) was ported from `com.sun.jersey.api.client.*` (Jersey 1.x) to `org.glassfish.jersey.*` and from `javax.ws.rs.*` to `jakarta.ws.rs.*` per the `features10@java17Tomcat10TeamEngine6` reference branch. ADR-004 is amended with a "Group F" cross-reference; ADR-006 is the canonical record. Closes Raze s01 CONCERN-1.
+
+### 14.2 ADR-007 — Dockerfile base image deviation: `tomcat:8.5-jre17` (post-hoc)
+
+Cross-references **§2 Deployment topology** (Dockerfile section). The original architecture text at §2 said the local Docker context "spins TeamEngine + jar" via the production-docker image; ADR-007 now governs the Sprint 1 Dockerfile reality: the `:5.6.1` Docker Hub tag does not exist, and the production image runs JDK 8 — incompatible with our JDK 17 ETS jar and Jakarta EE 9 imports. The Sprint 1 Dockerfile assembles TE 5.6.1 manually on `tomcat:8.5-jre17` via Maven Central artifacts + 3 secondary patches (VirtualWebappLoader strip, JAXB shared-lib jars, deps-closure with TE 6.0.0 jars filtered). ADR-001 §Consequences amended with cross-reference. REQ-ETS-TEAMENGINE-003 spec wording reconciled. Closes Quinn s03 GAP-1 + Raze s03 CONCERN-1.
+
+### 14.3 ADR-008 — EtsAssert REST/JSON helper API surface (forward-looking)
+
+Cross-references **§6 Quality, assertions, and logging** (EtsAssert pattern). 5 new static helpers added to `org.opengis.cite.ogcapiconnectedsystems10.ETSAssert`: `assertStatus`, `assertJsonObjectHas`, `assertJsonArrayContains`, `assertJsonArrayContainsAnyOf`, `failWithUri`. Every helper carries the OGC `/req/*` URI. S-ETS-02-02 refactors the 21 Sprint-1 bare-throw sites to use these helpers (3 commits, smoke-test verified between each). Sprint 2+ binding constraint: zero `throw new AssertionError(...)` permitted in `conformance.*` subpackages.
+
+### 14.4 ADR-009 — Multi-stage Dockerfile pattern (forward-looking)
+
+Cross-references **§2 Deployment topology** (Dockerfile section) and ADR-007. Sprint 2 S-ETS-02-05 rewrites the Dockerfile as: Stage 1 = `eclipse-temurin:17-jdk-jammy` + Maven 3.9.9 + BuildKit cache mount for `~/.m2`; Stage 2 = `tomcat:8.5-jre17` + ADR-007's secondary patches + non-root `USER tomcat`. `scripts/smoke-test.sh` simplifies (drops host-mvn dependency). Image size target ≤ 450MB (vs Sprint 1 ~600MB). Eliminates Quinn s03 / Raze s03 host-`~/.m2` brittleness.
+
+### 14.5 CredentialMaskingFilter (Sprint 2 S-ETS-02-04, no separate ADR)
+
+Cross-references **§6 Quality, assertions, and logging** ("Credential masking" subsection). Implementation rules captured inline in `openspec/capabilities/ets-ogcapi-connectedsystems/design.md` §"CredentialMaskingFilter wiring (Sprint 2 S-ETS-02-04)". Class at `org.opengis.cite.ogcapiconnectedsystems10.listener.CredentialMaskingFilter`; masking semantics ported verbatim from `csapi_compliance/src/engine/credential-masker.ts` (first 4 + last 4 chars; full redaction below 8 chars). Logback `<pattern>` excludes MDC dump as defense-in-depth. Architect ruled NO separate ADR because (a) implementation is wire-the-OGC-pattern-verbatim, (b) NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 carry the audit weight already.
+
+### 14.6 SystemFeatures conformance class (Sprint 2 S-ETS-02-06)
+
+Cross-references **§3 Component model** ("conformance.<class>.* (sprints 2..14; placeholders)" entry). Architect ratified Sprint-1-style minimal-then-expand: 4 @Test methods at Sprint 2 close, full-coverage expansion deferred to Sprint 3 with explicit per-method roadmap captured in design.md §"SystemFeatures conformance class scope". The 4 methods cover (a) `/systems` returns 200 + JSON, (b) collection has non-empty items array, (c) item shape (id/type/links), (d) collection-level links discipline including v1.0 GH#3 fix carryover (rel=self example-only). `dependsOnGroups="core"` wiring satisfies the dependency-skip CRITICAL scenario. Subpackage at `conformance.systemfeatures.SystemFeaturesTests`.
+
+### 14.7 ADR-001 cross-reference amendment
+
+Cross-references **§13 ADR index**. ADR-001 §Consequences "Positive" bullet 2 amended with a lightweight footnote pointing to ADR-007. Architect chose option (i) (footnote, not full rewrite, not v2 supersede) because ADR-001's SPI registration mechanics are correct as written; only the production-image-without-modification parenthetical was wrong. Lightest touch preserves audit-trail continuity.
+
+## 15. Last reconciled
+
+**2026-04-28** — Sprint 2 ratifications appended (this section). Original v2.0 sections 1-13 unchanged. Re-reconcile required if >30 days stale per CLAUDE.md.

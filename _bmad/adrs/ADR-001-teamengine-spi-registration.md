@@ -58,7 +58,7 @@ The `TestSuiteController` interface MUST be the one shipped by `teamengine-spi` 
 
 **Positive**:
 - Generator's S-ETS-01-03 work reduces to a mechanical port: copy 5 file shapes from features10, rename packages and `ets-code`, build.
-- TeamEngine 5.6.1 production Docker image (`opengeospatial/teamengine-docker/teamengine-production` master, `teamengine.version=5.6.1`) loads the resulting jar without modification.
+- TeamEngine 5.6.1 production Docker image loads the SPI-registered jar via standard ServiceLoader scan (verified empirically by Sprint 1 smoke-test: 12/12 PASS via SPI route against GeoRobotix). **Note (Sprint 2 amendment, 2026-04-28):** the original sentence here claimed the published `opengeospatial/teamengine-docker/teamengine-production` image loads our jar "without modification." This is **empirically false for our JDK 17 ETS jar** because (a) the `:5.6.1` Docker Hub tag does not exist (only `:latest` and `:1.0-SNAPSHOT`), and (b) `ogccite/teamengine-production:latest` runs JDK 8 — incompatible with our JDK 17 classfile bytecode and Jakarta EE 9 imports. See **ADR-007** for the Sprint 1 Dockerfile assembly strategy that preserves TE 5.6.1 semantics on a JDK 17 base. The SPI registration mechanics in this ADR are correct; only the production-image-without-modification claim was wrong.
 - Future TeamEngine 6.0.x migration is well-understood: the SPI interface contract is stable; only the parent `ets-common` version bumps (see ADR-004).
 
 **Negative**:

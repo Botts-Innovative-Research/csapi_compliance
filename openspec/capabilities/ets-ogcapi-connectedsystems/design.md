@@ -359,15 +359,190 @@ The Generator MUST NOT:
 
 | Decision | Authority |
 |---|---|
-| TeamEngine SPI registration mechanics | ADR-001 |
+| TeamEngine SPI registration mechanics | ADR-001 (with ADR-007 cross-reference for Dockerfile-side reality) |
 | Schema bundling | ADR-002 |
 | Java package + Maven coordinates | ADR-003 |
-| Archetype modernization checklist | ADR-004 |
+| Archetype modernization checklist | ADR-004 (extended via ADR-006 Group F retro-row) |
 | Cross-repo relationship | ADR-005 |
-| Logging stack (slf4j + logback) | Architecture §6 (no separate ADR per Pat's instruction — lower-stakes) |
+| Jersey 1.x → Jakarta EE 9 / Jersey 3.x port | ADR-006 (Sprint 2 retro) |
+| Dockerfile base image deviation (`tomcat:8.5-jre17`) | ADR-007 (Sprint 2 retro) |
+| EtsAssert REST/JSON helper API surface | ADR-008 (Sprint 2 forward-looking) |
+| Multi-stage Dockerfile pattern | ADR-009 (Sprint 2 forward-looking) |
+| Logging stack (slf4j + logback) | Architecture §6 + this design.md §"CredentialMaskingFilter wiring" (Sprint 2) |
+
+## Sprint 2 Ratifications (2026-04-28)
+
+The following sections were added by Architect (Alex) at Sprint 2 ets-02 to formalize decisions Pat (Planner) deferred. They bind the Sprint 2 Generator (Dana) and every conformance.* class added in Sprint 2+.
+
+### EtsAssert helper API (Sprint 2 S-ETS-02-02)
+
+Full specification at **ADR-008**. Summary for design.md readers:
+
+- 5 new static helpers added to `org.opengis.cite.ogcapiconnectedsystems10.ETSAssert`:
+  - `assertStatus(Response resp, int expected, String reqUri)` — covers ~7 of 21 Sprint-1 sites.
+  - `assertJsonObjectHas(Map<String,Object> body, String key, Class<?> type, String reqUri)` — covers ~5 sites.
+  - `assertJsonArrayContains(List<?> array, Predicate<Object> pred, String desc, String reqUri)` — covers ~5 sites.
+  - `assertJsonArrayContainsAnyOf(List<?> array, List<Map.Entry<String, Predicate<Object>>> alternatives, String reqUri)` — covers the OR-fallback patterns (~2 sites: `service-desc OR service-doc`; `rel=collection AND/OR rel=items`).
+  - `failWithUri(String reqUri, String message)` — universal escape hatch (~2 sites: sentinels, custom multi-step assertions).
+- Every helper raises `java.lang.AssertionError` (not TestNG `SkipException`) with the OGC `/req/*` URI as the message prefix.
+- Every helper has at least one PASS-path + one FAIL-path unit test under `src/test/java/.../VerifyETSAssert.java`.
+- **Constraint binding Sprint 2+**: zero `throw new AssertionError(...)` permitted in `conformance.*` subpackages; Quinn enforces via `grep -E 'throw new AssertionError|Assert\.fail' src/main/java/.../conformance/`. See ADR-008 §"Constraints" for the full list.
+- Refactor discipline (S-ETS-02-02): one commit per test class (3 commits — LandingPageTests, ConformanceTests, ResourceShapeTests); smoke-test 12/12 PASS verified at every commit boundary.
+
+Refactoring examples for the 21 Sprint-1 sites are in ADR-008 §"Examples drawn from actual Sprint 1 sites".
+
+### Dockerfile multi-stage build (Sprint 2 S-ETS-02-05)
+
+Full specification at **ADR-009**. Summary for design.md readers:
+
+- Two-stage Dockerfile: `eclipse-temurin:17-jdk-jammy` build stage + `tomcat:8.5-jre17` runtime stage (preserving ADR-007's runtime base choice and the 3 secondary patches).
+- Build stage uses BuildKit `--mount=type=cache,target=/root/.m2` to amortize Maven dep download across `docker build` invocations.
+- Layer ordering optimized for cache: pom.xml + `dependency:go-offline` BEFORE source COPY; rare-changing layers (TE WAR download, JAXB jars) BEFORE per-commit layers (`COPY --from=builder`).
+- Runtime image runs as non-root `USER tomcat` (REQ-ETS-CLEANUP-004 mandate); `chown -R tomcat:tomcat /usr/local/tomcat` before USER switch.
+- Image size target: ≤ 450MB (vs Sprint 1 single-stage ~600MB); soft target 400MB.
+- `scripts/smoke-test.sh` simplifies post-multi-stage: drops the host-`mvn -B clean package` and `mvn dependency:copy-dependencies` steps (now handled inside `docker build`); only `docker build .` is needed at smoke time. Eliminates Quinn s03 / Raze s03 host-`~/.m2` brittleness.
+
+The ADR explicitly REJECTED options (b) (pre-staged target/lib-runtime split-only) and (c) (pom.xml profile bakes deps closure) — both fail to eliminate the host-Maven dependency.
+
+### SystemFeatures conformance class scope (Sprint 2 S-ETS-02-06)
+
+**Architect ratifies: Sprint-1-style minimal-then-expand. 4 @Test methods at Sprint 2 close, full-coverage expansion deferred to Sprint 3.**
+
+Pat enumerated 4 SCENARIOs in REQ-ETS-PART1-002 (now SPECIFIED in spec.md). Architect maps these to 4 @Test methods, mirroring the LandingPageTests/ConformanceTests pattern:
+
+| @Test method | Asserts | Scenario closed |
+|---|---|---|
+| `systemsCollectionReturns200` | `GET /systems` → status 200; Content-Type contains `application/json` | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001 (CRITICAL) |
+| `systemsCollectionHasItemsArray` | body has array `items` (or `features` if CS API server uses GeoJSON wrapper); array is non-empty (Generator MUST curl-verify before writing assertion) | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001 (CRITICAL) |
+| `systemItemHasIdTypeLinks` | for the first item in the collection: has string `id`, string `type` (matching `System` or the IUT's discriminator), array `links` per REQ-ETS-CORE-004 base shape | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-RESOURCE-SHAPE-001 (NORMAL) |
+| `systemsCollectionLinksDiscipline` | collection-level `links` array contains `rel=collection` AND/OR `rel=items` per OGC Common; absence of `rel=self` is NOT FAIL (carries v1.0 GH#3 fix policy from Core landing page) | SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001 (NORMAL) |
+
+The `dependsOnGroups="core"` wiring (CRITICAL SCENARIO-ETS-PART1-002-SYSTEMFEATURES-DEPENDENCY-SKIP-001) is a **testng.xml change**, not a @Test method — handled inline in the `<test name="SystemFeatures">` block:
+
+```xml
+<test name="SystemFeatures">
+  <packages>
+    <package name="org.opengis.cite.ogcapiconnectedsystems10.conformance.systemfeatures"/>
+  </packages>
+  <groups>
+    <dependencies>
+      <group name="systemfeatures" depends-on="core"/>
+    </dependencies>
+  </groups>
+</test>
+```
+
+The `dependsOnGroups` semantics auto-skip every @Test in `conformance.systemfeatures.*` if any @Test in `conformance.core.*` produces FAIL. Verification per S-ETS-02-06 acceptance criterion #7: temporarily make Core FAIL (e.g. point IUT at server returning 500 on `/conformance`) and confirm SystemFeatures @Tests emit SKIP not FAIL/ERROR.
+
+#### Subpackage layout
+
+`org.opengis.cite.ogcapiconnectedsystems10.conformance.systemfeatures.SystemFeaturesTests` — single class for Sprint 2. Mirrors the 1:1 LandingPageTests/ConformanceTests/ResourceShapeTests pattern from `conformance.core.*`. If Sprint 3+ expansion grows the @Test count beyond ~10, split into `SystemFeaturesCollectionTests` + `SystemFeaturesItemTests` (deferred to Sprint 3 per below).
+
+#### Fixtures and listeners
+
+No new fixtures or listeners needed for Sprint 2. The existing `SuiteFixtureListener` (which fetches landing page + `/conformance` per ADR-001) supplies the IUT base URL via `SuiteAttribute.IUT`. SystemFeaturesTests reads `iutUri` the same way Core's classes do.
+
+`@BeforeClass` in `SystemFeaturesTests` performs the `GET /systems` once and caches the response shape into a class-level field (so the 4 @Tests don't redundantly hit the IUT). Pattern mirrors `ConformanceTests.fetchConformancePage()`.
+
+#### Coverage scope rationale (Sprint-1-style narrowing)
+
+Pat recommended Sprint-1-style narrowing for risk control on the first pattern extension. Architect concurs because:
+
+1. **The architectural pattern is being extended for the first time**. Sprint 2 proves the extension works mechanically. Minimizing the per-class surface area maximizes the signal-to-noise of "did the pattern extend?" vs "did we get the assertion logic right?"
+2. **The 4 chosen SCENARIOs cover the foundational shape** (collection landing, items array, item shape, links discipline). The remaining ~8-12 ATS items in OGC 23-001 Annex A `/conf/system-features/` (canonical-url, location-time, collections, write operations, advanced filtering interactions) layer on top — once the foundation is proven, expansion is mechanical.
+3. **Beta gate doesn't require full per-class coverage**. CITE SC review approves on the basis of "the test class exists, runs, and produces deterministic verdicts" — depth comes during the 6-12 month beta period via passing-IUT outreach.
+4. **GeoRobotix's `/systems` collection shape is unknown until Generator curls it**. Acceptance criterion #1 mandates the curl-first approach; if `/systems` returns an unexpected shape (e.g. paginated wrapper, GeoJSON FeatureCollection), 4 @Tests adapt cleanly while 12-15 would force structural choices we'd regret.
+
+Sprint 3 expansion (per the spec.md Implementation Status update Pat will make at S-ETS-02-06 close) targets:
+
+- `systemCanonicalUrlReturns200` — REQ-ETS-PART1-002 / `/req/system/canonical-url`
+- `systemHasGeometryAndValidTime` (NORMAL — `MAY` priority) — REQ-ETS-PART1-002 / `/req/system/location-time`
+- `systemAppearsInCollections` — REQ-ETS-PART1-002 / `/req/system/collections`
+- `systemFeaturesPagination` — pagination correctness if `/systems` returns `next` link
+- Plus ~4 more covering filter-by-property and filter-by-time interactions
+
+Architect estimates Sprint 3 SystemFeatures expansion at ~4 hours Generator time (mechanical extensions).
+
+#### What NOT to ship in Sprint 2
+
+- **Spec-trap fixture port**: the `asymmetric-feature-type/` fixture group from `csapi_compliance/tests/fixtures/spec-traps/` is REQ-ETS-FIXTURES-* / epic-ets-06 scope. Generator MUST NOT port it inline as part of S-ETS-02-06; the SCENARIO references it only as future-ready context.
+- **Write-operation coverage** (POST / PUT / DELETE on `/systems`): REQ-ETS-PART1-010 (`create-replace-delete`) scope; deferred to Sprint 4+.
+- **Cross-IUT testing**: GeoRobotix is the canonical Sprint 2 IUT. Multi-IUT smoke is REQ-ETS-CITE-002 (three-implementation outreach) at beta.
+
+### CredentialMaskingFilter wiring (Sprint 2 S-ETS-02-04)
+
+Architect rules **NO separate ADR** for CredentialMaskingFilter. Justification: the implementation is wire-the-OGC-pattern-verbatim (REST-Assured `Filter` SPI is well-trodden; logback `<pattern>` masking is a 5-line config; v1.0 `csapi_compliance/src/engine/credential-masker.ts` provides the masking semantics verbatim). The decision surface is too small for an ADR — design.md inline is sufficient. The audit-trail weight Pat flagged is captured by (a) NFR-ETS-08 in the PRD already mandating credential masking, (b) the credential-leak integration test required by S-ETS-02-04 acceptance criteria, (c) the SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 / NFR-ETS-08 spec entry.
+
+#### Class location and pattern
+
+`org.opengis.cite.ogcapiconnectedsystems10.listener.CredentialMaskingFilter` — `listener/` subpackage parallels the existing `ReusableEntityFilter` (which is also a REST-Assured `Filter`). Implements `io.restassured.filter.Filter`; constructor takes `Set<String>` of header names to mask (defaults to `Authorization`, `X-API-Key`, `Cookie`, `Set-Cookie`, `Proxy-Authorization` per v1.0 reference).
+
+#### Masking semantics (verbatim port from v1.0)
+
+Read `csapi_compliance/src/engine/credential-masker.ts` lines 35-41:
+
+```
+if value.length <= 8: return "****"
+else: return value[0:4] + "***" + value[-4:]
+```
+
+Java port preserves the same semantics:
+
+```java
+public static String maskValue(String value) {
+    if (value == null || value.isEmpty()) return "****";
+    if (value.length() <= 8) return "****";
+    return value.substring(0, 4) + "***" + value.substring(value.length() - 4);
+}
+```
+
+Edge cases (carry from v1.0):
+- Bearer-prefix preservation: input `"Bearer ABCDEFGH12345678WXYZ"` → output `"Bear***WXYZ"` (mask the entire credential value INCLUDING the Bearer prefix; the SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 acceptance criterion expects this — the literal substring `EFGH12345678WXYZ` must NOT appear, and a recognizable masked form like `Bear...WXYZ` MUST appear).
+- Empty string: returns `"****"`.
+- Credentials < 8 chars: full redaction `"****"` (avoids leaking length information that could enable shoulder-surfing reconstruction).
+- Non-credential headers (Content-Type, Accept, etc.): pass through unchanged (the filter only intervenes on the configured header set).
+
+#### Wiring point
+
+Register the filter in `SuiteFixtureListener.onStart()` alongside the existing REST-Assured baseline config. Generator updates the REST-Assured `RestAssured.filters(...)` global registration to include the new filter ONCE per suite execution.
+
+#### Logback configuration
+
+`src/main/resources/logback.xml`:
+
+```xml
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <!-- Pattern excludes %X{Authorization} and %X{X-API-Key} from MDC output -->
+      <pattern>%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+  </root>
+  <logger name="io.restassured" level="DEBUG"/>
+  <logger name="org.opengis.cite.ogcapiconnectedsystems10" level="DEBUG"/>
+</configuration>
+```
+
+The CredentialMaskingFilter does the actual masking BEFORE the request/response reaches the logger. Logback's pattern intentionally does NOT include `%X{*}` MDC dump — defense-in-depth in case any future code path bypasses the filter.
+
+#### Unit + integration test rules (per S-ETS-02-04 acceptance criteria)
+
+- Unit tests in `src/test/java/.../listener/VerifyCredentialMaskingFilter.java`: cover (a) Bearer 24-char masked correctly, (b) API key 16-char masked correctly, (c) credential < 8 chars fully redacted, (d) non-credential header pass-through.
+- Integration test: smoke-test.sh with synthetic `auth-credential=Bearer ABCDEFGH12345678WXYZ`; grep TestNG XML attachments + container logs for the literal `EFGH12345678WXYZ` (zero hits required); also grep for the masked form `Bear...WXYZ` (must be present, proving filter ran rather than dropping the field entirely).
+
+### ADR-001 cross-reference amendment
+
+ADR-001 §Consequences ("**Positive**" bullet 2) originally claimed: "TeamEngine 5.6.1 production Docker image (`opengeospatial/teamengine-docker/teamengine-production` master, `teamengine.version=5.6.1`) loads the resulting jar without modification." Per ADR-007 §Context, this claim is empirically false for our JDK 17 ETS jar (production image runs JDK 8). 
+
+Architect choses **option (i) — lightweight footnote amendment** (not full ADR-001 rewrite, not new ADR-001v2). The amendment adds a one-line cross-reference to ADR-007 in ADR-001's Consequences section, leaving the rest of ADR-001's content (which is correct about the SPI registration mechanics) untouched. Generator (Dana) applies the amendment as part of S-ETS-02-01 acceptance criterion #7.
+
+Rationale for option (i) over (ii) full rewrite: ADR-001 is correct about the SPI registration mechanics (META-INF/services file, TestNGController class, ets.properties, testng.xml, CTL wrapper — all verified at runtime in S-ETS-01-03 smoke). Only the one parenthetical remark about "production Docker image loads it without modification" is wrong. A footnote is the lightest touch that preserves the historical record.
 
 ## Status
 
-**Approved for Sprint 1**. Generator (Dana) may begin S-ETS-01-01 immediately. S-ETS-01-02 unblocked once -01 lands a green-build Maven scaffold. S-ETS-01-03 unblocked once -02 produces a non-empty Core test class set.
+**Approved for Sprint 1 + Sprint 2 ratifications**. Generator (Dana) may begin S-ETS-02-* work in dependency order per Sprint 2 contract. The 4 architectural deferrals + 2 surfaced questions are now resolved; ADRs 006, 007, 008, 009 + this section's CredentialMaskingFilter rules + ADR-001 cross-reference amendment cover them.
 
-The only CONCERNS verdict (S-ETS-01-03) does not block Generator — Generator may proceed with the four caveats listed and Quinn verifies them at evaluation time.
+The S-ETS-01-03 CONCERNS verdict from Sprint 1 is closed retroactively by ADR-007 (the deviation it flagged is now ratified).
