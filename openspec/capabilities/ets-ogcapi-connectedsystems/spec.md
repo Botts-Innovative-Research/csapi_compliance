@@ -319,18 +319,47 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **AND** the script exits non-zero if any URI is unmirrored without an allowlist entry.
 *Maps to*: REQ-ETS-SYNC-001.
 
-## Implementation Status (2026-04-27)
+## Implementation Status (2026-04-28)
 
-**Status**: Not Started — Sprint 1 contract pending (`.harness/contracts/sprint-ets-01.yaml`).
+**Status**: Sprint 1 / S-ETS-01-01 ✅ PASS at `Botts-Innovative-Research/ets-ogcapi-connectedsystems10` HEAD `1323884` (29 commits). Quinn (Gate 3.5) APPROVE_WITH_GAPS 0.88; Raze (Gate 4) GAPS_FOUND 0.84 — both gates' 3 doc gaps closed same-turn 2026-04-28T16:30Z. S-ETS-01-02 (CS API Core conformance class) and S-ETS-01-03 (TeamEngine Docker smoke) are the remaining stories in Sprint 1 contract `.harness/contracts/sprint-ets-01.yaml`.
 
-### What's Built
-- (Nothing yet.) v1.0 web-app capabilities are frozen at HEAD `ab53658`.
+### What's Built (Sprint ets-01 / S-ETS-01-01)
+
+**Sub-deliverable 1 — Maven Archetype Scaffold** (REQ-ETS-SCAFFOLD-001..007, Implemented):
+- REQ-ETS-SCAFFOLD-001: Archetype generated from `org.opengis.cite:ets-archetype-testng:2.7` with ADR-003 coordinates (artifactId `ets-ogcapi-connectedsystems10`, ets-code `ogcapi-connectedsystems10`, package `org.opengis.cite.ogcapiconnectedsystems10`). Generation command recorded in new repo's `ops/server.md`.
+- REQ-ETS-SCAFFOLD-002: `<maven.compiler.source/target/release>17</>` set; Maven 3.9 enforced via inherited ets-common:17 maven-enforcer config.
+- REQ-ETS-SCAFFOLD-003: Repo layout matches features10 archetype-flat structure. **PARTIAL caveat**: features10's `java17Tomcat10TeamEngine6` branch refactored to `listener/`+`conformance/` subpackages — that refactor is deferred to S-ETS-01-02 when real Core test classes need the subpackages.
+- REQ-ETS-SCAFFOLD-004: All deps pinned (no `RELEASE`/`LATEST`). ets-common:17 manages testng, rest-assured, openapi-parser, jts-core, proj4j, jts-io-common, slf4j-api, schema-utils. logback-classic 1.5.18 explicit (not in ets-common's depMgmt).
+- REQ-ETS-SCAFFOLD-005: Reproducible build verified. sha256 `fe1c90c54537facf73ddd5172deec4b866e0071eae78834606bf92b229746385` — verified across 7 independent builds (Quinn 3 + Raze 4) including two fresh-clone builds in `/tmp/`. ADR-004 C-5 plumbing: `<project.build.outputTimestamp>2026-04-27T00:00:00Z</>` + manifest `Build-Time` override.
+- REQ-ETS-SCAFFOLD-006: 5 ADRs at `_bmad/adrs/ADR-001..005` cover SPI registration, schema bundling, package naming, archetype modernization checklist, cross-repo relationship. 16 of 28 modernization commits cite ADR rows; 12 are legitimate non-ADR work (archetype baseline, SCM rewrite, formatting, Jersey/Jakarta port — Raze CONCERN-1 suggests an optional ADR-006 for the Jersey port; deferred to Sprint 2).
+- REQ-ETS-SCAFFOLD-007: Repo lives at `Botts-Innovative-Research/ets-ogcapi-connectedsystems10` per ADR-005 "our org first" gate.
+
+**Sub-deliverable 2 — JSON Schema Bundle** (REQ-ETS-FIXTURES-001 admin-deferred; ADR-002 verbatim copy live):
+- 126 JSON Schemas under `src/main/resources/schemas/` byte-identical to `csapi_compliance@ab53658/schemas/` (`diff -r` empty, verified by Quinn + Raze).
+- pom.xml `<connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f</>` per ADR-002 mandate (commit `1323884`). Schema-provenance audit trail in new repo's `ops/server.md`.
+
+**Sub-deliverable 5 — TeamEngine Integration plumbing** (REQ-ETS-TEAMENGINE-001 partial — SPI registration only):
+- META-INF/services SPI registration file at exactly the right path with single-line FQCN `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`. Verified by Quinn via `unzip -p target/...jar` showing exactly 58 bytes / no whitespace / no extension.
+- Live container loading test (REQ-ETS-TEAMENGINE-001/003) → S-ETS-01-03.
+- CTL wrapper at `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl` from archetype.
+
+**Sub-deliverable 8 — Web-App Freeze**: REQ-ETS-WEBAPP-FREEZE-001 ✅ closed (commit `44c279e`, tag `v1.0-frozen` at `ab53658`). README.adoc reverse cross-link in new repo closes ADR-005 "both directions" requirement.
 
 ### Deviations from Spec
-- (None yet.)
+- **Java root package, artifactId, ets-code, CTL filename, ets-common version, TeamEngine version**: spec text was reconciled to ADR-003/ADR-004/ADR-001 authority on 2026-04-28T14:42Z (commit `19003b1`). Spec now matches what Generator implemented.
+- **Layout PARTIAL**: archetype-flat retained for Sprint 1 instead of features10 java17Tomcat10TeamEngine6 subpackage refactor. Will close in S-ETS-01-02.
+- **Kaizen openapi-parser declared but not consumed in Sprint 1**: per architect-handoff `surfaced_risks_pat_missed.OPENAPI-PARSER-NOT-USED-IN-SPRINT-1`, Sprint 1 Core uses everit-json-schema (transitive via ets-common:17) directly. Kaizen is on the dep list for Sprint 2+ when richer Part 1 classes need OpenAPI-driven validation.
+- **GitHub Actions workflow staged at `ci/github-workflows-build.yml` not `.github/workflows/build.yml`**: gh OAuth token at commit time lacked `workflow` scope. One-line fix: `gh auth refresh -s workflow` then `git mv`. Tracked as Raze CONCERN-2.
 
 ### Deferred
-- REQ-ETS-PART1-001..013 (per-class detail) — drafted as placeholders; per-assertion FRs and SCENARIOs to be expanded in sprints 2..N (one or two conformance classes per sprint after Sprint 1 lands the scaffold + Core).
+- REQ-ETS-CORE-001..004 (CS API Core conformance class — LandingPageTests, ConformanceTests, ResourceShapeTests) → S-ETS-01-02.
+- REQ-ETS-TEAMENGINE-002..005 (Dockerfile, docker-compose, smoke-test.sh, container-load verification) → S-ETS-01-03.
+- REQ-ETS-PART1-001..013 (per-class detail beyond Core) — drafted as placeholders; per-assertion FRs and SCENARIOs to be expanded in sprints 2..N.
 - REQ-ETS-PART2-001..014 (Part 2) — explicitly deferred per user gate 2026-04-27 ("Part 1 first, Part 2 follows").
+- REQ-ETS-FIXTURES-001..003 (spec-trap port from `csapi_compliance/tests/fixtures/spec-traps/`) → epic-ets-06 parallel sprint after Sprint 1 closes.
 - REQ-ETS-CITE-001..003 — calendar-bound, not sprint-bound. Beta milestone gates these.
 - REQ-ETS-SYNC-001 — CI script work, expected after Part 1 is feature-complete enough to make the diff meaningful.
+
+### Gate verdicts (audit trail)
+- **Gate 3.5 (Quinn / Evaluator)**: APPROVE_WITH_GAPS confidence 0.88. Report at `.harness/evaluations/sprint-ets-01-evaluator.yaml`. 3 gaps + 4 concerns — all gaps closed same-turn 2026-04-28T16:30Z.
+- **Gate 4 (Raze / Adversarial)**: GAPS_FOUND confidence 0.84. Report at `.harness/evaluations/sprint-ets-01-adversarial.yaml`. 3 gaps + 3 concerns — same 3 gaps Quinn caught (cross-corroborating); GAP-1 (wrong sha256 propagated to ops/status.md), GAP-2 (pom.xml SHA pin missing), GAP-3 (this section). All closed same-turn.

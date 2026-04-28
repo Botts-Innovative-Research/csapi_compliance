@@ -1,0 +1,342 @@
+---
+sprint: ets-01
+story: S-ETS-01-01
+gate: 3.5
+agent: Quinn (Evaluator)
+date: 2026-04-28
+new_repo: Botts-Innovative-Research/ets-ogcapi-connectedsystems10
+new_repo_head: 35d5154
+verdict: APPROVE_WITH_GAPS
+confidence: 0.88
+verdict_rationale: |
+  S-ETS-01-01 ships a clean, reproducible JDK 17 + ets-common:17 scaffold with all critical
+  Sprint-1 success criteria PASS. Independent fresh-clone build (BUILD SUCCESS, 22.6s,
+  surefire 26/0/0/3 — exactly matching Dana's claim) and double-build sha256 byte-equality
+  on all four jars verifies REQ-ETS-SCAFFOLD-005 / SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001.
+  Schema diff is zero (126/126 .json verbatim). META-INF/services file is byte-perfect (58
+  bytes, single FQCN, no extension, no whitespace) and lands in the jar as
+  org.opengis.cite.ogcapiconnectedsystems10.TestNGController per ADR-001+ADR-003. Two non-
+  blocking gaps: (1) Dana's reported main-jar SHA `5021b1d3...` does NOT match the actual
+  reproducible SHA `fe1c90c5...` produced on three independent builds (Dana's number is
+  stale/wrong but reproducibility itself is verified — the orchestrator already propagated
+  the bad hash into ops/status.md), and (2) the OpenAPI YAML SHA pin called for in ADR-002
+  appears in ops/server.md but NOT in pom.xml comment block as ADR-002 explicitly directs.
+  Spec Implementation Status not yet updated for Sprint 1 — deferred per orchestrator's
+  documented "after both gates pass" plan, acceptable. Recommend APPROVE+merge with the two
+  small follow-ups.
+
+success_criteria_table:
+  - criterion: all_critical_scenarios_pass
+    contract_value: "true (S-ETS-01-01 critical = SCAFFOLD-BUILD-001)"
+    actual: "BUILD SUCCESS on fresh clone in /tmp/quinn-fresh/ets-build1, 22.558s wall, 26 surefire run / 0 failures / 0 errors / 3 skipped"
+    status: PASS
+    evidence: "Independent fresh-clone build at /tmp/quinn-fresh/ets-build1 (HEAD 35d5154); build log /tmp/quinn-fresh/build1.log line 'BUILD SUCCESS' + surefire summary line 'Tests run: 26, Failures: 0, Errors: 0, Skipped: 3'"
+
+  - criterion: build_green_jdk17
+    contract_value: true
+    actual: "Maven 3.9.9 + JDK 17 (compiler.release=17 in pom.xml line 57); maven-compiler invoked with -source 17 -target 17 from inherited config"
+    status: PASS
+    evidence: "/home/nh/docker/gir/ets-ogcapi-connectedsystems10/pom.xml lines 55-57 declare maven.compiler.source/target/release=17; build log shows JAR built and Implementation-Version manifest entry written"
+
+  - criterion: reproducible_build
+    contract_value: true
+    actual: |
+      Two fresh clones built `mvn clean install -DskipTests` independently in /tmp/quinn-fresh/ets-build1
+      and /tmp/quinn-fresh/ets-build2. All four resulting jars (main + aio + javadoc + site) are sha256-
+      byte-identical between the two builds AND identical to the canonical local target/ in the
+      worktree.
+        main jar:  fe1c90c54537facf73ddd5172deec4b866e0071eae78834606bf92b229746385
+        aio jar:   8745733458dc594c3e68696d98f277c90800fd293aa304f72ee94526e57d525a
+        javadoc:   297e20e1321a1b98a2a2719028c6f4a89c109621d5559c3486967de3a10d9d1f
+        site:      6dfa9faf753f9413c65ccd0d5fa12994da63931511a46c2b3bb9456bed4cc284
+      Note: Dana's handoff/orchestrator-status reported main jar SHA `5021b1d3275d8ff438c2bcd0d78881b2d3e9dd3f0ee3c71aa2648469462bbd9a` which does NOT match my three-build verification (`fe1c90c5...`). The reproducibility ITSELF holds; only Dana's reported hash is stale. See GAP-1.
+    status: PASS
+    evidence: "sha256sum output preserved at /tmp/quinn-fresh (2026-04-28T16:13Z); jar timestamps in unzip listing all show 2026-04-27 00:00 (project.build.outputTimestamp=2026-04-27T00:00:00Z, pom.xml line 60)"
+
+  - criterion: spec_updated
+    contract_value: true
+    actual: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md Implementation Status section still says 'Not Started — Sprint 1 contract pending'; not yet reconciled. ops/changelog.md and ops/status.md are updated, traceability.md still shows 'Active' not 'Done' for Sprint-1 rows."
+    status: PARTIAL
+    evidence: "/home/nh/docker/gir/csapi_compliance/openspec/capabilities/ets-ogcapi-connectedsystems/spec.md line 322: 'Implementation Status (2026-04-27)' / 'Status: Not Started'; /_bmad/traceability.md lines 18-24 status column still 'Active'. Per ops/status.md the spec/traceability reconciliation is deliberately scheduled 'after both gates pass'."
+
+  - criterion: no_regression
+    contract_value: true
+    actual: "Greenfield repo at HEAD 35d5154; no prior baseline to regress against. v1.0 web app csapi_compliance is frozen and untouched (no commits in csapi_compliance during Sprint 1)."
+    status: PASS
+    evidence: "csapi_compliance HEAD still ed45643 (pre-sprint-ets-01); no Sprint-1 work modified csapi_compliance code per the user freeze."
+
+  - criterion: teamengine_loads_ets_without_error
+    contract_value: true
+    actual: "S-ETS-01-03 deferred — TeamEngine Docker smoke test is a separate story; not gated by S-ETS-01-01."
+    status: DEFERRED
+    evidence: "Per .harness/contracts/sprint-ets-01.yaml lines 53-58 (S-ETS-01-03 listed), but S-ETS-01-01 evaluation is independent of S-ETS-01-03 outcomes."
+
+  - criterion: smoke_test_green_against_georobotix
+    contract_value: true
+    actual: "Deferred to S-ETS-01-03."
+    status: DEFERRED
+    evidence: "Same as above; out of S-ETS-01-01 scope."
+
+  - criterion: no_part2_work_in_sprint
+    contract_value: true
+    actual: |
+      grep -ri -E "OGC[ -]?23-?002|connectedsystems-?2|Datastream|ControlStream|swecommon" against
+      src/main/java/, src/test/java/, pom.xml returned ZERO hits. The schemas/connected-systems-2/
+      directory contains 31 .json files but they were copied verbatim per ADR-002 from the v1.0
+      bundle (no Java code references them). The archetype's level1.Capability1Tests is RelaxNG-
+      validating-Document scaffolding, not Part-2 ConnectedSystems content.
+    status: PASS
+    evidence: "grep output empty for Part-2 strings in src/main/java/; verified Capability1Tests.java imports org.opengis.cite.validation.RelaxNGValidator (archetype scaffolding) not any Part-2 class"
+
+  - criterion: uri_mapping_fidelity_preserved
+    contract_value: true
+    actual: "Sprint 1 deliberately doesn't ship Core conformance @Test methods yet; URI mapping fidelity is an S-ETS-01-02 deliverable. No premature URI assertions in S-ETS-01-01."
+    status: PASS
+    evidence: "/home/nh/docker/gir/ets-ogcapi-connectedsystems10/src/main/java contains only archetype scaffolding (level1.Capability1Tests) + util classes; no /req/core/* descriptions yet — correctly deferred."
+
+  - criterion: spec_trap_fixtures_preserved
+    contract_value: true
+    actual: |
+      epics/epic-ets-06-fixture-port.md exists and references REQ-ETS-FIXTURES-001..003 with
+      five backlog placeholder stories. The new repo contains zero spec-trap port code (verified
+      via grep -ri 'spec-trap|REQ-ETS-FIXTURES' against the new repo source — empty result).
+    status: PASS
+    evidence: "/home/nh/docker/gir/csapi_compliance/epics/epic-ets-06-fixture-port.md lines 16-20 list S-ETS-06-01..05 backlog stories; grep returned empty in new repo source tree"
+
+  - criterion: openapi_yaml_pinned_by_sha
+    contract_value: true
+    actual: |
+      Pinned in ops/server.md (line: 'Upstream master SHA at this copy (2026-04-28, for forward-
+      tracking): 3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f') but NOT in pom.xml comment block as
+      ADR-002 directs ('Pin upstream OGC SHA in pom.xml comment block. Initial value: the SHA
+      pinned by csapi_compliance/scripts/fetch-schemas.ts at commit ab53658.'). pom.xml has no
+      <connected-systems-yaml.sha> property and no upstream-SHA comment.
+    status: PARTIAL
+    evidence: "grep -nE 'csapi_compliance|ab53658|opengeospatial/ogcapi-connected-systems' against pom.xml returned zero hits. ops/server.md line 'Upstream master SHA at this copy' = 3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f. The architect-handoff surfaced_risks_pat_missed.OPENAPI-PARSER-NOT-USED-IN-SPRINT-1 explicitly flagged this trade-off."
+
+evaluation_questions_answered:
+  - question: |
+      Compare Java @Test descriptions in CoreTests.java against the URI list extracted from
+      csapi_compliance/src/engine/registry/common.ts and csapi_compliance/src/engine/registry/csapi-core.ts.
+      Are all relevant URIs present? Are there extras? Are any missing without justification?
+    answer: |
+      N/A for S-ETS-01-01. CoreTests.java does not yet exist — it's the S-ETS-01-02 deliverable.
+      The Sprint-1 scaffold ships only archetype scaffolding (Capability1Tests in level1/). No
+      premature URI assertions to evaluate. This is correctly deferred and the architect-handoff
+      readiness verdict for S-ETS-01-02 is PASS.
+
+  - question: |
+      Run scripts/smoke-test.sh in a fresh container; archive the TestNG report; verify zero
+      ERROR entries and non-empty test list.
+    answer: |
+      N/A for S-ETS-01-01. scripts/smoke-test.sh is an S-ETS-01-03 deliverable; the new repo's
+      README.adoc explicitly notes the smoke test is "to land in a follow-up sprint." Out of
+      S-ETS-01-01 scope.
+
+  - question: |
+      Verify reproducible build: clean checkout twice, mvn clean install twice, diff target/*.jar
+      excluding META-INF timestamps.
+    answer: |
+      VERIFIED. Cloned the new repo into /tmp/quinn-fresh/ets-build1 and /tmp/quinn-fresh/ets-build2,
+      ran `mvn -B -q clean install -DskipTests` independently in each. All four jars (main 0.1-SNAPSHOT.jar,
+      aio jar, javadoc jar, site jar) are sha256-byte-identical between the two fresh-clone builds
+      AND identical to the existing target/ in the worktree. project.build.outputTimestamp=
+      2026-04-27T00:00:00Z is the canonicalized META-INF timestamp; jar entries all show this
+      timestamp. Reproducibility holds rigorously. The only anomaly is Dana's reported main-jar
+      SHA `5021b1d3275d8ff438c2bcd0d78881b2d3e9dd3f0ee3c71aa2648469462bbd9a` which does NOT
+      match the three independent builds I observed — actual SHA is
+      `fe1c90c54537facf73ddd5172deec4b866e0071eae78834606bf92b229746385`. The build itself is
+      reproducible; Dana's reported number is wrong (see GAP-1). The orchestrator already
+      propagated the bad hash into ops/status.md which needs correction.
+
+  - question: |
+      Verify the v1.0 known-issue catalog at csapi_compliance/ops/known-issues.md does not regress:
+      rel=self, service-doc fallback, half-conformant featureType — all should be preserved-by-design
+      in the Java port.
+    answer: |
+      VERIFIED at design level. grep -rni for "rel=self|service-desc|service-doc" against the new
+      repo's src/main/java, src/test/java, src/main/resources/org returned ZERO hits. Sprint 1
+      correctly defers all normative assertions to S-ETS-01-02; nothing in S-ETS-01-01 prematurely
+      encodes the GH#3 regression vector (mandatory rel=self) or the service-desc-only (no fallback)
+      regression. The architect-handoff `constraints_for_generator.must` items 7-8 explicitly
+      direct Dana to preserve these in the eventual S-ETS-01-02 implementation; Quinn confirms
+      Sprint 1 doesn't preempt them.
+
+gaps_found:
+  - id: GAP-1
+    severity: low
+    description: |
+      Dana's generator-handoff (and ops/status.md line 3, propagated by orchestrator) report
+      the reproducible main-jar sha256 as `5021b1d3275d8ff438c2bcd0d78881b2d3e9dd3f0ee3c71aa2648469462bbd9a`.
+      My three independent builds (build1 + build2 fresh clones + existing target/) all produce
+      `fe1c90c54537facf73ddd5172deec4b866e0071eae78834606bf92b229746385`. The build IS reproducible
+      across all three builds I ran; Dana's reported number is stale or from a different jar.
+      This is not a build-correctness issue — reproducibility holds — but the audit trail in
+      ops/status.md is wrong and would mislead a future reviewer trying to spot-check.
+    recommended_fix: |
+      Edit /home/nh/docker/gir/csapi_compliance/ops/status.md line 3 to replace
+      `5021b1d3...` with `fe1c90c54537facf73ddd5172deec4b866e0071eae78834606bf92b229746385`
+      and add a note "(verified by Quinn against three independent builds 2026-04-28)".
+      Optionally also record the aio + javadoc + site SHAs there for the future
+      reproducible-build CI assertion.
+
+  - id: GAP-2
+    severity: low
+    description: |
+      ADR-002 directs Generator to "Pin upstream OGC SHA in pom.xml comment block" with the
+      initial value being the SHA that csapi_compliance/scripts/fetch-schemas.ts pinned at
+      commit ab53658. The new repo's pom.xml does NOT contain such a comment block — there is
+      no <connected-systems-yaml.sha> property, no upstream-OGC comment near the dependencies.
+      The SHA `3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f` IS recorded in ops/server.md schema-
+      provenance section, which is acceptable for audit but does not satisfy ADR-002's specific
+      pom.xml directive.
+      The architect-handoff surfaced_risks_pat_missed.OPENAPI-PARSER-NOT-USED-IN-SPRINT-1
+      explicitly anticipated this trade-off: Sprint 1 does NOT use Kaizen openapi-parser to
+      drive validation, so the YAML pin is currently informational rather than build-time
+      consumed. That makes GAP-2 a documentation discipline issue, not a build/test correctness
+      issue.
+    recommended_fix: |
+      In Sprint 2 (when CS API Core conformance class lands and openapi-parser may begin to be
+      consumed), add to pom.xml properties:
+      ```xml
+      <!--
+        Upstream OGC OpenAPI YAML provenance (per ADR-002).
+        Source repo: github.com/opengeospatial/ogcapi-connected-systems
+        Pinned commit: 3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f (2026-04-20)
+        Source via csapi_compliance@v1.0-frozen (ab53658) schemas/ verbatim copy.
+      -->
+      <connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f</connected-systems-yaml.sha>
+      ```
+      Or defer to S-ETS-01-02 prep — same Generator pass that wires CoreTests can land the
+      pom.xml comment block.
+
+  - id: GAP-3
+    severity: low
+    description: |
+      openspec/capabilities/ets-ogcapi-connectedsystems/spec.md "Implementation Status
+      (2026-04-27)" section still says "Status: Not Started — Sprint 1 contract pending"
+      and "(Nothing yet.)" under "What's Built". Sprint 1 S-ETS-01-01 IS now built; the
+      spec is unreconciled. Per CLAUDE.md mandatory workflow step 6, "Update Implementation
+      Status in spec.md."
+      _bmad/traceability.md rows 18-24 still show "Active" status for the seven REQ-ETS-
+      SCAFFOLD-001..007 entries when several are now satisfied (SCAFFOLD-001..006 pass at
+      design+build level; SCAFFOLD-005 reproducibility verified; SCAFFOLD-007 is administrative
+      and largely satisfied via the Botts-Innovative-Research org placement).
+      ops/status.md line 3 already documents the impl status (with the bad hash from GAP-1)
+      and notes spec reconciliation is "after both gates pass."
+    recommended_fix: |
+      After Quinn + Raze gates close, append to spec.md Implementation Status:
+        ### What's Built (Sprint ets-01 / S-ETS-01-01)
+        - REQ-ETS-SCAFFOLD-001..007 SATISFIED at scaffold level (sibling repo at HEAD 35d5154)
+        - SCENARIO-ETS-SCAFFOLD-BUILD-001 ✅ (mvn clean install green, JDK 17, surefire 26/0/0/3)
+        - SCENARIO-ETS-SCAFFOLD-LAYOUT-001 ✅ with PARTIAL caveat (archetype-flat layout, not features10-subpackage — see ops/changelog 2026-04-28)
+        - SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 ✅ (sha256 fe1c90c5... verified across 3 independent builds)
+      And flip traceability.md rows 18-24 status to "Done" for SCAFFOLD-001..006 and "Done (admin)" for SCAFFOLD-007.
+
+concerns:
+  - id: CONCERN-1
+    description: |
+      Dana's handoff claims "19 atomic commits" but git log shows 28 commits on the branch.
+      The 28 includes the archetype:generate baseline commit + 27 deltas. The discrepancy
+      doesn't materially affect the audit but suggests Dana miscounted; future Generators
+      should commit-count from `git log --oneline | wc -l` rather than memory.
+  - id: CONCERN-2
+    description: |
+      12 of the 28 commits do NOT cite an ADR row in the message. Most are legitimate
+      (archetype:generate raw output, SCM-rewrite for Botts-Innovative-Research, Mockito-3
+      ArgumentMatchers compatibility, Jersey/Jakarta port commits citing features10 java17
+      branch instead). REQ-ETS-SCAFFOLD-006 says "Each archetype-default modification has an
+      ADR" — strict reading would expect commits like the Jersey port and Jakarta migration
+      to map to a new ADR (call it "ADR-006: Jersey 1.x → Jakarta EE 9 / Jersey 3.x port for
+      JDK 17 archetype util layer"). Currently those decisions are documented only in commit
+      messages and via reference to the features10 java17Tomcat10TeamEngine6 branch.
+      Recommendation: write a small ADR-006 documenting the Jersey/Jakarta port reasoning so
+      a future maintainer doesn't have to reverse-engineer 5 commits to understand why
+      `javax.ws.rs` became `jakarta.ws.rs`. Not blocking for Sprint 1.
+  - id: CONCERN-3
+    description: |
+      Repo layout is the archetype-flat structure (level1/, util/, top-level controller +
+      listener classes) rather than the features10 java17Tomcat10TeamEngine6 subpackage
+      layout (conformance/core/*, listener/*, openapi3/*). Dana self-flagged this PARTIAL.
+      Architect-handoff design.md does specify the features10-style subpackage layout
+      (org.opengis.cite.ogcapiconnectedsystems10.conformance.core.*, .listener.*, .openapi3.*
+      per ADR-003). S-ETS-01-02 is when CoreTests lands and the conformance.core.* package
+      gets created — at that point Dana should also factor TestRunListener, SuiteFixtureListener,
+      TestFailureListener into a `listener` subpackage to match the design. Not blocking for
+      Sprint 1 since the scaffold builds green with the flat layout, but the divergence should
+      close in Sprint 2.
+  - id: CONCERN-4
+    description: |
+      The CI workflow (.github/workflows/build.yml) is staged at ci/github-workflows-build.yml
+      because gh token lacks "workflow" scope at push time. This is a known deferred item per
+      Dana's handoff and ops/status.md ("`gh auth refresh -s workflow` then git mv"). Acceptable
+      for Sprint 1 close; track to closure before S-ETS-01-02 ships so CI catches any
+      conformance-test regressions.
+
+verified_independently:
+  - "Fresh git clone of ets-ogcapi-connectedsystems10@35d5154 into /tmp/quinn-fresh/ets-build1 and /tmp/quinn-fresh/ets-build2"
+  - "mvn clean install in /tmp/quinn-fresh/ets-build1: BUILD SUCCESS, 22.558s, surefire 26/0/0/3 — exactly matches Dana's claim"
+  - "Double-build reproducibility: `mvn -q clean install -DskipTests` in both fresh clones; sha256 byte-equal on all 4 jars (main, aio, javadoc, site); also matches existing target/ in worktree"
+  - "Schema bundle byte-equivalence: `diff -r csapi_compliance/schemas/ ets-ogcapi-connectedsystems10/src/main/resources/schemas/` returned ZERO diff; both directories contain 126 .json files"
+  - "META-INF/services jar inspection: `unzip -p target/...jar META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController` produces exactly 58 bytes, single line `org.opengis.cite.ogcapiconnectedsystems10.TestNGController`, no trailing newline, no extension; verified via xxd hex dump"
+  - "Jar timestamp pin: `unzip -l target/...jar` shows all entries at 2026-04-27 00:00 (project.build.outputTimestamp working)"
+  - "Jersey port translation fidelity (ClientUtils): downloaded features10@java17Tomcat10TeamEngine6/util/ClientUtils.java to /tmp/quinn-fresh/features10-ClientUtils.java, compared method signatures — all 6 features10 public methods present in our port; we have one extra (`buildGetRequest`) which is additive not regressive"
+  - "Jersey port translation fidelity (URIUtils): public method count 1 (features10) vs 3 (ours) — ours is a superset; no methods dropped"
+  - "v1.0 GH#3 fix preservation (design-level): grep -rni 'rel=self|service-desc|service-doc' against src/main/java + src/test/java + src/main/resources/org returned ZERO hits — Sprint 1 doesn't preempt S-ETS-01-02's spec wiring"
+  - "Spec-trap fixture acknowledgment: epic-ets-06-fixture-port.md exists in csapi_compliance with REQ-ETS-FIXTURES-001..003 referenced; no spec-trap port code in new repo (confirmed)"
+  - "Part-2 contamination check: grep -rE 'OGC[ -]?23-?002|connectedsystems-?2|Datastream|ControlStream|swecommon' against src/main/java/, src/test/java/, pom.xml returned ZERO hits in Java code; schemas/connected-systems-2/ exists per ADR-002 verbatim copy but is not referenced from Java"
+  - "POM verification: parent ets-common:17 (pom.xml line 6-9), maven.compiler.{source,target,release}=17 (line 55-57), <project.build.outputTimestamp>2026-04-27T00:00:00Z</> (line 60), all required ADR-004 Group B deps declared without explicit versions, logback-classic 1.5.18 explicitly pinned"
+  - "ADR-citation audit: 16/28 commits cite ADR rows; 12 commits are legitimate non-ADR work (archetype baseline, SCM rewrite, mechanical formatting, Jersey/Jakarta port citing features10 branch)"
+  - "Cross-link audit: README.adoc lines 5-22 reverse-link to csapi_compliance with 'sibling repository' framing per ADR-005"
+  - "ets.properties: 3 lines, Maven-substituted (ets-title=${project.name}, ets-version=${project.version}, ets-code=${ets-code}) — matches features10 pattern per ADR-001"
+
+deferred_items_acknowledged:
+  - "GitHub Actions workflow staged at ci/github-workflows-build.yml pending `gh auth refresh -s workflow` then git mv (Dana flagged; CONCERN-4)"
+  - "Layout matches archetype-flat not features10-subpackage; refactor scheduled for S-ETS-01-02 when CoreTests land (Dana self-flagged PARTIAL; CONCERN-3)"
+  - "Spec.md Implementation Status section reconciliation deferred to 'after both gates pass' per ops/status.md (GAP-3)"
+  - "REQ-ETS-SYNC-001 (URI-coverage diff CI script) deferred to post-Part-1-feature-complete per ADR-005"
+  - "REQ-ETS-FIXTURES-001..003 (spec-trap port) deferred to epic-ets-06; backlog stories drafted, no Sprint-1 work"
+  - "REQ-ETS-CITE-001..003 (Maven Central, OSSRH, GPG) deferred to beta milestone per ADR-004 Group E-3"
+  - "S-ETS-01-02 (CoreTests) and S-ETS-01-03 (TeamEngine smoke) are separate Generator runs in this same Sprint 1 contract"
+
+recommendation_next_step:
+  verdict: APPROVE_WITH_GAPS
+  action: APPROVE+merge
+  rationale: |
+    All Sprint-1 critical scenarios for S-ETS-01-01 PASS (build green, reproducibility verified
+    across three independent builds, schema bundle byte-equal, META-INF/services correct, no
+    Part-2 contamination, design-level v1.0 fixes preserved). Three small documentation gaps
+    (GAP-1 wrong reported hash in status.md; GAP-2 OpenAPI YAML SHA not in pom.xml as ADR-002
+    directs; GAP-3 spec.md Implementation Status not yet flipped) are non-blocking and easily
+    fixed in a follow-up commit. Recommend:
+      1. Fix GAP-1 in csapi_compliance/ops/status.md before S-ETS-01-02 starts (1-line edit).
+      2. Defer GAP-2 to S-ETS-01-02 prep (where openapi-parser becomes consumed) OR add the
+         pom.xml comment block now as a single-commit follow-up.
+      3. After Raze (Gate 4) closes, do the spec.md + traceability.md reconciliation in one
+         commit (GAP-3).
+    S-ETS-01-02 is unblocked by S-ETS-01-01 and can begin immediately. Quinn approves merge
+    of HEAD 35d5154 to main.
+
+sub_agent_notes: |
+  - Raze (Gate 4 adversarial review) is being spawned in parallel by the orchestrator per
+    sprint contract `gate_4_required: true, force_run: true`. I did NOT modify the new repo
+    and did NOT touch its target/ directory; my mvn builds ran in /tmp/quinn-fresh/ets-build1
+    and /tmp/quinn-fresh/ets-build2 to avoid colliding with any concurrent Raze build.
+  - Dana's handoff hash `5021b1d3...` is wrong — actual is `fe1c90c5...`. This is a
+    documentation slip, not a build issue, but it's already propagated into ops/status.md
+    line 3 (a single grep+sed should fix it). Future generator-handoff template should
+    require the hash be captured via `sha256sum target/*.jar` output paste rather than
+    re-typed.
+  - For S-ETS-01-02 prep: the architect-design specifies the conformance.core.* +
+    listener.* + openapi3.* subpackage layout. CONCERN-3 captures that the current archetype-
+    flat layout should refactor when CoreTests land. The Generator working on S-ETS-01-02
+    should plan for that refactor as part of the same atomic-commit chain that lands
+    LandingPageTests, ConformanceTests, ResourceShapeTests.
+  - GAP-2 (OpenAPI YAML SHA in pom.xml) is the cleanest "small follow-up" — a 6-line
+    properties-block + comment in pom.xml, citing ADR-002 + the SHA already recorded in
+    ops/server.md. If the orchestrator wants Sprint 1 to close perfectly clean, this is
+    the smallest cost.
+  - Quinn confidence 0.88 (vs 0.90 retro-eval baseline) reflects: (a) reproducibility
+    verified independently is high-confidence good news, but (b) Dana's reported hash
+    being wrong is a yellow flag on handoff fidelity that motivates the slight haircut.
+    No findings rise to GAPS_FOUND or REJECT.

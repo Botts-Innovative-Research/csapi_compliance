@@ -15,13 +15,13 @@
 
 | Brief Req | PRD FR | OpenSpec REQ | OpenSpec SCENARIO | Epic | Story | Sprint | Status |
 |-----------|--------|--------------|-------------------|------|-------|--------|--------|
-| R-PIVOT-01 | FR-ETS-01 | REQ-ETS-SCAFFOLD-001 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-01 | FR-ETS-02 | REQ-ETS-SCAFFOLD-002 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-02 | FR-ETS-03 | REQ-ETS-SCAFFOLD-003 | SCENARIO-ETS-SCAFFOLD-LAYOUT-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-01 | FR-ETS-04 | REQ-ETS-SCAFFOLD-004 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-01 | FR-ETS-05 | REQ-ETS-SCAFFOLD-005 | SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-01 | FR-ETS-06 | REQ-ETS-SCAFFOLD-006 | (covered by ADR audit) | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
-| R-PIVOT-01 | FR-ETS-07 | REQ-ETS-SCAFFOLD-007 | (administrative) | epic-ets-01 | S-ETS-01-01 | ets-01 | Active |
+| R-PIVOT-01 | FR-ETS-01 | REQ-ETS-SCAFFOLD-001 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (29 commits, HEAD `1323884`; Quinn 0.88, Raze 0.84) |
+| R-PIVOT-01 | FR-ETS-02 | REQ-ETS-SCAFFOLD-002 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (JDK 17 source/target/release pinned in pom.xml) |
+| R-PIVOT-02 | FR-ETS-03 | REQ-ETS-SCAFFOLD-003 | SCENARIO-ETS-SCAFFOLD-LAYOUT-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented (PARTIAL)** — archetype-flat layout; features10 java17 subpackage refactor → S-ETS-01-02 |
+| R-PIVOT-01 | FR-ETS-04 | REQ-ETS-SCAFFOLD-004 | SCENARIO-ETS-SCAFFOLD-BUILD-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (deps pinned via ets-common:17 depMgmt; logback-classic 1.5.18 explicit) |
+| R-PIVOT-01 | FR-ETS-05 | REQ-ETS-SCAFFOLD-005 | SCENARIO-ETS-SCAFFOLD-REPRODUCIBLE-001 | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (sha256 `fe1c90c5...` verified across 7 independent builds Quinn+Raze) |
+| R-PIVOT-01 | FR-ETS-06 | REQ-ETS-SCAFFOLD-006 | (covered by ADR audit) | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (5 ADRs ADR-001..005; 16/28 commits cite ADR rows; ADR-006 for Jersey port suggested by Raze CONCERN-1, deferred to Sprint 2) |
+| R-PIVOT-01 | FR-ETS-07 | REQ-ETS-SCAFFOLD-007 | (administrative) | epic-ets-01 | S-ETS-01-01 | ets-01 | **Implemented** (admin) — repo at `Botts-Innovative-Research/ets-ogcapi-connectedsystems10` per ADR-005 "our org first" gate |
 | R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-001 | SCENARIO-ETS-CORE-LANDING-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
 | R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-002 | SCENARIO-ETS-CORE-LANDING-001, LINKS-NORMATIVE-001, API-DEF-FALLBACK-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
 | R-PIVOT-03 | FR-ETS-10 | REQ-ETS-CORE-003 | SCENARIO-ETS-CORE-CONFORMANCE-001 | epic-ets-02 | S-ETS-01-02 | ets-01 | Active |
@@ -37,7 +37,7 @@
 | R-PIVOT-08 | FR-ETS-70 | REQ-ETS-CITE-001 | (calendar-bound) | epic-ets-05 | S-ETS-05-01..02 | beta-milestone | Calendar-bound |
 | R-PIVOT-12 | FR-ETS-71 | REQ-ETS-CITE-002 | (calendar-bound) | epic-ets-05 | S-ETS-05-03..05 | beta-milestone | Calendar-bound |
 | R-PIVOT-12 | FR-ETS-72 | REQ-ETS-CITE-003 | (calendar-bound) | epic-ets-05 | S-ETS-05-06 | beta-milestone | Calendar-bound |
-| R-PIVOT-10 | FR-ETS-80 | REQ-ETS-WEBAPP-FREEZE-001 | SCENARIO-ETS-WEBAPP-FREEZE-README-001 | epic-ets-07 | S-ETS-07-01 | quick-win | Backlog |
+| R-PIVOT-10 | FR-ETS-80 | REQ-ETS-WEBAPP-FREEZE-001 | SCENARIO-ETS-WEBAPP-FREEZE-README-001 | epic-ets-07 | S-ETS-07-01 | quick-win | **Implemented** (commit `44c279e`; tag `v1.0-frozen` at `ab53658`) |
 | R-PIVOT-11 | FR-ETS-90 | REQ-ETS-SYNC-001 | SCENARIO-ETS-SYNC-URI-DIFF-001 | (cross-epic) | TBD | post-Part-1 | Backlog |
 
 **Status legend**: Active = in current sprint (ets-01) | Backlog = defined but not yet sprinted | Deferred = explicitly out of scope per user gate | Calendar-bound = waits on milestone, not engineering | Done = implemented and evaluated.
