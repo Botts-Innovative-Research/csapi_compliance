@@ -1,6 +1,6 @@
 # Operational Status — CS API Compliance Assessor
 
-> Last updated: 2026-04-28T14:42Z | **Project pivoted 2026-04-27 from Next.js v1.0 web app → Java/TestNG TeamEngine ETS.** v1.0 frozen at `ab53658` (last gate-clean commit `ed45643`). Sprint `ets-01` Gates 1–3 complete (Discovery + Planner + Architect outputs + post-Architect string reconciliation captured in this commit). Generator (Dana) gate not yet started — no Java code, no `pom.xml`, new sibling repo `ets-ogcapi-connectedsystems10` not yet bootstrapped. Next action: user picks (a) REQ-ETS-WEBAPP-FREEZE-001 quick-win (tag `v1.0-frozen`) or (b) bootstrap new repo + Generator on S-ETS-01-01.
+> Last updated: 2026-04-28T15:08Z | **Project pivoted 2026-04-27 from Next.js v1.0 web app → Java/TestNG TeamEngine ETS.** v1.0 frozen + tagged `v1.0-frozen` at `ab53658` (REQ-ETS-WEBAPP-FREEZE-001 ✅). README repositioned as "developer pre-flight tool, not certification-track" with forward cross-link to sibling repo. Sprint `ets-01` Gates 1–3 complete (Discovery + Planner + Architect outputs + post-Architect string reconciliation pushed as `19003b1`). Generator (Dana) gate not yet started — no Java code, no `pom.xml`, new sibling repo `ets-ogcapi-connectedsystems10` not yet bootstrapped. **Next action**: bootstrap new repo (`gh repo create Botts-Innovative-Research/ets-ogcapi-connectedsystems10 --public ...`) then start Generator on S-ETS-01-01 (archetype scaffold + ADR-004 modernization Group A–D as 25 atomic commits).
 
 ## ▶ Fresh-Session Entry Point
 
@@ -43,13 +43,16 @@ Read this file first. It is the single authoritative "where are we" doc. The piv
 | **S-ETS-01-02** Implement CS API Core conformance class end-to-end against GeoRobotix | P0 | M | PASS |
 | **S-ETS-01-03** TeamEngine 5.6.1 Docker smoke test runs Core suite against GeoRobotix | P0 | M | CONCERNS (TeamEngine version drift, META-INF/services filename pitfalls, CTL Saxon namespace typos, smoke-test artifact archival — Quinn check items) |
 
-### Suggested Next Action — User picks one
+### Suggested Next Action — Bootstrap new repo + start Generator on S-ETS-01-01
 
-**Option A — REQ-ETS-WEBAPP-FREEZE-001 quick-win** (~15 min). `git tag -a v1.0-frozen ab53658 -m "Frozen 2026-04-27 at user-pivot to Java/TestNG ETS"; git push origin v1.0-frozen` plus a one-line README banner pointing forward to the new ETS repo. Closes the assumption ADR-005 makes about the tag's existence.
+REQ-ETS-WEBAPP-FREEZE-001 is closed (tag `v1.0-frozen` at `ab53658`, README repositioned). The next substantive sprint is the new Java repo and the first three stories.
 
-**Option B — Bootstrap new repo + start Generator on S-ETS-01-01** (~half-day). `gh repo create <org>/ets-ogcapi-connectedsystems10 --public --description "OGC API - Connected Systems Part 1 ETS for TeamEngine"`, then `mvn archetype:generate -DarchetypeGroupId=org.opengis.cite -DarchetypeArtifactId=ets-archetype-testng -DarchetypeVersion=2.7 ...` per ADR-003 strings, then ADR-004 Group A–D as 25 atomic commits. Output: green `mvn clean install` on JDK 17, byte-reproducible jars.
+1. **Bootstrap the sibling repo** (~5 min): `gh repo create Botts-Innovative-Research/ets-ogcapi-connectedsystems10 --public --description "OGC API - Connected Systems Part 1 ETS for OGC TeamEngine"`. Initialize with empty README + `.gitignore` (or seed with a one-line README cross-linking back here, satisfying ADR-005's "both directions" cross-link).
+2. **Generate the archetype** (~10 min, S-ETS-01-01 first half): `mvn archetype:generate -B -DarchetypeGroupId=org.opengis.cite -DarchetypeArtifactId=ets-archetype-testng -DarchetypeVersion=2.7 -DgroupId=org.opengis.cite -DartifactId=ets-ogcapi-connectedsystems10 -Dets-code=ogcapi-connectedsystems10 -Dets-title='OGC API - Connected Systems Part 1'`. Commit raw archetype output as the first commit.
+3. **Apply ADR-004 modernization checklist** (~3–4h, S-ETS-01-01 second half): Groups A–D as 25 atomic commits, each commit message citing the ADR row (e.g. `S-ETS-01-01: pom.xml parent → ets-common:17 (ADR-004 A-1)`). Build green `mvn clean install` on JDK 17.
+4. **Spawn Generator (Dana) for S-ETS-01-02 + S-ETS-01-03** after S-ETS-01-01 lands. Per the sprint contract, Gate 4 (Raze) is mandatory at the end of Sprint 1 — `gate_4_required: true, force_run: true`.
 
-Recommendation: **Option A first** — it's cheap, removes the dangling assumption, and makes the next session's "where are we" cleaner. Option B is the next substantive sprint after that.
+Pre-flight check before bootstrapping: confirm the org `Botts-Innovative-Research` is the right home for the ETS (vs. a new dedicated org or eventual transfer to `opengeospatial`). ADR-005 says "our org first; propose to OGC at beta milestone."
 
 ## v1.0 Frozen State (snapshot for reference)
 

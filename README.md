@@ -1,8 +1,8 @@
 # CS API Compliance Assessor
 
-A web application that performs comprehensive conformance assessment of endpoints implementing the [OGC API - Connected Systems](https://ogcapi.ogc.org/connectedsystems/) standard. Enter an endpoint URL, and the tool automatically discovers its capabilities, runs requirement-level tests against the OGC specification, and produces detailed compliance reports.
+> **Status: v1.0 frozen 2026-04-27 — developer pre-flight tool, not certification-track.** This Next.js web app gives implementers fast, automated CS API conformance feedback during development. The **certification-track** Java/TestNG Executable Test Suite for OGC TeamEngine is being developed in the sibling repository [`ets-ogcapi-connectedsystems10`](https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10) (under construction — design spec at [`openspec/capabilities/ets-ogcapi-connectedsystems/`](openspec/capabilities/ets-ogcapi-connectedsystems/)). v1.0 HEAD is tagged [`v1.0-frozen`](https://github.com/Botts-Innovative-Research/csapi_compliance/releases/tag/v1.0-frozen) at `ab53658`. Bug fixes welcome here; new feature work goes to the ETS repo.
 
-**No official OGC Executable Test Suite exists yet for Connected Systems.** This tool fills that gap, giving implementers fast, automated conformance feedback during development.
+A web application that performs comprehensive conformance assessment of endpoints implementing the [OGC API - Connected Systems](https://ogcapi.ogc.org/connectedsystems/) standard. Enter an endpoint URL, and the tool automatically discovers its capabilities, runs requirement-level tests against the OGC specification, and produces detailed compliance reports — useful as a developer pre-flight before submitting to the certification-track ETS.
 
 ## What It Tests
 
@@ -139,7 +139,7 @@ The complete specification, architecture, UX design, epics, stories, and traceab
 
 ## Disclaimer
 
-This tool is **unofficial** and does not constitute OGC certification. Results are based on automated testing against the OGC 23-001 and OGC 23-002 standards and may not cover all edge cases. For official OGC compliance certification, visit [ogc.org/compliance](https://www.ogc.org/compliance/).
+This tool is **unofficial** and does not constitute OGC certification. Results are based on automated testing against the OGC 23-001 and OGC 23-002 standards and may not cover all edge cases. For official OGC compliance certification, the certification path is the OGC TeamEngine + an Executable Test Suite — that ETS is being developed in the sibling repository [`ets-ogcapi-connectedsystems10`](https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10). General OGC compliance information at [ogc.org/compliance](https://www.ogc.org/compliance/).
 
 ## License
 

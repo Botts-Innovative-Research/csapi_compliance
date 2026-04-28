@@ -2,6 +2,19 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-28T15:08Z — REQ-ETS-WEBAPP-FREEZE-001: v1.0-frozen tag + README reposition (epic-ets-07 quick-win)
+
+- **Trigger**: User instruction "A" (Option A from prior turn's recommendation), authorizing the freeze + README reposition + tag push.
+- **Scope (epic-ets-07-webapp-freeze, single story S-ETS-07-01)**: closes the only deliverable in the pivot scope that touches the v1.0 web-app codebase.
+- **Annotated tag**: `git tag -a v1.0-frozen ab53658` with multi-paragraph message documenting the freeze (last gate-clean commit, scope at freeze, ADR-005 cross-repo relationship, bug-fix-only policy). Tag object SHA `b59ace3` resolves to commit `ab53658`. Note: tag points at `ab53658` (last code-bearing v1.0 commit) rather than `ed45643` (post-freeze doc-only sync) so future diffs against the tag exclude the pivot's docs-only changes — matches REQ-ETS-WEBAPP-FREEZE-001 + ADR-005 wording.
+- **README reposition**: top-of-file blockquote callout identifies the project as "v1.0 frozen — developer pre-flight tool, not certification-track" and cross-links forward to the sibling repo `ets-ogcapi-connectedsystems10` (under-construction note + design-spec link to `openspec/capabilities/ets-ogcapi-connectedsystems/`). Removed line 5's now-inaccurate "no official OGC ETS exists yet" claim — the ETS IS being built (in the sibling repo). Updated Disclaimer to point at the ETS as the certification path. Acceptance criteria all green: first non-trivial paragraph identifies pre-flight role; README links to `github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10`; `git tag --list` shows `v1.0-frozen` at `ab53658`; bug-fix-only policy in effect.
+- **Cross-link symmetry pending**: ADR-005 mandates README cross-links both directions. The reverse link (ETS README → v1.0 web app) cannot exist until the new repo is bootstrapped. Logged as Generator-onramp item in S-ETS-01-01 (architect already mentioned this in `constraints_for_generator.must`).
+- **Spec status**: REQ-ETS-WEBAPP-FREEZE-001 is now Implemented. Capability spec `Implementation Status` section will be updated by the next reconcile cycle when Generator artifacts also need status flips. For this single REQ, the changelog + commit message + tag are the audit trail.
+- **Gates**: no test/build/lint runs (docs + tag only). v1.0 functional state at HEAD `19003b1` unchanged from `ed45643`.
+- **Scope**: 1 README edit, 1 annotated tag, ops/changelog.md (this entry), ops/status.md (Suggested Next Action updated), ops/metrics.md (turn 55).
+- **Push**: pushed `main` (commits `19003b1` Pivot prep + this freeze commit) + `v1.0-frozen` tag to `origin`.
+- **Next suggested**: Option B from prior turn — bootstrap the new sibling repo `gh repo create Botts-Innovative-Research/ets-ogcapi-connectedsystems10 --public ...` then start Generator (Dana) on S-ETS-01-01 (archetype scaffold + ADR-004 modernization Group A–D as 25 atomic commits).
+
 ## 2026-04-28T14:42Z — Pivot prep: Sprint ets-01 Gates 1–3 (Discovery + Planner + Architect) + post-Architect string reconciliation
 
 - **Trigger**: User instruction (recovery from interrupted session). Asked for an evaluator-phase status report and approved actions #1 (commit the planning/architecture work) and #2 (reconcile stale strings to ADR authority) from the assessment.
