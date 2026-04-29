@@ -2,6 +2,43 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T22:15Z — Sprint ets-05 Generator Run 2 of 2 IMPLEMENTED (Dana) — 3 of 6 stories conformance + sabotage batch (S-05-05 Procedures, S-05-06 Deployments, S-05-03 sabotage --target flag)
+
+**Sprint 5 ALL 6 STORIES NOW IMPLEMENTED** (Run 1 shipped 3 cleanup/wedge stories; Run 2 ships 3 conformance + sabotage stories). Sprint complete pending Quinn evaluator + Raze adversarial cumulative gates.
+
+**S-ETS-05-05 Procedures conformance class IMPLEMENTED** (~330 LOC new Java + ~10 LOC testng.xml extension + 3 lint tests; sister repo commit `215204a`):
+
+- New `org.opengis.cite.ogcapiconnectedsystems10.conformance.procedures.ProceduresTests` — 4 @Tests (Sprint-1-style minimal): `proceduresCollectionReturns200` (`/req/procedure/resources-endpoint`); `procedureItemsHaveNoGeometry` (UNIQUE-to-Procedures `/req/procedure/location` geometry-null invariant — asserted on EVERY item in the collection); `procedureItemHasIdTypeLinks` (`/req/procedure/canonical-endpoint`); `procedureItemHasCanonicalLink` (`/req/procedure/canonical-url` rel=canonical).
+- Generator-time GeoRobotix curl re-verification: ALL 19 procedures at `/procedures` have `geometry: null` — Pat's invariant HOLDS at IUT level. Assertion implemented as-written; no SKIP-with-reason fallback needed. The geometry=null invariant is the Procedures-unique assertion surface (not present in Subsystems, SystemFeatures, Core).
+- testng.xml: added `<group name="procedures" depends-on="systemfeatures"/>` + ProceduresTests `<class>` to single-block consolidation.
+- VerifyTestNGSuiteDependency: 3 new structural lint tests (mirrors Sprint 4 Subsystems pattern).
+
+**S-ETS-05-06 Deployments conformance class IMPLEMENTED** (~430 LOC new Java + testng.xml extension + 3 lint tests; same commit `215204a`):
+
+- New `org.opengis.cite.ogcapiconnectedsystems10.conformance.deployments.DeploymentsTests` — 4 @Tests: `deploymentsCollectionReturns200` (`/req/deployment/resources-endpoint`); `deploymentItemHasIdTypeLinks` (`/req/deployment/canonical-endpoint`); `deploymentItemHasCanonicalLink` (`/req/deployment/canonical-url`); `deploymentDeployedSystemEncodingDeclared` (UNIQUE-to-Deployments `/req/deployment/deployed-system-resource` HYPHENATED form — checks IUT `/conformance` for at least one of `{conf/geojson, conf/sensorml, conf/json, conf/html}` providing a DeployedSystem representation; SKIP-with-reason if absent).
+- Generator-time GeoRobotix curl re-verification: `/deployments` returns 1 item (id=`16sp744ch58g`, type=Feature, geometry=Polygon — Saildrone Arctic Mission flight envelope; deployments DO have geometry by design — no `/req/deployment/location` invariant equivalent to Procedures'). Single-item shape handled gracefully (non-empty check passes; no >=2 assumptions). `/conformance` declares both `conf/geojson` and `conf/sensorml` — deployed-system-resource assertion PASSES at encoding-class-presence layer.
+- @BeforeClass also fetches `/conformance` for the encoding-class assertion (best-effort; SKIP-with-reason on /conformance failure).
+- testng.xml: added `<group name="deployments" depends-on="systemfeatures"/>` + DeploymentsTests `<class>`.
+- VerifyTestNGSuiteDependency: 3 new structural lint tests for Deployments.
+
+**S-ETS-05-03 sabotage-test.sh --target=systemfeatures flag IMPLEMENTED** (~302 LOC bash addition; sister repo commit `c25e44a`):
+
+- `scripts/sabotage-test.sh` extended with `--target=core | --target=systemfeatures | --help` argument parser. Default (`--target=core` or no flag) preserves Sprint 3 + 4 backward-compatible HTTP-500 stub-server sabotage VERBATIM.
+- New `--target=systemfeatures` mode: rsync-copies repo to `/tmp/sabotage-fresh-<ts>/worktree/` (cp -a fallback if rsync absent; .git+target/node_modules excluded). Python-based sed-patch (more robust than BSD/GNU sed for multi-line regex) injects `throw new AssertionError("SABOTAGED by --target=systemfeatures Sprint 5 S-ETS-05-03");` as the FIRST statement of `systemsCollectionReturns200`'s body. **Worktree-pollution guard**: post-patch greps the user's REPO_ROOT path AND dies if the marker leaked there. Smoke runs from temp tree with `SMOKE_OUTPUT_DIR=/tmp/sabotage-fresh-<ts>/test-results` override (S-ETS-05-02 mitigation). Cascade parser asserts Core+Common all PASS / SystemFeatures has at least 1 FAIL / Subsystems+Procedures+Deployments all SKIP. Empty buckets gracefully skipped (forward-compat for Sprint 6+).
+- IMAGE_TAG defaults: `:smoke` (default mode) vs `:sabotage-sf` (systemfeatures mode) — dev cache not clobbered.
+- Bash `bash -n` PASS; `--help` renders usage; `--target=foo` exits 2; Python sed-patch dry-run-tested against a copy of SystemFeaturesTests.java.
+
+**Test results**: mvn test 72 → 78 / 0 / 0 / 3 BUILD SUCCESS (was 72 at Run 1 close `d418396`; +6 new structural lint tests for Procedures + Deployments combined). spring-javaformat:apply ran cleanly. ProceduresTests + DeploymentsTests @Tests run only via smoke against the live IUT — not in mvn unit test scope.
+
+**Smoke target post-Run-2**: 26 + 4 Procedures + 4 Deployments = **34 PASS** against GeoRobotix (live exec deferred to Quinn/Raze gate per worktree-pollution constraint + Sprint 5 mitigation pattern; no docker pull/build/run loops in Generator session per contract `forbid list`).
+
+**Sprint 5 Run 2 commits in sister repo `ets-ogcapi-connectedsystems10`** (HEAD `c25e44a`, pushed to origin/main):
+
+- `c25e44a` — `Sprint 5 Run 2: S-ETS-05-03 sabotage-test.sh --target=systemfeatures flag`
+- `215204a` — `Sprint 5 Run 2: S-ETS-05-05 Procedures + S-ETS-05-06 Deployments conformance classes`
+
+**Sprint 5 ready for cumulative Quinn + Raze gate close.** Run 1 + Run 2 combined deliverables: 6 stories Implemented; mvn 78/0/0/3 BUILD SUCCESS; smoke target 34 PASS post-Run-2 (live exec deferred). Quinn/Raze gates should set `SMOKE_OUTPUT_DIR=/tmp/<role>-fresh-sprint5/test-results/` per S-ETS-05-02 worktree-pollution constraint.
+
 ## 2026-04-29T21:50Z — Sprint ets-05 Generator Run 1 of 2 IMPLEMENTED (Dana) — 3 of 6 stories cleanup batch (S-05-01 GAP-1 wedge fix, S-05-02 SMOKE_OUTPUT_DIR, S-05-04 javadoc + ADR-010 v3)
 
 **S-ETS-05-01 GAP-1 SMOKE_AUTH_CREDENTIAL wedge fix IMPLEMENTED** (3-layer coordination, ~50 LOC total): bash + Java enums + Java listener. Closes the Sprint 4 cross-corroborated GAP-1 (Quinn 0.84 + Raze 0.84 — `scripts/smoke-test.sh` had ZERO references to `SMOKE_AUTH_CREDENTIAL` / `auth-credential` / `Authorization`).

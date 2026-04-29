@@ -120,8 +120,63 @@ sabotage cascade XML will show Procedures @Tests SKIPping).
 - [ ] traceability.md updated with S-ETS-05-05 row
 - [ ] Sprint 5 artifact archived
 
-## Implementation Notes (Sprint 5 — to be filled by Dana Generator)
+## Implementation Notes (Sprint 5 Run 2 — Dana Generator, 2026-04-29)
 
-**GeoRobotix curl-verification** (acceptance criterion — MUST come BEFORE writing assertions):
+**Status**: IMPLEMENTED. Sister repo commit `215204a` (HEAD `c25e44a`).
 
-_[Generator fills this section during Sprint 5 implementation]_
+### GeoRobotix curl-verification at sprint time (Generator re-verification)
+
+```
+$ curl -sf https://api.georobotix.io/ogc/t18/api/procedures | python3 -m json.tool | head -80
+# 200 OK; items array contains 19 GeoJSON Features.
+# First item: id=164p7ed8l47g, type=Feature, geometry=null,
+#   properties.name="Dahua PTZ Camera SD22204T-GN" (sosa Sensor)
+# Spot-checked 6 of the first 6 items: ALL have `geometry: null`. 
+# (Pat's invariant HOLDS — no SKIP-with-reason fallback needed.)
+
+$ curl -sf https://api.georobotix.io/ogc/t18/api/procedures/164p7ed8l47g | python3 -m json.tool
+# 200 OK; type=Feature, id=164p7ed8l47g, geometry=null,
+#   links=[ {rel:canonical href:.../164p7ed8l47g type:application/json},
+#           {rel:alternate href:.../164p7ed8l47g?f=sml3 type:application/sml+json},
+#           {rel:alternate href:.../164p7ed8l47g?f=html type:text/html} ]
+```
+
+### OGC .adoc HTTP 200 re-verification (5 sub-reqs)
+
+```
+procedure/resources-endpoint: 200
+procedure/canonical-url:      200
+procedure/canonical-endpoint: 200
+procedure/location:           200  (Pat-time; verbatim text re-confirmed:
+                                    "A `Procedure` feature resource SHALL not 
+                                     include a location or geometry.")
+procedure/collections:        200  (deferred to Sprint 6+)
+```
+
+### Implementation summary
+
+- **New file**: `src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/procedures/ProceduresTests.java` (~330 LOC; 4 @Test methods + @BeforeClass + helpers).
+- **testng.xml**: added `<group name="procedures" depends-on="systemfeatures"/>` + ProceduresTests `<class>` entry to the single-block consolidation. Extended class list now: SuitePreconditions, LandingPage, Conformance, ResourceShape, SystemFeatures, Common, Subsystems, **Procedures**, Deployments (Procedures + Deployments added in same commit).
+- **VerifyTestNGSuiteDependency**: 3 new structural lint tests added (testProceduresGroupDependsOnSystemFeatures, testEveryProceduresTestMethodCarriesProceduresGroup, testProceduresCoLocatedWithSystemFeatures). Mirrors Sprint 4 Subsystems pattern exactly.
+
+### @Test methods (4)
+
+1. `proceduresCollectionReturns200` — /req/procedure/resources-endpoint — 200 + non-empty items.
+2. `procedureItemsHaveNoGeometry` — /req/procedure/location — UNIQUE-to-Procedures geometry-null invariant asserted on every item in the collection (subsumes single-item dereference since GeoRobotix returns identical geometry-null for both).
+3. `procedureItemHasIdTypeLinks` — /req/procedure/canonical-endpoint — single-item id+type+links shape (REQ-ETS-CORE-004 base).
+4. `procedureItemHasCanonicalLink` — /req/procedure/canonical-url — rel=canonical link discipline (preserves v1.0 GH#3 fix policy: rel=canonical load-bearing; absence of rel=self NOT a FAIL).
+
+### Acceptance criteria checklist
+
+- [x] curl /procedures BEFORE writing assertions; archived above
+- [x] curl /procedures/164p7ed8l47g BEFORE per-item assertions; geometry=null verified at sprint time
+- [x] OGC .adoc 5 sub-reqs HTTP-200 verified
+- [x] ProceduresTests class with 4 @Test methods (Sprint-1-style minimal)
+- [x] All @Test descriptions prefix `OGC-23-001 /req/procedure/<X>` canonical URI
+- [x] All @Test methods use ETSAssert helpers (zero new bare-throw sites)
+- [x] testng.xml extended with `<class>` + `<group depends-on="systemfeatures">`
+- [ ] Smoke 26+P=30 PASS against GeoRobotix — **deferred to Quinn/Raze gate** (live smoke per Sprint 5 mitigation pattern; no docker pull/build/run loops in Generator session)
+- [x] mvn clean install BUILD SUCCESS (surefire 78/0/0/3; was 72)
+- [x] SCENARIO-ETS-PART1-006-PROCEDURES-RESOURCES/LOCATION/CANONICAL/CANONICAL-URL-001 covered by @Test methods
+- [ ] SCENARIO-ETS-PART1-006-PROCEDURES-DEPENDENCY-SKIP-001 — **deferred to Quinn/Raze gate** (verifiable via `bash scripts/sabotage-test.sh --target=systemfeatures` shipped under S-ETS-05-03; cascade pattern asserted on Procedures bucket)
+- [ ] Sprint 5 artifact archive at ops/test-results/sprint-ets-05-05-procedures-georobotix-smoke-<date>.xml — deferred to gate

@@ -131,8 +131,88 @@ Do NOT write assertions that require >=2 items.
 - [ ] traceability.md updated with S-ETS-05-06 row
 - [ ] Sprint 5 artifact archived
 
-## Implementation Notes (Sprint 5 — to be filled by Dana Generator)
+## Implementation Notes (Sprint 5 Run 2 — Dana Generator, 2026-04-29)
 
-**GeoRobotix curl-verification** (acceptance criterion — MUST come BEFORE writing assertions):
+**Status**: IMPLEMENTED. Sister repo commit `215204a` (HEAD `c25e44a`).
 
-_[Generator fills this section during Sprint 5 implementation]_
+### GeoRobotix curl-verification at sprint time
+
+```
+$ curl -sf https://api.georobotix.io/ogc/t18/api/deployments
+# 200 OK; items array contains 1 item.
+# id=16sp744ch58g, type=Feature,
+#   geometry=Polygon (17-vertex Saildrone Arctic Mission flight envelope —
+#                     IUT-side: deployments DO have geometry, unlike procedures.
+#                     This is by-design per OGC 23-001: Procedures are abstract
+#                     definitions; Deployments are physical/temporal/spatial events.
+#                     There is NO /req/deployment/location invariant equivalent
+#                     to /req/procedure/location — confirmed by inspecting the
+#                     deployment requirements directory).
+#   properties.name="Saildrone - 2017 Arctic Mission",
+#   properties.deployedSystems@link=[{ href:.../systems/17k8rt78j4j0,
+#                                       uid:urn:x-osh:saildrone:1001 }]
+#   (NOTE: properties.deployedSystems@link is a *vendor extension* — NOT a
+#    standard `links` rel; the OGC requirement deployed-system-resource is
+#    satisfied at the conformance-class-declaration layer in /conformance,
+#    not at this property-key layer.)
+
+$ curl -sf https://api.georobotix.io/ogc/t18/api/deployments/16sp744ch58g
+# 200 OK; identical content shape; links=[ canonical(json), alternate(sml3),
+#   alternate(html) ]
+
+$ curl -sf https://api.georobotix.io/ogc/t18/api/conformance
+# 200 OK; conformsTo array (33 entries) declares:
+#   .../ogcapi-connectedsystems-1/1.0/conf/deployment   (the Deployments class itself)
+#   .../ogcapi-connectedsystems-1/1.0/conf/geojson      (DeployedSystem GeoJSON encoding)
+#   .../ogcapi-connectedsystems-1/1.0/conf/sensorml     (DeployedSystem SensorML encoding)
+# /req/deployment/deployed-system-resource SATISFIED (any of {geojson, sensorml}
+# providing a DeployedSystem representation is sufficient per OGC 23-001 §Encoding
+# requirements).
+```
+
+### OGC .adoc HTTP 200 re-verification (5 sub-reqs; HYPHENATED form for
+deployed-system-resource)
+
+```
+deployment/resources-endpoint:        200
+deployment/canonical-url:             200
+deployment/canonical-endpoint:        200
+deployment/deployed-system-resource:  200  (verbatim: "The server SHALL implement
+                                            at least one encoding requirements
+                                            class that provides a representation
+                                            for the `DeployedSystem` resource.")
+deployment/collections:               200  (deferred to Sprint 6+)
+```
+
+### Implementation summary
+
+- **New file**: `src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/deployments/DeploymentsTests.java` (~430 LOC; 4 @Test methods + @BeforeClass-with-conformance-fetch + helpers; class is slightly larger than ProceduresTests because it also fetches /conformance for the deployed-system-resource encoding-class assertion).
+- **testng.xml**: added `<group name="deployments" depends-on="systemfeatures"/>` + DeploymentsTests `<class>` entry (same commit as Procedures; both classes added at once).
+- **VerifyTestNGSuiteDependency**: 3 new structural lint tests added (testDeploymentsGroupDependsOnSystemFeatures, testEveryDeploymentsTestMethodCarriesDeploymentsGroup, testDeploymentsCoLocatedWithSystemFeatures).
+
+### @Test methods (4)
+
+1. `deploymentsCollectionReturns200` — /req/deployment/resources-endpoint — 200 + non-empty items (single-item shape OK; items.size() >= 1 passes).
+2. `deploymentItemHasIdTypeLinks` — /req/deployment/canonical-endpoint — single-item id+type+links shape.
+3. `deploymentItemHasCanonicalLink` — /req/deployment/canonical-url — rel=canonical link discipline.
+4. `deploymentDeployedSystemEncodingDeclared` — /req/deployment/deployed-system-resource (HYPHENATED form) — UNIQUE-to-Deployments. Checks IUT /conformance for any of {`/conf/geojson`, `/conf/sensorml`, `/conf/json`, `/conf/html`}. SKIP-with-reason if /conformance unavailable or no matching encoding class declared. GeoRobotix declares both geojson and sensorml — assertion PASSES.
+
+### Single-item shape handling
+
+GeoRobotix has 1 deployment. The acceptance criterion "non-empty items" passes trivially. No assertions assume >=2 items. canonical-endpoint + canonical-url use `items[0]` deference. No structural shifts vs Subsystems/Procedures pattern were needed.
+
+### Acceptance criteria checklist
+
+- [x] curl /deployments BEFORE writing assertions; archived above
+- [x] curl /deployments/16sp744ch58g BEFORE per-item assertions
+- [x] curl /conformance for DeployedSystem encoding-class check; conf/geojson + conf/sensorml present
+- [x] OGC .adoc 5 sub-reqs HTTP-200 verified (HYPHENATED deployed-system-resource form)
+- [x] DeploymentsTests class with 4 @Test methods (Sprint-1-style minimal)
+- [x] All @Test descriptions prefix `OGC-23-001 /req/deployment/<X>` canonical URI; deployed-system-resource HYPHENATED
+- [x] All @Test methods use ETSAssert helpers (zero new bare-throw sites)
+- [x] testng.xml extended with `<class>` + `<group depends-on="systemfeatures">`
+- [ ] Smoke 26+P+D=34 PASS against GeoRobotix — **deferred to Quinn/Raze gate**
+- [x] mvn clean install BUILD SUCCESS (surefire 78/0/0/3)
+- [x] SCENARIO-ETS-PART1-004-DEPLOYMENTS-RESOURCES/CANONICAL/CANONICAL-URL/DEPLOYED-SYSTEM-001 covered by @Test methods
+- [ ] SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPENDENCY-SKIP-001 — **deferred to Quinn/Raze gate** (sabotage --target=systemfeatures shipped under S-ETS-05-03; cascade asserted on Deployments bucket)
+- [ ] Sprint 5 artifact archive — deferred to gate
