@@ -1,0 +1,343 @@
+# Adversarial Review Report — S-ETS-02-06 SystemFeatures Conformance Class (Gate 4)
+# Raze (adversarial reviewer), fresh context, post-Sprint-2-cleanup-batch follow-on
+sprint: "ets-02"
+story: "S-ETS-02-06"
+gate: 4
+agent: "Raze"
+date: "2026-04-29T01:08:00Z"
+new_repo_head: "3bd7fc6"
+prior_raze_runs:
+  - ".harness/evaluations/sprint-ets-01-adversarial.yaml (s01 GAPS_FOUND 0.84)"
+  - ".harness/evaluations/sprint-ets-01-adversarial-s02.yaml (s02 GAPS_FOUND 0.82)"
+  - ".harness/evaluations/sprint-ets-01-adversarial-s03.yaml (s03 APPROVE_WITH_CONCERNS 0.88)"
+  - ".harness/evaluations/sprint-ets-02-adversarial-cleanup.yaml (Sprint 2 cleanup batch APPROVE_WITH_CONCERNS 0.90)"
+prior_raze_timeout_note: |
+  An earlier Raze run on this same story (S-ETS-02-06) timed out at ~13 min wall-clock
+  with no report produced — the dependency-skip live-sabotage attempt + Docker build
+  loop were the suspected hangs. This run uses static-only verification of the
+  dependency-skip wiring (testng.xml + smoke XML's depends-on-groups attribute) and
+  defers live break-Core sabotage to Sprint 3 with explicit rationale (see CONCERNS).
+  Total wall-clock for this run: ~3 min (well within the 15 min budget).
+
+verdict: "APPROVE_WITH_CONCERNS"
+confidence: 0.92
+
+verdict_summary: |
+  Strongest single-story Sprint-2 deliverable Raze has reviewed. The URI pivot from
+  /req/system-features/<X> → /req/system/<X> is independently verified against four
+  upstream evidence sources: (1) GitHub API contents listing for /system path returns
+  HTTP 200 + 7 .adoc files including all 5 sub-requirements Dana cited; (2) counter-
+  check for /system-features path returns HTTP 404 (proves the legacy form Dana pivoted
+  AWAY from has no upstream existence); (3) raw .adoc fetch for req_resources_endpoint
+  shows `identifier:: /req/system/resources-endpoint` confirming canonical form; (4)
+  IUT GeoRobotix /conformance declares /conf/system (singular). All four evidence
+  vectors converge on the same canonical form Dana adopted. No /req/system-features/
+  string survives in production Java code (zero hits in src/main/java/.../conformance/).
+
+  SystemFeaturesTests.java (358 LOC) is a clean extension of the S-ETS-01-02 pattern
+  with zero new bare-throw sites, zero Assert.fail(), correct ETSAssert helper choice
+  for each assertion (assertStatus/assertJsonObjectHas/assertJsonArrayContains/
+  failWithUri sentinel — though the `assertJsonArrayContainsAnyOf` helper added in
+  ADR-008 is correctly NOT used because SystemFeatures has a single mandatory rel,
+  not an OR-fallback like Core's service-desc/service-doc), and explicit GH#3
+  sentinel preservation (selfPresent || selfAbsent always true; the dead-branch
+  failWithUri serves as a code-review trip-wire just like LandingPageTests does).
+
+  testng.xml consolidation to a single <test> block is a justified architectural
+  decision documented inline (TestNG group dependencies are <test>-scoped per
+  TestNG-1.0.dtd; "depends on nonexistent group" error empirically observed when
+  split across blocks). The smoke artifact at sprint-ets-02-systemfeatures-georobotix-
+  smoke-2026-04-28.xml shows total=16 passed=16 failed=0 skipped=0; ALL 4
+  SystemFeatures @Tests carry depends-on-groups="core" attribute in the TestNG XML
+  output (proves the wiring is real at runtime, not just declared in source). The
+  GeoRobotix /systems shape claim (36 items, top_keys=['items'], first_item_keys=
+  ['type', 'id', 'geometry', 'properties']) is reproducible-on-demand and matches
+  Dana's Implementation Notes exactly.
+
+  Two genuine CONCERNS (not GAPS): (1) live break-Core sabotage test deferred to
+  Sprint 3 due to time budget — static verification confirms the wiring at three
+  layers (groups annotation in source, dependencies declaration in testng.xml,
+  depends-on-groups attribute in TestNG output XML), but actual cascading SKIP
+  behavior under Core failure has not been live-exercised; (2) smoke artifact lives
+  at ets-ogcapi-connectedsystems10/ops/test-results/ — the Sprint 2 contract
+  evaluation_artifacts_required path implies it should be at csapi_compliance/ops/
+  test-results/ (the contract is ambiguous about which repo's ops/ directory). Both
+  are honest deferrals/clarifications, not deficiencies in the implementation.
+
+sections_evaluated: 10
+sections_passed: 8
+sections_concerns: 2
+sections_gaps: 0
+
+verified_independently:
+  - check: "URI pivot upstream verification — /system path exists, /system-features path does not"
+    evidence: |
+      `curl -sI api.github.com/.../api/part1/standard/requirements/system?ref=master` → HTTP/2 200
+      `curl -sI api.github.com/.../api/part1/standard/requirements/system-features?ref=master` → HTTP/2 404
+      Counter-checks succeed: the canonical form is /system; the legacy form has no upstream existence.
+    result: "PASS — URI pivot to /req/system/<X> is upstream-verified, NOT speculative"
+
+  - check: "URI pivot — all 5 cited sub-requirement .adoc files exist"
+    evidence: |
+      curl listing of /system contents returned 7 names:
+        req_canonical_endpoint.adoc, req_canonical_url.adoc, req_collections.adoc,
+        req_location.adoc, req_location_time.adoc, req_resources_endpoint.adoc,
+        requirements_class_system_features.adoc
+      Dana's 4 cited sub-requirements (resources-endpoint, canonical-endpoint,
+      canonical-url, plus collections + location-time deferred to Sprint 3) are all
+      present. The class-level file is named `requirements_class_system_features.adoc`
+      (note: the FILE name retains "system_features" but the canonical IDENTIFIER
+      string is `/req/system` per the .adoc body; this is exactly the design.md-text-
+      vs-canonical drift Dana documented in Implementation Notes).
+    result: "PASS — Dana's 5 cited URLs map to real upstream .adoc files"
+
+  - check: "URI pivot — actual .adoc identifier line confirms canonical form"
+    evidence: |
+      `curl -sL .../system/req_resources_endpoint.adoc | head -10`:
+        identifier:: /req/system/resources-endpoint
+      Matches Dana's REQ_RESOURCES_ENDPOINT constant exactly:
+      `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/req/system/resources-endpoint`
+    result: "PASS — the canonical identifier in upstream .adoc matches Dana's Java constant byte-for-byte"
+
+  - check: "No /req/system-features leak in production Java code"
+    evidence: |
+      `grep -rn "system-features" src/main/java/`:
+        4 hits — all in SystemFeaturesTests.java Javadoc comments referencing the
+        v1.0 .ts file path `csapi_compliance/src/engine/registry/system-features.ts`
+        (acceptable historical citation: the TypeScript SOURCE file is named with the
+        legacy convention, and Dana correctly cites it by file path for traceability).
+        ZERO hits in @Test descriptions, REQ_* constants, or assertion message strings.
+      In csapi_compliance/openspec/.../spec.md: 3 hits, all reconciliation-text
+      explaining the pivot rationale (acceptable per contract: historical mentions
+      citing the pivot are explicitly allowed).
+      In csapi_compliance/_bmad/traceability.md: 2 hits, both pivot-rationale text.
+    result: "PASS — no /req/system-features leak in production semantics; only historical citations"
+
+  - check: "ETSAssert helper choice correctness per ADR-008"
+    evidence: |
+      `systemsCollectionReturns200` → assertStatus(resp, 200, REQ) — CORRECT (matches
+        ADR-008 §"Refactoring rules" row 1: HTTP-status check pattern).
+      `systemsCollectionHasItemsArray` → assertJsonObjectHas(body, "items", List.class,
+        REQ) + emptiness check via failWithUri — CORRECT (matches ADR-008 row 3:
+        type-shape check; the empty-array case correctly uses failWithUri because
+        ADR-008 doesn't have a built-in non-empty-array helper, and Dana flagged the
+        Sprint 3 expansion path in the failure message itself).
+      `systemItemHasIdTypeLinks` → 3× assertJsonObjectHas + 1× assertStatus —
+        CORRECT (REQ-ETS-CORE-004 base shape decomposed into per-key assertions; each
+        assertion gets its own failure URI).
+      `systemsCollectionLinksDiscipline` → assertJsonArrayContains for canonical;
+        sentinel failWithUri for the impossible !(selfPresent || selfAbsent) case —
+        CORRECT and matches ADR-008 §"Sentinel test for v1.0 GH#3" pattern documented
+        in `LandingPageTests.landingPageDoesNotRequireSelfRel`.
+      Note on `assertJsonArrayContainsAnyOf`: Dana correctly does NOT use this helper
+      because /req/system/canonical-url has a single mandatory rel (=canonical), not
+      an OR-fallback like Core's service-desc OR service-doc API-def. The helper
+      remains exercised by LandingPageTests (Core); SystemFeaturesTests doesn't need
+      it. This is correct discipline, not a missed opportunity.
+    result: "PASS — every helper invocation is the most-specific helper for its assertion shape"
+
+  - check: "v1.0 GH#3 sentinel preservation at SystemFeatures level"
+    evidence: |
+      systemsCollectionLinksDiscipline (lines 283-301):
+        - PASS branch: assertJsonArrayContains(links, isCanonical, ...) — this is the
+          only load-bearing assertion. If the /systems/{id} response carries
+          rel="canonical" (which GeoRobotix verified curl-confirmed it does), the
+          method PASSes regardless of whether rel="self" is present or absent.
+        - Sentinel branch: `if (!(selfPresent || selfAbsent))` is BY CONSTRUCTION
+          unreachable (one of presence/absence is always true). The dead failWithUri
+          is intentional: it serves as a code-review trip-wire — a future @Test
+          author who attempts to add a strict rel="self" mandate must DELETE the
+          sentinel and provide a code-review-visible diff. Mirrors Sprint 1's
+          LandingPageTests.landingPageDoesNotRequireSelfRel pattern exactly.
+        - Trace: /systems/{id} has only rel=canonical → PASS (no FAIL).
+                 /systems/{id} has rel=canonical + rel=self → PASS (no FAIL).
+                 /systems/{id} has rel=self only (no canonical) → FAIL via
+                 assertJsonArrayContains (correct: canonical is mandatory; self is
+                 optional).
+    result: "PASS — GH#3 sentinel correctly preserved at SystemFeatures; sentinel pattern matches LandingPageTests"
+
+  - check: "Zero bare AssertionError / Assert.fail in conformance/* (precise regex)"
+    evidence: |
+      `grep -rE "throw new AssertionError\b|^[^/]*\bAssert\.fail\(" src/main/java/.../conformance/`:
+        1 hit, in SystemFeaturesTests.java line ~31 — but it is the JAVADOC string
+        `{@code throw new AssertionError}` documenting that the class uses ADR-008
+        helpers INSTEAD OF bare-throws. False-positive on the regex (the comment
+        documents the absence). Manual inspection: zero actual `throw new
+        AssertionError` statement-level occurrences in src/main/java/.../conformance/
+        across all 4 test classes (LandingPage, Conformance, ResourceShape,
+        SystemFeatures). All 21 Sprint-1 sites + the 4 new SystemFeatures @Tests use
+        ETSAssert helpers exclusively.
+    result: "PASS — invariant from S-ETS-02-02 preserved into S-ETS-02-06; zero bare-throws"
+
+  - check: "testng.xml single-block consolidation correctness (static)"
+    evidence: |
+      testng.xml (49 lines, fully read):
+        - Single <test> block named "Conformance Classes - Core + SystemFeatures
+          (OGC 23-001 /conf/core, /conf/system)" — confirmed.
+        - All 4 conformance classes referenced by FQCN: SuitePreconditions,
+          conformance.core.{LandingPageTests, ConformanceTests, ResourceShapeTests},
+          conformance.systemfeatures.SystemFeaturesTests — confirmed.
+        - <dependencies><group name="systemfeatures" depends-on="core"/> declared
+          inside the <test><groups> element — confirmed.
+        - groups="systemfeatures" annotation visible on all 4 SystemFeatures @Tests
+          (4/4 hits via grep) — confirmed.
+        - groups="core" annotation visible on Core @Tests (per LandingPageTests
+          inspection: 6 @Test methods all carry groups = "core"; ConformanceTests
+          and ResourceShapeTests not separately checked but smoke XML confirms all
+          12 Core methods ran in the correct order with depends-on-groups="core"
+          on the SystemFeatures methods).
+        - Inline comment justifying single-block consolidation: TestNG group
+          dependencies are <test>-scoped per TestNG-1.0.dtd; "depends on
+          nonexistent group" error empirically observed when split across blocks.
+          Sprint 3+ multi-class strategy noted (BeforeSuite SkipException pattern
+          or SuitePreconditions-style listener).
+    result: "PASS — single-block consolidation is documented + correct + has Sprint 3+ migration path noted"
+
+  - check: "Smoke XML artifact integrity"
+    evidence: |
+      File: ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-02-systemfeatures-georobotix-smoke-2026-04-28.xml
+      First line: <testng-results total="16" passed="16" failed="0" skipped="0">
+      test-method count: 21 (the 4 SystemFeatures @Tests + 12 Core @Tests + 5
+        BeforeClass/BeforeSuite config methods that the testng-results header doesn't
+        count toward total — total=16 reflects @Test methods only, which is correct).
+      All 4 SystemFeatures methods spot-checked: every one has
+        depends-on-groups="core" attribute in the TestNG output XML — proves the
+        dependency wiring is REAL at runtime, not just declared in testng.xml.
+      Method names spot-check vs source: systemsCollectionReturns200,
+        systemsCollectionHasItemsArray, systemItemHasIdTypeLinks,
+        systemsCollectionLinksDiscipline — match SystemFeaturesTests.java exactly.
+      Status="PASS" on all 4 SystemFeatures methods + dependency-ordered execution
+        chain (each depends-on-methods on the prior).
+    result: "PASS — smoke XML is internally consistent + matches source exactly + depends-on-groups attribute proves runtime wiring"
+
+  - check: "GeoRobotix /systems shape spot-check (live)"
+    evidence: |
+      `curl -sL https://api.georobotix.io/ogc/t18/api/systems` → 200 + JSON.
+      Reproduced shape: items_count=36, top_keys=['items'], first_item_keys=
+      ['type', 'id', 'geometry', 'properties'].
+      Matches Dana's Implementation Notes exactly: 36 items, items-only top-level
+      shape (no top-level links), GeoJSON Feature stubs at the per-item level
+      (no per-item links). Dana's adaptation (move resource-shape + links-discipline
+      tests to /systems/{id} single-item endpoint instead of collection level) is
+      empirically justified.
+    result: "PASS — GeoRobotix shape is reproducible + matches Dana's Implementation Notes"
+
+  - check: "No regression of prior Sprint deliverables"
+    evidence: |
+      Schema bundle byte-identity: `diff -r csapi_compliance/schemas/
+        ets-ogcapi-connectedsystems10/src/main/resources/schemas/` → empty (no
+        differences). Schema port from S-ETS-01-02 preserved.
+      pom.xml `<connected-systems-yaml.sha>3fd86c73e744b7e2faaf7f1c17366bfb9ff4cd6f
+        </connected-systems-yaml.sha>` — pinned SHA preserved through Sprint 2.
+      META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController:
+        single FQCN `org.opengis.cite.ogcapiconnectedsystems10.TestNGController` —
+        unchanged from Sprint 1.
+      Reproducibility claim: Dana cites sha256
+        `b51577cfb48535c6322cfc117514bd501e4d180b6c1435f8628b56d31a7a000a` byte-
+        identical across two consecutive `mvn clean install -DskipTests`. Per
+        contract directive (no Maven build per Raze time budget), claim accepted on
+        Dana's archived artifact + Sprint 2 cleanup batch's prior verification.
+    result: "PASS — Sprint 1 + Sprint 2 cleanup deliverables preserved; no regression"
+
+  - check: "Sprint 2 contract success_criteria walk for the 2 highest-leverage criteria"
+    evidence: |
+      `uri_mapping_fidelity_preserved`: PASS. The pivot to /req/system/<X> is
+        upstream-verified against canonical .adoc + IUT conformsTo + v1.0 registry.
+        Criterion holds for SystemFeatures specifically; criterion was ALREADY
+        PASS-flipped in Sprint 2 cleanup batch for Core (S-ETS-02-03), and Sprint
+        2 close preserves that flip across SystemFeatures.
+      `zero_bare_assertionerror_in_conformance`: PASS. Static grep confirms zero
+        bare-throws across all 4 conformance test classes (the 1 grep hit is a
+        Javadoc {@code} block documenting the ABSENCE of bare-throws). All 4 new
+        SystemFeatures @Tests use ETSAssert helpers per ADR-008 from day 1 (no
+        Sprint-3 cleanup needed).
+    result: "PASS — both load-bearing Sprint 2 success_criteria hold under SystemFeatures landing"
+
+gaps: []
+
+concerns:
+  - id: "CONCERN-DEPENDENCY-SKIP-LIVE-NOT-EXERCISED"
+    description: |
+      Acceptance Criterion 7 in s-ets-02-06.md requires "Dependency-skip wiring
+      verified: temporarily make Core FAIL (e.g. point IUT at a server returning
+      500 on /conformance) — confirm SystemFeatures @Tests emit SKIP not
+      FAIL/ERROR." Dana's Implementation Notes explicitly state "no live break-Core
+      test executed." Static verification via 3 layers (source `groups = "core"` /
+      `groups = "systemfeatures"` annotations + testng.xml `<group name=
+      "systemfeatures" depends-on="core"/>` declaration + smoke XML
+      `depends-on-groups="core"` attribute on all 4 SystemFeatures @Tests at
+      runtime) all CONFIRM the wiring is real and TestNG IS evaluating the
+      dependency at runtime. But the actual cascading-SKIP behavior under a
+      FAILing Core test has NOT been live-exercised.
+    severity: low
+    deferral_rationale: |
+      The prior Raze run on this story TIMED OUT at ~13 min trying this exact
+      live-sabotage test. The current Raze briefing explicitly DOWNGRADES this
+      to static-only and flags it as a CONCERN not a GAP. Static evidence is
+      strong (3 independent layers all consistent); the residual risk is purely
+      that TestNG's cascade-skip mechanism doesn't behave as the testng.xml
+      <dependencies> declaration claims. Per design.md Sprint 3+ multi-class
+      strategy notes, the live break-Core sabotage test naturally fits into
+      Sprint 3 when a second non-Core class lands (Subsystems or Common) and
+      the full multi-class dependency graph needs end-to-end verification.
+    proposed_resolution: "Sprint 3 acceptance criterion: live break-Core sabotage test executed for SystemFeatures + the new Sprint-3 conformance class together. No Sprint 2 close blocker."
+
+  - id: "CONCERN-SMOKE-ARTIFACT-LOCATION-AMBIGUITY"
+    description: |
+      Sprint 2 contract `evaluation_artifacts_required` lists:
+        "ops/test-results/sprint-ets-02-systemfeatures-georobotix-smoke-<date>.xml"
+      Dana archived to:
+        ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-02-systemfeatures-georobotix-smoke-2026-04-28.xml
+      But csapi_compliance/ops/test-results/ does NOT exist (the dir is missing).
+      The contract path is ambiguous about WHICH repo's ops/ directory. Dana chose
+      the ETS repo's ops/ — consistent with the principle that the smoke artifact
+      belongs to the artifact-producing repo. But evaluator/auditor expectations
+      may default to csapi_compliance/ops/ (the orchestration repo) based on the
+      contract's evaluation_artifacts_required wording.
+    severity: low
+    proposed_resolution: |
+      Either: (a) symlink or copy the smoke XML into csapi_compliance/ops/
+      test-results/ for evaluator convenience (one-line Sam orchestration step,
+      not a Dana code change), OR (b) clarify the Sprint 2 close note that
+      smoke artifacts archive to the ETS repo's ops/ directory and the
+      csapi_compliance/ops/ path in the contract was a planning-text
+      simplification. Pat ratifies the convention going forward.
+    blocks_sprint_2_close: false
+
+sprint_2_close_recommendation: "APPROVE for close — both CONCERNs are honest deferrals/clarifications, not deficiencies."
+
+sections_evaluated_breakdown:
+  - "URI pivot upstream verification (PASS — 4 evidence vectors all converge)"
+  - "URI pivot — no /req/system-features production-code leak (PASS — 0 hits in Java production semantics)"
+  - "ETSAssert helper choice correctness per ADR-008 (PASS — every helper is most-specific for its assertion shape)"
+  - "GH#3 sentinel preservation at SystemFeatures (PASS — sentinel pattern matches LandingPageTests exactly)"
+  - "Zero bare AssertionError audit (PASS — 0 production hits; 1 Javadoc reference documenting absence)"
+  - "testng.xml single-block consolidation (PASS — documented + correct + has Sprint 3+ migration path)"
+  - "Smoke XML artifact integrity (PASS — total=16/16 PASS + depends-on-groups attribute proves runtime wiring)"
+  - "GeoRobotix /systems shape spot-check (PASS — reproduced live; matches Implementation Notes)"
+  - "No regression of prior Sprint deliverables (PASS — schema/pom/META-INF all preserved)"
+  - "Sprint 2 contract success_criteria walk (PASS — uri_mapping_fidelity_preserved + zero_bare_assertionerror both hold)"
+
+deferred_due_to_time_budget:
+  - "Live break-Core sabotage test (downgraded to CONCERN-DEPENDENCY-SKIP-LIVE-NOT-EXERCISED per briefing instruction)"
+  - "mvn clean install reproducibility re-verification (claim accepted on Dana's archived sha256 + prior Sprint 2 cleanup batch verification)"
+  - "Multi-stage Dockerfile fresh-runner build verification (S-ETS-02-05 scope; covered by prior sprint-ets-02-adversarial-cleanup.yaml gate)"
+
+recommendation_next_step: |
+  Sprint 2 closes. Both CONCERNs are appropriate Sprint 3 carryovers (live
+  dependency-skip exercise; smoke-artifact-location convention clarification).
+  The story is ready for Sam's close-the-sprint orchestration: update
+  ops/status.md + ops/changelog.md + traceability.md per CLAUDE.md mandatory
+  workflow steps 7-8, then start Sprint 3 planning with a clean slate.
+
+  Sprint 3 planning input: The S-ETS-01-02 → S-ETS-02-06 architectural pattern
+  is now PROVEN to extend mechanically to a second Part 1 conformance class. The
+  remaining 12 Part 1 classes (Common, Subsystems, Procedures, Sampling,
+  Properties, Deployments, etc.) can be planned at ~50% the per-class effort
+  of the first two classes. The single-block testng.xml consolidation is the
+  one architectural decision that needs revisiting if Sprint 3 lands a 3rd
+  class — the inline comment in testng.xml flags the migration path
+  (BeforeSuite SkipException pattern or SuitePreconditions-style listener).
+
+  A clean Sprint 2 close. Recommend Quinn cross-validates and Sam orchestrates
+  the close.
