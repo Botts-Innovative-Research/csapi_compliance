@@ -1,0 +1,369 @@
+sprint: sprint-ets-04
+story: S-ETS-04-01..05 cumulative
+gate: 3.5
+agent: Quinn (Evaluator)
+date: "2026-04-29T16:39Z"
+new_repo_head: 2dc44d1
+verdict: APPROVE_WITH_CONCERNS
+confidence: 0.84
+verdict_rationale: |
+  Sprint 4 ships 4-of-5 stories cleanly with strong evidence (S-ETS-04-01 Path-B
+  formal-drop honest + correctly diagnosed; S-ETS-04-02 chown-layer attack delivered
+  663→540MB / -18.6% empirically verified via `docker images`; S-ETS-04-04 sabotage
+  bug fixes mechanical and committed; S-ETS-04-05 Subsystems FIRST two-level
+  dependency chain wired in testng.xml + 4 @Tests structurally clean + defense-in-
+  depth @BeforeClass SkipException present per ADR-010 v2 amendment). However, the
+  S-ETS-04-03 LIVE EXEC (which Dana explicitly deferred to gate per file
+  sprint-ets-04-03-credential-leak-2026-04-29.txt line 49) RAN AND FAILED at this
+  gate: prong (a) PASSED (0 unmasked hits in test artifacts) but prongs (b) AND (c)
+  BOTH FAILED — 0 masked-form hits in any artifact, AND 0 unmasked-credential hits
+  in stub-IUT log. Stub-IUT log shows 11 inbound requests ALL with
+  `Authorization=<absent>`. Root cause: smoke-test.sh has ZERO references to
+  `SMOKE_AUTH_CREDENTIAL`, `auth-credential`, OR `Authorization` (verified via
+  grep). The script Dana authored CLAIMS smoke-test.sh "propagates this to the
+  CTL/TestNG suite parameter `auth-credential` per S-ETS-04-03 acceptance
+  criterion" (credential-leak-e2e-test.sh line 112) but the propagation does NOT
+  exist in code. The synthetic credential never enters the pipeline; the test
+  cannot exercise the masking filter (which is why prong (b) is zero) and cannot
+  exercise the wire request (which is why prong (c) is zero). This is a real
+  defect — Dana's self-test in the artifact (lines 36-47) verified only the
+  stub-IUT primitive itself works, NOT the end-to-end auth threading. The unit-
+  layer credential-leak coverage from Sprint 3 (8/8 VerifyMaskingRequestLoggingFilter
+  + grep-evidence integration test) IS still green and remains the load-bearing
+  evidence for S-ETS-03-02; Sprint 4's deeper-E2E ambition is materially
+  unfulfilled. Separately, the live exec ALSO produced a worktree-pollution
+  incident (smoke-test.sh wrote to ops/test-results/s-ets-01-03-teamengine-smoke-
+  2026-04-29.xml in the user's worktree, violating the contract's
+  worktree_pollution_constraint — Quinn restored via `git checkout HEAD --` after
+  capturing evidence). The remaining 4 stories' independent verifications are
+  strong: mvn test 64/0/0/3 (exact byte match to Dana's claim — 9 Verify* classes
+  summing 5+2+9+7+1+15+8+2+15 = 64); 26/26 smoke PASS in archived Subsystems XML
+  (4 Subsystems @Tests including unique subsystemHasParentSystemLink each cite
+  canonical OGC URIs verified HTTP 200 against ogcapi-connected-systems@master
+  for /req/subsystem/); zero production bare-AssertionError hits across all 4
+  conformance classes (the 3 grep hits are Javadoc continuation lines documenting
+  ADR-008 in CommonTests:29 + SystemFeaturesTests:31 + SubsystemsTests:32);
+  testng.xml correctly declares the two-level chain `<group name="subsystems"
+  depends-on="systemfeatures"/>` AND the @BeforeClass SkipException defense-in-
+  depth fallback is implemented at SubsystemsTests.fetchSubsystemsCollection
+  lines 196-299 with explicit two-level cascade documentation; image-size 540MB
+  empirically <600MB Sprint 4 PASS target; gh token scopes still lack 'workflow'
+  (Path-B formal-drop empirically justified); ci/README.md documents BOTH
+  activation paths cleanly. Confidence 0.84 (vs Sprint 3's 0.95) reflects: (i)
+  S-ETS-04-03 is a real GAP not a deferral — prongs (b)+(c) tested negative when
+  Quinn exec'd what Dana deferred; (ii) worktree pollution recurrence (Sprint 2
+  systemfeatures incident pattern repeated). The 4 other stories alone would
+  warrant 0.93+; the credential-leak gap and pollution incident together pull to
+  0.84 — acceptable PASS-WITH-CONCERNS but Raze should examine S-ETS-04-03
+  closely. The MaskingRequestLoggingFilter wrap pattern from Sprint 3 IS still
+  load-bearing for the masking unit tests; what's missing is the smoke-pipeline
+  glue that injects auth-credential into the actual REST-Assured request chain.
+
+success_criteria_table:
+  - criterion: "ci_workflow_live_or_formally_dropped (S-ETS-04-01)"
+    status: PASS
+    evidence: |
+      gh auth status confirms scopes ('gist', 'read:org', 'repo') — 'workflow'
+      scope ABSENT (5th-sprint defer empirically justified). ci/README.md
+      documents Path A (gh refresh + git mv) and Path B (web UI upload) future-
+      activation paths. sprint-ets-04-01-ci-workflow-path-b-2026-04-29.txt
+      records formal-drop with rationale. Binary close achieved per Pat/Raze
+      escalation design — no 6th-sprint retry possible.
+
+  - criterion: "image_size_under_600mb (S-ETS-04-02)"
+    status: PASS
+    evidence: |
+      `docker images ets-ogcapi-connectedsystems10:smoke --format '{{.Size}}'`
+      returns 540MB; `docker images ets-deduped-v2 --format '{{.Size}}'`
+      returns 539MB. Sprint 3 baseline 660MB → Sprint 4 540MB = 120MB / 18.2%
+      reduction. Far below the 600MB Sprint 4 PASS band. Artifact
+      sprint-ets-04-02-image-size-v2-2026-04-29.txt narrates the implementation
+      (per-COPY --chown=tomcat:tomcat + per-RUN-step chown + DELETE standalone
+      RUN chown -R + post-extract /conf,/logs,/work,/temp chown set fix after
+      first iteration's SEVERE Tomcat startup error). 26/26 smoke PASS preserved
+      in the archived XML (sprint-ets-04-05-subsystems-georobotix-2026-04-29.xml).
+
+  - criterion: "credential_leak_e2e_test_green (S-ETS-04-03)"
+    status: FAIL
+    evidence: |
+      Quinn ran live exec at gate per Dana's deferral (artifact line 49 explicit).
+      Three-fold cross-check verdict: prong (a) PASS (0 unmasked hits in TestNG
+      XML + container log + smoke log); prong (b) FAIL (0 masked-form hits
+      anywhere); prong (c) FAIL (0 unmasked-credential hits in stub-IUT log —
+      stub log shows 11 inbound requests ALL with `Authorization=<absent>`).
+      Root cause: `grep -rnE "auth-credential|SMOKE_AUTH_CREDENTIAL"
+      scripts/smoke-test.sh` returns ZERO matches — the auth-credential plumbing
+      claimed in credential-leak-e2e-test.sh line 112 ("smoke-test.sh propagates
+      this to the CTL/TestNG suite parameter") DOES NOT EXIST. The synthetic
+      credential never reaches the pipeline. Stub-IUT primitive itself works
+      (Dana's self-test on lines 36-47 verifies it correctly logs Authorization
+      headers) but smoke-test.sh has no glue to inject the credential into
+      REST-Assured. EXIT 1 from credential-leak-e2e-test.sh.
+
+  - criterion: "sabotage_script_hermetic (S-ETS-04-04)"
+    status: PASS-STRUCTURAL
+    evidence: |
+      Commits 4f65130 (sabotage-test.sh stub bind 127.0.0.1 → 0.0.0.0) and
+      d954ae9 (smoke-test.sh add --add-host=host.docker.internal:host-gateway)
+      land both Pat-flagged mechanical fixes. Scripts present and syntactically
+      sound. NOT live-exec'd as part of two-level cascade verification because
+      sabotage-test.sh targets ONLY Core (no flag/mode for sabotaging
+      SystemFeatures). The two-level cascade verification therefore relies on
+      structural-lint evidence: testng.xml declares `<group name="subsystems"
+      depends-on="systemfeatures"/>` (line ~50) AND SubsystemsTests.java
+      lines 196-299 implement @BeforeClass SkipException defense-in-depth
+      fallback per ADR-010 v2 amendment. Extending sabotage-test.sh to
+      sabotage SystemFeatures requires a small `--target=systemfeatures` mode
+      addition; deferred to Sprint 5 (would complement S-ETS-04-04 fixes).
+
+  - criterion: "subsystems_conformance_class_passes (S-ETS-04-05)"
+    status: PASS
+    evidence: |
+      sprint-ets-04-05-subsystems-georobotix-2026-04-29.xml header total=26
+      passed=26 failed=0 skipped=0. 4 Subsystems @Tests: subsystemsCollectionReturns200
+      (CRITICAL, /req/subsystem/collection); subsystemItemHasIdTypeLinks
+      (NORMAL, inherited /req/system/canonical-endpoint); subsystemHasParentSystemLink
+      (CRITICAL, UNIQUE-to-Subsystems architectural invariant, /req/subsystem
+      class URI); subsystemItemHasCanonicalLink (NORMAL, inherited
+      /req/system/canonical-url). All carry depends-on-groups="systemfeatures"
+      attribute on the @Test methods. SubsystemsTests.java is structurally
+      clean: 4 @Test methods, all use ETSAssert helpers (assertStatus,
+      assertJsonObjectHas, assertJsonArrayContains, failWithUri); zero bare
+      AssertionError; @BeforeClass walks /systems looking for one with
+      non-empty subsystems (curl-verified GeoRobotix system 0n3rtpmuihc0 has
+      12); SkipException fallback documented as defense-in-depth.
+
+  - criterion: "two_level_dependency_skip_verified (S-ETS-04-05+04-04)"
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      testng.xml declares both `<group name="systemfeatures" depends-on="core"/>`
+      (Sprint 2/3 baseline) and `<group name="subsystems" depends-on="systemfeatures"/>`
+      (NEW Sprint 4 — first two-level chain). Defense-in-depth @BeforeClass
+      SkipException fallback present in SubsystemsTests at lines 196-299
+      cascading SKIP for missing IUT, no parent system has subsystems, or
+      /subsystems returns non-200. Live cascading-SKIP execution evidence is
+      NOT present because sabotage-test.sh targets only Core (sabotaging
+      Core would cause Core+SystemFeatures+Subsystems to all SKIP via
+      transitive cascade — which doesn't isolate the two-level mechanism).
+      A Sprint 5 sabotage-script extension (--target=systemfeatures mode)
+      would close this with one-shot live evidence. PARTIAL because the
+      structural wiring is verified but the runtime two-level cascade
+      observation is deferred.
+
+  - criterion: "Surefire green: 61 (Sprint 3 close) → 64 (Sprint 4 close)"
+    status: PASS
+    evidence: |
+      `mvn test` 9 Verify* classes summing 5(URIUtils)+2(ValidationUtils)+9
+      (XMLUtils)+7(TestNGSuiteDependency NEW +3 for Sprint 4 Subsystems
+      structural assertions)+1(TestNGController skipped)+15(ETSAssert)+8
+      (MaskingRequestLoggingFilter)+2(SuiteFixtureListener)+15
+      (CredentialMaskingFilter) = 64 tests / 0 failures / 0 errors / 3
+      skipped (1 TestNGController + 2 URIUtils). Exact byte match to Dana's
+      claim. Sprint 4 +3 is from VerifyTestNGSuiteDependency Subsystems
+      group-dependency assertions (4 → 7).
+
+  - criterion: "Zero bare AssertionError / Assert.fail in conformance.* (no Sprint 4 regression)"
+    status: PASS
+    evidence: |
+      grep returns 3 hits — ALL are Javadoc continuation lines (line prefix
+      ` * `) documenting ADR-008's "no bare throw" rule on the class-level
+      comments of CommonTests:29, SystemFeaturesTests:31, SubsystemsTests:32.
+      Zero production-code hits. SubsystemsTests cleanly uses
+      ETSAssert.assertStatus / assertJsonObjectHas / assertJsonArrayContains /
+      failWithUri throughout (Sprint 1's invariant preserved through 3 new
+      conformance classes).
+
+  - criterion: "OGC URI canonical form (Subsystems-specific)"
+    status: PASS
+    evidence: |
+      4 unique URIs in conformance/subsystems/*.java:
+      /req/subsystem (class itself, used for subsystemHasParentSystemLink),
+      /req/subsystem/collection (subsystemsCollectionReturns200),
+      /req/system/canonical-endpoint (subsystemItemHasIdTypeLinks; inherited
+      per OGC 23-001 §System Components composition), /req/system/canonical-url
+      (subsystemItemHasCanonicalLink; inherited). curl HTTP 200 confirmed for
+      /req/subsystem/ folder existence on ogcapi-connected-systems@master
+      api/part1/standard/requirements/subsystem (200 OK 2026-04-29).
+      SubsystemsTests Javadoc lines 96-104 narrates the 5 sub-requirements
+      verified HTTP 200 (collection + recursive-{param,search-systems,
+      search-subsystems} + subcollection-time + requirements_class_system_components)
+      AND explicitly documents WHY parent-link is asserted under
+      /req/subsystem class URI rather than a per-link sub-requirement
+      (the OGC spec doesn't define a standalone parent-link sub-req, the
+      link is implied by §System Components composition rules).
+
+  - criterion: "5 commits since Sprint 3 close c56df10..2dc44d1"
+    status: PASS
+    evidence: |
+      git log shows 5 commits: 4f65130 + d954ae9 (Run 1 sabotage fixes) +
+      18dbe1a (Run 1 CI Path B) + 1ed6ffc (Run 2 stub commit) + 2dc44d1
+      (Run 2 S-04-02/-03/-05 batch). 1ed6ffc is the write-result-FIRST stub
+      per autonomous-loop mitigation pattern (Dana applied the same safety
+      net Architect used).
+
+gaps_found:
+  - id: GAP-1
+    severity: high
+    description: |
+      S-ETS-04-03 credential-leak E2E live exec FAILED at gate. Three-fold
+      cross-check: prong (a) PASS (0 unmasked credential leaks in TestNG XML,
+      container log, smoke log); prong (b) FAIL (0 masked-form `Bear***WXYZ`
+      hits in any artifact); prong (c) FAIL (0 unmasked-credential hits in
+      stub-IUT log — 11 inbound requests, ALL with `Authorization=<absent>`).
+      Root cause: scripts/smoke-test.sh has ZERO references to
+      `SMOKE_AUTH_CREDENTIAL`, `auth-credential`, or `Authorization`
+      (verified via grep). The auth-credential plumbing claimed in
+      credential-leak-e2e-test.sh line 112 ("smoke-test.sh propagates this to
+      the CTL/TestNG suite parameter `auth-credential`") DOES NOT EXIST. The
+      synthetic credential never enters the smoke pipeline; therefore the
+      masking filter is never exercised (prong b zero) and the wire request
+      never carries the credential (prong c zero). Dana's self-test in
+      sprint-ets-04-03-credential-leak-2026-04-29.txt lines 36-47 only
+      verifies the stub-IUT primitive itself works, NOT the end-to-end auth
+      threading. This is a real Sprint 4 GAP, not just a deferral — when
+      Quinn exec'd what Dana deferred, two of three prongs failed
+      structurally.
+    recommendation: |
+      Sprint 5 wedge: extend smoke-test.sh to honor SMOKE_AUTH_CREDENTIAL by
+      passing `-Dauth-credential=<value>` (or equivalent CTL/TestNG suite
+      parameter) to the curl POST that runs the suite. Wire the resulting
+      `auth-credential` parameter through SuiteFixtureListener (add a new
+      SuiteAttribute.AUTH_CREDENTIAL) and inject into a REST-Assured filter
+      chain that adds the Authorization header to all requests. Then re-run
+      credential-leak-e2e-test.sh — expect prong (b) >=1 hit AND prong (c)
+      >=1 hit. ~1-2h Generator time. The unit-layer credential-leak coverage
+      (Sprint 3 8/8 VerifyMaskingRequestLoggingFilter + grep-evidence
+      integration test) remains green and continues to be the load-bearing
+      evidence for the masking filter itself; Sprint 4's deeper-E2E ambition
+      requires the smoke-pipeline glue.
+
+  - id: GAP-2
+    severity: medium
+    description: |
+      Worktree pollution recurrence: when Quinn ran `bash scripts/credential-
+      leak-e2e-test.sh` per the briefing's live-exec ITEM 1, the script
+      transitively invoked smoke-test.sh which wrote to
+      `ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-29.xml` IN THE
+      USER'S WORKTREE — exactly the violation the contract's
+      worktree_pollution_constraint forbids. This is the SAME pattern as the
+      Sprint 2 systemfeatures gate-run incident (changelog 2026-04-29T00:25Z).
+      Quinn restored via `git checkout HEAD --` after capturing evidence; the
+      worktree is now clean. The contract briefing forbade running smoke
+      against the user's worktree but the credential-leak-e2e-test.sh
+      hardcodes `IMAGE_TAG=ets-ogcapi-connectedsystems10:smoke` and
+      smoke-test.sh writes to its own repo-relative ops/test-results/ — there
+      is no way to run the live-exec WITHOUT polluting the worktree given
+      the current script architecture.
+    recommendation: |
+      Sprint 5 contract: add an env var like `SMOKE_OUTPUT_DIR` to
+      smoke-test.sh that overrides the default repo-relative
+      ops/test-results/ path. Then gate briefings can set this to /tmp/
+      before running live execs against the worktree. Alternative: the
+      gate briefing should instruct Quinn/Raze to clone the repo to /tmp/
+      first, then run scripts there — but this only works if the smoke
+      image is rebuilt against the /tmp/ clone (slow). Document the
+      smoke-output-dir override pattern in design.md.
+
+concerns:
+  - id: CONCERN-1
+    severity: medium
+    description: |
+      S-ETS-04-04 sabotage-script does not have a `--target=systemfeatures`
+      mode. The script targets ONLY Core (sabotages by stubbing every IUT
+      response with HTTP 500, which fails Core's first @Test). To live-verify
+      the two-level cascade Subsystems→SystemFeatures→Core, the script needs
+      to sabotage SystemFeatures specifically (so Core PASSes, SystemFeatures
+      FAILs, and Subsystems should cascade-SKIP). With Core sabotaged,
+      Core FAILs and ALL of SystemFeatures+Subsystems SKIP via transitive
+      cascade — which only proves the END-to-END SKIP works, not the
+      MIDDLE-level isolation. The defense-in-depth @BeforeClass SkipException
+      in SubsystemsTests is structural-lint visible (Quinn read source 196-
+      299) and ADR-010 v2 amendment ratifies this is acceptable, but a
+      sabotage-script extension would close the live-exec loop more decisively.
+    recommendation: |
+      Sprint 5: add a `--target=systemfeatures` flag to sabotage-test.sh that
+      stubs only `/systems` (returning 500 for that path; Core's landing-
+      page+conformance pass via the IUT's normal 200 responses; SystemFeatures
+      @Tests fail because /systems is stubbed; Subsystems should cascade-SKIP
+      due to depends-on=systemfeatures). 30-60 min Generator time. Single
+      archive proves the two-level isolation works.
+
+  - id: CONCERN-2
+    severity: low
+    description: |
+      The Subsystems testng-results.xml shows `depends-on-groups="systemfeatures"`
+      on each @Test method (NOT just at the group-level). This is double-
+      declared: testng.xml has `<group name="subsystems" depends-on="systemfeatures"/>`
+      AND each @Test has `dependsOnGroups = "systemfeatures"` literal Java
+      annotation. Both are valid TestNG idioms; the redundancy is cheap but
+      could surprise future maintainers (which one fires first, what happens
+      if they diverge). ADR-010 v2 amendment defense-in-depth pattern
+      explicitly endorses redundancy as risk-control, so this is by-design.
+    recommendation: |
+      Document the dual-declaration pattern explicitly in design.md as a
+      defense-in-depth idiom. Sprint 5+ may simplify to a single declaration
+      site once two-level cascade is empirically proven (currently structural-
+      lint only because no live exec isolates the middle level — see CONCERN-1).
+
+  - id: CONCERN-3
+    severity: informational
+    description: |
+      The post-Subsystems testng-results.xml header shows total=26 passed=26
+      failed=0 skipped=0 (12 Core + 6 SystemFeatures + 4 Common + 4 Subsystems).
+      But the XML body also shows `<test-method is-config="true" name=
+      "fetchSubsystemsCollection"` with `duration-ms="-1265"` — a NEGATIVE
+      duration. This is a TestNG XML anomaly (start_time later than finish_time
+      due to clock skew or @BeforeClass timing artifact across nested test
+      contexts), not a test failure. The status="PASS" is correct (the
+      @BeforeClass succeeded; the parent system was found). Cosmetic; Raze may
+      flag as noise.
+    recommendation: |
+      No action required. If Raze flags, document as known TestNG XML
+      reporter quirk (similar to Sprint 3's nested @BeforeClass duration
+      observations).
+
+verified_independently:
+  - "git log shows exactly 5 commits c56df10..2dc44d1 across 2 Generator Runs (Run 1: 4f65130 + d954ae9 + 18dbe1a; Run 2: 1ed6ffc + 2dc44d1)"
+  - "mvn test offline: 9 Verify* classes summing 64 tests / 0 failures / 0 errors / 3 skipped (1 TestNGController + 2 URIUtils). Sprint 3's 61 → Sprint 4's 64 = +3 from VerifyTestNGSuiteDependency Subsystems group-dependency structural assertions"
+  - "sprint-ets-04-05-subsystems-georobotix-2026-04-29.xml header total=26 passed=26 failed=0 skipped=0 with 4 Subsystems @Tests including unique subsystemHasParentSystemLink. Each @Test cites canonical OGC URI; depends-on-groups='systemfeatures' on each method"
+  - "SubsystemsTests.java structurally clean: 4 @Test methods + @BeforeClass SkipException defense-in-depth fallback (lines 196-299) + ETSAssert helpers throughout + zero production bare-AssertionError"
+  - "testng.xml declares both `<group name='systemfeatures' depends-on='core'/>` (Sprint 2/3) AND `<group name='subsystems' depends-on='systemfeatures'/>` (Sprint 4 NEW two-level chain) within the consolidated single-block <test> wrapper"
+  - "Production Java audit grep for bare AssertionError/Assert.fail in conformance/: 3 hits, ALL Javadoc continuation lines (` * ` prefix) documenting ADR-008 in CommonTests:29 + SystemFeaturesTests:31 + SubsystemsTests:32. Zero production-code hits"
+  - "Subsystems URI form audit: 4 unique URIs (/req/subsystem, /req/subsystem/collection, /req/system/canonical-endpoint, /req/system/canonical-url) — all canonical OGC form. curl HTTP 200 verified for ogcapi-connected-systems@master api/part1/standard/requirements/subsystem folder existence (2026-04-29)"
+  - "image-size verification: `docker images ets-ogcapi-connectedsystems10:smoke --format '{{.Size}}'` returns 540MB; `docker images ets-deduped-v2 --format '{{.Size}}'` returns 539MB. Sprint 3 660MB → Sprint 4 540MB = -120MB / -18.2% achieved. Far below the 600MB Sprint 4 PASS band"
+  - "gh auth status confirms scopes ('gist', 'read:org', 'repo') — 'workflow' scope ABSENT (5th-sprint defer empirically justified). ci/README.md cleanly documents both Path A (gh refresh + git mv) and Path B (web UI upload) future-activation paths"
+  - "S-ETS-04-03 credential-leak E2E LIVE EXEC at gate (per Dana's deferral): script ran exit 1; three-fold cross-check (a) PASS 0/0/0 unmasked hits / (b) FAIL 0/0/0 masked hits / (c) FAIL 0 stub-IUT auth header hits. Stub-IUT log shows 11 inbound requests, ALL with `Authorization=<absent>`. Root cause grep-verified: scripts/smoke-test.sh has ZERO auth-credential / SMOKE_AUTH_CREDENTIAL / Authorization references. The plumbing claimed in credential-leak-e2e-test.sh line 112 does not exist"
+  - "Worktree pollution restored: smoke-test.sh wrote to ops/test-results/s-ets-01-03-teamengine-smoke-2026-04-29.xml in user worktree during live exec; Quinn restored via `git checkout HEAD --` after capturing evidence (recurrence of Sprint 2 systemfeatures incident pattern)"
+
+recommendation_next_step: |
+  PROCEED to Gate 4 (Raze adversarial review) with concerns flagged for two
+  Sprint 5 wedge items:
+    (1) S-ETS-04-03 credential-leak E2E (GAP-1, high severity) — Sprint 5
+        story to wire SMOKE_AUTH_CREDENTIAL → auth-credential CTL/TestNG
+        suite parameter → REST-Assured filter chain → Authorization header
+        on every request. Estimated 1-2h Dana time. Re-run credential-leak-
+        e2e-test.sh and expect prong (b) and prong (c) both >=1 hit.
+    (2) Worktree pollution constraint enforcement (GAP-2, medium severity) —
+        add SMOKE_OUTPUT_DIR override to smoke-test.sh so gate briefings
+        can run live execs against /tmp/ paths without polluting the worktree.
+        Alternative: gate briefings clone repo to /tmp/ first (slower; image
+        rebuild required).
+    (3) Two-level cascade live verification (CONCERN-1, medium severity) —
+        Sprint 5 add `--target=systemfeatures` mode to sabotage-test.sh so
+        Subsystems' two-level cascade-SKIP can be live-verified (currently
+        structural-lint only via testng.xml + @BeforeClass SkipException
+        defense-in-depth — ADR-010 v2 amendment ratifies this is acceptable
+        but a live exec would close the loop).
+  The 4 other stories' verifications are strong: image-size 540MB empirically
+  PASSes the <600MB band by a wide margin (chown-layer attack delivered the
+  predicted ~80MB savings — closes the high-severity Architect-flagged risk
+  CHOWN-LAYER-ATTACK-MAY-NOT-MATERIALIZE-EXPECTED-SAVINGS); CI workflow
+  Path-B formal-drop is honest empirical engineering closing a 5-sprint
+  defer cleanly; Subsystems is structurally tight (4 @Tests, 2 CRITICAL +
+  2 NORMAL, all canonical URIs, defense-in-depth fallback present); sabotage-
+  script bug fixes mechanical. Confidence 0.84 — between Sprint 1's first
+  cumulative gate (0.88, lower bar) and Sprint 3's 0.95. The credential-leak
+  gap is the single dominant deduction; without it Sprint 4 would clear
+  0.93+. Raze should focus adversarial energy on credential-leak-e2e-test.sh
+  + the auth-credential plumbing claim vs reality (the script docstring asserts
+  behavior smoke-test.sh doesn't deliver — surface for honesty review).
