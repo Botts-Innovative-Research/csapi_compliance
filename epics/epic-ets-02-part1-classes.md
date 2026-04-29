@@ -21,18 +21,18 @@ Implement TestNG suite classes for all 14 OGC 23-001 conformance classes, with e
 | S-ETS-03-05 | (Sprint 3) SystemFeatures expansion: `/req/system/collections` + `/req/system/location-time` | Active (Sprint 3) | REQ-ETS-PART1-002 (modified) |
 | S-ETS-03-06 | (Sprint 3) Doc cleanups: VerifySystemFeaturesTests reference + ops/test-results/ convention | Active (Sprint 3) | (none — pure doc) |
 | S-ETS-03-07 | (Sprint 3, CLOSED) Implement CS API Common (`/conf/common`) conformance class end-to-end against GeoRobotix | Done (Sprint 3, Quinn 0.95, Raze 0.93) | REQ-ETS-PART1-001 |
-| S-ETS-04-05 | (Sprint 4) Implement CS API Subsystems (`/conf/subsystem`) conformance class — first TWO-LEVEL dependency chain | Active (Sprint 4) | REQ-ETS-PART1-003 |
-| S-ETS-05-01 | (placeholder) Implement `/conf/procedure-features` suite (sibling of Subsystems; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-006 |
-| S-ETS-05-02 | (placeholder) Implement `/conf/sampling-features` suite (sibling of Subsystems; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-007 |
-| S-ETS-05-03 | (placeholder) Implement `/conf/property-definitions` suite (sibling of Subsystems) | Backlog | REQ-ETS-PART1-008 |
-| S-ETS-05-04 | (placeholder) Implement `/conf/deployment-features` suite | Backlog | REQ-ETS-PART1-004 |
-| S-ETS-05-05 | (placeholder) Implement `/conf/subdeployments` suite | Backlog | REQ-ETS-PART1-005 |
-| S-ETS-05-06 | (placeholder) Implement `/conf/advanced-filtering` suite | Backlog | REQ-ETS-PART1-009 |
-| S-ETS-05-07 | (placeholder) Implement `/conf/create-replace-delete` suite | Backlog | REQ-ETS-PART1-010 |
-| S-ETS-05-08 | (placeholder) Implement `/conf/update` suite | Backlog | REQ-ETS-PART1-011 |
-| S-ETS-05-09 | (placeholder) Implement `/conf/geojson` suite | Backlog | REQ-ETS-PART1-012 |
-| S-ETS-05-10 | (placeholder) Implement `/conf/sensorml` suite | Backlog | REQ-ETS-PART1-013 |
-| S-ETS-05-11 | (optional) Common conformance class expansion 4 → 8 @Tests (Sprint 3 minimal-then-expand by design per Quinn cumulative CONCERN-2) | Backlog | REQ-ETS-PART1-001 (modified) |
+| S-ETS-04-05 | (Sprint 4, CLOSED) Implement CS API Subsystems (`/conf/subsystem`) conformance class — first TWO-LEVEL dependency chain | Done (Sprint 4, Quinn 0.84 / Raze 0.84 APPROVE_WITH_GAPS — 4 @Tests PASS 26/26 smoke) | REQ-ETS-PART1-003 |
+| S-ETS-05-05 | (Sprint 5) Implement CS API Procedures (`/conf/procedure-features`) conformance class — geometry=null invariant unique assertion | Active (Sprint 5) | REQ-ETS-PART1-006 |
+| S-ETS-05-06 | (Sprint 5) Implement CS API Deployments (`/conf/deployment-features`) conformance class — deployed-system-resource SKIP-with-reason | Active (Sprint 5) | REQ-ETS-PART1-004 |
+| S-ETS-06-01 | (placeholder) Implement `/conf/sampling-features` suite (sibling; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-007 |
+| S-ETS-06-02 | (placeholder) Implement `/conf/property-definitions` suite (sibling; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-008 |
+| S-ETS-06-03 | (placeholder) Implement `/conf/subdeployments` suite | Backlog | REQ-ETS-PART1-005 |
+| S-ETS-07-01 | (placeholder) Implement `/conf/advanced-filtering` suite | Backlog | REQ-ETS-PART1-009 |
+| S-ETS-07-02 | (placeholder) Implement `/conf/create-replace-delete` suite | Backlog | REQ-ETS-PART1-010 |
+| S-ETS-07-03 | (placeholder) Implement `/conf/update` suite | Backlog | REQ-ETS-PART1-011 |
+| S-ETS-07-04 | (placeholder) Implement `/conf/geojson` suite | Backlog | REQ-ETS-PART1-012 |
+| S-ETS-07-05 | (placeholder) Implement `/conf/sensorml` suite | Backlog | REQ-ETS-PART1-013 |
+| S-ETS-06-04 | (optional) Common conformance class expansion 4 → 8 @Tests (Sprint 3+ minimal-then-expand by design per Quinn CONCERN-2) | Backlog | REQ-ETS-PART1-001 (modified) |
 
 ## Acceptance Criteria
 - [ ] All 14 Part 1 conformance classes have at least one `@Test` per ATS assertion

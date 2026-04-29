@@ -122,12 +122,32 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - **Rationale**: Subsystems is the FIRST class to exercise a TWO-LEVEL group dependency chain (Subsystems→SystemFeatures→Core). Sprint 3 proved one-level (SystemFeatures→Core) live cascading-skip via S-ETS-03-01 sabotage exec. Subsystems extends to two levels — critical proof point before Sprint 5+ scales to remaining 10 Part 1 classes (most depend on either SystemFeatures or SystemFeatures+Common). Procedures/Sampling/Properties/Deployments are siblings of Subsystems (also depend on SystemFeatures); once Subsystems proves the two-level pattern, Sprint 5+ can BATCH 2-3 of these classes per sprint with confidence. GeoRobotix readily exercises Subsystems via `/systems/{id}/subsystems` (Generator MUST curl-verify BEFORE writing assertions).
 - **Maps to**: PRD FR-ETS-13.
 
-#### REQ-ETS-PART1-004..013: Remaining Per-Class Conformance Suites
+#### REQ-ETS-PART1-004: Deployments Conformance Class (Sprint 5 target)
 - **Priority**: MUST
-- **Status**: PLACEHOLDER (per-class detail deferred to future sprint planning)
-- **Description**: For each of the remaining 10 OGC 23-001 conformance classes (004=`deployment-features`, 005=`subdeployments`, 006=`procedure-features`, 007=`sampling-features`, 008=`property-definitions`, 009=`advanced-filtering`, 010=`create-replace-delete`, 011=`update`, 012=`geojson`, 013=`sensorml`), the ETS SHALL provide a TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004), SystemFeatures (REQ-ETS-PART1-002), Common (REQ-ETS-PART1-001), and Subsystems (REQ-ETS-PART1-003): one `@Test` per ATS assertion, `description` attribute carries the OGC canonical `.adoc` requirement URI form, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails. (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27).
-- **Rationale**: PRD SC-2 requires Part 1 coverage. Placeholder REQ shape lets the planner enumerate the certification surface without front-loading per-assertion detail. Sprint 4 unlocks two-level dependency cascade via REQ-ETS-PART1-003 (Subsystems); Sprint 5+ batches siblings (Procedures, Sampling, Properties, Deployments) using the same pattern.
-- **Maps to**: PRD FR-ETS-14..23.
+- **Status**: SPECIFIED (Sprint 5, S-ETS-05-06; GeoRobotix shape-verified 2026-04-29: /deployments returns 1 item id=16sp744ch58g type=Feature links=[canonical,alternate,alternate])
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/deployment-features/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form `/req/deployment/<assertion>`. The 5 sub-requirement `.adoc` files at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/deployment/` (HTTP-200-verified by Pat 2026-04-29): `req_resources_endpoint.adoc`, `req_canonical_url.adoc`, `req_canonical_endpoint.adoc`, `req_deployed_system_resource.adoc` (identifier: `/req/deployment/deployed-system-resource` — HYPHENATED), `req_collections.adoc`. The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.deployments.DeploymentsTests`. Deployments DEPENDS ON SystemFeatures via `<group name="deployments" depends-on="systemfeatures"/>`. Coverage scope at Sprint 5: Sprint-1-style minimal (4-5 @Tests): (a) GET /deployments 200 + non-empty items; (b) GET /deployments/{id} canonical shape; (c) rel=canonical link; (d) /req/deployment/deployed-system-resource — SKIP-with-reason if IUT doesn't declare DeployedSystem encoding conformance class. GeoRobotix serves 1 deployment (single-item shape is valid; non-empty check passes). Generator MUST re-verify at sprint time.
+- **Rationale**: Deployments is a SystemFeatures sibling (depends on SystemFeatures, not Core directly). With the two-level cascade proven at Sprint 4, Sprint 5 mechanically extends to Deployments using the identical pattern. GeoRobotix confirms the /deployments endpoint exists (1 item).
+- **Maps to**: PRD FR-ETS-14.
+
+#### REQ-ETS-PART1-005: Subdeployments Conformance Class
+- **Priority**: MUST
+- **Status**: PLACEHOLDER (per-class detail deferred to Sprint 6+)
+- **Description**: For `/conf/subdeployments/`, the ETS SHALL provide @Tests per ATS assertions, canonical URI form, dependency wiring per the established pattern.
+- **Maps to**: PRD FR-ETS-15.
+
+#### REQ-ETS-PART1-006: Procedures Conformance Class (Sprint 5 target)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 5, S-ETS-05-05; GeoRobotix shape-verified 2026-04-29: /procedures returns 19 items first id=164p7ed8l47g type=Feature links=[canonical,alternate,alternate])
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/procedure-features/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form `/req/procedure/<assertion>`. The 5 sub-requirement `.adoc` files at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/procedure/` (HTTP-200-verified by Pat 2026-04-29): `req_resources_endpoint.adoc`, `req_canonical_url.adoc`, `req_canonical_endpoint.adoc`, `req_location.adoc` (identifier: `/req/procedure/location` — Procedure SHALL NOT include geometry), `req_collections.adoc`. The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.procedures.ProceduresTests`. Procedures DEPENDS ON SystemFeatures via `<group name="procedures" depends-on="systemfeatures"/>`. Coverage scope at Sprint 5: Sprint-1-style minimal (4-5 @Tests): (a) GET /procedures 200 + non-empty items; (b) GET /procedures/{id} canonical shape; (c) rel=canonical link; (d) `/req/procedure/location` — geometry=null invariant (UNIQUE to Procedures — not in Subsystems or SystemFeatures). Generator MUST curl-verify geometry value BEFORE writing assertion; if IUT returns non-null geometry, use SKIP-with-reason. GeoRobotix serves 19 procedures. Generator MUST re-verify at sprint time.
+- **Rationale**: Procedures is a SystemFeatures sibling. Sprint 5 two-class batch (with Deployments) uses the now-proven cascade pattern. The geometry=null invariant is Procedures-unique and represents new assertion surface not present in prior classes.
+- **Maps to**: PRD FR-ETS-16.
+
+#### REQ-ETS-PART1-007..013: Remaining Per-Class Conformance Suites
+- **Priority**: MUST
+- **Status**: PLACEHOLDER (per-class detail deferred to Sprint 6+)
+- **Description**: For each of the remaining 7 OGC 23-001 conformance classes (007=`sampling-features`, 008=`property-definitions`, 009=`advanced-filtering`, 010=`create-replace-delete`, 011=`update`, 012=`geojson`, 013=`sensorml`), the ETS SHALL provide a TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004), SystemFeatures (REQ-ETS-PART1-002), Common (REQ-ETS-PART1-001), Subsystems (REQ-ETS-PART1-003), Procedures (REQ-ETS-PART1-006), and Deployments (REQ-ETS-PART1-004): one `@Test` per ATS assertion, `description` attribute carries the OGC canonical `.adoc` requirement URI form, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails.
+- **Rationale**: PRD SC-2 requires Part 1 coverage. Sprint 5 batches Deployments + Procedures; Sprint 6 batches Sampling + Properties; Sprint 7+ handles the remaining 5.
+- **Maps to**: PRD FR-ETS-17..23.
 
 ### Sub-deliverable 4 — Part 2 Conformance Classes (placeholders, NOT in Sprint 1)
 
@@ -286,6 +306,26 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - **Status**: IMPLEMENTED (Sprint 4 Generator Run 1 2026-04-29; pending Quinn+Raze live verification). Both bug fixes applied as separate atomic commits in `ets-ogcapi-connectedsystems10`: HEAD `4f65130` switches the Python ThreadingTCPServer in `scripts/sabotage-test.sh` from `("127.0.0.1", 0)` to `("0.0.0.0", 0)`; HEAD `d954ae9` adds `--add-host=host.docker.internal:host-gateway` to the `docker run` command in `scripts/smoke-test.sh`. STUB-IUT-PORT-LEAK risk verified mitigated by existing PID-based `cleanup_all` trap (kills via `$STUB_PIDFILE` content, not via port). `mvn test` BUILD SUCCESS surefire 61/0/0/3 (unchanged from Sprint 3 baseline). Live hermetic E2E execution deferred to Quinn/Raze gate per QUINN-RAZE-GATE-VERIFICATION-TIME-BUDGET mitigation.
 - **Description**: Sprint 3 ADR-010 §"Defense-in-depth role split" landed the bash sabotage script (`scripts/sabotage-test.sh`) with two known bugs preventing hermetic CITE-SC-grade execution: (a) stub server binds to 127.0.0.1 (or default localhost) — should bind to 0.0.0.0 so a Docker container running smoke against `host.docker.internal:<port>` can reach the stub; (b) docker run command lacks `--add-host=host.docker.internal:host-gateway` — Docker on Linux WITHOUT Docker Desktop does NOT auto-resolve `host.docker.internal` (only Docker Desktop's macOS/Windows variants do). Both fixes are mechanical, ~5 LOC each, no architecture decision required. Acceptance: bash sabotage script runs hermetically end-to-end on Linux-without-Docker-Desktop hosts; netstat verification shows stub binding `0.0.0.0:<port>` not `127.0.0.1:<port>`; smoke container reaches stub via `host.docker.internal:<port>`. Live execution evidence archived for audit trail.
 - **Maps to**: ADR-010 §"Defense-in-depth role split" (extended to hermetic CITE-SC-grade execution).
+
+> Sprint 5 extends with REQ-ETS-CLEANUP-013..015 for the Sprint 4 carryover items now closing (SMOKE_AUTH_CREDENTIAL wiring wedge fix, SMOKE_OUTPUT_DIR worktree-pollution mitigation v2, sabotage --target flag).
+
+#### REQ-ETS-CLEANUP-013: SMOKE_AUTH_CREDENTIAL End-to-End Wiring (GAP-1 wedge fix)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 5, S-ETS-05-01; GAP-1 from Quinn+Raze Sprint 4 cumulative)
+- **Description**: `scripts/smoke-test.sh` SHALL read the `SMOKE_AUTH_CREDENTIAL` environment variable and propagate it as the `auth-credential` TestNG suite parameter via the curl POST `--data-urlencode` call to the TeamEngine `/suite/.../run` endpoint. The Java `SuiteFixtureListener` (or equivalent fixture) SHALL read this TestNG suite parameter and inject it into the REST-Assured `RequestSpec` as an `Authorization` header, flowing through the existing `MaskingRequestLoggingFilter` chain. Acceptance: `scripts/credential-leak-e2e-test.sh` with `SMOKE_AUTH_CREDENTIAL=Bearer ABCDEFGH12345678WXYZ` produces three-fold verdict: (a) ZERO unmasked-credential hits in TestNG XML + container log + smoke log; (b) AT LEAST ONE masked-form (`Bear***WXYZ` or equivalent) hit in log (proves filter ran); (c) AT LEAST ONE unmasked-credential hit in stub-IUT log (proves wire carried the credential). Closes S-ETS-04-03 PARTIAL → IMPLEMENTED.
+- **Maps to**: PRD FR-ETS-25, NFR-ETS-08. Closes GAP-1 from Sprint 4 Quinn cumulative APPROVE_WITH_CONCERNS + Raze cumulative APPROVE_WITH_GAPS.
+
+#### REQ-ETS-CLEANUP-014: SMOKE_OUTPUT_DIR Override in smoke-test.sh (Worktree-pollution mitigation v2)
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 5, S-ETS-05-02; Quinn GAP-2 Sprint 4 cumulative — worktree-pollution incident recurred)
+- **Description**: `scripts/smoke-test.sh` SHALL accept a `SMOKE_OUTPUT_DIR` environment variable. When set, ALL TestNG XML artifact writes SHALL use `${SMOKE_OUTPUT_DIR}/` as the base directory instead of `ops/test-results/`. When unset, behavior defaults to the existing `ops/test-results/` path (backward compatible). Gate briefings for Sprint 5+ SHALL mandate `SMOKE_OUTPUT_DIR=/tmp/<role>-fresh-sprint<N>/test-results/` in all gate smoke invocations to prevent worktree writes.
+- **Maps to**: Worktree-pollution mitigation. Closes Sprint 2 systemfeatures gate incident pattern + Sprint 4 Quinn gate recurrence.
+
+#### REQ-ETS-CLEANUP-015: sabotage-test.sh --target=\<class\> Flag
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 5, S-ETS-05-03; Raze Sprint 4 carryover — native flag for gate invocation without Java edits)
+- **Description**: `scripts/sabotage-test.sh` SHALL accept a `--target=<class-name>` argument (e.g. `--target=systemfeatures`). When provided, the script SHALL patch the first `@Test` method of the target class in a temporary copy of the source tree (not the user's worktree), recompile, run smoke, archive the TestNG XML cascade evidence, and restore without modifying the original. Acceptance: `bash scripts/sabotage-test.sh --target=systemfeatures` runs end-to-end without manual Java edits; produced XML shows SystemFeatures FAIL + dependents SKIP; original SystemFeaturesTests.java is unmodified after the run.
+- **Maps to**: ADR-010 §"Defense-in-depth role split" (behavioral verification at gate). Closes Raze Sprint 4 carryover recommendation.
 
 ## Acceptance Scenarios
 
@@ -632,6 +672,127 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **AND** ALL Subsystems @Tests report `status="SKIP"` (NOT FAIL, NOT ERROR) — TWO-LEVEL cascade verified
 **AND** the SKIP reason references the unsatisfied `systemfeatures` group dependency.
 *Maps to*: REQ-ETS-PART1-003. Closes architect-handoff `TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK` risk; first multi-level cascade verification in the project.
+
+### Sprint 5 Scenarios
+
+#### SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-WIRING-001 (CRITICAL — Sprint 5)
+**GIVEN** `SMOKE_AUTH_CREDENTIAL=Bearer ABCDEFGH12345678WXYZ` is set in the environment
+**AND** `scripts/stub-iut.sh` is running on 0.0.0.0 on an ephemeral port
+**WHEN** `scripts/credential-leak-e2e-test.sh` invokes `scripts/smoke-test.sh` targeting the stub IUT
+**THEN** the stub-IUT log shows AT LEAST ONE request with `Authorization: Bearer ABCDEFGH12345678WXYZ`
+**AND** the smoke-test.sh passes the credential as `auth-credential` TestNG suite parameter via curl POST.
+*Maps to*: REQ-ETS-CLEANUP-013. Closes GAP-1 wiring defect from Sprint 4 cumulative gates.
+
+#### SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-001 (CRITICAL — Sprint 5)
+**GIVEN** `scripts/credential-leak-e2e-test.sh` runs end-to-end with stub IUT and `SMOKE_AUTH_CREDENTIAL` set
+**WHEN** the three-fold cross-check executes
+**THEN** prong (a): `grep -r 'EFGH12345678WXYZ' $SMOKE_OUTPUT_DIR` returns ZERO hits
+**AND** prong (b): `grep -rE 'Bear\*\*\*WXYZ' $SMOKE_OUTPUT_DIR` returns AT LEAST ONE hit (proves MaskingRequestLoggingFilter ran)
+**AND** prong (c): stub-IUT log returns AT LEAST ONE hit for unmasked credential (proves wire carried the credential).
+*Maps to*: REQ-ETS-CLEANUP-013, REQ-ETS-CLEANUP-006 (closed). Fully closes design.md §529 deferral.
+
+#### SCENARIO-ETS-CLEANUP-SMOKE-OUTPUT-DIR-001 (NORMAL — Sprint 5)
+**GIVEN** `SMOKE_OUTPUT_DIR=/tmp/smoke-test-output` is set
+**WHEN** `scripts/smoke-test.sh` runs end-to-end
+**THEN** TestNG XML artifacts are written to `/tmp/smoke-test-output/` (not to `ops/test-results/`)
+**AND** the user's worktree `ops/test-results/` directory is unmodified.
+*Maps to*: REQ-ETS-CLEANUP-014. Closes Sprint 2 + Sprint 4 worktree-pollution incident pattern.
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-001 (NORMAL — Sprint 5)
+**GIVEN** `scripts/sabotage-test.sh --target=systemfeatures` is invoked
+**WHEN** the script runs end-to-end
+**THEN** the produced TestNG XML shows SystemFeatures @Tests FAIL (1) + SKIP (5) + Subsystems SKIP (4) + Procedures SKIP (P) + Deployments SKIP (D); Core + Common PASS
+**AND** the original SystemFeaturesTests.java file in the worktree is UNMODIFIED after the run.
+*Maps to*: REQ-ETS-CLEANUP-015.
+
+#### SCENARIO-ETS-CLEANUP-SUBSYSTEMS-JAVADOC-001 (NORMAL — Sprint 5)
+**GIVEN** SubsystemsTests.java at Sprint 5 close HEAD
+**WHEN** a reviewer reads the class-level javadoc
+**THEN** the javadoc enumerates 6 `.adoc` files (not 5) including `req_subcollection_time.adoc`
+**AND** the javadoc clarifies that `req_subcollection_time.adoc` exists but is not enumerated in requirements_class_system_components.adoc.
+*Maps to*: REQ-ETS-PART1-003 (minor doc accuracy).
+
+#### SCENARIO-ETS-CLEANUP-ADR-010-V3-001 (NORMAL — Sprint 5)
+**GIVEN** `_bmad/adrs/ADR-010.md` at Sprint 5 close HEAD
+**WHEN** a reviewer reads the Amendment v3 section
+**THEN** the section states that TestNG 7.9.0 transitive cascade is VERIFIED LIVE (not hypothesized)
+**AND** cites Raze Sprint 4 sabotage evidence (total=26/passed=16/failed=1/skipped=9)
+**AND** does NOT modify the architectural decision text of the original ADR.
+*Maps to*: ADR-010 amendment.
+
+#### SCENARIO-ETS-PART1-006-PROCEDURES-RESOURCES-001 (CRITICAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Procedures suite executes `GET /procedures`
+**THEN** the response is HTTP 200
+**AND** the JSON body contains an `items` array with at least one element
+**AND** the assertion cites `OGC-23-001 /req/procedure/resources-endpoint`.
+*Maps to*: REQ-ETS-PART1-006.
+
+#### SCENARIO-ETS-PART1-006-PROCEDURES-LOCATION-001 (CRITICAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Procedures suite fetches `GET /procedures/{id}` for a representative procedure item
+**THEN** the `geometry` field of the response is null or absent
+**AND** the assertion cites `OGC-23-001 /req/procedure/location`
+**OR** the test SKIPs with reason if the IUT returns non-null geometry (IUT conformance gap flagged).
+*Maps to*: REQ-ETS-PART1-006.
+
+#### SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-001 (NORMAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Procedures suite fetches `GET /procedures/{id}`
+**THEN** the response has `id` (string), `type` (string), and `links` (array) per REQ-ETS-CORE-004 base shape
+**AND** the assertion cites `OGC-23-001 /req/procedure/canonical-endpoint`.
+*Maps to*: REQ-ETS-PART1-006.
+
+#### SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-URL-001 (NORMAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Procedures suite fetches `GET /procedures/{id}`
+**THEN** the `links` array contains at least one entry with `rel="canonical"`
+**AND** the assertion cites `OGC-23-001 /req/procedure/canonical-url`.
+*Maps to*: REQ-ETS-PART1-006.
+
+#### SCENARIO-ETS-PART1-006-PROCEDURES-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 5)
+**GIVEN** SystemFeatures tests are sabotaged to FAIL
+**WHEN** the suite runs end-to-end
+**THEN** ALL ProceduresTests @Tests report `status="SKIP"` (NOT FAIL, NOT ERROR)
+**AND** the SKIP reason references the unsatisfied `systemfeatures` group dependency.
+*Maps to*: REQ-ETS-PART1-006. Extends the TWO-LEVEL cascade pattern to Procedures.
+
+#### SCENARIO-ETS-PART1-004-DEPLOYMENTS-RESOURCES-001 (CRITICAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Deployments suite executes `GET /deployments`
+**THEN** the response is HTTP 200
+**AND** the JSON body contains an `items` array with at least one element
+**AND** the assertion cites `OGC-23-001 /req/deployment/resources-endpoint`.
+*Maps to*: REQ-ETS-PART1-004.
+
+#### SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-001 (NORMAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Deployments suite fetches `GET /deployments/{id}`
+**THEN** the response has `id` (string), `type` (string), and `links` (array) per REQ-ETS-CORE-004 base shape
+**AND** the assertion cites `OGC-23-001 /req/deployment/canonical-endpoint`.
+*Maps to*: REQ-ETS-PART1-004.
+
+#### SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-URL-001 (NORMAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Deployments suite fetches `GET /deployments/{id}`
+**THEN** the `links` array contains at least one entry with `rel="canonical"`
+**AND** the assertion cites `OGC-23-001 /req/deployment/canonical-url`.
+*Maps to*: REQ-ETS-PART1-004.
+
+#### SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPLOYED-SYSTEM-001 (NORMAL — Sprint 5)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** the Deployments suite checks for DeployedSystem encoding conformance class in `/conformance`
+**THEN** if the IUT declares the class: the test PASSES asserting a DeployedSystem representation exists
+**OR** if the IUT does NOT declare the class: the test SKIPs with reason (IUT conformance gap noted)
+**AND** the assertion cites `OGC-23-001 /req/deployment/deployed-system-resource`.
+*Maps to*: REQ-ETS-PART1-004.
+
+#### SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 5)
+**GIVEN** SystemFeatures tests are sabotaged to FAIL
+**WHEN** the suite runs end-to-end
+**THEN** ALL DeploymentsTests @Tests report `status="SKIP"` (NOT FAIL, NOT ERROR)
+**AND** the SKIP reason references the unsatisfied `systemfeatures` group dependency.
+*Maps to*: REQ-ETS-PART1-004. Extends the TWO-LEVEL cascade pattern to Deployments.
 
 #### SCENARIO-ETS-WEBAPP-FREEZE-README-001 (NORMAL)
 **GIVEN** the `csapi_compliance` repo at HEAD `ab53658` plus the README reposition commit

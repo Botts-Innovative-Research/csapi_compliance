@@ -2,6 +2,21 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T19:21Z — Sprint ets-05 PLANNED (Pat) — 6 stories, Procedures + Deployments batched, next_agent: generator (no Architect cycle)
+
+- **Trigger**: User instruction "do a then b" after reading SESSION-HANDOFF-2026-04-29.md. (a) was no-op (handoff already in `642b5c7`/pushed). (b) spawned Pat for Sprint 5 contract authoring with 6-item carryover + sibling-class batch selection.
+- **Sub-agent**: Pat (Planner, general-purpose, sonnet, fresh context). 142,367 tokens / ~15m43s wall-clock / 64 tool uses; agentId `a72dd9431334dc8a3`. Mitigation pattern continues — 5 prior sub-agent timeouts → **12 consecutive successes**. 35min/200K budget honored.
+- **Sprint 5 contract** (`.harness/contracts/sprint-ets-05.yaml`, 44KB, `procedures-deployments-plus-sprint-4-carryover`): 6 stories — S-05-01 GAP-1 SMOKE_AUTH_CREDENTIAL wedge fix (P0; 3-layer bash+CTL+Java; closes Sprint 4 Quinn+Raze cross-corroborated GAP-1), -02 SMOKE_OUTPUT_DIR worktree-pollution v2 (P1), -03 sabotage --target=systemfeatures flag (P2; sequence last), -04 SubsystemsTests javadoc fix bundled with ADR-010 v3 amendment (P2 doc-only), **-05 Procedures conformance class (P0 NEW FEATURE)**, **-06 Deployments conformance class (P0 NEW FEATURE)**.
+- **Conformance batch pick: Procedures + Deployments (2 of 4 siblings)**. Pat conservative on gate-fatigue (Sprint 4 0.84/0.84 vs prior 0.95/0.93); Sampling + Properties deferred to Sprint 6. **OGC + GeoRobotix shape verified at planning time**: /procedures 19 items at GeoRobotix (164p7ed8l47g) + /deployments 1 item (16sp744ch58g). 5 OGC sub-reqs each (~4-5 @Tests per class).
+- **5 new REQs**: REQ-ETS-PART1-004 (Deployments) + REQ-ETS-PART1-006 (Procedures) expanded PLACEHOLDER → SPECIFIED; REQ-ETS-CLEANUP-013..015 new (SMOKE_AUTH_CREDENTIAL wiring, SMOKE_OUTPUT_DIR, sabotage --target). PART1-004..013 placeholder block split into individual rows.
+- **15 new SCENARIOs** (7 CRITICAL + 8 NORMAL).
+- **HIGH risks**: GAP-1-WIRING-FIX-COMPLEXITY-UNDERESTIMATE (3-layer coord — Generator MUST read CTL → Java chain before writing); TWO-CLASS-BATCH-GATE-FATIGUE (first two-class batch — defect in either class could drop confidence <0.80). MEDIUM: GeoRobotix /procedures geometry value not verified by Pat (Generator must check before writing /req/procedure/location assertion); GeoRobotix /deployments single-item shape (handle without assuming multiple).
+- **CI workflow decision**: `gh auth status` re-confirmed `workflow` scope absent at planning time — Path B formal-drop from Sprint 4 stays in force. CI carryover CANCELLED; no new CI story in Sprint 5.
+- **Next agent: GENERATOR DIRECT (no Architect cycle)** — Pat judges no architectural decisions outstanding (GAP-1 fix is implementation-only; Procedures + Deployments mechanical extension of Sprint-4 Subsystems precedent; ADR-010 v3 narrow empirical addendum bundled into S-05-04). Architect deferred until new dependency pattern emerges (e.g. dual-dep on SystemFeatures + Common) or testng.xml BeforeSuite SkipException migration triggers at 6+ classes.
+- **Generator suggested sequence**: S-05-01 (GAP-1 first; closes gate defect) → S-05-02 → S-05-04 → S-05-05 → S-05-06 → S-05-03 (sabotage flag last). Estimated **3-5h wall-clock** Generator (vs Sprint 4's 8-12h; Sprint 5 is pattern extension + bounded GAP-1 fix). Gate estimate ~45min (Quinn 20m + Raze 25m).
+- **Pat handoff confidence**: 0.86. Write-handoff-FIRST mitigation worked again — stub written at 19:05:07Z, all 8 deliverables incrementally landed, finalized at 19:18:21Z.
+- **Files written by Pat (12)**: planner-handoff.yaml + sprint-ets-05.yaml + 6 story files + spec.md + traceability.md + 2 epic files. Plus orchestrator added ops/changelog.md (this entry) + ops/status.md (header) + ops/metrics.md (turn 79).
+
 ## 2026-04-29T16:30Z — Sprint ets-04 Generator Run 2: S-ETS-04-02 image-size v2 chown attack + S-ETS-04-05 Subsystems conformance class + S-ETS-04-03 credential-leak E2E (Sprint 4 ALL 5 STORIES IMPLEMENTED)
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Pat+Alex Sprint 4 sequencing. Run 1 covered the mechanical/orchestration stories (S-04-04 sabotage fixes + S-04-01 CI PATH B); Run 2 covers the heavier remaining 3 stories (S-04-02 chown attack + S-04-05 Subsystems + S-04-03 credential-leak E2E).
