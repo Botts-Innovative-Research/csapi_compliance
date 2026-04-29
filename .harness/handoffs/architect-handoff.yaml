@@ -1,328 +1,267 @@
 agent: architect
 status: complete
-timestamp: "2026-04-29T02:15:00Z"
-sprint_number: "ets-03"
-triggered_by: "Pat's planner-handoff (orchestrator-reconstructed 2026-04-29T01:25Z) naming Architect as next, deferring 3 architectural decisions + 1 surfaced question"
-supersedes: ".harness/handoffs/architect-handoff.yaml (Alex 2026-04-28T21:30Z Sprint 2 — preserved in git history)"
+timestamp: "2026-04-29T15:43:02Z"
+sprint_number: "ets-04"
+sprint_name: "subsystems-plus-sprint-3-carryover"
+triggered_by: |
+  Pat's planner-handoff (.harness/handoffs/planner-handoff.yaml 2026-04-29T15:11:45Z)
+  naming Architect as next, deferring 3 architectural decisions + 2 surfaced suggestions
+  for Sprint 4 ets-04. Sprint 3 closed cleanly (Quinn cumulative APPROVE 0.95 / Raze
+  cumulative APPROVE_WITH_CONCERNS 0.93 — 2nd-best evaluator, best Raze ever).
+supersedes: ".harness/handoffs/architect-handoff.yaml (Sprint 3 — preserved in git history at HEAD ed45643)"
 
 next_agent: generator
 next_agent_rationale: |
-  All 3 deferred decisions ratified, 1 surfaced question resolved. Outputs:
-    - 1 NEW ADR (ADR-010 dependency-skip verification strategy)
-    - 1 design.md amendment (§"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern (S-ETS-03-02)")
-    - 1 ADR-009 in-place amendment (§"Sprint 3 Amendment (2026-04-29) — Image-Size Optimization via TE common-libs ↔ deps-closure dedupe")
-    - 1 architecture.md addendum (v2.0.2 §15 Sprint 3 ratifications, 5 sub-sections)
-
-  Pat's 7-story sprint contract is unchanged. Generator (Dana) can take stories
-  in the dependency order Pat enumerated (slightly re-grouped for batching per
-  architecture.md §15.5):
-    - Run 1: S-ETS-03-06 (doc cleanups, doc-only — fastest warmup)
-             + S-ETS-03-01 (dependency-skip sabotage — no Java conflict with -06)
-    - Run 2: S-ETS-03-02 (credential-leak + RequestLoggingFilter wrap)
-             + S-ETS-03-03 (CI workflow git mv)
-             + S-ETS-03-04 (image-size dedupe — Dockerfile changes share CI context)
-    - Run 3: S-ETS-03-05 (SystemFeatures expansion)
-             + S-ETS-03-07 (Common conformance class — shares testng.xml + listener context)
-
-  Architect cycle was scoped to 3 deferred decisions + 1 surfaced question; no
-  contract-rewrite signals surfaced during ratification. One scope tweak
-  observation (see surfaced_risks.GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION)
-  but it tightens Generator guidance, doesn't change the contract.
+  All 3 architectural deferrals + 2 surfaced suggestions resolved. Generator (Dana)
+  may now begin Sprint 4 work in Pat's recommended sequencing per planner-handoff
+  `deferred_to_generator` block: S-ETS-04-04 (sabotage-script bug fixes) →
+  S-ETS-04-01 (CI workflow binary close) → S-ETS-04-03 (credential-leak E2E using
+  fixed sabotage primitives + new stub-IUT) → S-ETS-04-02 (chown-layer attack on
+  Stage 2 Dockerfile) → S-ETS-04-05 (Subsystems conformance class with two-level
+  dependency cascade defense-in-depth).
 
 next_agent_inputs:
-  - "_bmad/architecture.md v2.0.2 (§15 Sprint 3 ratifications appended)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (§ Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (Pat expanded REQ-ETS-PART1-001 Common + new REQ-ETS-CLEANUP-005..NNN)"
-  - "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (NEW)"
-  - "_bmad/adrs/ADR-009-multi-stage-dockerfile.md (Sprint 3 amendment appended)"
-  - "_bmad/adrs/ADR-001..008.md (binding architectural baseline; unchanged)"
-  - ".harness/contracts/sprint-ets-03.yaml (Pat's 7-story Sprint 3 contract)"
-  - "epics/stories/s-ets-03-01..07-*.md (7 new story files Pat authored)"
-  - "Sprint 2 close evidence: .harness/evaluations/sprint-ets-02-{evaluator,adversarial}-{cleanup,systemfeatures}.yaml"
+  - ".harness/handoffs/planner-handoff.yaml (Pat 2026-04-29T15:11:45Z)"
+  - ".harness/handoffs/architect-handoff.yaml (this handoff)"
+  - ".harness/contracts/sprint-ets-04.yaml (Pat 2026-04-29 — full sprint scope + handoff_to_generator)"
+  - "_bmad/architecture.md v2.0.3 §16 (NEW Sprint 4 ratifications appendix)"
+  - "_bmad/adrs/ADR-009-multi-stage-dockerfile.md (Sprint 4 v2 amendment appended)"
+  - "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (Sprint 4 v2 amendment appended)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (NEW Sprint 4 Ratifications section)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (Pat's Subsystems REQ-ETS-PART1-003 SPECIFIED block + 5 SCENARIOs)"
+  - "epics/stories/s-ets-04-{01..05}-*.md (Pat's 5 story files)"
+  - "Sprint 3 empirical evidence: ~/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt (PRIMARY input for ADR-009 v2 amendment falsification record)"
 
-outputs:
-  - path: "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md"
-    type: "adr"
-    status: "accepted-forward-looking"
-    note: |
-      Pat's option (c) BOTH ratified — bash sabotage script as canonical CITE-SC-grade
-      end-to-end artifact + TestNG XmlSuite-parser-based unit test as fast-feedback
-      structural lint. Defense-in-depth role split documented. Stub-server sabotage
-      preferred over testng.xml mutation (hermetic; no jar rebundling; no restoration
-      risk). Worktree-pollution constraint embedded: sabotage operates on /tmp/ clones
-      OR built Docker image only; archived testng-results.xml lets Quinn/Raze gate-
-      verify by reading archive, not by re-running. Closes Quinn s06 CONCERN-1 +
-      Raze s06 CONCERN-1.
-  - path: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md"
-    type: "design-extension"
-    note: |
-      Sprint 3 hardening section appended after §"CredentialMaskingFilter wiring".
-      Specifies: MaskingRequestLoggingFilter class (extends RequestLoggingFilter,
-      try/finally header swap pattern), executable Java snippet with full filter()
-      implementation, wiring point (REPLACE bare RequestLoggingFilter in
-      SuiteFixtureListener.onStart with Masking variant; KEEP CredentialMaskingFilter
-      for parallel FINE log defense-in-depth), header set rationale (superset of
-      CredentialMaskingFilter — adds Set-Cookie + Proxy-Authorization), unit +
-      integration test rules. Architect ruled NO separate ADR (precedent: Sprint 2
-      §14.5 CredentialMaskingFilter NO-ADR ruling).
+ratifications_complete:
+  - id: "DECISION-1-ADR-009-V2-AMENDMENT"
+    pick: "(a) in-place ADR-009 amendment (NOT new ADR-011 superseding)"
+    rationale: |
+      Per Sprint 2 §14.5 NO-ADR-for-CredentialMaskingFilter precedent + §14.7
+      ADR-001 cross-reference amendment precedent. Core ADR-009 decision (multi-
+      stage build, USER tomcat, BuildKit cache mount) preserved; only optimization
+      tactic evolves (chown-layer attack vs the empirically-falsified jar-dedupe
+      projection). Avoids audit-trail fragmentation across ADR-009 + ADR-009
+      Sprint 3 amendment + a hypothetical ADR-011. Pat recommended (a); Architect
+      ratifies.
+    artifact: "_bmad/adrs/ADR-009-multi-stage-dockerfile.md (~150 lines appended at end)"
+
+  - id: "DECISION-2-TWO-LEVEL-DEPENDENCY-SKIP"
+    pick: "(c) BOTH defense-in-depth — testng.xml <group depends-on> extension AND @BeforeSuite SkipException fallback"
+    rationale: |
+      TestNG 7.9.0 group-dependency transitive cascade across multi-level chains
+      is NOT explicitly documented. Cannot bet Sprint 4 on undocumented behavior.
+      ~10 LOC @BeforeSuite fallback is cheap insurance; activates ONLY if
+      Generator runtime verification shows TestNG cascade underperforms. Both per-
+      <test> and consolidated-suite-level testng.xml forms documented; Generator
+      picks based on runtime cascade behavior. Defense-in-depth aligns with
+      §14.5+§15.3 CredentialMaskingFilter+MaskingRequestLoggingFilter wrap pattern.
+    artifact: "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (~140 lines appended at end)"
+
+  - id: "DECISION-3-CREDENTIAL-LEAK-E2E-APPROACH"
+    pick: "(a) stub IUT in /tmp/ — REJECT (b) authenticated IUT pivot, REJECT (c) extended unit-layer fallback"
+    rationale: |
+      Composes with S-ETS-04-04 sabotage-script bug fixes (same stub-server
+      primitive — minimum new code). Hermeticity preserved (no IUT-vendor
+      coordination, no real credentials in test corpus). Three-fold cross-check
+      strongest possible hermetic evidence: (i) zero unmasked credential in logs,
+      (ii) masked form present, (iii) stub-IUT echo proves try/finally
+      restoration. Pat recommended (a); Architect ratifies. NO separate ADR
+      (precedent: §14.5+§15.4 NO-ADR-for-CredentialMaskingFilter).
+    artifact: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md §'Sprint 4 hardening: credential-leak E2E via stub IUT (S-ETS-04-03)'"
+
+  - id: "SURFACED-Q-A-CHOWN-SCRATCH-REBUILD"
+    pick: "SKIPPED per autonomous-loop mitigation pattern"
+    rationale: |
+      Orchestrator-imposed budget constraint (no docker / no live network ops in
+      25-min wall-clock window). Pat's Sprint 3 empirical evidence
+      (sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt — chown-layer 80MB
+      identification) + Generator runtime verification mandate in S-ETS-04-02
+      acceptance criteria are sufficient pre-commit signal. PARTIAL outcome
+      (600-650MB) acceptable per Sprint 4 contract; tier-2 dedupe + alpine
+      roadmap fallbacks documented in ADR-009 v2 amendment.
+    artifact: "_bmad/architecture.md §16.5 (decision recorded explicitly)"
+
+  - id: "SURFACED-Q-B-SUBSYSTEMS-COVERAGE-SCOPE"
+    pick: "Sprint-1-style minimal — 4 @Test methods at Sprint 4 close"
+    rationale: |
+      Third pattern extension AND first multi-level dependency chain compound
+      risk surface. Minimal per-class @Test count concentrates Generator + gate
+      verification effort on cascade verification (the riskier of the two firsts).
+      4 @Tests cover foundational shape PLUS unique-to-Subsystems
+      `subsystemHasParentSystemLink` architectural invariant. Sprint 5+ batches
+      remaining ATS items with sibling classes (Procedures/Sampling/Properties/
+      Deployments). Pat recommended Sprint-1-style; Architect ratifies.
+    artifact: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md §'Sprint 4 hardening: Subsystems conformance class scope (S-ETS-04-05)'"
+
+adrs_written:
   - path: "_bmad/adrs/ADR-009-multi-stage-dockerfile.md"
-    type: "adr-amendment"
-    status: "amended (Sprint 3 increment)"
-    note: |
-      Pat's option (a) deps-closure dedupe ratified. ADR-009 §Negative bullet 4
-      explicitly anticipated this Sprint 3 carryover ("defer to Sprint 3 if 450 MB
-      is missed"). Amendment specifies: empirical TE common-libs vs ETS deps
-      overlap enumeration methodology (comm-comparison commands), illustrative
-      jar-group table (Generator MUST derive authoritative list empirically),
-      Dockerfile snippet for the dedupe RUN step, verification approach (5 steps
-      ending in archived ops/test-results/sprint-ets-03-04-image-size.txt).
-      Rejected (b) distroless (Sprint 5+; original §Alternatives) and (c) alpine
-      (50-100MB savings insufficient vs dedupe's 200-300MB). Closes Quinn cleanup
-      GAP-1 + Raze cleanup CONCERN-2.
+    type: "in-place v2 amendment"
+    section: "## Sprint 4 v2 amendment (2026-04-29) — chown-layer attack + Sprint 3 illustrative-table falsification"
+    summary: "Records empirical falsification of 200-300MB jar-dedupe projection (only 4 jars/1.8MB actual exact-basename overlap); ratifies chown-layer attack via COPY --chown=tomcat:tomcat + per-RUN-step ownership eliminating ~80MB filesystem-attribute layer; target <600MB (PARTIAL acceptable 600-650MB); Sprint 5+ alpine-variant roadmap if Sprint 4 underperforms."
+
+  - path: "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md"
+    type: "in-place v2 amendment"
+    section: "## Sprint 4 v2 amendment (2026-04-29) — Two-level dependency-skip cascade (Subsystems → SystemFeatures → Core)"
+    summary: "Defense-in-depth (option c): testng.xml <group name='subsystems' depends-on='systemfeatures'/> extension PLUS @BeforeSuite SkipException fallback in SubsystemsTests. Generator MUST runtime-verify TestNG transitive cascade behavior; @BeforeSuite activates conditionally. Extends VerifyDependencySkipWiring unit test with Subsystems structural assertions. Archive: ops/test-results/sprint-ets-04-two-level-dependency-skip-evidence.xml."
+
+design_md_updates:
+  - path: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md"
+    type: "new section appended before Status"
+    section: "## Sprint 4 Ratifications (2026-04-29)"
+    subsections:
+      - "Sprint 4 hardening: credential-leak E2E via stub IUT (S-ETS-04-03) — stub-iut.sh pattern + scripts/verify-credential-leak.sh three-fold cross-check + composability with S-ETS-04-04 sabotage-script fixes"
+      - "Sprint 4 hardening: Subsystems conformance class scope (S-ETS-04-05) — 4 @Tests including unique-to-Subsystems subsystemHasParentSystemLink + subpackage layout + fixtures + coverage scope rationale + What NOT to ship in Sprint 4"
+    summary: "~330 lines added; Sprint 1-3 ratification sections preserved unchanged; Status block updated to Sprint 4."
+
+architecture_md_updates:
   - path: "_bmad/architecture.md"
-    type: "architecture-extension"
-    version: "2.0.2"
-    note: |
-      §15 Sprint 3 ratifications appended (5 sub-sections covering ADR-010 +
-      ADR-009 amendment + design.md MaskingRequestLoggingFilter + surfaced
-      question resolution + Generator batching guidance). §13 ADR index updated
-      with ADR-010 row. v2.0.1 §14 + v2.0 sections 1-13 unchanged. Last
-      reconciled date updated to 2026-04-29.
-
-readiness: "PASS"
-readiness_per_story:
-  S-ETS-03-01:
-    verdict: "PASS"
-    rationale: |
-      ADR-010 specifies the dual-pattern (bash + unit test) in full with role
-      split, sabotage approach (stub-server preferred), verification matrix,
-      worktree-pollution constraint. Generator implements directly from ADR-010.
-  S-ETS-03-02:
-    verdict: "PASS"
-    rationale: |
-      design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern"
-      specifies the subclass with executable Java snippet (try/finally header
-      swap), wiring point (REPLACE in SuiteFixtureListener.onStart), header set,
-      unit + integration test rules. Generator implements verbatim from the
-      snippet.
-  S-ETS-03-03:
-    verdict: "PASS"
-    rationale: |
-      No new architectural decisions needed. Generator does git mv per Sprint 2
-      S-ETS-02-05 sub-task C deferred work (ci/ → .github/workflows/) plus
-      gh auth refresh -s workflow user-action follow-through.
-  S-ETS-03-04:
-    verdict: "PASS"
-    rationale: |
-      ADR-009 Sprint 3 amendment specifies the dedupe pattern with methodology
-      (empirical comm-comparison FIRST), illustrative jar table, Dockerfile
-      snippet, verification approach. Generator MUST derive authoritative
-      exclusion list empirically — illustrative table is NOT the authoritative
-      list (this constraint is in must_not below).
-  S-ETS-03-05:
-    verdict: "PASS"
-    rationale: |
-      No new architectural decisions needed. design.md §"SystemFeatures
-      conformance class scope" Sprint 3 expansion roadmap (5 @Test methods:
-      systemCanonicalUrlReturns200, systemHasGeometryAndValidTime,
-      systemAppearsInCollections, systemFeaturesPagination, plus filter/time
-      interactions) is the contract Generator extends. Mechanical extension
-      using ETSAssert helpers + canonical OGC URIs from Sprint 2.
-  S-ETS-03-06:
-    verdict: "PASS"
-    rationale: |
-      No architectural decisions; doc-only cleanups (changelog, README,
-      status.md, traceability.md row reconciliation). Generator's mechanical
-      task.
-  S-ETS-03-07:
-    verdict: "PASS"
-    rationale: |
-      Pat expanded REQ-ETS-PART1-001 Common to SPECIFIED + per-class SCENARIOs
-      in spec.md. Generator follows Sprint 2's SystemFeatures pattern: curl-
-      verify GeoRobotix endpoints FIRST (landing-page, /conformance, /collections);
-      single CommonTests class; Sprint-1-style minimal-then-expand (4-5 @Tests
-      covering 3-4 highest-priority OGC 23-001 Annex A /conf/common ATS items).
-      testng.xml gets a new <test name="Common"> block — Architect recommends
-      KEEP single-block consolidation (Sprint 4 will trigger BeforeSuite
-      SkipException pattern when 4+ classes need it).
-
-adrs:
-  - id: "ADR-010"
-    title: "Dependency-Skip Verification Strategy: Bash Sabotage (Canonical) + TestNG Unit Test (Fast-Feedback Supplement)"
-    decision: |
-      Pat's option (c) BOTH. Bash sabotage script as canonical CITE-SC-grade
-      end-to-end verification (stub-server sabotage preferred over testng.xml
-      mutation; archived testng-results.xml as evidence); TestNG unit test as
-      fast-feedback structural lint over the canonical testng.xml shipped in
-      the jar. Defense-in-depth: structural lint catches refactor regressions
-      (<2s); bash script catches semantic regressions (~5 min CI). Sets
-      precedent for Common (S-ETS-03-07) + Subsystems (Sprint 4).
+    type: "new section §16 appended"
+    section: "## 16. Architecture v2.0.3 — Sprint 4 ratifications (2026-04-29)"
+    subsections:
+      - "16.1 ADR-009 v2 amendment — chown-layer attack + Sprint 3 illustrative-table falsification"
+      - "16.2 ADR-010 v2 amendment — Two-level dependency-skip cascade (defense-in-depth)"
+      - "16.3 design.md §'Sprint 4 hardening: credential-leak E2E via stub IUT' — stub IUT pattern"
+      - "16.4 design.md §'Sprint 4 hardening: Subsystems conformance class scope' — Sprint-1-style minimal"
+      - "16.5 Surfaced question resolution — Architect chown-scratch rebuild SKIPPED"
+      - "16.6 Architecture-level guidance for Generator (Sprint 4)"
+    note: "§17 'Last reconciled' bumped to 2026-04-29 with Sprint 4 §16 reference."
 
 constraints_for_generator:
   must:
-    # Sprint 3-specific musts (in addition to all Sprint 1+2 musts that still apply)
-    - "S-ETS-03-01: implement BOTH the bash sabotage script AND the TestNG unit test per ADR-010. Bash script is canonical CI artifact; unit test is fast-feedback supplement. Skipping either is a contract violation."
-    - "S-ETS-03-01: stub-server sabotage approach preferred over testng.xml mutation (hermetic; no jar rebundling). If stub-server proves problematic, fall back to testng.xml mutation with `trap cleanup EXIT` for restoration."
-    - "S-ETS-03-01: bash script MUST archive the sabotaged testng-results.xml to ops/test-results/sprint-ets-03-dependency-skip-evidence.xml so Quinn/Raze can verify by READING the archive (no re-run required — closes worktree-pollution risk)."
-    - "S-ETS-03-01: unit test uses org.testng.xml.Parser → XmlSuite API. Asserts STRUCTURAL invariants (group depends-on declarations exist) NOT runtime SKIP semantics (that's the bash script's domain)."
-    - "S-ETS-03-02: subclass REST-Assured RequestLoggingFilter (NOT chained-filter, NOT full-replacement). Class at org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter per design.md snippet."
-    - "S-ETS-03-02: try/finally header swap pattern is mandatory — masked headers exist ONLY for the duration of super.filter() call; originals MUST be restored before the actual HTTP request reaches the IUT (otherwise authenticated calls fail)."
-    - "S-ETS-03-02: REPLACE the bare RequestLoggingFilter registration in SuiteFixtureListener.onStart with the masking variant. KEEP the CredentialMaskingFilter registration alongside (defense-in-depth for parallel FINE log)."
-    - "S-ETS-03-02: header set is SUPERSET of CredentialMaskingFilter's — adds Set-Cookie + Proxy-Authorization. Both filters mask Authorization/X-API-Key/Cookie redundantly per defense-in-depth."
-    - "S-ETS-03-02: scripts/verify-credential-leak.sh integration test is now MANDATED (no longer deferred). Synthetic Bearer ABCDEFGH12345678WXYZ; zero-leak grep for literal EFGH12345678WXYZ; assert masked Bear...WXYZ IS present."
-    - "S-ETS-03-04: derive the dedupe exclusion list EMPIRICALLY using the comm-comparison commands in ADR-009 Sprint 3 amendment. The illustrative jar table in the amendment is NOT the authoritative list — Generator's actual list depends on the live Maven dep tree."
-    - "S-ETS-03-04: archive the empirical enumeration to ops/test-results/sprint-ets-03-04-dedupe-enumeration.txt; archive the post-dedupe image size to ops/test-results/sprint-ets-03-04-image-size.txt. Both are CITE-SC-reproducibility evidence."
-    - "S-ETS-03-04: smoke 12/12+ PASS preserved AFTER each batch of jar exclusions (NoClassDefFoundError surfaces immediately if a removed jar is needed). Restore + document any irremovable jar."
-    - "S-ETS-03-04: image size acceptance threshold is ≤ 450 MB per docker images --format '{{.Size}}'. Sprint 2 missed this (~570 MB); Sprint 3 closes it."
-    - "S-ETS-03-05: extend SystemFeaturesTests with the 5 Sprint 3 expansion @Test methods per design.md §SystemFeatures Sprint 3 expansion roadmap. Use ETSAssert helpers + canonical OGC URIs from Sprint 2 (zero new bare-throw, zero stale URIs)."
-    - "S-ETS-03-07: curl GeoRobotix /, /conformance, /collections FIRST (acceptance criterion — Sprint 2 SystemFeatures pattern); archive output to story Implementation Notes; if endpoints unavailable, PIVOT documented in handoff."
-    - "S-ETS-03-07: Sprint-1-style minimal-then-expand for Common (4-5 @Tests covering highest-priority /conf/common ATS items: landing-page, conformance, collections, content-negotiation, json-html). Sprint 4+ expansion for the remainder."
-    - "S-ETS-03-07: testng.xml KEEP single-block consolidation — add <test name=\"Common\"> block alongside existing Core + SystemFeatures. The BeforeSuite SkipException pattern is deferred to Sprint 4 when 4+ classes need it."
-    - "All stories: gates verify against /tmp/ clones OR archived artifacts ONLY — NEVER against the user's worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/ (per Sprint 3 contract worktree_pollution_constraint)."
-    - "All stories: run smoke-test.sh and verify 12/12+ PASS BEFORE committing. Sprint 3's no-regression invariant is the integration gate (carryover from Sprint 2)."
+    - "Run S-ETS-04-* in Pat's recommended order: -04 → -01 → -03 → -02 → -05 (sabotage fixes BEFORE credential-leak; Dockerfile changes AFTER Java/script work to preserve smoke baseline; Subsystems LAST as it depends on -01..04 stability)"
+    - "S-ETS-04-02 (chown-layer attack): empirically baseline image size BEFORE attack; apply COPY --chown=tomcat:tomcat per ADR-009 v2 amendment §'Implementation' fragment; per-RUN-step chown for TE WAR/console extraction; DELETE the standalone RUN ... && chown -R tomcat:tomcat /usr/local/tomcat block; verify <600MB AND smoke 22+M PASS preserved (M = Subsystems @Test count); archive size measurement to ops/test-results/sprint-ets-04-02-image-size.txt"
+    - "S-ETS-04-05 (Subsystems): curl-verify GeoRobotix /systems/{id}/subsystems shape BEFORE writing assertions (acceptance criterion #1; SKIP-with-reason if 404); implement EXACTLY 4 @Tests per design.md Sprint 4 Ratifications section; extend testng.xml with <group name='subsystems' depends-on='systemfeatures'/> per ADR-010 v2 amendment; ALWAYS implement @BeforeSuite SkipException fallback (forward-compat for Sprint 5+; conditionally inert if TestNG cascade verified working); extend VerifyDependencySkipWiring unit test with Subsystems structural assertions; runtime-verify two-level cascade via extended bash sabotage; archive to ops/test-results/sprint-ets-04-two-level-dependency-skip-evidence.xml"
+    - "S-ETS-04-03 (credential-leak E2E): create scripts/stub-iut.sh per design.md Sprint 4 Ratifications §'Stub IUT extension pattern'; create scripts/verify-credential-leak.sh executing three-fold cross-check (zero unmasked + ≥1 masked + stub-IUT echo verifies original credential transmitted); archive to ops/test-results/sprint-ets-04-credential-leak-evidence.txt; reuse sabotage-script primitives (ephemeral port allocation; trap cleanup EXIT) per S-ETS-04-04 fixes"
+    - "Worktree-pollution constraint (preserved from Sprint 2/3): ALL work operates against /tmp/ clones or archived artifacts; NEVER against ~/docker/gir/ets-ogcapi-connectedsystems10/ (frozen at HEAD c56df10)"
+    - "Update spec.md Implementation Status, _bmad/traceability.md impl status column, ops/status.md, ops/changelog.md per CLAUDE.md §'Reconcile Specs' + §'Update Ops' workflow gates"
+    - "Run scripts/session-metrics.py per CLAUDE.md §Session Metrics on Generator session end"
 
   must_not:
-    - "Implement Pat's option (a) ALONE for S-ETS-03-01 (TestNG unit test only). The CRITICAL SCENARIO requires end-to-end verification per ADR-010; structural lint is not sufficient."
-    - "Implement Pat's option (b) ALONE for S-ETS-03-01 (bash only). Defense-in-depth requires both per ADR-010; fast-feedback unit test is mandatory."
-    - "Use Pat's option (b) chained-filter-with-registration-order for S-ETS-03-02. REJECTED in design.md §wrap pattern — fragile to REST-Assured filter-order changes."
-    - "Use Pat's option (c) full-replacement for S-ETS-03-02. REJECTED — re-implements 200+ LOC of formatter; subclass is the minimal touch."
-    - "Use the illustrative jar exclusion table in ADR-009 Sprint 3 amendment as the authoritative list. Generator MUST derive empirically — the table is documentation only."
-    - "Implement option (b) distroless runtime for S-ETS-03-04. Still deferred per ADR-009 §Alternatives — Sprint 5+ at earliest."
-    - "Implement option (c) alpine refinement for S-ETS-03-04. REJECTED in ADR-009 Sprint 3 amendment — savings insufficient (50-100MB vs dedupe's 200-300MB) and musl libc compatibility risk."
-    - "Mutate REST-Assured request payloads in MaskingRequestLoggingFilter (would break authenticated IUT calls). The header swap MUST be transient (try/finally restoration mandatory)."
-    - "Sabotage against the user's worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/ for S-ETS-03-01. Use /tmp/ clones or built Docker image only (per ADR-010 + Sprint 3 contract worktree_pollution_constraint)."
-    - "Adopt the BeforeSuite SkipException pattern in testng.xml for Common (S-ETS-03-07). Defer to Sprint 4 when 4+ classes need it; Sprint 3 keeps single-block consolidation."
-    - "Ship more than 5 @Test methods in CommonTests for Sprint 3 (Sprint-1-style minimal — same risk-control rationale as Sprint 2 SystemFeatures)."
-    - "All Sprint 1+2 must_not entries continue to apply (Part 2 work, fixtures port, CITE work, frozen v1.0 modifications, ets-common version overrides without ADR, etc.)."
+    - "Modify ADRs 001-008 (frozen; only ADR-009 + ADR-010 amended in-place by Architect)"
+    - "Add new ADRs (ADR cardinality at 10; Architect ratified IN-PLACE amendments to ADR-009 + ADR-010 — NO new ADRs Sprint 4)"
+    - "Modify Sprint 1+2+3 contracts, gate reports, or v1.0 frozen artifacts"
+    - "Modify the new repo at ~/docker/gir/ets-ogcapi-connectedsystems10/ (worktree-pollution constraint; all work in /tmp/ clones)"
+    - "Run docker pull/build/run loops in gate runs (Quinn/Raze: ONE smoke run + curl + mvn test only per Pat's QUINN-RAZE-GATE-VERIFICATION-TIME-BUDGET mitigation)"
+    - "Pivot to authenticated IUT for credential-leak E2E (Architect ruled REJECT in DECISION-3; stub-IUT path is canonical)"
+    - "Implement Subsystems coverage beyond the 4 @Tests in design.md Sprint 4 Ratifications (full coverage is Sprint 5+ batched with sibling classes)"
+    - "Add a SECOND new conformance class to Sprint 4 (Procedures/Sampling/Properties/Deployments are Sprint 5+ batched siblings)"
+    - "Implement Subsystems write operations (POST/PUT/DELETE) — REQ-ETS-PART1-010 scope; deferred to Sprint 6+"
 
   should:
-    - "After landing each S-ETS-03-* commit, regenerate ops/test-results/sprint-ets-03-georobotix-smoke-<date>.xml and verify 12/12+ PASS. Archive to /tmp/ if running gates against fresh clones (do NOT pollute ~/docker/gir/ets-ogcapi-connectedsystems10/ worktree)."
-    - "S-ETS-03-01: pin TestNG version explicitly in pom.xml comments referencing org.testng.xml.Parser (so future migrations know the unit test depends on it)."
-    - "S-ETS-03-02: when writing VerifyMaskingRequestLoggingFilter unit tests, use ByteArrayOutputStream injection to capture the formatter output (avoids polluting test logs with masked content)."
-    - "S-ETS-03-04: include the TE 5.6.1 version in Dockerfile dedupe RUN step comments (so future TE bump knows to re-run the comm-comparison)."
-    - "S-ETS-03-04: document the BuildKit cache-hit rate behavior change (if any) post-dedupe in Implementation Notes."
-    - "S-ETS-03-07: copy the curl-verification methodology from Sprint 2 S-ETS-02-06 verbatim (proven pattern). Archive curl output BEFORE writing assertions — protects against silent IUT shape changes."
-    - "Generator batching per architecture.md §15.5 recommendation: Run 1 (-06 + -01) → Run 2 (-02 + -03 + -04) → Run 3 (-05 + -07). Aligns with file-touch graph; minimizes context switching."
-    - "When in doubt, copy from Sprint 2's analogous patterns verbatim (CredentialMaskingFilter → MaskingRequestLoggingFilter; SystemFeaturesTests → CommonTests; Sprint 2 testng.xml → Sprint 3 testng.xml). Innovation here is anti-value."
+    - "Verify TestNG transitive cascade behavior empirically in S-ETS-04-05 BEFORE deciding whether @BeforeSuite fallback is functionally inert OR load-bearing; document the resolution in S-ETS-04-05 Implementation Notes"
+    - "Prefer per-<test>-block testng.xml form for <group depends-on> declarations (mirrors Sprint 2/3 baseline) UNLESS consolidated-suite-level form is empirically required for transitive cascade in TestNG 7.9.0"
+    - "Archive image-size baseline (BEFORE chown-layer attack) AND post-attack measurement in S-ETS-04-02 Implementation Notes for traceability"
+    - "Use ephemeral port (Python socket.bind(('', 0))) for stub-IUT in scripts/stub-iut.sh; write resolved port to /tmp/stub-iut-port for caller discovery (per ADR-010 sabotage-script pattern; closes port-collision risk)"
+    - "If Pat's surfaced GEOROBOTIX-SUBSYSTEMS-SHAPE-MISMATCH risk materializes (404 on /systems/{id}/subsystems), implement SKIP-with-reason for all 4 Subsystems @Tests; the testng.xml + bash sabotage two-level cascade verification still proves the dependency wiring (which is the architectural goal — IUT-side coverage is secondary)"
+    - "Sequence S-ETS-04-04 sabotage-script bug fixes FIRST so subsequent stories inherit fixed primitives (ephemeral ports + trap cleanup + restoration ordering)"
 
 surfaced_risks:
-  - id: "GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION"
-    severity: medium
+  - id: "TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK"
+    severity: "high (preserved from Pat)"
+    architect_mitigation: |
+      ADR-010 v2 amendment ratifies defense-in-depth (testng.xml + @BeforeSuite
+      fallback). Generator MUST implement BOTH; the @BeforeSuite is a
+      pre-ratified fallback (no Architect re-cycle needed if testng.xml form
+      alone underperforms). Runtime verification mandatory; archived testng-
+      results.xml is canonical evidence.
+
+  - id: "CHOWN-LAYER-ATTACK-MAY-NOT-MATERIALIZE-EXPECTED-SAVINGS"
+    severity: "medium (preserved from Pat)"
+    architect_mitigation: |
+      ADR-009 v2 amendment documents PARTIAL acceptance band (600-650MB) +
+      tier-2 version-overlap dedupe fallback (~7-8MB additional per Sprint 3
+      empirical analysis intra-WEB-INF/lib duplicate-version table) +
+      Sprint 5+ alpine-variant roadmap. Generator runtime verification
+      empirically determines actual outcome; PARTIAL is contractually
+      acceptable.
+
+  - id: "TESTNG-BEFORE-SUITE-VS-DEPENDS-ON-GROUPS-INTERACTION-ORDERING"
+    severity: "low (NEW Architect-surfaced risk)"
     description: |
-      ADR-009 Sprint 3 amendment provides an illustrative jar exclusion table
-      but EXPLICITLY mandates empirical derivation. Risk: Generator may treat
-      the illustrative table as authoritative and skip the comm-comparison step,
-      shipping a jar set that doesn't match the actual Maven dep tree at
-      Sprint 3 implementation time. Symptom: image size doesn't reach 450MB OR
-      removes a jar that breaks 12/12 PASS.
-    mitigation: |
-      Captured in constraints_for_generator.must (item 11) and must_not (item 5).
-      Acceptance criterion in S-ETS-03-04 should require archiving the empirical
-      enumeration BEFORE the Dockerfile edit (sequencing: enumerate → archive →
-      edit). Quinn verifies the archive matches the Dockerfile exclusion list at
-      gate review.
+      If both testng.xml <group depends-on> and @BeforeSuite SkipException
+      activate, the result is idempotent SKIP either way. However, if @BeforeSuite
+      reads SuiteAttribute keys (core.failed / systemfeatures.failed) BEFORE
+      Core/SystemFeatures @Tests have run (TestNG @BeforeSuite fires once per
+      suite, before ANY test), the keys may be null / absent. SuiteFixtureListener
+      extension to populate these keys via ITestListener.onTestFailure runs AFTER
+      individual test failures — so the @BeforeSuite check on subsequent test
+      classes (Subsystems' @BeforeSuite for the Subsystems class) needs careful
+      ordering verification. Mitigation: Generator empirically verifies in
+      S-ETS-04-05; if ordering is wrong, fall back to @BeforeClass on
+      SubsystemsTests (fires per-class, after upstream classes).
 
-  - id: "MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING"
-    severity: low
+  - id: "STUB-IUT-PORT-LEAK-ACROSS-SCRIPT-RUNS"
+    severity: "low (NEW Architect-surfaced risk)"
     description: |
-      design.md §wrap pattern's MaskingRequestLoggingFilter overrides
-      RequestLoggingFilter (request-side). REST-Assured also has
-      ResponseLoggingFilter (response-side). If the Sprint 2 baseline registered
-      both Request + Response logging filters, only the request side is being
-      hardened in Sprint 3. The response side could leak Set-Cookie or
-      Authorization-bounce headers.
-    mitigation: |
-      Generator should grep SuiteFixtureListener.java for any
-      ResponseLoggingFilter registration. If present, the same wrap pattern
-      applies — extend ResponseLoggingFilter into MaskingResponseLoggingFilter
-      with the same try/finally pattern (mirror image; ~30 LOC). If not present,
-      no action. This finding is captured here as a Sprint 3 close audit item;
-      Generator notes in Implementation Notes whether ResponseLoggingFilter
-      exists in the Sprint 2 baseline.
+      If scripts/verify-credential-leak.sh aborts mid-run, the stub-IUT Python
+      process may continue running on the ephemeral port; subsequent runs would
+      fail to bind OR get a different port confusing /tmp/stub-iut-port readers.
+      Mitigation: trap cleanup EXIT per S-ETS-04-04 fix pattern MUST kill the
+      stub-IUT process by PID (not by port). Document the PID-tracking pattern
+      in scripts/stub-iut.sh.
 
-  - id: "STUB-SERVER-PORT-COLLISION-IN-CI"
-    severity: low
-    description: |
-      ADR-010 §Risks notes the stub-server may collide with port 5000 (or
-      whatever Generator picks) on GitHub Actions runners. Mitigation in ADR
-      (ephemeral port via socket.bind(('', 0))) is correct but adds Generator
-      complexity vs hardcoded port.
-    mitigation: |
-      Hardcoded port + retry-on-collision is acceptable as a simpler fallback
-      if ephemeral-port is fragile. Generator picks pragmatically; document
-      in Implementation Notes. CI failure of dependency-skip job due to port
-      collision is recoverable (workflow re-run) and rare.
-
-architectural_decisions_resolved:
-  - id: "DEPENDENCY-SKIP-APPROACH"
-    question: "Pat's option (a), (b), or (c)?"
-    resolution: |
-      Option (c) BOTH. Bash sabotage canonical (CITE-SC-grade end-to-end);
-      TestNG unit test fast-feedback structural lint. Stub-server sabotage
-      preferred over testng.xml mutation. Defense-in-depth role split per
-      ADR-010. Worktree-pollution constraint embedded.
-  - id: "REST-ASSURED-LOGGING-FILTER-WRAP-PATTERN"
-    question: "Pat's option (a) subclass, (b) chained-filter, or (c) full-replacement?"
-    resolution: |
-      Option (a) subclass. MaskingRequestLoggingFilter extends RequestLoggingFilter;
-      try/finally header swap pattern (originals restored before HTTP request
-      reaches IUT). Per design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter
-      wrap pattern". Rejected (b) (fragile to filter-order changes) and (c)
-      (overkill — re-implements 200+ LOC of formatting).
-  - id: "IMAGE-SIZE-OPTIMIZATION-APPROACH"
-    question: "Pat's option (a) deps-closure dedupe, (b) distroless, or (c) alpine?"
-    resolution: |
-      Option (a) TE common-libs ↔ deps-closure dedupe. Per ADR-009 Sprint 3
-      amendment (in-place; not a new ADR — it's a continuation of the original
-      ADR-009 §Negative bullet 4 deferral). Empirical exclusion list mandated;
-      illustrative table is not authoritative. Rejected (b) distroless
-      (Sprint 5+) and (c) alpine (50-100MB savings insufficient + musl risk).
-
-surfaced_questions_resolved:
-  - id: "REST-ASSURED-WRAP-ADR-OR-DESIGN-MD"
-    question: "Should REST-Assured RequestLoggingFilter wrap warrant its own ADR or just design.md §529 amendment?"
-    resolution: |
-      design.md amendment (NOT a new ADR). Justification: (a) wrap uses well-
-      trodden REST-Assured public Filter SPI; (b) masking semantics already in
-      CredentialMaskingFilter.maskValue() from Sprint 2; (c) wrap is 30-50 LOC
-      subclass — decision surface too small per the Sprint 2 §14.5
-      NO-ADR-for-CredentialMaskingFilter precedent; (d) audit weight carried by
-      NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 + the now-mandated
-      credential-leak integration test. ADR-010 §Notes cross-references the
-      design.md section to maintain traceability.
+  - id: "GEOROBOTIX-SUBSYSTEMS-SHAPE-MISMATCH"
+    severity: "medium (preserved from Pat)"
+    architect_mitigation: |
+      design.md §'Sprint 4 hardening: Subsystems conformance class scope'
+      explicitly accepts SKIP-with-reason if GeoRobotix returns 404 — the
+      testng.xml + bash sabotage two-level cascade verification still proves
+      the dependency wiring (architectural goal). 4-@Test scope minimizes
+      structural commitment if GeoRobotix shape diverges.
 
 confidence: 0.91
 confidence_rationale: |
-  Higher confidence (0.91 vs Sprint 2's 0.89) because:
-    + (+) All 3 deferred decisions have direct empirical grounding from Pat's
-          analysis + my prior architectural decisions (ADR-009 §Negative bullet 4
-          ANTICIPATED Sprint 3 carryover for the dedupe; design.md §529 already
-          flagged the Sprint 3 hardening; ADR-010 builds on TestNG XmlSuite API
-          which is well-documented).
-    + (+) The 7 stories in Pat's contract map cleanly to the architectural
-          deliverables; no scope-rewrite signals surfaced. Generator's path is
-          unambiguous.
-    + (+) No new external dependencies introduced. REST-Assured 5.5.0 is already
-          declared (Sprint 2); MaskingRequestLoggingFilter is pure-Java subclass
-          using public SPI.
-    + (+) Architect cycle was tightly scoped (~25 min wall-clock per the
-          mitigation plan vs Sprint 2's 30-50 min). Token usage well within
-          budget.
-    + (+) Sprint 2 quality trend is accelerating (Quinn 0.96 / Raze 0.92 best
-          single-story verdicts). Sprint 3 inherits the same tooling + patterns,
-          so quality-trend extrapolates favorably.
-    - (-) Did not validate the MaskingRequestLoggingFilter actually compiles
-          against the real REST-Assured 5.5.0 jar (no mvn invocation). The wrap
-          pattern is grounded in REST-Assured Javadoc + the existing
-          CredentialMaskingFilter pattern which DOES compile against the same
-          jar. Runtime validation is Generator's S-ETS-03-02 work.
-    - (-) Did not validate the TestNG XmlSuite API is callable from a unit test
-          (no JVM invocation). The API is documented at javadoc.io and is
-          publicly stable; runtime validation is Generator's S-ETS-03-01 work.
-    - (-) Empirical dedupe list is not pre-derived (would have required Docker
-          + mvn invocation, both blocked by the timeout-mitigation plan).
-          Generator does the comm-comparison as part of S-ETS-03-04 acceptance.
+  - (+) All 3 deferred decisions ratified with concrete artifacts (ADR-009 v2 +
+        ADR-010 v2 amendments + design.md Sprint 4 Ratifications section);
+        write-handoff-FIRST mitigation in effect; all files written within
+        budget (~25 min wall-clock projected; actual ~7 min)
+  - (+) Both surfaced suggestions resolved (chown-scratch SKIPPED with explicit
+        rationale; Subsystems scope = Sprint-1-style minimal per Pat's
+        recommendation)
+  - (+) Defense-in-depth pattern selected for highest-severity risk
+        (TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK); both testng.xml + @BeforeSuite
+        pre-ratified — no Architect re-cycle needed regardless of TestNG runtime
+        outcome
+  - (+) ADR-009 + ADR-010 v2 amendments preserve audit trail (no fragmentation
+        across ADR-011 / ADR-012 hypothetical splits); ADR cardinality stable
+        at 10
+  - (+) Sprint 3 empirical evidence (sprint-ets-03-04-empirical-dedupe-list-
+        2026-04-29.txt) referenced as PRIMARY input for ADR-009 v2 amendment
+        falsification record — anchors decisions in observed reality, not
+        projection
+  - (+) 2 new Architect-surfaced risks (TESTNG-BEFORE-SUITE-ORDERING +
+        STUB-IUT-PORT-LEAK) flagged for Generator pre-emptively; mitigation
+        guidance embedded in constraints_for_generator.should
+  - (-) Optional Architect chown-scratch rebuild SKIPPED per mitigation —
+        Generator's S-ETS-04-02 PARTIAL outcome remains a possibility
+        (acceptable per Sprint 4 contract; tier-2 + alpine fallbacks documented)
+  - (-) TestNG 7.9.0 transitive cascade behavior unverified pre-Generator
+        (cannot test without docker/mvn per mitigation); defense-in-depth is
+        the contingency
+  - (-) ADR cardinality at 10 = the stated threshold for considering
+        _bmad/adrs/INDEX.md (Pat's ADR-CARDINALITY-DRIFT risk); deferred to
+        Sprint 5+ per §16.6 — borderline call but defensible
+  - (-) Confidence comparable to Sprint 3's 0.91 (Architect's previous best);
+        consistent gate-trending suggests the architectural baseline is stable;
+        Sprint 4 doesn't introduce v2.0+ baseline drift
 
-residual_questions: []
+  Sprint 4 confidence target met (Pat's 0.87 → Architect's 0.91); gates remain
+  the load-bearing verification path.
 
-blockers: []
+estimated_generator_effort: |
+  Per Pat's planner-handoff estimate: 8-12h Generator wall-clock for 5 stories.
+  Architect concurs. S-ETS-04-05 (Subsystems + two-level cascade) is the
+  highest-novelty story (~3-4h); -02 (chown-layer attack + size verification)
+  ~2h; -03 (credential-leak E2E + stub IUT) ~2h; -04 (sabotage-script fixes)
+  ~30min mechanical; -01 (CI workflow git mv OR formal-drop) ~30min.
+
+orchestrator_handoff_note: |
+  This architect-handoff.yaml was authored by Alex (Architect sub-agent, fresh
+  context) at 2026-04-29T15:35-15:43Z. Per autonomous-loop mitigation directive,
+  Alex wrote this handoff FIRST as a stub (Task 0) and updated incrementally
+  throughout the run as each substantive deliverable landed: ADR-009 v2 amendment
+  → handoff update → ADR-010 v2 amendment → handoff update → design.md Sprint 4
+  Ratifications → handoff update → architecture.md §16 → final handoff
+  finalization. All 7 tasks completed within 8 minutes (well within 25-min
+  budget). 5 prior sub-agent timeouts → 8 consecutive successes. The
+  write-handoff-FIRST safety net continues to prove robust.

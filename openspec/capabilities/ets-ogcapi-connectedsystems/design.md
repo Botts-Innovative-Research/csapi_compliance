@@ -653,8 +653,154 @@ Architect choses **option (i) — lightweight footnote amendment** (not full ADR
 
 Rationale for option (i) over (ii) full rewrite: ADR-001 is correct about the SPI registration mechanics (META-INF/services file, TestNGController class, ets.properties, testng.xml, CTL wrapper — all verified at runtime in S-ETS-01-03 smoke). Only the one parenthetical remark about "production Docker image loads it without modification" is wrong. A footnote is the lightest touch that preserves the historical record.
 
+## Sprint 4 Ratifications (2026-04-29)
+
+### Sprint 4 hardening: credential-leak E2E via stub IUT (S-ETS-04-03)
+
+**Architect ratifies: option (a) stub IUT in `/tmp/`** — REJECTS option (b) authenticated IUT pivot (sacrifices hermeticity; CITE SC reviewers cannot reproduce without IUT credentials) and option (c) extended unit-layer fallback (already shipped in Sprint 3 `VerifyMaskingRequestLoggingFilter` unit tests; insufficient as E2E evidence per Quinn cumulative CONCERN-3 / Raze cumulative CONCERN-1 deeper-E2E gap).
+
+Justification:
+
+1. **Composability with S-ETS-04-04 sabotage-script bug fixes**. The Sprint 3 stub-server pattern (per ADR-010 §Decision option b) already exists in bash form at `scripts/verify-dependency-skip.sh`. S-ETS-04-04 fixes the known sabotage-script bugs (Pat enumerated; mostly mechanical). Extending the same stub-server to also echo the inbound `Authorization` header in a 401 response gives a single hermetic primitive that powers BOTH the dependency-skip verification AND the credential-leak verification — minimum new code.
+2. **Hermeticity preserved**. `/tmp/` stub IUT has no network egress, no real credentials, no IUT-vendor coordination. The synthetic credential `Bearer ABCDEFGH12345678WXYZ` is the same Sprint 2 + Sprint 3 unit-test fixture; reusing it gives the integration test trivial reproducibility.
+3. **The masking gap is a SIDE-CHANNEL gap, not an IUT-vendor-specific gap**. CredentialMaskingFilter + MaskingRequestLoggingFilter both operate against the outbound REST-Assured request lifecycle independent of which IUT receives the call. A stub IUT that simply records "yes, I received an Authorization header; here's what I saw verbatim" gives sufficient E2E coverage to assert the masking pipeline did its job without leaking the credential into TestNG XML attachments / container logs / REST-Assured stdout.
+
+Reject (b): pivoting to an authenticated IUT (e.g. GeoRobotix with a leased credential) would (i) introduce vendor-coordination latency, (ii) leak a real credential into the project's test corpus (CITE SC submission risk), (iii) fail closed if IUT is offline. Reject (c): unit-layer tests don't exercise REST-Assured's actual request emission pipeline; insufficient as the deferred-from-Sprint-3 E2E evidence.
+
+#### Stub IUT extension pattern
+
+`scripts/stub-iut.sh` (NEW; or extend the Sprint 3 stub-server inline within `scripts/verify-credential-leak.sh`):
+
+```bash
+#!/usr/bin/env bash
+# Sprint 4 stub IUT for credential-leak E2E verification.
+# Echoes the inbound Authorization header back in the 401 response body so
+# downstream test logic can assert "what the stub received" vs "what the logs
+# / TestNG attachments captured" — proving the masking pipeline worked.
+#
+# Per design.md §"Sprint 4 hardening: credential-leak E2E via stub IUT (S-ETS-04-03)".
+
+set -euo pipefail
+PORT="${1:-0}"  # 0 = ephemeral; bind script writes resolved port to /tmp/stub-iut-port
+
+python3 - <<'PYEOF' &
+import http.server
+import socketserver
+import sys
+import os
+
+class StubIUT(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Capture incoming Authorization header verbatim for echo-back.
+        auth = self.headers.get("Authorization", "")
+        body = f'{{"received_authorization": "{auth}"}}\n'.encode()
+        self.send_response(401)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+    def log_message(self, format, *args):
+        pass  # suppress access log
+
+sock = socketserver.TCPServer(("127.0.0.1", 0), StubIUT)
+port = sock.server_address[1]
+with open("/tmp/stub-iut-port", "w") as f:
+    f.write(str(port))
+sock.serve_forever()
+PYEOF
+
+# Caller reads /tmp/stub-iut-port to discover the bound port; stub keeps running until killed.
+echo "Stub IUT started on port $(cat /tmp/stub-iut-port)" >&2
+```
+
+#### E2E test flow
+
+`scripts/verify-credential-leak.sh` (already mandated by S-ETS-03-02; Sprint 4 S-ETS-04-03 strengthens with stub-IUT integration):
+
+1. Launch `scripts/stub-iut.sh` in background (binds ephemeral port; writes `/tmp/stub-iut-port`).
+2. Run `scripts/smoke-test.sh` against the stub IUT with `-DiutUri=http://127.0.0.1:$(cat /tmp/stub-iut-port)` and synthetic credential `-Dauth-credential="Bearer ABCDEFGH12345678WXYZ"`.
+3. Smoke completes (TestNG suite executes; Core landing-page assertion fails because stub returns 401 — expected; the test goal is the masking pipeline, not the assertion outcome).
+4. Grep for the literal credential substring `EFGH12345678WXYZ` in:
+   - `target/testng-results.xml` (zero hits required)
+   - The container's stdout log (zero hits required) — fetched via `docker logs <container_id> > /tmp/container-log.txt`
+   - REST-Assured's request-emission stdout if separately captured (zero hits required)
+5. Grep for the masked form `Bear***WXYZ` in the same logs/attachments — at least one hit required (proves the masking filter ran rather than silently dropping the header).
+6. **Cross-check via stub-IUT echo**: parse the stub IUT's 401 response body (preserved in the smoke run's TestNG attachments). Assert that the `received_authorization` field contains the FULL UNMASKED credential `Bearer ABCDEFGH12345678WXYZ` — proving REST-Assured restored the original header before HTTP transmission per the Sprint 3 try/finally pattern (so the IUT receives the credential as the user intended).
+7. Tear down stub IUT (`kill $stub_pid`); cleanup `/tmp/stub-iut-port`.
+
+This three-fold cross-check (logs masked + stub received unmasked + masked form present in logs) is the strongest possible hermetic evidence for the credential-masking pipeline.
+
+#### Composability with S-ETS-04-04 sabotage-script fixes
+
+S-ETS-04-04 fixes the Sprint 3 sabotage-script bugs (per Pat's enumeration: stub-server kill on script abort, port-collision retry, jar-restoration `trap` ordering). The fixes apply to `scripts/verify-dependency-skip.sh` AND propagate to the new `scripts/verify-credential-leak.sh` AND `scripts/stub-iut.sh`:
+
+- The `trap cleanup EXIT` block extends to kill the stub-IUT process AND remove `/tmp/stub-iut-port`.
+- The ephemeral-port allocation pattern (Python `socket.bind(('', 0))`) is the same in both scripts.
+- The `ops/test-results/` archival pattern carries over (stub IUT logs archived per Sprint 4 close).
+
+S-ETS-04-04 SHOULD ship BEFORE S-ETS-04-03 so the credential-leak script inherits the fixed primitives; Pat's deferred_to_generator sequencing already reflects this.
+
+#### Acceptance criterion (S-ETS-04-03)
+
+The Sprint 4 contract's `success_criteria.credential_leak_e2e_test_green` is satisfied when:
+
+- `scripts/verify-credential-leak.sh` exits zero.
+- `ops/test-results/sprint-ets-04-credential-leak-evidence.txt` archives: (i) the synthetic credential used, (ii) the stub-IUT received-authorization echo (full unmasked), (iii) the grep results from logs/attachments (zero unmasked + at least one masked), (iv) the cross-check verdict.
+- A CI job runs the script on every PR + main push (per S-ETS-04-01 `ci_workflow_live_or_formally_dropped` outcome — if CI workflow is dropped per Path B, the script runs locally as a `make` target).
+
+### Sprint 4 hardening: Subsystems conformance class scope (S-ETS-04-05)
+
+**Architect ratifies: Sprint-1-style minimal — 4 @Test methods at Sprint 4 close** (parallel to SystemFeatures Sprint 2 §"SystemFeatures conformance class scope" + Common Sprint 3 baseline). Full per-class expansion deferred to Sprint 5+ when sibling classes (Procedures, Sampling, Properties, Deployments) are batched.
+
+Pat enumerated 5 SCENARIOs in REQ-ETS-PART1-003 (now SPECIFIED in spec.md). Architect maps these to 4 @Test methods + 1 testng.xml-level wiring concern (the dependency-skip SCENARIO is `<dependencies>` config, not a method):
+
+| @Test method | Asserts | SCENARIO closed |
+|---|---|---|
+| `subsystemsResourcesEndpointReturnsCollection` | `GET /systems/{id}/subsystems` → status 200; body has array `items` (or equivalent — Generator MUST curl-verify GeoRobotix's actual shape FIRST per acceptance criterion #1); SKIP-with-reason if 404 (IUT does not implement Subsystems) | SCENARIO-ETS-PART1-003-SUBSYSTEMS-RESOURCES-001 (CRITICAL) |
+| `subsystemCanonicalEndpointReturnsBaseShape` | for the first subsystem item: has string `id`, string `type`, array `links` per REQ-ETS-CORE-004 base shape | SCENARIO-ETS-PART1-003-SUBSYSTEMS-CANONICAL-001 (NORMAL) |
+| `subsystemHasParentSystemLink` | subsystem item's `links` array contains an entry with `rel="system"` (or equivalent OGC-defined relation referencing the parent system); this is the **UNIQUE-TO-SUBSYSTEMS** assertion — the architectural invariant that distinguishes subsystems from sibling collection types | SCENARIO-ETS-PART1-003-SUBSYSTEMS-PARENT-LINK-001 (NORMAL) |
+| `subsystemHasCanonicalLink` | subsystem item's `links` array contains `rel="canonical"` (absence of `rel="self"` is NOT FAIL — preserves v1.0 GH#3 fix policy from Core landing page) | SCENARIO-ETS-PART1-003-SUBSYSTEMS-CANONICAL-URL-001 (NORMAL) |
+
+The `dependsOnGroups="systemfeatures"` wiring (SCENARIO-ETS-PART1-003-SUBSYSTEMS-DEPENDENCY-SKIP-001 — CRITICAL) is a **testng.xml change**, not a @Test method — handled per ADR-010 v2 amendment (defense-in-depth: `<group depends-on>` extension in testng.xml + `@BeforeSuite` SkipException fallback in `SubsystemsTests`).
+
+#### Subpackage layout
+
+`org.opengis.cite.ogcapiconnectedsystems10.conformance.subsystems.SubsystemsTests` — single class for Sprint 4. Mirrors the Sprint 2 SystemFeaturesTests pattern (1:1 class:conformance-class structure). If Sprint 5+ expansion grows the @Test count beyond ~10, split into `SubsystemsCollectionTests` + `SubsystemsItemTests` (deferred per the SystemFeatures-pattern precedent at design.md §437 line 439).
+
+#### Fixtures and listeners
+
+No new fixtures or listeners needed for Sprint 4. The existing `SuiteFixtureListener` supplies `iutUri`. Subsystems' `@BeforeClass` performs `GET /systems` ONCE to extract a sample system `id`, then `GET /systems/{id}/subsystems` ONCE to cache the response shape — pattern mirrors `SystemFeaturesTests.fetchSystemsCollection()`.
+
+If the `@BeforeSuite` SkipException fallback (per ADR-010 v2 amendment) activates, SuiteFixtureListener may need a small extension to populate `core.failed` / `systemfeatures.failed` SuiteAttribute keys via `ITestListener.onTestFailure` — Generator implements ONLY IF runtime verification shows TestNG transitive cascade does not work without it.
+
+#### Coverage scope rationale (Sprint-1-style narrowing — third extension)
+
+Pat recommended Sprint-1-style minimal for risk control on the third pattern extension AND first two-level dependency chain. Architect concurs because:
+
+1. **First two-level dependency chain compounds risk surface.** Sprint 4 introduces TWO new architectural firsts simultaneously: (i) the third conformance-class extension, (ii) the first multi-level group-dependency chain. Minimizing per-class @Test count concentrates Generator + gate verification effort on the dependency-cascade verification (the riskier of the two firsts).
+2. **The 4 chosen SCENARIOs cover the foundational shape** AND the unique-to-Subsystems `parent-system-link` assertion. The remaining ~3-5 ATS items in OGC 23-001 Annex A `/conf/subsystem/` (canonical-url depth, location-time geometry, cross-system queries, write operations, advanced filtering interactions) layer on top — once the foundation + two-level cascade are proven, expansion is mechanical AND batches cleanly with sibling classes.
+3. **Beta gate doesn't require full per-class coverage.** Per the SystemFeatures rationale (§"Coverage scope rationale (Sprint-1-style narrowing)" line 453), CITE SC review approves on the basis of "the test class exists, runs, and produces deterministic verdicts" — depth comes during the 6-12 month beta period via passing-IUT outreach.
+4. **GeoRobotix's `/systems/{id}/subsystems` shape is unknown until Generator curls it** (acceptance criterion #1 mandates curl-first). 4 @Tests adapt cleanly to whatever GeoRobotix returns; 12-15 would force structural choices we'd regret OR force a SKIP-with-reason cascade that breaks the demonstration of the multi-level dependency mechanism.
+5. **GEOROBOTIX-SUBSYSTEMS-SHAPE-MISMATCH risk** (Pat surfaced; medium severity). If GeoRobotix returns 404 on `/systems/{id}/subsystems`, the entire Subsystems class SKIP-with-reasons (acceptable Sprint 4 outcome — the testng.xml two-level dependency wiring is still verified via the sabotage exec, which doesn't require IUT 200s). 4 @Tests narrow the scope of "what to SKIP gracefully if IUT doesn't implement Subsystems".
+
+Sprint 5+ expansion targets (mechanical extensions, batched with Procedures/Sampling/Properties/Deployments siblings):
+
+- `subsystemCanonicalUrlReturns200` — REQ-ETS-PART1-003 / `/req/subsystem/canonical-url` deeper assertion
+- `subsystemHasGeometryAndValidTime` (NORMAL — `MAY` priority) — `/req/subsystem/location-time` if present in OGC 23-001 Annex A
+- `subsystemAppearsInCollections` — cross-system query (parent-system-link inverse direction)
+- Plus ~2-3 more covering filter-by-property and filter-by-time interactions
+
+Architect estimates Sprint 5 Subsystems-expansion-bundled-with-Procedures/Sampling at ~6-8 hours Generator time (mechanical extensions across 3-4 sibling classes sharing the SystemFeatures dependency baseline).
+
+#### What NOT to ship in Sprint 4
+
+- **Subsystems write operations** (POST / PUT / DELETE on `/systems/{id}/subsystems`): REQ-ETS-PART1-010 (`create-replace-delete`) scope; deferred to Sprint 6+ per epic-ets-02 placeholder repositioning.
+- **Cross-system query depth**: `GET /systems?subsystem.id=X` filtering not in Sprint 4 scope; covered by REQ-ETS-PART1-009 (`advanced-filtering`) when that class lands.
+- **Subdeployments coverage**: REQ-ETS-PART1-005 (`subdeployments`) is a related-but-distinct OGC 23-001 conformance class; deferred to Sprint 5+ batching.
+- **Common conformance class expansion** (4 → 8 @Tests per Quinn cumulative CONCERN-2): per-Pat-Sprint-4-conformance-class-pick rationale, this is "by-design minimal-then-expand" — explicit deferral to Sprint 5+ when user prioritizes batching with sibling classes.
+
 ## Status
 
-**Approved for Sprint 1 + Sprint 2 ratifications**. Generator (Dana) may begin S-ETS-02-* work in dependency order per Sprint 2 contract. The 4 architectural deferrals + 2 surfaced questions are now resolved; ADRs 006, 007, 008, 009 + this section's CredentialMaskingFilter rules + ADR-001 cross-reference amendment cover them.
+**Approved for Sprint 1 + Sprint 2 + Sprint 3 + Sprint 4 ratifications**. Generator (Dana) may begin S-ETS-04-* work in Pat's recommended dependency order (S-ETS-04-04 → -01 → -03 → -02 → -05) per Sprint 4 contract `deferred_to_generator` block. Architect's 3 deferred decisions + 2 surfaced suggestions are now resolved; ADR-009 v2 amendment + ADR-010 v2 amendment + this Sprint 4 Ratifications section's stub-IUT credential-leak design + Subsystems coverage scope cover them.
 
-The S-ETS-01-03 CONCERNS verdict from Sprint 1 is closed retroactively by ADR-007 (the deviation it flagged is now ratified).
+The Sprint 1 + Sprint 2 + Sprint 3 ratifications above remain canonical. The S-ETS-01-03 CONCERNS verdict from Sprint 1 remains closed retroactively by ADR-007.

@@ -101,3 +101,155 @@ This unit test is a **structural lint** for the testng.xml dependency wiring. It
 - TestNG XmlSuite API: https://javadoc.io/doc/org.testng/testng/latest/org/testng/xml/XmlSuite.html
 - S-ETS-03-01 acceptance criteria (the work this ADR ratifies): `epics/stories/s-ets-03-01-dependency-skip-sabotage-test.md`
 - Sprint 3 contract worktree-pollution constraint: `.harness/contracts/sprint-ets-03.yaml` (`worktree_pollution_constraint` field)
+
+---
+
+## Sprint 4 v2 amendment (2026-04-29) — Two-level dependency-skip cascade (Subsystems → SystemFeatures → Core)
+
+**Trigger**: Sprint 4 S-ETS-04-05 introduces the **first two-level group-dependency chain** in the project — Subsystems depends on SystemFeatures, which depends on Core. Sprint 3's S-ETS-03-01 sabotage exec proved one-level cascade live (SystemFeatures→Core) but did NOT exercise multi-level cascade behavior. Pat surfaced TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK as the highest-severity Sprint 4 risk (TestNG's `<group depends-on>` mechanism is not explicitly documented as transitive across three-or-more levels).
+
+### Decision (Sprint 4 v2 amendment)
+
+**Architect ratifies option (c): BOTH (defense-in-depth)** — start with (a) testng.xml `<group depends-on>` extension AND add (b) `BeforeSuite` SkipException pattern in the Subsystems class as a fallback if TestNG's transitive cascade does not actually skip Subsystems when Core fails.
+
+Justification:
+
+1. **TestNG group dependencies are NOT documented as transitive across multi-level chains.** TestNG documentation (https://testng.org/#_dependent_methods, https://testng.org/#_groups) describes `dependsOnGroups` and `<group depends-on>` semantics for **direct** dependencies (group A depends on group B = if B has any FAIL/SKIP, A's methods become SKIP). Transitive cascade (B depends on C; A depends on B; C fails → does A skip?) is not explicitly stated as supported. Empirical observation in TestNG 7.9.0 source (`org.testng.internal.MethodHelper.calculateDependentExpressionMethods`) suggests it works for `dependsOnMethods` but the group-level cascade across multiple `<group depends-on>` declarations in `<dependencies>` is uncertain. **We must not bet Sprint 4 on undocumented behavior.**
+2. **Defense-in-depth aligns with the project's hardening pattern.** Sprint 3's CredentialMaskingFilter + MaskingRequestLoggingFilter wrap pair (§14.5 + §15.3) used the same defense-in-depth principle. Two independent failure modes are unlikely to coincide; either one alone closes the SCENARIO.
+3. **The cost of (b) is negligible** (~10 LOC `@BeforeSuite` annotation + SkipException; reusable pattern documented in design.md "Sprint 3+ migration path"). Adding it as a belt-and-braces fallback is cheap insurance.
+4. **Generator runtime verification is mandated** (Sprint 4 contract `success_criteria.two_level_dependency_skip_verified`) — extended bash sabotage (Core sabotage → assert SystemFeatures AND Subsystems both SKIP) is the canonical verification. If (a) alone passes the test, (b) is documented but inert (no harm; ready for next two-level chain in Sprint 5+); if (a) FAILs (Subsystems reports FAIL/ERROR instead of SKIP when Core fails), (b) activates and re-verifies. Either way, Sprint 4 ships green without an Architect re-cycle.
+
+Reject option (a) alone: bets Sprint 4 on undocumented TestNG transitive cascade behavior. Reject option (b) alone: structural lint + bash sabotage exec already prove (a)'s pattern works for one-level chains; deprecating (a) in favor of (b) for two-level would create implementation drift between Subsystems' wiring and SystemFeatures' (Sprint 2/3 baseline).
+
+### Implementation pattern
+
+**(a) testng.xml extension** (S-ETS-04-05 sub-task):
+
+Extend the canonical `src/main/resources/testng.xml` `<dependencies>` block to include the Subsystems group:
+
+```xml
+<test name="Subsystems">
+  <packages>
+    <package name="org.opengis.cite.ogcapiconnectedsystems10.conformance.subsystems"/>
+  </packages>
+  <groups>
+    <dependencies>
+      <group name="subsystems" depends-on="systemfeatures"/>
+    </dependencies>
+  </groups>
+</test>
+```
+
+**Critical**: keep the SystemFeatures `<group name="systemfeatures" depends-on="core"/>` declaration in the SystemFeatures `<test>` block (Sprint 2 baseline) AND add the Subsystems declaration in the Subsystems `<test>` block. Some TestNG versions process group dependencies per-`<test>`-block and transitive cascade requires the entire chain to be visible at suite-load time.
+
+**Alternative single-block consolidation** (Pat's option (a) hypothesis — also valid; Generator picks based on TestNG runtime behavior):
+
+Some TestNG documentation suggests consolidating `<dependencies>` into a single suite-level block:
+
+```xml
+<suite name="ets-ogcapi-connectedsystems10">
+  <groups>
+    <dependencies>
+      <group name="systemfeatures" depends-on="core"/>
+      <group name="subsystems" depends-on="systemfeatures"/>
+    </dependencies>
+  </groups>
+  <test name="Core">...</test>
+  <test name="SystemFeatures">...</test>
+  <test name="Subsystems">...</test>
+</suite>
+```
+
+Generator MUST verify which form actually triggers transitive cascade in TestNG 7.9.0 (the version ets-common 17 enforces). The per-`<test>` form is the conservative default (mirrors Sprint 2/3 baseline); the consolidated form is the cleaner pattern if it works.
+
+**(b) `@BeforeSuite` SkipException fallback** (S-ETS-04-05 sub-task; conditionally activated):
+
+`org.opengis.cite.ogcapiconnectedsystems10.conformance.subsystems.SubsystemsTests`:
+
+```java
+package org.opengis.cite.ogcapiconnectedsystems10.conformance.subsystems;
+
+import org.testng.SkipException;
+import org.testng.annotations.BeforeSuite;
+import org.testng.ITestContext;
+// ... existing imports
+
+public class SubsystemsTests {
+
+    /**
+     * Sprint 4 v2 amendment defense-in-depth: if TestNG's group-level transitive
+     * cascade does NOT auto-skip Subsystems when Core OR SystemFeatures fails,
+     * this @BeforeSuite explicitly checks the upstream conformance state from
+     * SuiteAttribute and throws SkipException.
+     *
+     * NOTE: only activates if Generator empirically verifies that
+     * `<group depends-on>` transitive cascade is not delivered by TestNG 7.9.0.
+     * Otherwise this method is a no-op (safe to leave in for forward compatibility
+     * with Sprint 5+ multi-level chains).
+     *
+     * Per ADR-010 v2 amendment §"Implementation pattern (b)".
+     */
+    @BeforeSuite(alwaysRun = true)
+    public void verifyUpstreamConformancePassed(ITestContext context) {
+        // SuiteFixtureListener stashes upstream pass/fail state into SuiteAttribute
+        // (Generator extends SuiteFixtureListener if not already present).
+        Boolean coreFailed = (Boolean) context.getSuite().getAttribute("core.failed");
+        Boolean systemFeaturesFailed = (Boolean) context.getSuite().getAttribute("systemfeatures.failed");
+        if (Boolean.TRUE.equals(coreFailed)) {
+            throw new SkipException("Subsystems SKIPPED — upstream Core conformance class FAILed; two-level cascade fallback (ADR-010 v2)");
+        }
+        if (Boolean.TRUE.equals(systemFeaturesFailed)) {
+            throw new SkipException("Subsystems SKIPPED — upstream SystemFeatures conformance class FAILed; two-level cascade fallback (ADR-010 v2)");
+        }
+    }
+}
+```
+
+This pattern requires SuiteFixtureListener to track per-conformance-class pass/fail state (Generator extends if not already present per a Sprint 3+ migration-path design.md note). For Sprint 4, the conditional activation criterion: if (a) testng.xml form alone passes the extended bash sabotage test, leave the @BeforeSuite in place as forward-compat insurance but document it as "INERT — TestNG transitive cascade verified working in TestNG 7.9.0 against this suite".
+
+### Test verification approach (Generator MUST implement at runtime)
+
+S-ETS-04-05 acceptance criterion: extend `scripts/verify-dependency-skip.sh` (or add a sibling `scripts/verify-two-level-dependency-skip.sh`) to:
+
+1. Sabotage Core (per existing Sprint 3 stub-server pattern — ADR-010 §Decision option b "stub-server sabotage").
+2. Run smoke against the sabotaged config.
+3. Parse `target/testng-results.xml`:
+   - Assert `<test name="Core">` has at least one method with `status="FAIL"` (sabotage worked).
+   - Assert **EVERY** method in `<test name="SystemFeatures">` has `status="SKIP"` (one-level cascade — Sprint 3 baseline).
+   - Assert **EVERY** method in `<test name="Subsystems">` has `status="SKIP"` (TWO-LEVEL cascade — NEW for Sprint 4; closes SCENARIO-ETS-PART1-003-SUBSYSTEMS-DEPENDENCY-SKIP-001).
+4. **If step 3's third assertion FAILs** (Subsystems reports FAIL/ERROR/PASS instead of SKIP): TestNG transitive cascade does NOT work; activate (b) `@BeforeSuite` fallback in `SubsystemsTests`; re-run; assert SKIP this time.
+5. Archive the sabotaged `target/testng-results.xml` to `ops/test-results/sprint-ets-04-two-level-dependency-skip-evidence.xml` for gate-review.
+
+### Extension to VerifyDependencySkipWiring unit test
+
+`src/test/java/.../listener/VerifyDependencySkipWiring.java` (Sprint 3 baseline) SHALL be extended with a Subsystems structural assertion:
+
+- Assert `<test name="Subsystems">` exists in the canonical testng.xml.
+- Assert its `<groups><dependencies>` block contains `<group name="subsystems" depends-on="systemfeatures"/>` (or, if consolidated-block form is adopted, the suite-level `<dependencies>` block contains it).
+- Assert the dependency chain SystemFeatures→Core remains intact (no regression).
+
+Lightweight; ~10 LOC addition to the existing test class.
+
+### Consequences (Sprint 4 v2 amendment increment)
+
+**Positive**:
+- Defense-in-depth: testng.xml structural pattern (cheap to extend mechanically) + explicit `@BeforeSuite` (cheap insurance) cover both happy-path and fallback.
+- Forward-compatible with Sprint 5+ multi-level chains (Procedures→SystemFeatures→Core; Sampling→SystemFeatures→Core; etc.) — `@BeforeSuite` pattern ports cleanly.
+- Closes Pat's TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK risk pre-emptively without an Architect re-cycle if TestNG cascade underperforms.
+- Sets the canonical pattern for the project's group-dependency depth (one or two levels covered; deeper chains would extend the `@BeforeSuite` check, not introduce new architectural ratifications).
+
+**Negative**:
+- ~10 LOC `@BeforeSuite` overhead per conformance class (post-Sprint-4) if defense-in-depth is retained for forward chains. Acceptable.
+- SuiteFixtureListener may need a small extension to populate `core.failed` / `systemfeatures.failed` SuiteAttribute keys (TestNG's `ITestListener.onTestFailure` hook). ~15 LOC; carry as a Sprint 4 sub-task within S-ETS-04-05 IF the (b) fallback activates; defer otherwise.
+
+**Risks**:
+- **TestNG 7.9.0 transitive cascade behavior may surprise**. Mitigation: Generator runtime verification is mandatory; archived `target/testng-results.xml` is the canonical evidence (no theoretical assumption; binary observed-or-not result).
+- **`@BeforeSuite` activation order vs `dependsOnGroups` interaction**. If both fire and Subsystems' upstream-check throws SkipException, but TestNG already would have SKIPPED via group-dependency, the result is still SKIP (idempotent). If only `@BeforeSuite` is the active mechanism, all Subsystems @Tests are SKIPPED at suite startup. Either way: net effect = Subsystems methods report `status="SKIP"`. No conflict.
+
+### Notes / references (Sprint 4 v2 amendment)
+
+- TestNG 7.9.0 group dependencies docs: https://testng.org/#_groups (§"Dependencies")
+- Sprint 4 contract success criterion: `.harness/contracts/sprint-ets-04.yaml` `success_criteria.two_level_dependency_skip_verified`
+- S-ETS-04-05 acceptance criteria: `epics/stories/s-ets-04-05-subsystems-conformance-class.md`
+- SCENARIO-ETS-PART1-003-SUBSYSTEMS-DEPENDENCY-SKIP-001: `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`
+- Architecture v2.0.3 §16: `_bmad/architecture.md`

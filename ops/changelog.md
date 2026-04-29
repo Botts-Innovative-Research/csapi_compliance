@@ -2,6 +2,26 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T15:46Z — Sprint ets-04 ARCHITECTED: Alex ratified all 3 deferred decisions + 2 surfaced suggestions in 9m; ADR-009 v2 + ADR-010 v2 amendments + design.md Sprint 4 Ratifications + architecture v2.0.3 §16; next_agent generator confidence 0.91
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Pat's Sprint 4 handoff (`next_agent: architect`).
+- **Sub-agent**: Alex (general-purpose, fresh context, opus). 102,753 tokens / **9m wall-clock** / 26 tool uses; agentId `a19142b25014a3087`. **Within tight 25min/150K budget**. Mitigation pattern: 5 prior timeouts → **8 consecutive successes** (Alex + Dana ×3 + Quinn + Raze + Pat + Alex). Pattern reliable across all 5 BMAD roles.
+- **Decisions ratified**:
+  - **D1 ADR-009 v2 amendment** (Pat option a in-place; +139 lines): Records empirical falsification of 200-300MB jar-dedupe projection (Sprint 3 found only 4 jars/1.8MB exact-basename overlap). Ratifies chown-layer attack: `COPY --chown=tomcat:tomcat` + per-RUN-step chown eliminating ~80MB filesystem-attribute layer; target <600MB; PARTIAL acceptable 600-650MB. Sprint 5+ alpine roadmap documented.
+  - **D2 Two-level dependency-skip cascade = (c) BOTH defense-in-depth** (ADR-010 v2 amendment, +152 lines). TestNG 7.9.0 transitive cascade across multi-level chains is NOT explicitly documented; can't bet Sprint 4 on undocumented behavior. Ratifies testng.xml `<group depends-on>` extension PLUS `@BeforeSuite` SkipException fallback (~10 LOC; pre-ratified — no Architect re-cycle if cascade underperforms).
+  - **D3 Credential-leak E2E = (a) stub IUT in /tmp/** (Pat recommendation; design.md +146 lines). Composes with S-ETS-04-04 sabotage-script fixes (same primitive); hermetic; three-fold cross-check (zero unmasked + ≥1 masked + stub-IUT echo proves try/finally restoration). Pattern + scripts/stub-iut.sh design specified.
+- **Surfaced suggestions resolved**:
+  - **(a) Architect chown-scratch rebuild**: SKIPPED per autonomous-loop mitigation (no docker/network); §16.5 records rationale. Pre-ratified per Pat's empirical evidence sufficiency.
+  - **(b) Subsystems coverage scope**: **Sprint-1-style minimal — 4 @Tests** including unique-to-Subsystems `subsystemHasParentSystemLink` (architectural invariant). Sprint 5+ batches expansion with Procedures/Sampling/Properties/Deployments siblings.
+- **Architecture v2.0.2 → v2.0.3** with new §16 (Sprint 4 ratifications addendum, +32 lines). NOT a full rewrite.
+- **ADR cardinality stable at 10** (in-place amendments; NO new ADRs). Pat recommendation honored.
+- **Architect-handoff** (`status: complete`, `next_agent: generator`, **confidence 0.91** — matches Sprint 3 best). `constraints_for_generator.must/must_not/should` populated.
+- **Generator sequencing per Pat + Alex**: S-ETS-04-04 → -01 → -03 → -02 → -05 (mechanical-first ordering; -04 sabotage-script fixes are 30min mechanical; -01 CI workflow ESCALATION binary close; -03 stub IUT composes with -04; -02 image-size v2 chown attack; -05 Subsystems P0 new feature with two-level dependency).
+- **2 new Architect-surfaced risks for Generator**: (1) **TESTNG-BEFORE-SUITE-VS-DEPENDS-ON-GROUPS-INTERACTION-ORDERING** (low) — if `@BeforeSuite` reads SuiteAttribute keys before upstream classes run, keys may be null; mitigation: fall back to `@BeforeClass` if ordering wrong. (2) **STUB-IUT-PORT-LEAK-ACROSS-SCRIPT-RUNS** (low) — orphaned Python process if script aborts; mitigation: trap cleanup MUST kill by PID, not by port.
+- **Verification (orchestrator-side, post-Alex, trust-but-verify per CLAUDE.md)**: 5 modified files in csapi_compliance ✅; ADR-009 + ADR-010 amended (no NEW ADRs) ✅; architecture.md §16 v2.0.3 present at line 371 ✅; design.md modified (+146 lines per Alex) ✅; architect-handoff.yaml has `next_agent: generator` + confidence 0.91 + status: complete ✅.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite (Sprint 4 ARCHITECTED + next-action Generator Run 1) + metrics turn 76 + Alex's 5 modified files.
+- **Next iteration (autonomous loop)**: spawn **Generator (Dana) Run 1** for Sprint 4 batch 1 per Pat+Alex sequencing: S-ETS-04-04 sabotage-script fixes (30min mechanical) + S-ETS-04-01 CI workflow ESCALATION (binary close — user-action prerequisite). Brief will use write-result-FIRST + tight budget + explicit forbid-list (proven across 8 consecutive successes).
+
 ## 2026-04-29T15:29Z — Sprint ets-04 PLANNED (Pat write-handoff-FIRST mitigation worked — no timeout): 5 stories `subsystems-plus-sprint-3-carryover`; next_agent architect with 3 deferred decisions; confidence 0.87
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Sprint 3 close, Pat authors Sprint 4 contract.

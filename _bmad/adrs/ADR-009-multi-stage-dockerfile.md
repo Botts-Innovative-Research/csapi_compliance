@@ -286,3 +286,143 @@ RUN cd target/lib-runtime \
 **Risks**:
 - **NoClassDefFoundError from over-aggressive dedupe**. Mitigation: smoke runs end-to-end after each batch of exclusions; if any removed jar breaks 12/12 PASS, restore it and document in the exclusion list comments why it can't be excluded.
 - **TE 6.x migration invalidates the exclusion list**. Mitigation: when TE bumps to 6.x, re-run the comm-comparison; the dedupe step is the lightest-touch part of the migration plan.
+
+---
+
+## Sprint 4 v2 amendment (2026-04-29) — chown-layer attack + Sprint 3 illustrative-table falsification
+
+**Trigger**: Sprint 3 S-ETS-03-04 EMPIRICALLY FALSIFIED the Sprint 3 amendment's "200-300MB reclaim" projection. The deduce-list test results at `~/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt` showed only **4 jars / ~1.8MB** of safe (exact-basename) overlap on the actual TE 5.6.1 + ETS 0.1-SNAPSHOT post-ADR-006 layout. The illustrative table in §"Sprint 3 Amendment" above (Jakarta Servlet API, JAX-RS API, Apache Commons, etc.) projected dedupe candidates that DID NOT MATERIALIZE because (a) ADR-006's Jakarta EE 9 / Jersey 3.x port mismatches every TE common-libs Jakarta EE 8 version (KEEP-both-due-to-version-mismatch dominates the overlap matrix), (b) most of the projected `commons-*` / `slf4j-*` overlaps in the illustrative table actually live on different version axes between TE common-libs and ETS deps-closure. Dedupe yielded only ~1.8MB savings; image size remained ~661MB at Sprint 3 close — well above the 450MB target ADR-009 §"Image size target" originally set, but acceptable given the empirically-revealed structural ceiling.
+
+Sprint 3 also identified the **dominant remaining cost**: the `RUN groupadd ... && useradd ... && chown -R tomcat:tomcat /usr/local/tomcat` block at lines 116-117 of the Stage 2 Dockerfile rewrites the entire `/usr/local/tomcat` filesystem layer's ownership metadata, materializing as an **~80MB Docker layer** (filesystem-attribute-change layer). This is the largest single optimization target now visible.
+
+### Decision (Sprint 4 v2 amendment)
+
+**Architect ratifies in-place ADR-009 amendment** (Pat's option (a)) — REJECTS new ADR-011 superseding (Pat's option (b)). Justification:
+
+1. **Sprint 2 NO-ADR-for-CredentialMaskingFilter precedent (§14.5 architecture.md)** — when a follow-on decision extends an existing ADR's scope without contradicting its core decision (multi-stage build is preserved; only the optimization tactic evolves), in-place amendment maintains a single source of truth.
+2. **ADR-001 cross-reference amendment precedent (§14.7 architecture.md)** — minor empirical falsification of one parenthetical projection is the lightest-touch correction; full ADR-011 supersession would orphan the ADR-009 + ADR-009 Sprint 3 amendment audit trail.
+3. **The core ADR-009 decision (multi-stage Dockerfile, build/runtime split, USER tomcat directive, BuildKit cache mount) is NOT being changed** — only the image-size optimization tactic shifts from "rely on TE common-libs ↔ deps-closure dedupe" to "use BuildKit `--chown=tomcat:tomcat` on COPY directives + smaller-than-projected dedupe + roadmap to alpine".
+4. **ADR cardinality discipline** — Pat surfaced ADR-CARDINALITY-DRIFT (low severity); avoiding ADR-011 keeps the index manageable. (When the ADR set genuinely needs a navigation aid, that's a separate `_bmad/adrs/INDEX.md` task — not a justification for cosmetic ADR splits.)
+
+### Empirical falsification record (Sprint 3 close)
+
+Per `~/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt`:
+
+| Pre-Sprint-3 projection (illustrative table above) | Sprint 3 empirical result | Delta |
+|---|---|---|
+| 200-300MB reclaim via TE common-libs ↔ deps-closure dedupe | 4 jars / ~1.8MB exact-basename overlap | -198MB (projection wrong by 99%) |
+| Jakarta Servlet API duplicate | NOT a duplicate (Jakarta EE 9 vs EE 8 version mismatch — KEEP both) | — |
+| Jersey duplicates | NOT duplicates (Jersey 3.1.x vs 1.19 version mismatch — KEEP both per ADR-006) | — |
+| Apache Commons duplicates | Live on different version axes between TE common-libs and ETS deps-closure | — |
+| Saxon-HE duplicate (~50-80MB) | Not present in ETS deps-closure (no XSLT use) | — |
+
+The 4 actual exact-basename overlaps (`schema-utils-1.8.jar`, `xercesImpl-2.12.2.jar`, `xml-apis-1.4.01.jar`, `xml-resolver-1.2.jar`) are kept in Sprint 4's dedupe RUN step but represent the structural ceiling for safe (zero-NoClassDefFoundError-risk) dedupe given the ADR-006 Jakarta EE 9 baseline.
+
+### Sprint 4 chown-layer attack approach
+
+S-ETS-04-02 SHALL refactor the Stage 2 Dockerfile's USER setup as follows:
+
+1. **Move `groupadd` + `useradd` BEFORE all `COPY --from=builder` and TE-staging RUN steps** (so the `tomcat` user/group exist when the COPYs land).
+2. **Replace every `COPY --from=builder` directive with `COPY --chown=tomcat:tomcat --from=builder`** — BuildKit applies ownership at COPY time without a follow-on filesystem rewrite.
+3. **Replace TE WAR-extraction RUN steps' final state with chown-at-extraction** — either via running the `unzip` blocks inside a `--mount=type=bind` context that chowns inline, or (simpler) via switching ownership inside the same RUN step so the layer commit captures the final ownership without a separate `chown -R` rewrite layer.
+4. **DELETE the standalone `RUN ... && chown -R tomcat:tomcat /usr/local/tomcat` block** (current lines 116-117). Retain `USER tomcat` directive immediately after the now-redundant chown removal.
+
+Expected outcome: ~80MB filesystem-attribute layer eliminated. Combined with Sprint 3's existing ~1.8MB dedupe and Sprint 4 mechanical state, **target <600MB** (Sprint 4 contract `image_size_under_600mb`). PARTIAL acceptable at 600-650MB (chown-layer attack may underperform if BuildKit's `--chown` semantics still materialize a non-zero layer for large filesystems, e.g. 30-50MB).
+
+### Sprint 4 illustrative Dockerfile fragment (architect-authored; Generator empirically verifies)
+
+```dockerfile
+# Stage 2 — runtime (rewritten per Sprint 4 v2 amendment)
+FROM tomcat:8.5-jre17
+
+LABEL ... # unchanged
+
+# (1) Create non-root user FIRST so subsequent COPYs can use --chown.
+RUN groupadd -r tomcat && useradd -r -g tomcat -d /usr/local/tomcat -s /sbin/nologin tomcat
+
+ARG TEAMENGINE_VERSION=5.6.1
+ARG TEAMENGINE_BASE=https://repo.maven.apache.org/maven2/org/opengis/cite/teamengine
+
+# (2) TE WAR/console install (unchanged structure; ownership applied per-step)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends unzip ca-certificates curl \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* \
+ && mkdir -p /root/te-stage \
+ && cd /root/te-stage \
+ && curl -fsSL "${TEAMENGINE_BASE}/teamengine-web/${TEAMENGINE_VERSION}/teamengine-web-${TEAMENGINE_VERSION}.war" -o teamengine-web.war \
+ && curl -fsSL "${TEAMENGINE_BASE}/teamengine-web/${TEAMENGINE_VERSION}/teamengine-web-${TEAMENGINE_VERSION}-common-libs.zip" -o teamengine-web-common-libs.zip \
+ && curl -fsSL "${TEAMENGINE_BASE}/teamengine-console/${TEAMENGINE_VERSION}/teamengine-console-${TEAMENGINE_VERSION}-base.zip" -o teamengine-console-base.zip \
+ && unzip -q teamengine-web.war -d /usr/local/tomcat/webapps/teamengine \
+ && unzip -q teamengine-web-common-libs.zip -d /usr/local/tomcat/lib \
+ && unzip -q teamengine-console-base.zip -d /usr/local/tomcat/te_base \
+ && chown -R tomcat:tomcat /usr/local/tomcat/webapps/teamengine /usr/local/tomcat/lib /usr/local/tomcat/te_base \
+ && rm -rf /root/te-stage
+
+# Patch 1 + Patch 2 (unchanged; chown applied inline at end of each RUN step OR via --chown on add-style operations)
+RUN sed -i '/<Loader className="org.apache.catalina.loader.VirtualWebappLoader"/,/\/>/d' \
+        /usr/local/tomcat/webapps/teamengine/META-INF/context.xml \
+ && chown tomcat:tomcat /usr/local/tomcat/webapps/teamengine/META-INF/context.xml
+
+RUN cd /usr/local/tomcat/lib \
+ && curl -fsSL "...jaxb-api-2.3.1.jar" -o jaxb-api-2.3.1.jar \
+ && curl -fsSL "...jaxb-core-2.3.0.1.jar" -o jaxb-core-2.3.0.1.jar \
+ && curl -fsSL "...jaxb-impl-2.3.1.jar" -o jaxb-impl-2.3.1.jar \
+ && curl -fsSL "...javax.activation-api-1.2.0.jar" -o javax.activation-api-1.2.0.jar \
+ && chown tomcat:tomcat jaxb-api-*.jar jaxb-core-*.jar jaxb-impl-*.jar javax.activation-api-*.jar
+
+# (3) Stage 1 outputs — COPY with --chown so no follow-on rewrite layer.
+COPY --chown=tomcat:tomcat --from=builder /build/target/lib-runtime/ /usr/local/tomcat/webapps/teamengine/WEB-INF/lib/
+COPY --chown=tomcat:tomcat --from=builder /build/target/ets-ogcapi-connectedsystems10-*.jar /usr/local/tomcat/webapps/teamengine/WEB-INF/lib/
+COPY --chown=tomcat:tomcat --from=builder /build/target/ets-ogcapi-connectedsystems10-*-ctl.zip /tmp/ets-ctl.zip
+RUN unzip -q -o /tmp/ets-ctl.zip -d /usr/local/tomcat/te_base/scripts \
+ && chown -R tomcat:tomcat /usr/local/tomcat/te_base/scripts \
+ && rm /tmp/ets-ctl.zip
+
+RUN rm -rf /usr/local/tomcat/te_base/scripts/note 2>/dev/null || true
+
+# (4) DELETED: standalone `RUN ... && chown -R tomcat:tomcat /usr/local/tomcat` (Sprint 3 baseline ~80MB layer; eliminated).
+# Per-step chowns above carry the equivalent state without a final filesystem-attribute rewrite.
+
+USER tomcat
+ENV JAVA_OPTS=...
+ENV CATALINA_OPTS=...
+EXPOSE 8080
+HEALTHCHECK ...
+CMD ["catalina.sh", "run"]
+```
+
+**Caveat**: BuildKit's `--chown` on `COPY` is well-supported (Docker 17.09+); the per-step chown inside RUN blocks for the TE WAR/console extractions is the substantive change. Generator MUST verify at runtime that `docker images --format '{{.Size}}'` reports <600MB AND smoke 22+M PASS preserved (where M = Subsystems @Test count from S-ETS-04-05). PARTIAL acceptable at 600-650MB; tier-2 version-overlap dedupe (~7-8MB additional, per Sprint 3 empirical analysis intra-WEB-INF/lib duplicate-version artifacts table) permitted with per-jar smoke verification.
+
+### Sprint 5+ alpine-variant roadmap
+
+If Sprint 4 chown-attack hits 600-650MB PARTIAL and user prioritizes further size reduction, Sprint 5+ may pursue alpine-variant Stage 2:
+
+- Replace `tomcat:8.5-jre17` (Debian-based, ~280MB) with a custom alpine + JRE 17 + Tomcat 8.5 assembly (~180-230MB; ~50-100MB savings)
+- **Risks** (per original §Alternatives): musl libc compatibility for native libs in TestNG/REST-Assured (low risk for our pure-Java stack but unverified); apk vs apt for any future package additions; no upstream tomcat:alpine official image for Tomcat 8.5 specifically (would need a bespoke Dockerfile).
+- **Trigger**: Sprint 4 close at PARTIAL with user-prioritized size reduction explicit. Otherwise this remains a noted-but-unscheduled future option.
+
+Distroless (per original §Alternatives) remains deferred to Sprint 6+; the additional ~150MB savings is real but the migration cost (Tomcat overlay onto distroless/java17) outweighs the value for a project whose primary delivery vehicle is CITE SC submission, not size-optimized production deployment.
+
+### Consequences (Sprint 4 v2 amendment increment)
+
+**Positive**:
+- Closes Sprint 3 carryover empirical-falsification gap (illustrative table now annotated as historically-superseded).
+- ~80MB chown-layer attack delivers ~12% size reduction against Sprint 3 661MB baseline (target ~580MB).
+- Forward-compatible with alpine + distroless future paths (chown-layer pattern ports cleanly).
+- ADR-009 remains the single source of truth for image-build optimization decisions; no ADR-011 audit-trail fragmentation.
+
+**Negative**:
+- The Sprint 3 amendment's illustrative table now requires a "historically-superseded" mental tag for readers; mitigated by this Sprint 4 v2 amendment's explicit falsification record above.
+- BuildKit `--chown` semantics may still materialize a non-zero layer for large filesystems; empirical verification required at S-ETS-04-02 close.
+
+**Risks**:
+- **CHOWN-LAYER-ATTACK-MAY-NOT-MATERIALIZE-EXPECTED-SAVINGS** (Pat surfaced; medium severity). Mitigation: PARTIAL acceptable at 600-650MB; tier-2 version-overlap dedupe fallback documented; alpine roadmap is the Sprint 5+ escalation path.
+- **TE WAR/console RUN-step chown adding to layer size**: the per-step chown applied at the end of each TE-staging RUN is small (already-staged files) but non-zero. Net effect should be strictly less than the eliminated standalone `chown -R` layer. Generator empirically verifies.
+
+### Notes / references (Sprint 4 v2 amendment)
+
+- Sprint 3 empirical evidence: `~/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt`
+- Sprint 4 contract success criterion: `.harness/contracts/sprint-ets-04.yaml` `success_criteria.image_size_under_600mb`
+- S-ETS-04-02 acceptance criteria: `epics/stories/s-ets-04-02-image-size-chown-layer.md`
+- BuildKit `COPY --chown` documentation: https://docs.docker.com/engine/reference/builder/#copy
+- Architecture v2.0.3 §16: `_bmad/architecture.md`
