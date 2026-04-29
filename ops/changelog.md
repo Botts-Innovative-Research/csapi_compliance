@@ -2,6 +2,49 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T14:25Z — Sprint ets-03 Run 2 (Generator Dana): S-03-02 PASS + S-03-04 PARTIAL + S-03-03 DEFERRED + bash sabotage live exec PASS; 13m wall-clock — closes `live_dependency_skip_verified` PARTIAL → PASS; **ADR-009 image-size projection EMPIRICALLY WRONG**
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per architect §15.5 batching + Run 1 deferred bash sabotage live exec.
+- **Sub-agent**: Dana (general-purpose, fresh context, opus). 146,786 tokens / **13m wall-clock** / 85 tool uses; agentId `a9b94e220c33ee1ee`. **Well under budget** (50min/200K) — mitigation pattern (write-result-FIRST + tight budget + Docker-in-/tmp/-clone) continues to dodge timeouts. **5 prior timeouts → 3 consecutive successes.**
+- **Deliverables**:
+  - **New repo (6 commits since `c751fe1`, HEAD `42ca050`)**:
+    - `583982b` — MaskingRequestLoggingFilter (subclass + try/finally swap per design.md §wrap pattern)
+    - `924ef1a` — wire filter + 8 unit tests (surefire 53 → 61)
+    - `9917f8d` — credential-leak integration test + archive evidence
+    - `a8e251f` — S-ETS-03-03 DEFERRED-WITH-RATIONALE (gh token still no `workflow` scope; verified via `gh auth status`)
+    - `df7634b` — S-ETS-03-04 empirical dedupe (4 jars / 1.8MB) + analysis archive
+    - `42ca050` — S-ETS-03-01 + S-ETS-03-04 live evidence (sabotage + deduped smoke)
+  - **csapi_compliance (1 commit since `7667656`, HEAD `c512233`)**:
+    - `c512233` — Sprint 3 Run 2 Implementation Notes for S-03-02/-03/-04
+- **S-ETS-03-02 IMPLEMENTED (PASS at unit-test layer)**: 8 new @Tests + integration script PASS (zero credential leaks). IUT-auth wiring (CTL parameter + `--auth-credential` flag + live smoke against GeoRobotix with synthetic credential) deferred to Sprint 4 per architect-handoff scope.
+- **S-ETS-03-03 DEFERRED-WITH-RATIONALE** (4th-sprint defer): gh token lacks `workflow` scope verified via `gh auth status`. **User-action item carrying for 4th sprint now**: `gh auth refresh -s workflow`. Should escalate.
+- **S-ETS-03-04 PARTIAL** (550MB stretch target MISSED — but for an honest reason):
+  - Image 663MB → 660MB (only **3MB savings**)
+  - **🚨 ADR-009 amendment §"illustrative table" 200-300MB savings projection EMPIRICALLY CONTRADICTED**: actual exact-basename overlap between TE common-libs (42 jars / 14MB) and WEB-INF/lib (98 jars / 49MB) is only **4 jars / 1.8MB**. Architect's surfaced risk **GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION** worked exactly as intended — Dana derived the empirical list rather than treating the illustrative table as authoritative; the discrepancy IS the finding.
+  - **Sprint 4 path forward identified**: 663MB image is dominated by 286MB tomcat base + **80MB chown -R layer** (Docker copy-on-write rewrites every file's metadata) + 25MB TE WAR. Sprint 4 should attack the 80MB chown layer first via `--chown=tomcat:tomcat` on each `COPY` (saves ~80MB → ~580MB image). 14 intra-WEB-INF/lib duplicate-version artifacts (~7-8MB) are a secondary Sprint 4 target.
+  - Smoke 16/16 PASS preserved against deduped image (`ets-deduped:latest`).
+- **Bash sabotage live exec PASS** (Run 1 deferred → Run 2 closed): cascading-skip behavior **OBSERVED LIVE**. TestNG report parsed:
+  - Core: PASS=0, **FAIL=6** (sabotage worked), SKIP=6
+  - SystemFeatures: PASS=0, FAIL=0, **SKIP=4** (cascading-skip via `depends-on=core`)
+  - **Closes `live_dependency_skip_verified` PARTIAL → PASS at runtime layer.**
+  - Used **direct-bogus-IUT fallback** (per ADR-010 §"if stub-server proves problematic, fall back to ...") because original stub-server hit `host.docker.internal` resolution failure on default Linux Docker.
+  - **2 sabotage-script bugs documented for Sprint 4 fix**: (a) stub bind 127.0.0.1 → 0.0.0.0; (b) smoke-test.sh add `--add-host=host.docker.internal:host-gateway`.
+- **mvn test surefire 53 → 61** (+8 from VerifyMaskingRequestLoggingFilter); smoke 16/16 PASS preserved against deduped image.
+- **Risks closed by Run 2**:
+  - MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING (low) — verified: no `ResponseLoggingFilter` in baseline; no mirror wrap needed.
+  - GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION (medium) — closed transparently with empirical evidence (Dana DID the analysis; ADR-009 illustrative table was wrong; finding archived).
+  - STUB-SERVER-PORT-COLLISION-IN-CI (low) — N/A; live exec used direct-bogus-IUT fallback so port collision did not surface.
+- **Verification (orchestrator-side, post-Dana, trust-but-verify per CLAUDE.md)**: new repo HEAD `42ca050` ✅; 6 commits since `c751fe1` ✅; VerifyMaskingRequestLoggingFilter.java present ✅; scripts/credential-leak-integration-test.sh present + executable + 5.3KB ✅; 8 archived evidence files in ops/test-results/ (sprint-ets-03-02-credential-leak + -03-ci-workflow-deferred + -04-deduped-{smoke,container} + -04-empirical-dedupe-list + -04-image-size + -dependency-skip-sabotage.{xml,log}) ✅; csapi_compliance HEAD `c512233` ✅.
+- **Sprint 3 batch 2 success_criteria**:
+  - `live_dependency_skip_verified` PARTIAL → **PASS** (bash sabotage live exec confirmed cascading-skip)
+  - `credential_leak_integration_test_green` → **PASS** (S-03-02 integration test PASS)
+  - `rest_assured_logging_filter_wrapped` → **PASS** (MaskingRequestLoggingFilter subclass + 8 unit tests)
+  - `image_size_under_550mb` (stretch) → **PARTIAL** (660MB; 3MB savings vs 200-300MB ADR-009 projection; finding documented; Sprint 4 path identified)
+  - `ci_workflow_live` → **STILL DEFERRED** (gh token user-action item, 4th sprint)
+- **Mitigation pattern validation update**: 5 prior timeouts → 3 consecutive successes (Alex 8m26s, Dana Run 1 11m30s, Dana Run 2 13m). Pattern reliable across Generator AND Architect. Continue applying to Run 3 + final gates.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite (Sprint 3 Run 2 done + Run 3 next-action) + metrics turn 72.
+- **Next iteration (autonomous loop)**: spawn **Generator (Dana) Run 3** for Sprint 3 batch 3: S-ETS-03-05 SystemFeatures expansion (2 v1.0 URIs: collections + location-time) + S-ETS-03-07 Common conformance class (REQ-ETS-PART1-001, the new feature work). Per Dana Run 2's recommendation: start with S-03-07 Common (curl-verify GeoRobotix `/`, `/conformance`, `/collections` first per Sprint 2 pattern; minimal 4-5 @Tests; new `<test name="Common">` in single-block testng.xml consolidation). Then S-03-05 SystemFeatures expansion (mechanical addition of 2 @Test methods per design.md SystemFeatures Sprint 3 expansion roadmap). Estimated 30-40min wall-clock total (mvn-only + format-apply, no Docker rebuild needed unless smoke re-validation).
+
 ## 2026-04-29T02:18Z — Sprint ets-03 Run 1 (Generator Dana): S-ETS-03-06 doc cleanups + S-ETS-03-01 dependency-skip (unit test live, bash script deferred to gate); 11m wall-clock — mitigation pattern continues to work
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per architect §15.5 batching, Dana Run 1 = -06 + -01 (low-coupling pair).
