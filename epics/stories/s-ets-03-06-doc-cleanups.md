@@ -1,6 +1,6 @@
 # S-ETS-03-06: Documentation cleanups — VerifySystemFeaturesTests reference + ops/test-results/ convention
 
-> Status: Active — Sprint 3 | Epic: ETS-02 | Priority: P2 | Complexity: S | Last updated: 2026-04-29
+> Status: Implemented (pending Quinn+Raze) — Sprint 3 | Epic: ETS-02 | Priority: P2 | Complexity: S | Last updated: 2026-04-29
 
 ## Description
 Close 2 LOW-severity documentation concerns from Sprint 2 SystemFeatures gates. Pure documentation; no production-code changes (unless Generator picks doc-cleanup option (a) below — adds a small unit-test class).
@@ -44,6 +44,24 @@ Pat recommends (a) — adds substantive ~5 LOC test class + closes the concern w
 - Provides: clean audit trail for Sprint 1+2+3 evaluator/auditor expectations
 
 ## Implementation Notes
+
+### Generator Run 1 (2026-04-29) — IMPLEMENTED
+
+**Concern 1 (Quinn s06 CONCERN-2)** — picked option (b) (amend story criterion to remove `VerifySystemFeaturesTests` reference). Rationale: creating a fake unit-test class just to satisfy a doc-criterion is wasteful — SystemFeatures business-logic helpers are already covered by `VerifyETSAssert` at the helper layer per ADR-008 mandate; the conformance class itself is verified end-to-end via smoke against GeoRobotix per design.md §"SystemFeatures conformance class scope" (16/16 PASS at Sprint 2 close). Adding a new VerifySystemFeaturesTests would double-cover and add maintenance cost without strengthening the regression check. Edit landed at `epics/stories/s-ets-02-06-systemfeatures-conformance-class.md` line 30 with inline rationale.
+
+**Concern 2 (Raze s06 CONCERN-2)** — added explicit Convention section to Sprint 3 contract (Pat had partially documented the convention inline at line 463; this run elevated it into a stand-alone Convention header for unambiguous visibility going forward). Sprint 1 + Sprint 2 contracts also got the same one-line Convention footnote for retroactive clarity per the story acceptance criterion. Sprint 1 + Sprint 2 contracts are otherwise frozen audit artifacts — only the footnote was added; the rest of the contract surface is unchanged.
+
+**Files touched (csapi_compliance)**:
+- `epics/stories/s-ets-02-06-systemfeatures-conformance-class.md` (line 30 amended)
+- `.harness/contracts/sprint-ets-01.yaml` (Convention footnote at evaluation_artifacts_required)
+- `.harness/contracts/sprint-ets-02.yaml` (Convention footnote at evaluation_artifacts_required)
+- This story (Implementation Notes + status)
+
+**Files touched (new repo)**: none — pure doc cleanup.
+
+**mvn test result**: not applicable (no Java change).
+
+**Doc-only sprint impact**: zero risk to smoke baseline (no Java changes); zero new ADR; zero spec.md changes (REQ-* surface unchanged).
 
 ### Concern 1 option (a) sample test class
 ```java

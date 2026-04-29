@@ -134,6 +134,10 @@ gate_4_triggers:
   reason: "First sprint of a major architectural pivot. Adversarial review (Raze) is mandatory regardless of LOC because the language change introduces translation risk; specifically, spec knowledge encoded in TypeScript must transfer to Java without losing the GH#3 fix and the spec-trap fixture corpus."
   force_run: true
 
+# Convention (clarified retroactively per S-ETS-03-06 doc-cleanup #2):
+# Smoke artifacts archive to ets-ogcapi-connectedsystems10/ops/test-results/
+# (the artifact-producing repo's ops/), NOT csapi_compliance/ops/test-results/
+# (which does not exist).
 evaluation_artifacts_required:
   - "Archived TestNG report from smoke test against GeoRobotix"
   - "Diff output from reproducible-build CI job (must be empty modulo META-INF timestamps)"

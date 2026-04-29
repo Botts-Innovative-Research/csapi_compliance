@@ -27,7 +27,7 @@ First additional Part 1 conformance class beyond Core. This story proves that th
 - [ ] testng.xml updated to register SystemFeaturesTests with `dependsOnGroups="core"` so SystemFeatures @Tests SKIP if Core fails (closes SCENARIO-ETS-PART1-DEPENDENCY-SKIP-001 for SystemFeatures specifically)
 - [ ] Dependency-skip wiring verified: temporarily make Core FAIL (e.g. point IUT at a server returning 500 on /conformance) — confirm SystemFeatures @Tests emit SKIP not FAIL/ERROR
 - [ ] Smoke against GeoRobotix: total = 12 (Core) + N (SystemFeatures) PASS; ZERO failures; archived TestNG XML at ops/test-results/sprint-ets-02-systemfeatures-georobotix-smoke-<date>.xml
-- [ ] mvn clean install green: surefire baseline tests + new VerifySystemFeaturesTests if any
+- [ ] mvn clean install green: surefire baseline tests pass (no new VerifySystemFeaturesTests required — SystemFeatures business-logic helpers are covered by VerifyETSAssert at the helper layer per ADR-008 mandate; the conformance class itself is verified end-to-end via smoke against GeoRobotix per design.md §"SystemFeatures conformance class scope". Reference removed retroactively per S-ETS-03-06 doc-cleanup #1 option (b))
 - [ ] Reproducible build preserved
 - [ ] REQ-ETS-PART1-002 status updated PLACEHOLDER → IMPLEMENTED in spec.md
 - [ ] All 4 SCENARIO-ETS-PART1-002-* pass
