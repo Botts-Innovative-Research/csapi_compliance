@@ -2,6 +2,23 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T15:55Z — Sprint ets-04 Generator Run 1: S-ETS-04-04 sabotage-script bug fixes + S-ETS-04-01 CI workflow PATH B (formal-drop) binary close
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Alex's Sprint 4 architect-handoff (`next_agent: generator`) with Pat+Alex sequencing `-04 → -01 → -03 → -02 → -05`. This Generator run covers the 2 mechanical/orchestration stories first; Generator Run 2 covers -03 + -02 + -05.
+- **Sub-agent**: Dana (Generator, general-purpose, fresh context, opus). ~12 min wall-clock. Mitigation pattern continues — 5 prior sub-agent timeouts → **9 consecutive successes**. Tight 25-min/100K budget honored.
+- **S-ETS-04-04 IMPLEMENTED** (REQ-ETS-CLEANUP-012): Both Sprint 3 sabotage-script bug fixes applied as separate atomic commits in `ets-ogcapi-connectedsystems10`:
+  - HEAD `4f65130` — `S-ETS-04-04: sabotage-test.sh stub bind 127.0.0.1 -> 0.0.0.0`. The Python `ThreadingTCPServer` in `scripts/sabotage-test.sh` now binds to `("0.0.0.0", 0)` so a Docker container can reach the stub via `host.docker.internal:<port>`. Bug fix (a) per Raze cumulative `architect_surfaced_risks_status` §STUB-SERVER-PORT-COLLISION-IN-CI.
+  - HEAD `d954ae9` — `S-ETS-04-04: smoke-test.sh add --add-host=host.docker.internal:host-gateway`. The `docker run -d --name ... -p ...` invocation in `scripts/smoke-test.sh` now includes `--add-host=host.docker.internal:host-gateway` (Docker 20.10+). Required on Linux without Docker Desktop. Bug fix (b).
+  - **STUB-IUT-PORT-LEAK** (Alex's NEW Sprint 4 surfaced risk) verified mitigated by EXISTING `cleanup_all` trap: kills via `$STUB_PIDFILE` content (PID-based), not port-based. No additional fix required.
+- **S-ETS-04-01 IMPLEMENTED via PATH B** (REQ-ETS-CLEANUP-009; binary close — formal-drop):
+  - **Auth scope probe at run start**: `gh auth status 2>&1 | grep -i scopes` returned `'gist', 'read:org', 'repo'` — `workflow` scope ABSENT. After 5 sprints (S-ETS-01-01..03 + S-ETS-02-05 + S-ETS-03-03 + would-be S-04-01) without the user-action `gh auth refresh -s workflow`, continuing the defer pattern is structurally invalid per Pat's binary-close design + Raze's Sprint 3 cumulative APPROVE_WITH_CONCERNS ESCALATION TERRITORY recommendation.
+  - HEAD `18dbe1a` — `S-ETS-04-01: formal-drop closure (5-sprint user-action escalation)`. Adds `ci/README.md` (documents WHY the workflow is staged at `ci/github-workflows-build.yml` instead of `.github/workflows/build.yml`, AND two activation paths for any future session: Option 1 `gh scope refresh + git mv`, Option 2 GitHub web UI upload). PRESERVES `ci/github-workflows-build.yml` (not deleted — keeps one-line activation cheap if user later wants CI). Archives `ops/test-results/sprint-ets-04-01-ci-workflow-path-b-2026-04-29.txt` as Sprint 4 close evidence.
+  - `ops/status.md` updated with new "Perpetual Environmental Blockers (DROPPED from sprint cadence)" section listing `ci_workflow_live` with rationale + activation-path link. Future sprints will not re-litigate.
+- **No regression**: `mvn test` BUILD SUCCESS surefire 61/0/0/3 — UNCHANGED from Sprint 3 baseline `c56df10`.
+- **csapi_compliance docs updated**: spec.md (REQ-ETS-CLEANUP-009 + -012 IMPLEMENTED), traceability.md (rows for S-04-01 + S-04-04), epics/stories/s-ets-04-01-*.md + s-ets-04-04-*.md (Implementation Notes), ops/status.md (Sprint 4 entry + Perpetual Blockers section), this changelog entry.
+- **New repo HEAD**: `18dbe1a` (3 new commits since Sprint 3 close `c56df10`). **csapi_compliance HEAD**: pending this commit.
+- **Generator Run 2 next**: -03 (credential-leak E2E with stub IUT — composes with -04 sabotage-script fixes), -02 (chown-layer attack on Dockerfile — target <600MB), -05 (Subsystems conformance class with two-level dependency cascade defense-in-depth: testng.xml `<group depends-on>` + `@BeforeSuite SkipException` per Alex's ADR-010 v2 amendment).
+
 ## 2026-04-29T15:46Z — Sprint ets-04 ARCHITECTED: Alex ratified all 3 deferred decisions + 2 surfaced suggestions in 9m; ADR-009 v2 + ADR-010 v2 amendments + design.md Sprint 4 Ratifications + architecture v2.0.3 §16; next_agent generator confidence 0.91
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Pat's Sprint 4 handoff (`next_agent: architect`).
