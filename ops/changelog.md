@@ -2,6 +2,50 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T01:13Z — Sprint ets-03 PLANNED (post-Pat-timeout recovery): 7 stories cleanup-tail-plus-common-plus-systemfeatures-expansion; next_agent architect with 3 deferred decisions
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Sprint 2 close, spawn Pat (Planner) for Sprint 3 contract authoring.
+- **Sub-agent timeout (3rd consecutive sub-agent timeout in this autonomous-loop run)**: Pat (general-purpose, fresh context, opus) — agentId `abd15784826b019a2` ran 23m 24s wall-clock / 43 tool uses / **0 tokens returned** (API stream idle timeout, partial response received). Pat completed substantially all of her work before timeout — orchestrator verified on disk:
+  - ✅ `.harness/contracts/sprint-ets-03.yaml` (56KB, 7 stories, full success_criteria/evaluation_focus/risks/handoff_to_generator)
+  - ✅ 7 story files at `epics/stories/s-ets-03-{01..07}-*.md`
+  - ✅ `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` (REQ-ETS-PART1-001 Common expanded + REQ-ETS-CLEANUP-005..NNN added)
+  - ✅ `_bmad/traceability.md` updated
+  - ✅ 2 epic file Stories tables updated (`epic-ets-02` + `epic-ets-04`)
+  - ❌ `.harness/handoffs/planner-handoff.yaml` NOT updated (still showed Sprint 2 sprint_number)
+- **Recovery**: orchestrator authored the planner-handoff.yaml manually based on Pat's contract `handoff_to_generator` block (which Pat DID write). This is doc-only reconstruction, not net-new planning decisions — Pat's intent is faithfully captured. Orchestrator-handoff-note appended to the YAML for audit trail.
+- **Sprint 3 contract** (`cleanup-tail-plus-common-plus-systemfeatures-expansion`, type `cleanup-tail-plus-feature-expansion`):
+  - **7 stories**:
+    - **S-ETS-03-01** (P0 cleanup) — Live break-Core dependency-skip sabotage test (closes Sprint 2 systemfeatures CONCERN-1 — the test prior Raze gate-run timed out attempting)
+    - **S-ETS-03-02** (P1 cleanup) — CredentialMaskingFilter integration test + REST-Assured RequestLoggingFilter wrap (closes Sprint 2 PARTIAL `no_credential_leak_in_test_logs` + Raze cleanup CONCERN-1 follow-up; 2 carryover items combined)
+    - **S-ETS-03-03** (P1 cleanup) — CI workflow `git mv` + workflow_dispatch verification (closes Sprint 2 DEFERRED `ci_workflow_live`; pre-condition: user runs `gh auth refresh -s workflow`)
+    - **S-ETS-03-04** (P1 cleanup) — Image size optimization 815MB → 550MB (Sprint 3 stretch; ADR-009 §Negative deferred 450MB target)
+    - **S-ETS-03-05** (P1 cleanup) — SystemFeatures expansion: `/req/system/collections` + `/req/system/location-time` (2 v1.0 URIs deferred from Sprint 2)
+    - **S-ETS-03-06** (P2 cleanup) — Doc cleanups (Quinn/Raze s06 doc concerns): create or remove `VerifySystemFeaturesTests` reference; clarify `ops/test-results/` convention
+    - **S-ETS-03-07** (P0 NEW FEATURE) — **Common conformance class** (REQ-ETS-PART1-001, `/conf/common`)
+  - **Conformance class pick: Common ONLY** (NOT Common+Subsystems pair). Pat's rationale:
+    - 8 carryover items + 2 new conformance classes = gate-fatigue risk; tight scope preserves Quinn 0.96 / Raze 0.92 quality trend
+    - Common is foundational — unlocks all 11 remaining Part 1 classes which inherit Common's base assertions; highest dependency-leverage of any single class
+    - Subsystems → Sprint 4 (depends on SystemFeatures; dependency wiring now PROVEN; low risk)
+    - Common+Subsystems would also exercise testng.xml multi-class consolidation — but that exercise better done in Sprint 4 with 4 classes (Core+SystemFeatures+Common+Subsystems) needing the BeforeSuite SkipException pattern from design.md "Sprint 3+ migration path"
+  - **New success_criteria** specific to Sprint 3: `live_dependency_skip_verified: true`, `credential_leak_integration_test_green: true`, `ci_workflow_live: true`, `image_size_under_550mb: true` (stretch), `rest_assured_logging_filter_wrapped: true`, `common_conformance_class_passes: true`
+  - **Worktree-pollution mitigation note** for Sprint 3 gate sub-agent briefings (added per Sprint 2 SystemFeatures gate-run worktree-pollution incident): explicitly forbid running smoke or docker against user worktree; only via /tmp/ clone OR via reading archived artifacts. Included in `evaluation_focus` block.
+  - **Risks**: highest = `DEPENDENCY-SKIP-SABOTAGE-FLAKY-OR-SLOW` (S-ETS-03-01 is exactly what prior Raze gate-run timed out on; mitigation = architect picks unit-test approach OR bash sabotage OR both); + `REST-ASSURED-LOGGING-FILTER-WRAP-COMPLEXITY` (S-ETS-03-02 sub-task; mitigation = architect picks subclass pattern).
+- **Capability spec changes**: REQ-ETS-PART1-001 Common expanded from PLACEHOLDER → SPECIFIED with full SHALL block + Rationale + per-class SCENARIOs. New REQ-ETS-CLEANUP-005..NNN entries for Sprint 3 cleanup work. REQ-ETS-PART1-003..013 placeholders preserved.
+- **Traceability**: new rows for Sprint 3 REQs + SCENARIOs + 7 stories.
+- **Epic file updates** (Pat's per-story-into-existing-epic decomposition pattern from Sprint 2):
+  - `epic-ets-02-part1-classes.md` Stories table extended for S-ETS-03-01 / -05 / -07 (sabotage test + SystemFeatures expansion + Common)
+  - `epic-ets-04-teamengine-integration.md` Stories table extended for S-ETS-03-02 / -03 / -04 / -06 (credential-leak + CI workflow + Dockerfile size + doc cleanups)
+- **Planner-handoff** (orchestrator-reconstructed): `next_agent: architect` with confidence 0.85. **3 architectural decisions deferred to Alex**:
+  1. Live break-Core dependency-skip approach: (a) TestNG programmatic API + mocked Core failures (~30 LOC unit test); (b) bash sabotage script + Docker rebuild + smoke + restoration; (c) BOTH (defense-in-depth). Pat recommends (c).
+  2. REST-Assured RequestLoggingFilter wrap pattern: (a) `MaskingRequestLoggingFilter extends RequestLoggingFilter` (subclass, robust); (b) chained-filter registration-order (fragile); (c) replace entirely (invasive). Pat recommends (a).
+  3. Image-size optimization approach: (a) TE common-libs ↔ deps-closure dedupe (200-300MB savings); (b) distroless runtime (deferred per ADR-009); (c) alpine multi-stage refinement (50-100MB). Pat recommends (a).
+- **Plus 1 surfaced question**: whether REST-Assured RequestLoggingFilter wrap warrants its own ADR-010 OR just design.md §529 amendment. Pat's hypothesis: design.md sufficient given Sprint 2's NO-ADR-for-CredentialMaskingFilter precedent.
+- **Estimated total Sprint 3 effort**: 10-15h Generator wall-clock (vs Sprint 1's ~6h / Sprint 2's ~12h). Higher than Sprint 2 because 8 carryover items have real failure modes; Generator may need 2-3 sub-agent runs (cleanup batch -01..04+06 + SystemFeatures expansion -05 + Common -07).
+- **Sub-agent timeout pattern across this autonomous-loop run** (concerning trend): (1) Quinn s02-systemfeatures timed out 72m (docker pull / live smoke wait); (2) Raze s02-systemfeatures timed out 13m (sabotage test); (3) Pat ets-03 timed out 23m (no obvious external cause — possibly runaway during file authoring). Recovery worked all 3 times: (1+2) tighter constraints respawn → 3-4 min completions; (3) orchestrator wrote the missing handoff manually based on contract evidence. Mitigation patterns to fold into future briefings: (a) tighter time/token budgets; (b) explicit forbid-list (no docker pull, no live smoke, no bash sabotage during gates); (c) write-handoff-FIRST strategy so the most-important artifact lands even if other tasks overrun.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite (Sprint 2 ✅ COMPLETE + Sprint 3 PLANNED + Architect next-action) + metrics turn 69 + Pat's 11 modified/new files + the orchestrator-reconstructed planner-handoff.yaml.
+- **Commits this turn (new repo)**: none (Sprint 3 planning only).
+- **Next iteration (autonomous loop)**: spawn **Architect (Alex)** for Pat's 3 deferred decisions + 1 surfaced question. After Alex lands, **Generator (Dana)** in 1-3 batches per Pat's estimate. Then gates for each batch. Then Sprint 3 closes.
+
 ## 2026-04-29T00:25Z — 🎉 Sprint ets-02 SPRINT-COMPLETE: S-ETS-02-06 SystemFeatures Gates 3.5 + 4 closed (Quinn APPROVE 0.96 — first non-WITH_GAPS APPROVE + Raze APPROVE_WITH_CONCERNS 0.92 — strongest single-story Sprint 2 verdict); zero gaps; 2 LOW concerns (deferred-with-rationale)
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + sprint contract `gate_4_required: true, force_run: true`, parallel Quinn + Raze gate close on the final Sprint 2 story.

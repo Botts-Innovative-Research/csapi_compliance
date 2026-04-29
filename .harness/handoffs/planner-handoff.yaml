@@ -1,305 +1,145 @@
 agent: planner
-status: complete
-timestamp: "2026-04-28T20:55:00Z"
-sprint_number: "ets-02"
-sprint_name: "cleanup-plus-systemfeatures"
-contract_path: ".harness/contracts/sprint-ets-02.yaml"
-triggered_by: "Sprint 1 close (3 stories shipped, 6 gates closed: Quinn x3 + Raze x3, all 5 critical + 5 normal SCENARIOs PASS, 1 inherited PARTIAL `uri_mapping_fidelity_preserved` carried forward)"
-supersedes: ".harness/handoffs/planner-handoff.yaml (Pat 2026-04-27 Sprint 1 — preserved in git history)"
+status: complete (handoff yaml authored by orchestrator post-Pat-timeout 2026-04-29T01:13Z; Pat completed contract+stories+spec+traceability+epics but timed out after 23m before writing this handoff; reconstructed from .harness/contracts/sprint-ets-03.yaml `handoff_to_generator` block)
+timestamp: "2026-04-29T01:25:00Z"
+sprint_number: "ets-03"
+sprint_name: "cleanup-tail-plus-common-plus-systemfeatures-expansion"
+contract_path: ".harness/contracts/sprint-ets-03.yaml"
+triggered_by: "Sprint 2 close (6 stories shipped, 4 gates closed: cleanup-batch Quinn 0.93 / Raze 0.90; SystemFeatures Quinn 0.96 — first non-WITH_GAPS APPROVE — / Raze 0.92 — strongest single-story Sprint 2 verdict). 8-item carryover from Sprint 2 gate findings + new feature work (Common conformance class for highest dependency-leverage)."
+supersedes: ".harness/handoffs/planner-handoff.yaml (Pat 2026-04-28T20:55Z Sprint 2 — preserved in git history)"
 
 next_agent: architect
 next_agent_rationale: |
-  Architect (Alex) MUST land before Generator (Dana) for 5 deferred decisions that gate Sprint 2 execution:
+  Architect (Alex) MUST land before Generator (Dana) for 3 deferred decisions
+  that gate Sprint 3 execution. Per Pat's contract `handoff_to_generator` block:
 
-  1. **ADR-006 content** (Jersey 1.x → Jakarta EE 9 / Jersey 3.x port) — Pat identified the
-     audit gap (Raze s01 CONCERN-1) but cannot author the ADR text content (alternatives
-     considered, decision rationale) unilaterally. Architect formalizes covering the 6 Sprint 1
-     commits (`8e031ef` `3979709` `9ca229f` `87c6fe2` `9b42cb7` `d01c187`).
+  1. **Live break-Core dependency-skip approach** (S-ETS-03-01) — Architect
+     picks: (a) TestNG programmatic API + mocked Core failures (~30 LOC unit
+     test, hermetic, fast); (b) bash sabotage script + Docker rebuild + smoke
+     + restoration (~5 min once cache warm; touches Docker); (c) BOTH
+     (defense-in-depth — unit test for fast feedback + bash for end-to-end
+     behavioral verification). Pat recommends (c).
 
-  2. **ADR-007 content** (Dockerfile base image deviation) — Quinn s03 GAP-1 + Raze s03 CONCERN-1
-     provide complete empirical justification (Docker Hub tag enumeration, JDK 8 verification,
-     JDK 17 ETS bytecode requirement, Jakarta EE 9 imports). Architect formalizes the ADR with
-     alternatives section.
+  2. **REST-Assured RequestLoggingFilter wrap pattern** (S-ETS-03-02) —
+     Architect picks: (a) `MaskingRequestLoggingFilter extends
+     RequestLoggingFilter` (subclass-based, robust); (b) chained-filter
+     registration-order (fragile but minimal change); (c) replace entirely
+     with custom logger (most invasive). Pat recommends (a) per public-API
+     verification.
 
-  3. **EtsAssert helper API surface** — Pat proposed 4 method signatures (assertStatus,
-     assertJsonObjectHas, assertJsonArrayContains, failWithUri) but Architect ratifies the
-     final API (or proposes alternatives mirroring ets-common's existing assertion helpers
-     if a closer-to-OGC-convention form exists Pat doesn't know about).
+  3. **Image-size optimization approach** (S-ETS-03-04) — Architect picks
+     from Quinn cleanup GAP-1 enumeration: (a) TE common-libs ↔ deps-closure
+     dedupe (recommended; 200-300MB savings); (b) distroless runtime stage
+     (deferred per ADR-009); (c) multi-stage refinement (alpine; ~50-100MB).
+     Pat recommends (a).
 
-  4. **Multi-stage Dockerfile pattern** — Architect picks one of three options listed in the
-     Sprint 2 contract: (a) build-stage Maven cache mount; (b) pre-staged target/lib-runtime/
-     across stages; (c) full mvn package inside build stage. Each has different trade-offs on
-     build time vs host-dep-elimination.
-
-  5. **SystemFeatures coverage scope** (S-ETS-02-06) — Sprint-1-style minimal-then-expand
-     (4-6 @Tests, PARTIAL with deferral notes) vs full-coverage from day 1 (12-15 @Tests). Pat
-     recommends minimal narrowing for risk control on first pattern extension; Architect ratifies
-     based on whether the remaining 12 classes need full-coverage rigor from day 1 to hit beta.
-
-  Architect ALSO surfaces: (i) whether CredentialMaskingFilter (S-ETS-02-04) needs its own ADR
-  (Pat's call: yes, security-audit weight); (ii) whether ADR-001 should be amended to
-  cross-reference ADR-007 (the "production-docker:5.6.1 loads our jar without modification"
-  claim in ADR-001 is FALSE for our JDK 17 ETS jar per Quinn s03 evidence).
-
-  Architect produces an updated architect-handoff.yaml with `next_agent: generator`. Once
-  Architect lands, Generator implements all 6 Sprint 2 stories in dependency order:
-    S-ETS-02-01 (ADRs, doc-only — fast) →
-    S-ETS-02-04 (logback — parallel-safe) →
-    S-ETS-02-02 (EtsAssert — 3 commits one per test class) →
-    S-ETS-02-03 (URI canonicalization sweep — verified-canonical mapping table FIRST, then sweep) →
-    S-ETS-02-05 (Dockerfile multi-stage + tighter smoke + CI git-mv) →
-    S-ETS-02-06 (SystemFeatures — can begin in parallel after S-ETS-02-02 + S-ETS-02-03 land).
+  Plus 1 surfaced question: whether REST-Assured RequestLoggingFilter wrap
+  warrants its own ADR (ADR-010) or just design.md §529 amendment. Pat's
+  hypothesis: design.md amendment is sufficient given Sprint 2's
+  NO-ADR-for-CredentialMaskingFilter precedent (architect ratified inline).
 
 next_agent_inputs:
-  - ".harness/contracts/sprint-ets-02.yaml (Pat just authored)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (REQ-ETS-PART1-002 SystemFeatures expanded; REQ-ETS-CLEANUP-001..004 NEW; 11 new SCENARIOs added)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (existing; SystemFeatures placeholder at conformance.systemfeatures.* unchanged)"
-  - "_bmad/architecture.md v2.0 (existing; review whether ADR-006/007/multi-stage Dockerfile/EtsAssert helpers warrant architecture.md updates)"
-  - ".harness/evaluations/sprint-ets-01-evaluator.yaml (Quinn s01 APPROVE_WITH_GAPS 0.88) — for ADR-006 context"
-  - ".harness/evaluations/sprint-ets-01-adversarial.yaml (Raze s01 GAPS_FOUND 0.84) — Jersey port CONCERN-1"
-  - ".harness/evaluations/sprint-ets-01-evaluator-s02.yaml (Quinn s02 APPROVE_WITH_GAPS 0.85) — EtsAssert GAP-1 + URI GAP-2"
-  - ".harness/evaluations/sprint-ets-01-adversarial-s02.yaml (Raze s02 GAPS_FOUND 0.82) — corroborates s02 gaps"
-  - ".harness/evaluations/sprint-ets-01-evaluator-s03.yaml (Quinn s03 APPROVE_WITH_GAPS 0.91) — Dockerfile GAP-1 + dep-closure CONCERN-1"
-  - ".harness/evaluations/sprint-ets-01-adversarial-s03.yaml (Raze s03 APPROVE_WITH_CONCERNS 0.88) — multi-stage CONCERN-2/3 + smoke metadata CONCERN-4"
-  - ".harness/handoffs/architect-handoff.yaml (Alex 2026-04-27 Sprint 1 — for prior must/must_not/should constraint set)"
-  - "_bmad/adrs/ADR-001..005 (existing; ADR-001 may need cross-reference amendment to ADR-007)"
-  - "csapi_compliance/src/lib/credential-masker.ts (v1.0 reference for CredentialMaskingFilter masking semantics — Architect should ratify whether semantics carry over verbatim)"
-  - "csapi_compliance/src/engine/registry/csapi-system-features.ts (v1.0 reference for SystemFeatures coverage + tolerance comments — Architect can use to ratify coverage scope)"
+  - ".harness/contracts/sprint-ets-03.yaml (Pat 2026-04-29 — full sprint scope + handoff_to_generator with 3 deferred decisions enumerated)"
+  - ".harness/handoffs/planner-handoff.yaml (this handoff — overrides Pat 2026-04-28T20:55Z Sprint 2 handoff)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/{spec.md,design.md} (Pat just expanded REQ-ETS-PART1-001 Common to full SHALL block + added per-class SCENARIOs + new REQ-ETS-CLEANUP-005..NNN entries)"
+  - "_bmad/traceability.md (Pat just added rows for new REQs + Sprint 3 stories)"
+  - "epics/epic-ets-{02,04}.md (Pat updated Stories tables)"
+  - "epics/stories/s-ets-03-{01..07}-*.md (7 new story files)"
+  - "_bmad/architecture.md v2.0.1 + _bmad/adrs/ADR-001..009.md (binding architectural baseline)"
+  - "Sprint 2 close evidence: .harness/evaluations/sprint-ets-02-{evaluator,adversarial}-{cleanup,systemfeatures}.yaml (4 reports — 8-item carryover distilled from these)"
 
 outputs:
-  - path: ".harness/contracts/sprint-ets-02.yaml"
-    type: "contract"
-    note: "Sprint 2 contract. Type: cleanup-plus-feature-expansion. 6 stories (1 P0 cleanup + 4 P1 cleanup + 1 P0 new feature). 4 critical + 7 normal SCENARIOs. Gate 4 (Raze) required. Closes 8 Sprint 1 carryover items + 1 new conformance class (SystemFeatures REQ-ETS-PART1-002)."
-  - path: "epics/stories/s-ets-02-01-adr-backfill.md"
-    type: "story"
-    note: "Sprint 2 P1 (S, doc-only): ADR-006 + ADR-007 retroactively. Architect authors text content; Generator commits. Parallelizable."
-  - path: "epics/stories/s-ets-02-02-etsassert-refactor.md"
-    type: "story"
-    note: "Sprint 2 P1 (M): extend ETSAssert with 4 REST-friendly helpers + refactor 21 bare-throw sites. 3 commits (one per test class). Architect ratifies API surface."
-  - path: "epics/stories/s-ets-02-03-uri-canonicalization-sweep.md"
-    type: "story"
-    note: "Sprint 2 P0 (M): URI form drift sweep across spec.md + traceability.md + Java REQ_* constants to OGC canonical .adoc form. Closes Sprint 1 inherited `uri_mapping_fidelity_preserved` PARTIAL → PASS."
-  - path: "epics/stories/s-ets-02-04-logback-credential-masking.md"
-    type: "story"
-    note: "Sprint 2 P1 (M): logback.xml + CredentialMaskingFilter wired via SuiteFixtureListener. Includes credential-leak integration test (synthetic Authorization header). Parallelizable."
-  - path: "epics/stories/s-ets-02-05-dockerfile-cleanup.md"
-    type: "story"
-    note: "Sprint 2 P1 (M): multi-stage Dockerfile + non-root USER + tighter `/rest/suites/<code>` parse + CI workflow `git mv`. Depends on S-ETS-02-01 (ADR-007 first). Architect ratifies multi-stage pattern."
-  - path: "epics/stories/s-ets-02-06-systemfeatures-conformance-class.md"
-    type: "story"
-    note: "Sprint 2 P0 (M): first additional Part 1 conformance class (SystemFeatures REQ-ETS-PART1-002). Depends on S-ETS-02-02 + S-ETS-02-03 (must use new EtsAssert helpers + canonical URIs from day 1). Architect ratifies coverage scope."
+  - path: ".harness/contracts/sprint-ets-03.yaml"
+    type: "sprint-contract"
+    note: "56KB; 7 stories; new Sprint-3-specific success_criteria (live_dependency_skip_verified, credential_leak_integration_test_green, ci_workflow_live, image_size_under_550mb, rest_assured_logging_filter_wrapped, common_conformance_class_passes); gate_4_required: true; risks (highest: DEPENDENCY-SKIP-SABOTAGE-FLAKY-OR-SLOW + REST-ASSURED-LOGGING-FILTER-WRAP-COMPLEXITY); worktree-pollution mitigation note for gate sub-agent briefings."
+  - path: "epics/stories/s-ets-03-{01..07}-*.md"
+    type: "stories"
+    count: 7
+    note: "S-ETS-03-01 dependency-skip-sabotage-test, -02 credential-leak-integration, -03 ci-workflow-live, -04 image-size-optimization, -05 systemfeatures-expansion (collections + location-time), -06 doc-cleanups, -07 common-conformance-class."
   - path: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
-    type: "spec"
-    note: "Edits: REQ-ETS-PART1-002 expanded PLACEHOLDER → SPECIFIED with full per-assertion enumeration; REQ-ETS-PART1-001 + 003..013 remain placeholders; 11 new SCENARIOs added under Acceptance Scenarios (4 SCENARIO-ETS-PART1-002-* + 7 SCENARIO-ETS-CLEANUP-*)."
+    type: "spec-update"
+    note: "REQ-ETS-PART1-001 Common expanded from PLACEHOLDER → SPECIFIED with full SHALL block + per-class SCENARIOs. New REQ-ETS-CLEANUP-005..NNN for Sprint 3 cleanup. Other REQ-ETS-PART1-003..013 placeholders preserved for future sprints."
   - path: "_bmad/traceability.md"
-    type: "matrix-edit"
-    note: "Edits: replaced single placeholder row for REQ-ETS-PART1-001..013 with 3 rows (PART1-001 placeholder, PART1-002 active Sprint 2, PART1-003..013 placeholders); added 5 new rows for REQ-ETS-CLEANUP-001..004 + REQ-ETS-SCAFFOLD-006-audit (S-ETS-02-01..05)."
-  - path: "epics/epic-ets-02-part1-classes.md"
-    type: "epic-table-edit"
-    note: "Stories table updated: S-ETS-01-02 closed; S-ETS-02-02, S-ETS-02-03, S-ETS-02-06 added as Active Sprint 2; placeholders renumbered S-ETS-03-* (post-ets-02)."
-  - path: "epics/epic-ets-04-teamengine-integration.md"
-    type: "epic-table-edit"
-    note: "Stories table updated: S-ETS-01-03 closed; S-ETS-02-01, S-ETS-02-04, S-ETS-02-05 added as Active Sprint 2."
-  - path: ".harness/handoffs/planner-handoff.yaml"
-    type: "handoff"
-    note: "This file. Sprint 1 planner-handoff content preserved in git history."
+    type: "traceability-update"
+    note: "New rows for Sprint 3 REQs + SCENARIOs + 7 stories."
+  - path: "epics/epic-ets-{02,04}.md"
+    type: "epic-update"
+    note: "Per-story-into-existing-epic decomposition (Sprint 2 pattern). epic-ets-02 extended for -01/-05/-07 (sabotage test + SystemFeatures expansion + Common). epic-ets-04 extended for -02/-03/-04/-06 (credential-leak + CI workflow + Dockerfile size + doc cleanups)."
 
-summary: |
-  Sprint 2 contract authored as cleanup-plus-feature-expansion. **6 stories** (1 P0 cleanup
-  for the URI canonicalization sweep that closes Sprint 1's inherited PARTIAL, 4 P1 cleanup
-  for ADRs/EtsAssert/logback/Dockerfile, 1 P0 new feature for SystemFeatures). Total est
-  Generator wall-clock 8-12h (vs Sprint 1's ~6h for 3 stories — Sprint 2 has doubled scope
-  from cleanup work but the per-class new-feature effort should be ~50% the cost of Sprint 1's
-  Core because the architectural pattern is now established).
-
-  **Conformance class pick: SystemFeatures (REQ-ETS-PART1-002)**. Foundational because
-  every CS API endpoint exposes /systems collections; GeoRobotix serves a non-empty /systems
-  collection per v1.0 web-app E2E history; the dependency-skip SCENARIO already references
-  SystemFeatures by name; spec-trap fixture group `asymmetric-feature-type/` already exists
-  in v1.0 ready for epic-ets-06 port.
-
-  **Cleanup organization rationale**: per-story (cleaner than bundling into a new
-  epic-ets-08-sprint2-cleanup.md). ADR-006/007 + logback + Dockerfile fold semantically into
-  epic-ets-04-teamengine-integration; EtsAssert + URI sweep + SystemFeatures fold into
-  epic-ets-02-part1-classes. Each cleanup story has its own focused REQ-ETS-CLEANUP-* + dedicated
-  SCENARIO; no cleanup work hides inside a feature story.
-
-  **5 architectural decisions deferred to Architect** (next_agent: architect): ADR-006 content,
-  ADR-007 content, EtsAssert helper API surface, multi-stage Dockerfile pattern, SystemFeatures
-  coverage scope. Plus 2 surfaced questions: (a) whether CredentialMaskingFilter warrants its
-  own ADR; (b) whether ADR-001 needs cross-reference amendment to ADR-007. Architect cycle
-  expected to be quick (low complexity since empirical evidence is already captured in Quinn
-  s03 + Raze s03 reports).
-
-  **Sprint 1 contract closure**: closing S-ETS-02-03 (URI canonicalization sweep) flips
-  Sprint 1's inherited `uri_mapping_fidelity_preserved` PARTIAL → PASS, completing the Sprint 1
-  contract retroactively. All other Sprint 1 success_criteria are already PASS.
-
-  **Sprint 2 contract gates**: gate_4_required: true (continuing rigor pattern). Each non-trivial
-  refactor (EtsAssert, URI sweep, Dockerfile multi-stage, SystemFeatures pattern extension) is a
-  risk category Quinn + Raze need to verify independently.
-
-spec_changes:
-  new_capabilities: []  # ets-ogcapi-connectedsystems is unchanged at the capability level
-  expanded_placeholder_to_specified:
-    - "REQ-ETS-PART1-002 (SystemFeatures conformance class)"
-  new_reqs:
-    - "REQ-ETS-CLEANUP-001 (EtsAssert helper API contract)"
-    - "REQ-ETS-CLEANUP-002 (URI canonicalization to OGC `.adoc` form)"
-    - "REQ-ETS-CLEANUP-003 (logback.xml + CredentialMaskingFilter)"
-    - "REQ-ETS-CLEANUP-004 (Dockerfile multi-stage + non-root USER)"
-  modified_reqs:
-    - "REQ-ETS-CORE-001..004 (URI strings to be updated by S-ETS-02-03)"
-    - "REQ-ETS-TEAMENGINE-005 (smoke-test.sh tightening by S-ETS-02-05)"
-  new_scenarios:
-    critical:
-      - "SCENARIO-ETS-CLEANUP-URI-CANONICALIZATION-001 (closes Sprint 1 inherited PARTIAL)"
-      - "SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001"
-      - "SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LANDING-001"
-      - "SCENARIO-ETS-PART1-002-SYSTEMFEATURES-DEPENDENCY-SKIP-001"
-    normal:
-      - "SCENARIO-ETS-CLEANUP-ETSASSERT-REFACTOR-001"
-      - "SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001"
-      - "SCENARIO-ETS-CLEANUP-DOCKERFILE-MULTISTAGE-001"
-      - "SCENARIO-ETS-CLEANUP-CI-WORKFLOW-LIVE-001"
-      - "SCENARIO-ETS-CLEANUP-ADR-006-007-001"
-      - "SCENARIO-ETS-PART1-002-SYSTEMFEATURES-RESOURCE-SHAPE-001"
-      - "SCENARIO-ETS-PART1-002-SYSTEMFEATURES-LINKS-NORMATIVE-001"
+conformance_class_pick:
+  picked: "Common (REQ-ETS-PART1-001) only — NOT Common+Subsystems pair"
+  rationale: |
+    Per Pat's contract description block:
+    (i) Sprint 3 has 8 carryover items — doubling that with 2 new conformance
+        classes risks gate fatigue (Sprint 2 systemfeatures gate-run timed
+        out on the dependency-skip test; tight scope preserves Quinn 0.96
+        / Raze 0.92 quality trend);
+    (ii) Common is foundational and unlocks all 11 remaining Part 1 classes
+         which inherit Common's base assertions — highest dependency-leverage
+         of any single class;
+    (iii) Subsystems depends on SystemFeatures (per OGC ATS) but the dependency
+          wiring is now PROVEN via the SystemFeatures→Core link, so Subsystems
+          can land cleanly in Sprint 4 with low risk;
+    (iv) Common+Subsystems would also exercise the testng.xml multi-class
+         consolidation strategy — but that exercise is better done in Sprint 4
+         when 4 classes (Core+SystemFeatures+Common+Subsystems) needs the
+         BeforeSuite SkipException pattern noted in design.md §"testng.xml
+         single-block consolidation" Sprint 3+ migration path.
 
 deferred_to_architect:
-  - id: "ADR-006-CONTENT"
-    description: "Jersey 1.x → Jakarta EE 9 / Jersey 3.x port — Architect authors ADR text covering 6 Sprint 1 commits per Raze s01 CONCERN-1 evidence"
-    blocks_story: "S-ETS-02-01"
-  - id: "ADR-007-CONTENT"
-    description: "Dockerfile base image deviation (`tomcat:8.5-jre17` not `ogccite/teamengine-production:5.6.1`) — Architect authors ADR text per Quinn s03 GAP-1 + Raze s03 CONCERN-1 evidence"
-    blocks_story: "S-ETS-02-01"
-  - id: "ETSASSERT-API-SURFACE"
-    description: "Architect ratifies the 4 helper method signatures Pat proposed (or alternatives mirroring ets-common's existing assertion helpers if a closer-to-OGC-convention form exists)"
-    blocks_story: "S-ETS-02-02"
-  - id: "MULTI-STAGE-DOCKERFILE-PATTERN"
-    description: "Architect picks one of three multi-stage patterns (build-stage Maven cache mount; pre-staged target/lib-runtime/ across stages; or full mvn package inside build stage)"
-    blocks_story: "S-ETS-02-05"
-  - id: "SYSTEMFEATURES-COVERAGE-SCOPE"
-    description: "Architect ratifies coverage scope: Sprint-1-style minimal-then-expand (4-6 @Tests with PARTIAL deferral notes) vs full-coverage day 1 (12-15 @Tests). Pat recommends minimal narrowing for risk control on first pattern extension."
-    blocks_story: "S-ETS-02-06"
-  - id: "CREDENTIAL-MASKING-FILTER-ADR"
-    description: "Architect surfaces: should CredentialMaskingFilter (S-ETS-02-04) warrant its own ADR? Pat's call: yes, security-audit weight. Not blocking S-ETS-02-04 implementation but blocking S-ETS-02-04 audit-trail completeness."
-    blocks_story: "S-ETS-02-04 (audit trail only; implementation can proceed)"
-  - id: "ADR-001-CROSS-REFERENCE-AMENDMENT"
-    description: "Architect surfaces: should ADR-001 be amended with a cross-reference paragraph pointing to ADR-007? The 'production-docker:5.6.1 loads our jar without modification' claim in ADR-001 is FALSE for our JDK 17 ETS jar per Quinn s03 evidence."
-    blocks_story: "S-ETS-02-01 (audit trail completeness)"
-
-deferred_to_future_sprints:
-  - "REQ-ETS-PART1-001 (`/conf/common`) — Sprint 3 (Pat recommends as the natural next class after SystemFeatures)"
-  - "REQ-ETS-PART1-003..013 (remaining 11 Part 1 classes) — Sprints 4..N, sprint-by-sprint"
-  - "REQ-ETS-PART2-001..014 (Part 2) — explicitly deferred per user gate 2026-04-27"
-  - "REQ-ETS-FIXTURES-001..003 (spec-trap port) — epic-ets-06 parallel sprint after Sprint 2 closes; SystemFeatures has the `asymmetric-feature-type/` fixture group ready to port"
-  - "REQ-ETS-CITE-001..003 — calendar-bound, beta milestone gates"
-  - "REQ-ETS-SYNC-001 (TS↔Java URI diff CI) — post-Part-1-feature-complete; Sprint 2's URI canonicalization sweep (S-ETS-02-03) reduces the future allowlist surface to near-zero"
-  - "JaCoCo ≥80% coverage instrumentation — deferred from Sprint 1; Pat may surface as Sprint 3 candidate if coverage discipline becomes a CITE blocker"
+  - id: "DEPENDENCY-SKIP-APPROACH"
+    severity: "high (affects S-ETS-03-01 implementation strategy)"
+    description: "Pick (a) TestNG programmatic API + mocked Core failures, (b) bash sabotage script + Docker rebuild + smoke + restoration, OR (c) BOTH. Pat recommends (c). Architect ratifies based on TestNG XmlSuite parsing feasibility for unit-test approach."
+  - id: "REST-ASSURED-LOGGING-FILTER-WRAP-PATTERN"
+    severity: "medium (affects S-ETS-03-02 implementation)"
+    description: "Pick (a) MaskingRequestLoggingFilter extends RequestLoggingFilter (subclass), (b) chained-filter registration-order (fragile), OR (c) replace entirely (invasive). Pat recommends (a). Possibly write ADR-010 OR amend design.md §529."
+  - id: "IMAGE-SIZE-OPTIMIZATION-APPROACH"
+    severity: "low (ADR-009 §Negative explicitly accepts deferral)"
+    description: "Pick (a) TE common-libs ↔ deps-closure dedupe (200-300MB), (b) distroless runtime (deferred per ADR-009), OR (c) alpine multi-stage refinement (50-100MB). Pat recommends (a)."
 
 surfaced_risks:
-  # Pat noticed during Sprint 2 planning
-  - id: "URI-CANONICALIZATION-BREAKS-SMOKE"
-    severity: high
-    description: |
-      S-ETS-02-03 changes 30-40 URI strings across spec.md + traceability.md + Java
-      @Test descriptions. If the OGC canonical form differs from what we ASSUME for any
-      single URI (e.g. /conformance might be `/req/core/conformance-success` not
-      `/req/conformance/conformance-success`), the @Test description carries a wrong URI
-      but the assertion logic still passes — silent regression of audit-trail integrity.
-    mitigation: |
-      Generator MUST fetch the actual OGC `.adoc` source for each URI (not assume the
-      pattern). Build a verified-canonical mapping table BEFORE the sweep. Quinn verifies
-      the table during gate review.
+  - id: "ADR-CARDINALITY-DRIFT"
+    severity: "low"
+    description: "Sprint 1 had 5 ADRs. Sprint 2 added 4 (006-009). Sprint 3 may add 0-2 more. At ADR-011+ level, Architect should consider an ADR-INDEX.md navigation aid."
+  - id: "GATE-SUB-AGENT-WORKTREE-POLLUTION-RECURRENCE"
+    severity: "medium"
+    description: "Sprint 2 SystemFeatures gate run polluted new repo's worktree by running smoke against ~/docker/gir/ets-ogcapi-connectedsystems10/ instead of /tmp/. Sprint 3 contract has worktree-pollution mitigation note in evaluation_focus; architect should also consider an architect-handoff-level constraints_for_sub_agents block."
+  - id: "GENERATOR-BATCHING-DECISION"
+    severity: "low"
+    description: "Sprint 3 has 7 stories. Generator could batch -01..04+06 cleanup + -05 SystemFeatures expansion as one Generator run, then -07 Common as separate run (similar to Sprint 2 batching). Architect/orchestrator's call."
 
-  - id: "ETSASSERT-REFACTOR-BREAKS-12-12-PASS"
-    severity: high
-    description: |
-      S-ETS-02-02 mechanically refactors 21 bare-throw sites to ETSAssert helpers. If
-      helper signatures diverge from architect's ratified API surface, or if the refactor
-      accidentally changes assertion semantics (e.g. swapping operands in an OR check),
-      the 12/12 PASS smoke could regress.
-    mitigation: |
-      Refactor + test in lockstep: each helper method gets a unit test BEFORE the
-      bare-throw sites are migrated. After every test class migration, re-run smoke. One
-      commit per test class for Quinn-bisectability.
-
-  - id: "DOCKERFILE-MULTISTAGE-BREAKS-SMOKE"
-    severity: medium
-    description: |
-      S-ETS-02-05 rewrites the Dockerfile to multi-stage. Build artifacts and runtime
-      layout may shift in ways that break the smoke pipeline. Raze's adversarial sabotage
-      test in s03 confirmed smoke-test.sh catches assertion failures cleanly; it does NOT
-      confirm that a Dockerfile change is automatically caught.
-    mitigation: |
-      Generator MUST re-run smoke END-TO-END after the Dockerfile rewrite — exit 0 + 12/12
-      PASS — BEFORE committing the Dockerfile change. Architect ratifies the multi-stage
-      pattern so Generator doesn't ad-lib.
-
-  - id: "GH-WORKFLOW-SCOPE-STILL-MISSING"
-    severity: medium
-    description: |
-      S-ETS-02-05 includes the `git mv` of `ci/github-workflows-build.yml` to
-      `.github/workflows/build.yml`. Requires gh token with `workflow` scope. Same scope
-      was missing across S-ETS-01-01..03. If still missing at Sprint 2, the move-to-live
-      cannot land in this sprint either.
-    mitigation: |
-      User-action item: orchestrator runs `gh auth refresh -s workflow` at sprint start.
-      If still blocked, S-ETS-02-05 closes with workflow file under `ci/` and explicit
-      deferral note; success_criterion `ci_workflow_live` converges to Sprint 3+ carryover.
-
-  - id: "SYSTEMFEATURES-GEOROBOTIX-EMPTY-COLLECTION"
-    severity: medium
-    description: |
-      Sprint 2 assumes GeoRobotix's /systems collection is non-empty (per v1.0 E2E
-      history). If GeoRobotix has changed (e.g. /systems now empty or returns 404), some
-      SystemFeatures @Tests may legitimately PASS-by-vacuity in misleading ways.
-    mitigation: |
-      Generator MUST `curl -sf https://api.georobotix.io/ogc/t18/api/systems | head` as
-      first step of S-ETS-02-06; archive response shape into Implementation Notes BEFORE
-      writing assertions. If empty/404, PIVOT to /conf/common (REQ-ETS-PART1-001) as the
-      new feature class with rationale captured in generator-handoff.
-
-  - id: "ADR-DOCS-NEED-CONTENT-PAT-CANT-RATIFY"
-    severity: low
-    description: |
-      Pat (Planner) can identify ADR-006 + ADR-007 are NEEDED but cannot author the ADR
-      text content (decision, alternatives) unilaterally — that's Architect domain.
-      Sprint 2 needs an Architect cycle BEFORE Generator can land S-ETS-02-01.
-    mitigation: |
-      next_agent: architect (this handoff). If Architect ratifies the ADR templates +
-      EtsAssert API + Dockerfile multi-stage + SystemFeatures coverage scope quickly
-      (1 cycle, low complexity since empirical evidence is captured in Quinn s03 + Raze
-      s03 reports), Generator can then proceed with all 6 stories.
-
-resolved_open_questions: []  # Sprint 2 has no Sprint-1-level open architectural questions; Sprint 1's were all resolved by Alex's first invocation
-
-confidence: 0.86
+confidence: 0.85
 confidence_rationale: |
-  Higher confidence (0.86 vs Sprint 1's 0.82) because:
-    + (+) Sprint 1 successfully closed all critical + normal SCENARIOs at the FUNCTIONAL level
-          (the architectural pattern works; this is no longer a hypothesis).
-    + (+) Six gate reports across 3 stories provide unusually thorough evidence of what
-          worked, what didn't, and what cleanup is genuinely necessary. Sprint 2 cleanup work
-          isn't speculative — it's distilled from concrete gap reports.
-    + (+) The conformance-class extension (S-ETS-02-06 SystemFeatures) follows a now-proven
-          pattern; design.md placeholder already names the package + class; GeoRobotix history
-          de-risks the IUT.
-    + (+) The 5 architectural decisions deferred to Architect are scoped to specific story
-          acceptance criteria; Architect's cycle should be ~30-50% of the Sprint 1 invocation
-          since the architecture baseline is unchanged.
-    - (-) Sprint 2 has 6 stories (vs Sprint 1's 3); doubled scope means more Generator
-          coordination overhead. Mitigated by clear dependency graph in the contract.
-    - (-) URI canonicalization sweep (S-ETS-02-03) is the highest-risk story because it
-          touches BOTH repos (csapi_compliance spec.md + traceability.md AND new repo Java
-          source) and a silent error in the canonical-URI table propagates everywhere.
-          Mitigated by mapping-table-first methodology + Quinn spot-check.
-    - (-) Sprint 2 introduces the first refactor-of-tested-behavior (S-ETS-02-02 EtsAssert);
-          if the refactor regresses 12/12 PASS, Sprint 1's audit-trail (proven 3x by
-          Quinn+Raze) gets clouded. Mitigated by smoke-between-commits discipline.
-    - (-) gh workflow scope is the one carryover Pat cannot mitigate without user action;
-          if the user doesn't grant `workflow` scope before sprint end, Sprint 2 closes with
-          one open success_criterion (`ci_workflow_live`).
+  - (+) Pat's prior 2 sprints (1 + 2) shipped cleanly; Sprint 3 reuses the
+        same architectural pattern — low novelty risk
+  - (+) 8-item carryover is well-distilled from gate findings; each item has
+        an identified Architect-deferred decision OR an existing ADR/design.md
+        Generator can follow
+  - (+) Conformance class pick (Common only) is conservative + dependency-
+        leverage-justified
+  - (-) Sprint 3 has 7 stories vs Sprint 1's 3 / Sprint 2's 6 — gate-fatigue
+        risk if Quinn+Raze gate each story individually (Sprint 2 cleanup-
+        batch precedent supports batching)
+  - (-) S-ETS-03-01 dependency-skip sabotage test is exactly what prior
+        Raze SystemFeatures gate run timed out attempting; risk Generator
+        also hits Docker-pull/smoke-loop hangs unless approach (a) unit
+        test is picked (architect's call)
 
-blockers: []
+estimated_total_sprint_3_effort: |
+  10-15h Generator wall-clock. Vs Sprint 1's ~6h / Sprint 2's ~12h. Higher
+  than Sprint 2 because: 8 carryover items (vs Sprint 2's 5), same number
+  of conformance classes (1), but the 8 cleanup items include a non-trivial
+  Architect-pickable approach (S-ETS-03-01) + a non-trivial integration
+  test (S-ETS-03-02) + a non-trivial REST-Assured wrap (S-ETS-03-02 sub-
+  task). Generator may need 2-3 sub-agent runs (cleanup batch -01..04+06 +
+  SystemFeatures expansion -05 + Common -07) vs Sprint 2's 2 runs.
+
+orchestrator_handoff_note: |
+  This planner-handoff.yaml was authored by the orchestrator (Sam) at
+  2026-04-29T01:13Z after Pat's general-purpose sub-agent (agentId
+  abd15784826b019a2) timed out at 23m / 43 tool uses without writing
+  this artifact. All other Pat outputs (contract + 7 stories + spec
+  expansion + traceability + epic updates) WERE written to disk before
+  the timeout — verified by orchestrator. The reconstruction faithfully
+  represents Pat's intent per the contract's `handoff_to_generator`
+  block (which Pat DID write); this is doc-only reconstruction, not
+  net-new planning decisions.
