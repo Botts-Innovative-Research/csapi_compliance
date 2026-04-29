@@ -1,6 +1,6 @@
 # S-ETS-03-07: Implement CS API Common (`/conf/common`) conformance class end-to-end against GeoRobotix
 
-> Status: Active — Sprint 3 | Epic: ETS-02 | Priority: P0 | Complexity: M | Last updated: 2026-04-29
+> Status: Implemented (pending Quinn+Raze) — Sprint 3 | Epic: ETS-02 | Priority: P0 | Complexity: M | Last updated: 2026-04-29
 
 ## Description
 Second additional Part 1 conformance class beyond Core + SystemFeatures. Mirrors the proven S-ETS-01-02 / S-ETS-02-06 architectural pattern: new `conformance.common.*` subpackage with at least one TestNG @Test per ATS assertion in OGC 23-001 Annex A `/conf/common/`, REQ-ETS-PART1-001 expanded from PLACEHOLDER → SPECIFIED with full per-assertion enumeration, SCENARIO-ETS-PART1-001-* added, testng.xml wired (Common is INDEPENDENT of Core — same group-dependency-DAG-root level as Core; no `dependsOnGroups` entry needed; Common runs in parallel with Core), smoke verified against GeoRobotix.
@@ -54,6 +54,51 @@ Second additional Part 1 conformance class beyond Core + SystemFeatures. Mirrors
 - Provides foundation for: Sprint 4+ remaining 11 Part 1 classes (Subsystems, Procedures, Sampling, Properties, Deployments, etc — all inherit Common's base assertions; the `groups="common"` annotation lets future classes declare `depends-on="common"` if they need Common to PASS first)
 
 ## Implementation Notes
+
+### Sprint 3 close (Dana Run 3, 2026-04-29) — IMPLEMENTED
+
+**Status**: All 4 @Tests PASS against GeoRobotix. Smoke total = 22/22 (12 Core + 6 SystemFeatures + 4 Common) at HEAD commit `c56df10` (new repo).
+
+**GeoRobotix curl evidence (architect-handoff hard constraint — captured BEFORE writing assertions)**:
+
+| Endpoint | Status | Key shape |
+|---|---|---|
+| `GET /` | 200 | `{title, serviceProvider, links: [{rel:"service-desc",type:"application/vnd.oai.openapi;version=3.1"}, {rel:"conformance",type:"application/json"}, {rel:"collections",type:"application/json"}, {rel:"systems",...}, ...]}` |
+| `GET /conformance` | 200 | declares `ogcapi-common-1/1.0/conf/core` + `ogcapi-common-2/0.0/conf/collections` + 31 other URIs |
+| `GET /collections` | 200 | `{collections: [{id:"all_systems", itemType:"feature", featureType:"system", links:[...]}, {id:"all_datastreams",...}, ...]}` |
+| `GET /?f=json` | 200 | landing page JSON body |
+| `GET /?f=html` | 400 | "Unsupported format: text/html" — IUT explicitly handles parameter (HTML class is OPTIONAL) |
+
+**URI canonical-form audit** (4 OGC `.adoc` URLs HTTP-200-verified at OGC source):
+| URI | OGC `.adoc` source | Status |
+|---|---|---|
+| `/req/json/definition` | `raw.githubusercontent.com/opengeospatial/ogcapi-common/master/19-072/requirements/json/REQ_definition.adoc` | 200 |
+| `/req/landing-page/conformance-success` | `…/19-072/requirements/landing-page/REQ_conformance-success.adoc` | 200 (also used by Core) |
+| `/req/collections/collections-list-success` | `…/collections/requirements/collections/REQ_collections-collections-list-success.adoc` | 200 |
+| `/req/json/content` | `…/19-072/requirements/json/REQ_content.adoc` | 200 |
+
+**4 @Test methods (per architect-handoff item 17 minimal-then-expand)**:
+| @Test | URI | Status | Scenario closed |
+|---|---|---|---|
+| `commonLandingPageConformanceLinkHasJsonType` | `/req/json/definition` | PASS | LANDING-001 |
+| `commonConformanceDeclaresCommonCore` | `/req/landing-page/conformance-success` | PASS | CONFORMANCE-001 |
+| `commonCollectionsEndpointReturnsCollectionsArray` | `/req/collections/collections-list-success` | PASS | COLLECTIONS-001 |
+| `commonContentNegotiationHonoursFJsonParameter` | `/req/json/content` | PASS | CONTENT-NEGOTIATION-001 |
+
+**testng.xml strategy**: per architect-handoff S-ETS-03-07 readiness rationale + must-item 18, single-block consolidation extended (Common added to existing `<test>` block alongside Core + SystemFeatures). Common is INDEPENDENT of Core — `<group name="common"/>` declared in @Test annotations but NO `dependsOnGroups` declaration in testng.xml `<dependencies>` section. Common runs in parallel with Core. BeforeSuite SkipException pattern still deferred to Sprint 4 (when 4+ classes need it).
+
+**Distinct surface from Core** (avoids duplication): Core (Sprint 1) covers SUCCESS-side at landing-page+oas30 layer (`/req/landing-page/{root,conformance,api-definition}-success` + `/req/oas30/oas-impl`). Common (Sprint 3) covers JSON encoding class (`/req/json/{definition,content}`) + Common Part 2 collections-list (`/req/collections/collections-list-success`) + reuses `/req/landing-page/conformance-success` at Common-class layer (asserts `ogcapi-common-1/1.0/conf/core` IS in the conformsTo array — Core does NOT make this assertion).
+
+**Verification approach** (per mitigation pattern — no Docker round-trip): direct TestNG invocation against the AIO jar at `/tmp/dana-run3-out/`:
+```
+java -cp target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT-aio.jar org.testng.TestNG \
+  -d /tmp/dana-run3-out /tmp/dana-run3-suite.xml
+```
+Smoke artifact archived at `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-{common,full}-georobotix-smoke-2026-04-29.xml` per architect-handoff worktree-pollution constraint.
+
+**Commits**:
+- `f384509` — CommonTests + testng.xml single-block consolidation extension
+- `c56df10` — live smoke evidence (combined with S-ETS-03-05 nested-properties fix)
 
 ### Expected Common sub-requirements (Generator HTTP-200-verifies)
 Per OGC API Common Part 1 (19-072) and OGC 23-001 Annex A `/conf/common/` mapping:

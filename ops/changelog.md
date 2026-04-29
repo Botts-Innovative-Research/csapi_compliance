@@ -1029,3 +1029,61 @@ Rolling 2-week work log. Remove entries older than 2 weeks.
     - NFR-03 Full Assessment: ~0.1 min (target <10 min)
     - NFR-14 Export: 33ms (target <10s)
   - **All work items complete. 15/15 NFRs addressed. Zero remaining TODOs.**
+
+## 2026-04-29T14:50Z — Sprint ets-03 Generator Run 3 (Dana) — S-ETS-03-{05,07} Implemented; Sprint 3 functionally complete
+
+**Triggered by**: ScheduleWakeup autonomous loop continuation; Run 3 of 3 Generator runs in Sprint 3 batching plan from architect-handoff §15.5 (Run 1 = -06+-01, Run 2 = -02+-03+-04, Run 3 = -05+-07).
+
+**Done**:
+- **S-ETS-03-07 Common conformance class** (REQ-ETS-PART1-001 PLACEHOLDER → IMPLEMENTED pending Quinn+Raze):
+  - New file `src/main/java/.../conformance/common/CommonTests.java` — 4 @Test methods (Sprint-1-style minimal-then-expand per architect-handoff item 17; deliberately distinct surface from Core to avoid duplication)
+  - URIs: `/req/json/definition`, `/req/landing-page/conformance-success` (reused at Common-class layer to assert Common Core IS in conformsTo), `/req/collections/collections-list-success` (Common Part 2), `/req/json/content`
+  - All 4 .adoc URLs HTTP-200-verified at `raw.githubusercontent.com/opengeospatial/ogcapi-common/master/{19-072,collections}/requirements/`
+  - testng.xml: Common added to existing single-block consolidation (per architect-handoff must-item 18; INDEPENDENT of Core — no dependsOnGroups on the `common` group)
+  - GeoRobotix curl evidence captured BEFORE writing tests (architect's hard constraint): `/conformance` declares `ogcapi-common-1/1.0/conf/core` AND `ogcapi-common-2/0.0/conf/collections`; `/collections` returns 200 with `id="all_systems"` entry; `?f=json` returns JSON
+  - All 4 @Tests PASS against GeoRobotix
+- **S-ETS-03-05 SystemFeatures expansion** (REQ-ETS-PART1-002 extended; 5/5 v1.0 URI coverage achieved):
+  - 2 new @Test methods added to `SystemFeaturesTests.java`: `systemsDiscoverableViaCollectionsOrLandingPage` (`/req/system/collections` — defense-in-depth: PASS if /collections OR landing-page rel=systems link works), `systemItemHasGeometryOrValidTime` (`/req/system/location-time` — MAY-priority SKIP-with-reason if both absent)
+  - Both URIs HTTP-200-verified at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/`
+  - Nested-properties fix: GeoRobotix items follow GeoJSON Feature shape with validTime under `properties` (not top-level); helper `nestedHasNonNull` accepts both shapes — initial smoke had 1 SKIP, post-fix 0 SKIP
+  - Both new @Tests PASS against GeoRobotix
+- **Smoke against GeoRobotix via direct TestNG invocation** (mitigation pattern — no Docker round-trip):
+  - Total: 22/22 PASS / 0 FAIL / 0 SKIP
+  - Class breakdown: 12 Core (preserved) + 6 SystemFeatures (4 existing + 2 new) + 4 Common
+  - Smoke artifacts archived at `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-{common,full}-georobotix-smoke-2026-04-29.xml`
+- **mvn test**: surefire 61/0/0/3 preserved (no surefire-level regressions; new conformance @Tests don't run at unit-test layer per design)
+- **Spec/traceability/story updates**:
+  - spec.md REQ-ETS-PART1-001 status PLACEHOLDER → IMPLEMENTED; new Sub-deliverable 3 cont. Common section
+  - spec.md REQ-ETS-PART1-002 status text amended to reflect 5/5 v1.0 coverage + Sprint 3 expansion
+  - traceability.md REQ-ETS-PART1-001 row Active → Implemented (pending Quinn+Raze)
+  - traceability.md REQ-ETS-PART1-002 row extended with Sprint 3 expansion notes + 6 SCENARIOs (was 4)
+  - epics/stories/s-ets-03-07-*.md: status Active → Implemented; full Implementation Notes section with curl evidence + URI audit + per-@Test PASS table
+  - epics/stories/s-ets-03-05-*.md: status Active → Implemented; full Implementation Notes section with nested-properties fix rationale
+
+**New repo commits since `42ca050`**:
+- `f384509` — S-ETS-03-07 Common conformance class — CommonTests + testng.xml wiring
+- `bfa0e6b` — S-ETS-03-05 SystemFeatures expansion — /req/system/{collections,location-time}
+- `c56df10` — S-ETS-03-05+07 live evidence — 22/22 PASS GeoRobotix; nested-properties fix
+
+**Sprint 3 final status (all 3 Generator runs combined)**:
+| Story | Status | Evidence |
+|---|---|---|
+| S-ETS-03-01 | Implemented (Run 1) | TestNG XmlSuite parser unit test PASS; bash sabotage live-exec PASS in Run 2 |
+| S-ETS-03-02 | Implemented (Run 2) | MaskingRequestLoggingFilter subclass + 8 unit tests + integration script PASS |
+| S-ETS-03-03 | DEFERRED-WITH-RATIONALE (Run 2) | gh `workflow` token still missing — user action required |
+| S-ETS-03-04 | PARTIAL (Run 2) | Image deduped 815→660MB vs 550MB stretch — ADR-009 illustrative table empirically wrong; Sprint 4 path = attack 80MB chown layer |
+| S-ETS-03-05 | Implemented (Run 3) | 6/6 SystemFeatures @Tests PASS; 5/5 v1.0 URI coverage |
+| S-ETS-03-06 | Implemented (Run 1) | Doc cleanups landed |
+| S-ETS-03-07 | Implemented (Run 3) | 4/4 Common @Tests PASS; first non-dependent sibling-of-Core class |
+
+**Sprint 3 success_criteria status (Run 3 increment)**:
+- `common_conformance_class_passes`: ✅ PASS (4/4 PASS)
+- `smoke_test_green_against_georobotix`: ✅ PASS (22/22)
+- `no_regression`: ✅ PASS (12 Core preserved; 4 existing SystemFeatures preserved)
+- `zero_bare_assertionerror_in_conformance`: ✅ PASS (ETSAssert helpers throughout; zero new bare-throw sites)
+- `uri_form_matches_ogc_adoc_canonical`: ✅ PASS (4 new Common URIs + 2 new SystemFeatures URIs all HTTP-200-verified)
+- `uri_mapping_fidelity_preserved`: ✅ PASS
+- Sprint 3 success_criteria: 5 of 5 Run 3 increment success_criteria PASS
+
+**Recommended next action**: Quinn + Raze gate runs against cumulative Sprint 3 work (all 7 stories) to close sprint. Briefing: NO docker round-trip per Sprint 3 contract worktree-pollution constraint; verify via /tmp/ clones OR archived artifacts (`ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-*.xml`). Quinn focus: live-exercise S-ETS-03-01 dependency-skip artifact + S-ETS-03-02 credential-leak grep + per-class @Test PASS counts; Raze focus: bare-throw audit, URI canonical form audit, smoke artifact integrity.
+

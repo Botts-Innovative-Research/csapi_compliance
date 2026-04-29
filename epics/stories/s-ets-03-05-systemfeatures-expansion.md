@@ -1,6 +1,6 @@
 # S-ETS-03-05: SystemFeatures expansion — `/req/system/collections` + `/req/system/location-time`
 
-> Status: Active — Sprint 3 | Epic: ETS-02 | Priority: P1 | Complexity: S | Last updated: 2026-04-29
+> Status: Implemented (pending Quinn+Raze) — Sprint 3 | Epic: ETS-02 | Priority: P1 | Complexity: S | Last updated: 2026-04-29
 
 ## Description
 Sprint 2 S-ETS-02-06 shipped 4 SystemFeatures @Tests covering 3 of 5 v1.0 `system-features.ts` URIs (resources-endpoint, canonical-endpoint, canonical-url). Sprint 3 extends with the 2 deferred URIs per design.md §"Coverage scope rationale" Sprint 3 expansion roadmap:
@@ -48,6 +48,37 @@ Both new @Tests use ETSAssert helpers + `/req/system/<X>` canonical URI form fro
 - Provides: 5/5 v1.0 SystemFeatures URI coverage (final SystemFeatures expansion before potential Sprint 4+ pagination/filter coverage)
 
 ## Implementation Notes
+
+### Sprint 3 close (Dana Run 3, 2026-04-29) — IMPLEMENTED
+
+**Status**: 2 new @Tests added; 6/6 SystemFeatures @Tests PASS against GeoRobotix. Smoke total = 22/22 (12 Core + 6 SystemFeatures + 4 Common) at HEAD commit `c56df10` (new repo). 5/5 v1.0 SystemFeatures URI coverage achieved (was 3/5 at Sprint 2 close).
+
+**GeoRobotix curl evidence**:
+- `GET /collections` returns 200 with `id="all_systems"` entry — `/req/system/collections` Common Part 2 path WORKS
+- Landing page `links[]` includes `rel="systems"` — `/req/system/collections` landing-page-link path WORKS (defense-in-depth: PASS via either path)
+- `GET /systems/{id}` returns GeoJSON Feature shape: `{type:"Feature", id:..., geometry: null, properties: {validTime: ["2023-05-14T15:22:00Z","now"], ...}}` — validTime exists nested under `properties`, NOT top-level (initial test SKIPped because lookup was top-level only; nested-properties fix added in `c56df10` to accept both shapes)
+
+**URI canonical-form audit** (2 OGC `.adoc` URLs HTTP-200-verified at OGC source):
+| URI | OGC `.adoc` source | Status |
+|---|---|---|
+| `/req/system/collections` | `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/system/req_collections.adoc` | 200 (verified S-ETS-02-06) |
+| `/req/system/location-time` | `…/req_location_time.adoc` | 200 (verified S-ETS-02-06) |
+
+**2 new @Test methods** (mechanical extension of proven Sprint 2 pattern):
+| @Test | URI | Status | Scenario closed |
+|---|---|---|---|
+| `systemsDiscoverableViaCollectionsOrLandingPage` | `/req/system/collections` | PASS | COLLECTIONS-001 |
+| `systemItemHasGeometryOrValidTime` | `/req/system/location-time` | PASS (post nested-properties fix) | LOCATION-TIME-001 |
+
+**Implementation choice (per Pat's recommendation)**: extended existing `SystemFeaturesTests.java` rather than splitting into a sibling file (file size still appropriate at 6 @Tests; design.md threshold for split is ~10 @Tests).
+
+**Defense-in-depth nuances**:
+- `systemsDiscoverableViaCollectionsOrLandingPage`: PASS if EITHER path works (Common Part 2 `/collections` OR landing-page `rel="systems"/"collection"/"collections"` link). GeoRobotix has both; the OR logic future-proofs against IUTs that implement only one.
+- `systemItemHasGeometryOrValidTime`: MAY-priority — SKIP-with-reason (not FAIL) if BOTH validTime and geometry absent. PASS if either present at top-level OR nested under `properties` (GeoJSON Feature shape).
+
+**Commits**:
+- `bfa0e6b` — 2 new @Tests + URI constants
+- `c56df10` — nested-properties fix (PASS rate went from 21/22 to 22/22)
 
 ### v1.0 reference (system-features.ts)
 Generator reads `csapi_compliance/src/engine/registry/system-features.ts` for:
