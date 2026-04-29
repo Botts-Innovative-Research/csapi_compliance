@@ -1,517 +1,327 @@
 agent: architect
 status: complete
-timestamp: "2026-04-28T21:30:00Z"
-sprint_number: "ets-02"
-triggered_by: "Pat's planner-handoff naming Architect as next, deferring 5 architectural decisions + 2 surfaced questions"
-supersedes: ".harness/handoffs/architect-handoff.yaml (Alex 2026-04-27 Sprint 1 — preserved in git history at HEAD ed45643)"
+timestamp: "2026-04-29T02:15:00Z"
+sprint_number: "ets-03"
+triggered_by: "Pat's planner-handoff (orchestrator-reconstructed 2026-04-29T01:25Z) naming Architect as next, deferring 3 architectural decisions + 1 surfaced question"
+supersedes: ".harness/handoffs/architect-handoff.yaml (Alex 2026-04-28T21:30Z Sprint 2 — preserved in git history)"
 
 next_agent: generator
 next_agent_rationale: |
-  All 5 deferred decisions ratified, both surfaced questions resolved. ADR-006/007/008/009
-  written; design.md extended with "Sprint 2 Ratifications" section (4 sub-sections);
-  ADR-001 cross-reference amendment specified (Generator applies as part of S-ETS-02-01
-  acceptance criterion #7); architecture.md updated to v2.0.1 with §14 addendum.
+  All 3 deferred decisions ratified, 1 surfaced question resolved. Outputs:
+    - 1 NEW ADR (ADR-010 dependency-skip verification strategy)
+    - 1 design.md amendment (§"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern (S-ETS-03-02)")
+    - 1 ADR-009 in-place amendment (§"Sprint 3 Amendment (2026-04-29) — Image-Size Optimization via TE common-libs ↔ deps-closure dedupe")
+    - 1 architecture.md addendum (v2.0.2 §15 Sprint 3 ratifications, 5 sub-sections)
 
-  Pat's 6-story sprint contract is unchanged. Generator (Dana) can take stories in the
-  dependency order Pat enumerated:
-    1. S-ETS-02-01 (ADR-006/007 commit + ADR-001 amend) — doc-only, fast
-    2. S-ETS-02-04 (logback + CredentialMaskingFilter) — parallelizable
-    3. S-ETS-02-02 (EtsAssert refactor — 3 commits, one per test class)
-    4. S-ETS-02-03 (URI canonicalization sweep — mapping table FIRST, then sweep)
-    5. S-ETS-02-05 (Dockerfile multi-stage + tighter smoke + CI git-mv) — depends on S-ETS-02-01
-    6. S-ETS-02-06 (SystemFeatures) — depends on S-ETS-02-02 + S-ETS-02-03
+  Pat's 7-story sprint contract is unchanged. Generator (Dana) can take stories
+  in the dependency order Pat enumerated (slightly re-grouped for batching per
+  architecture.md §15.5):
+    - Run 1: S-ETS-03-06 (doc cleanups, doc-only — fastest warmup)
+             + S-ETS-03-01 (dependency-skip sabotage — no Java conflict with -06)
+    - Run 2: S-ETS-03-02 (credential-leak + RequestLoggingFilter wrap)
+             + S-ETS-03-03 (CI workflow git mv)
+             + S-ETS-03-04 (image-size dedupe — Dockerfile changes share CI context)
+    - Run 3: S-ETS-03-05 (SystemFeatures expansion)
+             + S-ETS-03-07 (Common conformance class — shares testng.xml + listener context)
 
-  Skipped Design (Sally): no UI surface (server-side test suite). Skipped Discovery: Sprint 2
-  is cleanup + one new conformance class extending the proven Sprint 1 pattern; no new
-  capability discovery needed.
-
-  Architect cycle was scoped to 4 deferred decisions + 2 surfaced questions; no contract-
-  rewrite signals surfaced during ratification. One scope tweak observation (see
-  surfaced_risks_pat_missed.SCOPE-CONFLICT-INSIDE-CONFORMANCE-CORE-RACE) but it does not
-  change the contract; it tightens Generator sequencing guidance.
+  Architect cycle was scoped to 3 deferred decisions + 1 surfaced question; no
+  contract-rewrite signals surfaced during ratification. One scope tweak
+  observation (see surfaced_risks.GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION)
+  but it tightens Generator guidance, doesn't change the contract.
 
 next_agent_inputs:
-  - "_bmad/architecture.md v2.0.1 (§14 Sprint 2 ratifications appended)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (Sprint 2 Ratifications section)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (REQ-ETS-PART1-002 SPECIFIED + 11 new SCENARIOs from Pat)"
-  - "_bmad/adrs/ADR-006-jersey-1-to-jakarta-port.md (NEW)"
-  - "_bmad/adrs/ADR-007-dockerfile-base-image-deviation.md (NEW)"
-  - "_bmad/adrs/ADR-008-etsassert-helper-api.md (NEW)"
-  - "_bmad/adrs/ADR-009-multi-stage-dockerfile.md (NEW)"
-  - "_bmad/adrs/ADR-001-teamengine-spi-registration.md (amended with cross-reference to ADR-007)"
-  - ".harness/contracts/sprint-ets-02.yaml"
-  - "epics/stories/s-ets-02-01-adr-backfill.md"
-  - "epics/stories/s-ets-02-02-etsassert-refactor.md"
-  - "epics/stories/s-ets-02-03-uri-canonicalization-sweep.md"
-  - "epics/stories/s-ets-02-04-logback-credential-masking.md"
-  - "epics/stories/s-ets-02-05-dockerfile-cleanup.md"
-  - "epics/stories/s-ets-02-06-systemfeatures-conformance-class.md"
+  - "_bmad/architecture.md v2.0.2 (§15 Sprint 3 ratifications appended)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (§ Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (Pat expanded REQ-ETS-PART1-001 Common + new REQ-ETS-CLEANUP-005..NNN)"
+  - "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (NEW)"
+  - "_bmad/adrs/ADR-009-multi-stage-dockerfile.md (Sprint 3 amendment appended)"
+  - "_bmad/adrs/ADR-001..008.md (binding architectural baseline; unchanged)"
+  - ".harness/contracts/sprint-ets-03.yaml (Pat's 7-story Sprint 3 contract)"
+  - "epics/stories/s-ets-03-01..07-*.md (7 new story files Pat authored)"
+  - "Sprint 2 close evidence: .harness/evaluations/sprint-ets-02-{evaluator,adversarial}-{cleanup,systemfeatures}.yaml"
 
 outputs:
-  - path: "_bmad/adrs/ADR-006-jersey-1-to-jakarta-port.md"
-    type: "adr"
-    status: "accepted-post-hoc"
-    note: |
-      Retroactively covers 6 Sprint 1 commits (8e031ef, 3979709, 9ca229f, 87c6fe2,
-      9b42cb7, d01c187) that ported the archetype util layer from Jersey 1.x /
-      javax.ws.rs.* to Jersey 3.x / jakarta.ws.rs.*. References features10
-      java17Tomcat10TeamEngine6 branch as port pattern. Closes Raze s01 CONCERN-1.
-  - path: "_bmad/adrs/ADR-007-dockerfile-base-image-deviation.md"
-    type: "adr"
-    status: "accepted-post-hoc"
-    note: |
-      Retroactively documents Sprint 1 Dockerfile (commit d910808) deviation from
-      ogccite/teamengine-production:5.6.1 to tomcat:8.5-jre17 + manual TE 5.6.1
-      assembly via Maven Central + 3 secondary patches. Empirical evidence: :5.6.1
-      tag absent on Docker Hub (only :latest, :1.0-SNAPSHOT); production image
-      runs JDK 8 (UnsupportedClassVersionError 61.0 vs 52.0); our jar is JDK 17 +
-      Jakarta EE 9. Closes Quinn s03 GAP-1 + Raze s03 CONCERN-1. Supersedes ADR-001
-      §Consequences sentence about production-image-without-modification.
-  - path: "_bmad/adrs/ADR-008-etsassert-helper-api.md"
+  - path: "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md"
     type: "adr"
     status: "accepted-forward-looking"
     note: |
-      5 new static helpers added to ETSAssert: assertStatus, assertJsonObjectHas,
-      assertJsonArrayContains, assertJsonArrayContainsAnyOf (the addition vs Pat's
-      4 — for OR-fallback patterns), failWithUri. Per-helper unit tests mandated.
-      Sprint 2+ binding: zero throw new AssertionError permitted in conformance.*.
-      Refactor discipline: 3 commits (one per test class), smoke-between-commits.
-  - path: "_bmad/adrs/ADR-009-multi-stage-dockerfile.md"
-    type: "adr"
-    status: "accepted-forward-looking"
-    note: |
-      Picked Pat's option (a): eclipse-temurin:17-jdk-jammy build stage with Maven
-      3.9.9 + BuildKit cache mount; tomcat:8.5-jre17 runtime stage preserves
-      ADR-007's 3 secondary patches; non-root USER tomcat. scripts/smoke-test.sh
-      simplifies (drops host-mvn dependency). Image size target ≤ 450MB.
-      Rejected (b) (cosmetic split, doesn't fix host-~/.m2) and (c) (pushes problem
-      to mvn package time).
-  - path: "_bmad/adrs/ADR-001-teamengine-spi-registration.md"
-    type: "adr-amendment"
-    status: "amended"
-    note: |
-      Lightweight footnote in §Consequences "Positive" bullet 2 cross-references
-      ADR-007 for the JDK-17 + Jakarta-EE-9 reality that the original
-      production-image-without-modification claim missed. Option (i) chosen — not
-      a full rewrite (ADR-001's SPI mechanics are correct), not a supersede (the
-      claim that's wrong is one parenthetical).
+      Pat's option (c) BOTH ratified — bash sabotage script as canonical CITE-SC-grade
+      end-to-end artifact + TestNG XmlSuite-parser-based unit test as fast-feedback
+      structural lint. Defense-in-depth role split documented. Stub-server sabotage
+      preferred over testng.xml mutation (hermetic; no jar rebundling; no restoration
+      risk). Worktree-pollution constraint embedded: sabotage operates on /tmp/ clones
+      OR built Docker image only; archived testng-results.xml lets Quinn/Raze gate-
+      verify by reading archive, not by re-running. Closes Quinn s06 CONCERN-1 +
+      Raze s06 CONCERN-1.
   - path: "openspec/capabilities/ets-ogcapi-connectedsystems/design.md"
     type: "design-extension"
     note: |
-      Sprint 2 Ratifications section appended. 4 sub-sections: EtsAssert helper API
-      (refers to ADR-008 + concrete refactor examples), Dockerfile multi-stage
-      (refers to ADR-009 + smoke-test simplification), SystemFeatures conformance
-      class scope (4 @Test methods at Sprint 2 close, Sprint 3 expansion roadmap,
-      subpackage layout, fixtures, dependsOnGroups wiring), CredentialMaskingFilter
-      wiring (no separate ADR; class location, masking semantics from v1.0,
-      logback config, unit + integration test rules). ADR Cross-References table
-      updated.
+      Sprint 3 hardening section appended after §"CredentialMaskingFilter wiring".
+      Specifies: MaskingRequestLoggingFilter class (extends RequestLoggingFilter,
+      try/finally header swap pattern), executable Java snippet with full filter()
+      implementation, wiring point (REPLACE bare RequestLoggingFilter in
+      SuiteFixtureListener.onStart with Masking variant; KEEP CredentialMaskingFilter
+      for parallel FINE log defense-in-depth), header set rationale (superset of
+      CredentialMaskingFilter — adds Set-Cookie + Proxy-Authorization), unit +
+      integration test rules. Architect ruled NO separate ADR (precedent: Sprint 2
+      §14.5 CredentialMaskingFilter NO-ADR ruling).
+  - path: "_bmad/adrs/ADR-009-multi-stage-dockerfile.md"
+    type: "adr-amendment"
+    status: "amended (Sprint 3 increment)"
+    note: |
+      Pat's option (a) deps-closure dedupe ratified. ADR-009 §Negative bullet 4
+      explicitly anticipated this Sprint 3 carryover ("defer to Sprint 3 if 450 MB
+      is missed"). Amendment specifies: empirical TE common-libs vs ETS deps
+      overlap enumeration methodology (comm-comparison commands), illustrative
+      jar-group table (Generator MUST derive authoritative list empirically),
+      Dockerfile snippet for the dedupe RUN step, verification approach (5 steps
+      ending in archived ops/test-results/sprint-ets-03-04-image-size.txt).
+      Rejected (b) distroless (Sprint 5+; original §Alternatives) and (c) alpine
+      (50-100MB savings insufficient vs dedupe's 200-300MB). Closes Quinn cleanup
+      GAP-1 + Raze cleanup CONCERN-2.
   - path: "_bmad/architecture.md"
     type: "architecture-extension"
-    version: "2.0.1"
+    version: "2.0.2"
     note: |
-      §14 Sprint 2 ratifications appended (7 sub-sections covering ADRs 006-009 +
-      ADR-001 amendment + CredentialMaskingFilter inline + SystemFeatures scope).
-      §13 ADR index updated. v2.0 sections 1-13 unchanged. Last reconciled date
-      updated to 2026-04-28.
+      §15 Sprint 3 ratifications appended (5 sub-sections covering ADR-010 +
+      ADR-009 amendment + design.md MaskingRequestLoggingFilter + surfaced
+      question resolution + Generator batching guidance). §13 ADR index updated
+      with ADR-010 row. v2.0.1 §14 + v2.0 sections 1-13 unchanged. Last
+      reconciled date updated to 2026-04-29.
 
 readiness: "PASS"
 readiness_per_story:
-  S-ETS-02-01:
+  S-ETS-03-01:
     verdict: "PASS"
     rationale: |
-      ADR-006 + ADR-007 text content delivered. ADR-001 amendment specified
-      (lightweight footnote, exact text in design.md §"ADR-001 cross-reference
-      amendment"). Generator's job is mechanical: commit ADR-006, commit ADR-007,
-      amend ADR-001, update traceability.md cross-references for REQ-ETS-SCAFFOLD-006.
-  S-ETS-02-02:
+      ADR-010 specifies the dual-pattern (bash + unit test) in full with role
+      split, sabotage approach (stub-server preferred), verification matrix,
+      worktree-pollution constraint. Generator implements directly from ADR-010.
+  S-ETS-03-02:
     verdict: "PASS"
     rationale: |
-      ADR-008 specifies all 5 helper signatures with example refactorings drawn
-      from actual Sprint 1 sites (LandingPageTests:107, :144-148, :158-162,
-      :179-184, :204-218). Generator extends ETSAssert.java with 5 helpers + 5
-      VerifyETSAssert tests, refactors 21 sites in 3 commits with smoke-between.
-  S-ETS-02-03:
+      design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern"
+      specifies the subclass with executable Java snippet (try/finally header
+      swap), wiring point (REPLACE in SuiteFixtureListener.onStart), header set,
+      unit + integration test rules. Generator implements verbatim from the
+      snippet.
+  S-ETS-03-03:
     verdict: "PASS"
     rationale: |
-      Story self-contained per Pat's spec. No new architectural decisions needed
-      (the canonical OGC .adoc URI form was already established by Raze 2026-04-17
-      verification at /req/landing-page/root-success). Generator builds the
-      verified-canonical mapping table FIRST (acceptance criterion #1), then
-      sweeps. Quinn spot-checks the table.
-  S-ETS-02-04:
+      No new architectural decisions needed. Generator does git mv per Sprint 2
+      S-ETS-02-05 sub-task C deferred work (ci/ → .github/workflows/) plus
+      gh auth refresh -s workflow user-action follow-through.
+  S-ETS-03-04:
     verdict: "PASS"
     rationale: |
-      design.md §"CredentialMaskingFilter wiring (Sprint 2 S-ETS-02-04)" specifies:
-      class location (listener/), masking semantics (verbatim port from v1.0
-      credential-masker.ts lines 35-41), logback.xml config, wiring point
-      (SuiteFixtureListener.onStart REST-Assured filter registration), unit + leak
-      integration tests. Architect ruled NO separate ADR needed; design.md is
-      sufficient (NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 carry the
-      audit weight already).
-  S-ETS-02-05:
+      ADR-009 Sprint 3 amendment specifies the dedupe pattern with methodology
+      (empirical comm-comparison FIRST), illustrative jar table, Dockerfile
+      snippet, verification approach. Generator MUST derive authoritative
+      exclusion list empirically — illustrative table is NOT the authoritative
+      list (this constraint is in must_not below).
+  S-ETS-03-05:
     verdict: "PASS"
     rationale: |
-      ADR-009 specifies the multi-stage Dockerfile in full (both stages with
-      executable Dockerfile snippets, layer ordering rules, USER directive rules,
-      image size target, scripts/smoke-test.sh simplification rules). Generator
-      can implement directly from the ADR. Depends on S-ETS-02-01 landing first
-      (ADR-007 must exist in repo so ADR-009 can cross-reference it).
-  S-ETS-02-06:
+      No new architectural decisions needed. design.md §"SystemFeatures
+      conformance class scope" Sprint 3 expansion roadmap (5 @Test methods:
+      systemCanonicalUrlReturns200, systemHasGeometryAndValidTime,
+      systemAppearsInCollections, systemFeaturesPagination, plus filter/time
+      interactions) is the contract Generator extends. Mechanical extension
+      using ETSAssert helpers + canonical OGC URIs from Sprint 2.
+  S-ETS-03-06:
     verdict: "PASS"
     rationale: |
-      design.md §"SystemFeatures conformance class scope (Sprint 2 S-ETS-02-06)"
-      specifies the 4 @Test methods, mapping to the 4 Sprint 2 SCENARIOs Pat added,
-      subpackage layout, dependsOnGroups XML snippet, fixture reuse rules (no new
-      fixtures needed), Sprint 3 expansion roadmap, what NOT to ship. Generator
-      curl-verifies /systems shape FIRST (acceptance criterion #1) then writes
-      the 4 @Tests using ETSAssert helpers (S-ETS-02-02 must land first) and
-      canonical URIs (S-ETS-02-03 must land first).
+      No architectural decisions; doc-only cleanups (changelog, README,
+      status.md, traceability.md row reconciliation). Generator's mechanical
+      task.
+  S-ETS-03-07:
+    verdict: "PASS"
+    rationale: |
+      Pat expanded REQ-ETS-PART1-001 Common to SPECIFIED + per-class SCENARIOs
+      in spec.md. Generator follows Sprint 2's SystemFeatures pattern: curl-
+      verify GeoRobotix endpoints FIRST (landing-page, /conformance, /collections);
+      single CommonTests class; Sprint-1-style minimal-then-expand (4-5 @Tests
+      covering 3-4 highest-priority OGC 23-001 Annex A /conf/common ATS items).
+      testng.xml gets a new <test name="Common"> block — Architect recommends
+      KEEP single-block consolidation (Sprint 4 will trigger BeforeSuite
+      SkipException pattern when 4+ classes need it).
 
 adrs:
-  - id: "ADR-006"
-    title: "Jersey 1.x → Jakarta EE 9 / Jersey 3.x Port (Archetype Util Layer)"
+  - id: "ADR-010"
+    title: "Dependency-Skip Verification Strategy: Bash Sabotage (Canonical) + TestNG Unit Test (Fast-Feedback Supplement)"
     decision: |
-      Port the 8 archetype-supplied util-layer source files + verification test from
-      com.sun.jersey.* / javax.ws.rs.* to org.glassfish.jersey.* / jakarta.ws.rs.*
-      using features10@java17Tomcat10TeamEngine6 as the reference branch. 6 atomic
-      commits cited retroactively. ADR-004 amended with Group F cross-ref.
-  - id: "ADR-007"
-    title: "Dockerfile Base Image Deviation: tomcat:8.5-jre17 + Manual TE 5.6.1 Assembly"
-    decision: |
-      FROM tomcat:8.5-jre17 (not ogccite/teamengine-production:5.6.1 — tag absent +
-      JDK 8). Assemble TE 5.6.1 via Maven Central artifacts (teamengine-web,
-      teamengine-web-common-libs, teamengine-console-base) + 3 patches
-      (VirtualWebappLoader strip, JAXB shared-lib, deps closure with TE 6.0.0
-      filter). Identical 12/12 PASS to what the directed image would have produced.
-      Supersedes ADR-001 §Consequences "production image loads without modification"
-      sentence.
-  - id: "ADR-008"
-    title: "EtsAssert REST/JSON Helper API Surface"
-    decision: |
-      5 new static helpers in ETSAssert: assertStatus(Response, int, String),
-      assertJsonObjectHas(Map, String, Class, String), assertJsonArrayContains(List,
-      Predicate, String, String), assertJsonArrayContainsAnyOf(List,
-      List<Map.Entry<String, Predicate>>, String), failWithUri(String, String). All
-      raise AssertionError with /req/* URI prefix. Per-helper unit tests mandated.
-      Sprint 2+ binding constraint: zero throw new AssertionError in conformance.*.
-  - id: "ADR-009"
-    title: "Multi-Stage Dockerfile Pattern"
-    decision: |
-      Pat option (a): Stage 1 = eclipse-temurin:17-jdk-jammy + Maven 3.9.9 + BuildKit
-      --mount=type=cache,target=/root/.m2; Stage 2 = tomcat:8.5-jre17 + ADR-007's 3
-      patches + non-root USER tomcat. Layer order optimized for cache (pom.xml +
-      go-offline before src; rare-changing layers before per-commit). Image target
-      ≤ 450MB. scripts/smoke-test.sh drops host-mvn deps. Eliminates Quinn s03 +
-      Raze s03 host-~/.m2 brittleness.
+      Pat's option (c) BOTH. Bash sabotage script as canonical CITE-SC-grade
+      end-to-end verification (stub-server sabotage preferred over testng.xml
+      mutation; archived testng-results.xml as evidence); TestNG unit test as
+      fast-feedback structural lint over the canonical testng.xml shipped in
+      the jar. Defense-in-depth: structural lint catches refactor regressions
+      (<2s); bash script catches semantic regressions (~5 min CI). Sets
+      precedent for Common (S-ETS-03-07) + Subsystems (Sprint 4).
 
 constraints_for_generator:
   must:
-    # Sprint 2-specific musts (in addition to all Sprint 1 musts that still apply)
-    - "S-ETS-02-01: write ADR-006 + ADR-007 commits with the EXACT text Architect produced (do not paraphrase, do not add unsourced claims). Cite ADR-006/007 in the relevant Sprint 1 commit messages retroactively if any future amend is requested (do NOT amend Sprint 1 commits — they're frozen)."
-    - "S-ETS-02-01: amend ADR-001 §Consequences 'Positive' bullet 2 with the EXACT footnote text the Architect added (the file is already amended at this commit; Generator's S-ETS-02-01 work just needs to verify it landed). The amendment is applied; Generator's job is to commit the existing edit."
-    - "S-ETS-02-02: extend ETSAssert.java with the 5 helpers per ADR-008 signatures EXACTLY (do not rename methods, do not change parameter order). Each helper raises java.lang.AssertionError (NOT TestNG's SkipException, NOT a custom exception)."
-    - "S-ETS-02-02: every helper has at least one PASS-path + one FAIL-path unit test. Run the unit test BEFORE migrating any bare-throw site to use the helper."
-    - "S-ETS-02-02: refactor in 3 commits (one per test class — LandingPageTests first, ConformanceTests second, ResourceShapeTests third). Run smoke-test.sh between each commit; rollback the commit if smoke regresses."
-    - "S-ETS-02-03: build the verified-canonical-URI mapping table FIRST (acceptance criterion #1), curl-verify each .adoc URL returns HTTP 200, archive the table to ops/test-results/. THEN execute the sweep. Quinn verifies the table during gate review."
-    - "S-ETS-02-04: port credential-masker.ts semantics VERBATIM (first 4 + last 4 chars; full redaction below 8 chars; null/empty → ****). The CredentialMaskingFilter masks the ENTIRE credential value including the Bearer/Basic prefix (matches v1.0; SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 expects this — literal substring 'EFGH12345678WXYZ' must NOT appear)."
-    - "S-ETS-02-04: register CredentialMaskingFilter in SuiteFixtureListener.onStart() alongside ReusableEntityFilter; logback.xml MUST NOT include %X{*} MDC dump (defense-in-depth)."
-    - "S-ETS-02-05: implement the multi-stage Dockerfile with the EXACT base images ADR-009 specifies (eclipse-temurin:17-jdk-jammy build, tomcat:8.5-jre17 runtime). Use BuildKit cache mount syntax exactly per ADR-009 snippet."
-    - "S-ETS-02-05: layer order EXACTLY per ADR-009 (pom.xml + dependency:go-offline before COPY src; runtime stage's apt-get + TE WAR before COPY --from=builder). Wrong layer order kills cache effectiveness."
-    - "S-ETS-02-05: USER tomcat with chown -R BEFORE the USER directive. Verify via docker run ... id showing non-zero UID."
-    - "S-ETS-02-05: post-multi-stage, scripts/smoke-test.sh DROPS the host mvn invocations. Verify by running smoke-test.sh on a host with mvn temporarily uninstalled (or PATH-removed) — must still produce 12/12 PASS."
-    - "S-ETS-02-06: curl https://api.georobotix.io/ogc/t18/api/systems FIRST (acceptance criterion #1); archive output to Implementation Notes; if /systems is empty/404, PIVOT to /conf/common per Sprint 2 contract risk mitigation."
-    - "S-ETS-02-06: ship EXACTLY 4 @Test methods per design.md §SystemFeatures table: systemsCollectionReturns200, systemsCollectionHasItemsArray, systemItemHasIdTypeLinks, systemsCollectionLinksDiscipline. Sprint 3 expansion roadmap is documented; do NOT ship Sprint 3 methods early."
-    - "S-ETS-02-06: every @Test uses ETSAssert helpers from S-ETS-02-02 (zero new bare-throw sites) AND uses the canonical OGC .adoc URI form from S-ETS-02-03 (e.g. /req/system-features/<X>). Both dependencies MUST land before this story starts."
-    - "S-ETS-02-06: testng.xml gets a new <test name=\"SystemFeatures\"> block with dependsOnGroups wiring per design.md §SystemFeatures snippet (group 'systemfeatures' depends on 'core'). Verify dependency-skip works by temporarily breaking Core."
-    - "All stories: run smoke-test.sh and verify 12/12+ PASS BEFORE committing. Sprint 2's no-regression invariant is the integration gate — every cleanup commit must preserve smoke."
+    # Sprint 3-specific musts (in addition to all Sprint 1+2 musts that still apply)
+    - "S-ETS-03-01: implement BOTH the bash sabotage script AND the TestNG unit test per ADR-010. Bash script is canonical CI artifact; unit test is fast-feedback supplement. Skipping either is a contract violation."
+    - "S-ETS-03-01: stub-server sabotage approach preferred over testng.xml mutation (hermetic; no jar rebundling). If stub-server proves problematic, fall back to testng.xml mutation with `trap cleanup EXIT` for restoration."
+    - "S-ETS-03-01: bash script MUST archive the sabotaged testng-results.xml to ops/test-results/sprint-ets-03-dependency-skip-evidence.xml so Quinn/Raze can verify by READING the archive (no re-run required — closes worktree-pollution risk)."
+    - "S-ETS-03-01: unit test uses org.testng.xml.Parser → XmlSuite API. Asserts STRUCTURAL invariants (group depends-on declarations exist) NOT runtime SKIP semantics (that's the bash script's domain)."
+    - "S-ETS-03-02: subclass REST-Assured RequestLoggingFilter (NOT chained-filter, NOT full-replacement). Class at org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter per design.md snippet."
+    - "S-ETS-03-02: try/finally header swap pattern is mandatory — masked headers exist ONLY for the duration of super.filter() call; originals MUST be restored before the actual HTTP request reaches the IUT (otherwise authenticated calls fail)."
+    - "S-ETS-03-02: REPLACE the bare RequestLoggingFilter registration in SuiteFixtureListener.onStart with the masking variant. KEEP the CredentialMaskingFilter registration alongside (defense-in-depth for parallel FINE log)."
+    - "S-ETS-03-02: header set is SUPERSET of CredentialMaskingFilter's — adds Set-Cookie + Proxy-Authorization. Both filters mask Authorization/X-API-Key/Cookie redundantly per defense-in-depth."
+    - "S-ETS-03-02: scripts/verify-credential-leak.sh integration test is now MANDATED (no longer deferred). Synthetic Bearer ABCDEFGH12345678WXYZ; zero-leak grep for literal EFGH12345678WXYZ; assert masked Bear...WXYZ IS present."
+    - "S-ETS-03-04: derive the dedupe exclusion list EMPIRICALLY using the comm-comparison commands in ADR-009 Sprint 3 amendment. The illustrative jar table in the amendment is NOT the authoritative list — Generator's actual list depends on the live Maven dep tree."
+    - "S-ETS-03-04: archive the empirical enumeration to ops/test-results/sprint-ets-03-04-dedupe-enumeration.txt; archive the post-dedupe image size to ops/test-results/sprint-ets-03-04-image-size.txt. Both are CITE-SC-reproducibility evidence."
+    - "S-ETS-03-04: smoke 12/12+ PASS preserved AFTER each batch of jar exclusions (NoClassDefFoundError surfaces immediately if a removed jar is needed). Restore + document any irremovable jar."
+    - "S-ETS-03-04: image size acceptance threshold is ≤ 450 MB per docker images --format '{{.Size}}'. Sprint 2 missed this (~570 MB); Sprint 3 closes it."
+    - "S-ETS-03-05: extend SystemFeaturesTests with the 5 Sprint 3 expansion @Test methods per design.md §SystemFeatures Sprint 3 expansion roadmap. Use ETSAssert helpers + canonical OGC URIs from Sprint 2 (zero new bare-throw, zero stale URIs)."
+    - "S-ETS-03-07: curl GeoRobotix /, /conformance, /collections FIRST (acceptance criterion — Sprint 2 SystemFeatures pattern); archive output to story Implementation Notes; if endpoints unavailable, PIVOT documented in handoff."
+    - "S-ETS-03-07: Sprint-1-style minimal-then-expand for Common (4-5 @Tests covering highest-priority /conf/common ATS items: landing-page, conformance, collections, content-negotiation, json-html). Sprint 4+ expansion for the remainder."
+    - "S-ETS-03-07: testng.xml KEEP single-block consolidation — add <test name=\"Common\"> block alongside existing Core + SystemFeatures. The BeforeSuite SkipException pattern is deferred to Sprint 4 when 4+ classes need it."
+    - "All stories: gates verify against /tmp/ clones OR archived artifacts ONLY — NEVER against the user's worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/ (per Sprint 3 contract worktree_pollution_constraint)."
+    - "All stories: run smoke-test.sh and verify 12/12+ PASS BEFORE committing. Sprint 3's no-regression invariant is the integration gate (carryover from Sprint 2)."
 
   must_not:
-    - "Implement any Part 2 functionality (REQ-ETS-PART2-*). Sprint 2 contract enforces; Quinn rejects on violation. Same as Sprint 1."
-    - "Implement REQ-ETS-FIXTURES-* (spec-trap port). Out of Sprint 2 scope; epic-ets-06 parallel sprint. The asymmetric-feature-type fixture group is on the v1.0 side — do NOT inline it into S-ETS-02-06."
-    - "Implement REQ-ETS-CITE-* (Maven Central, OSSRH, GPG, outreach). Calendar-bound; beta milestone."
-    - "Modify the v1.0 csapi_compliance/ repo files EXCEPT for the 4 Sprint 2 read-write touchpoints: spec.md (S-ETS-02-03 + S-ETS-02-06 reconcile), traceability.md (S-ETS-02-* rows), ops/* (status, changelog, test-results), and the architect-handoff/planner-handoff yaml. Do NOT touch any v1.0 frozen artifact (architecture-v1-frozen.md, schemas/, src/, etc.)."
-    - "Override ets-common-managed transitive dep versions without an ADR. Same as Sprint 1."
-    - "Add a non-ets-common-managed transitive dependency without an ADR. Same as Sprint 1."
-    - "Use Pat's Sprint 1 stale strings (connectedsystems-1, ogcapi.cs10, ets-common:14, teamengine 5.5). Same as Sprint 1; ADR-003/004 supersede."
-    - "Re-introduce a strict rel=self mandatory assertion. Same as Sprint 1; the v1.0 GH#3 fix is preserved at LandingPageTests:204 + spec.md SCENARIO-ETS-CORE-LINKS-NORMATIVE-001 + design.md S-ETS-02-06's `systemsCollectionLinksDiscipline` (which carries the same policy to /systems collection-level links)."
-    - "Use Hamcrest fluent matchers as the EtsAssert helper style (rejected in ADR-008 §Alternatives). Use the static-helper signatures EXACTLY."
-    - "Add ApacheConnectorProvider wiring in Sprint 2 (deferred per ADR-006 §Consequences Negative bullet 2). Wait until a future sprint surfaces a real need."
-    - "Use options (b) or (c) for the multi-stage Dockerfile (rejected in ADR-009 §Alternatives). Use option (a) — eclipse-temurin:17-jdk-jammy build stage with BuildKit cache mount — EXACTLY."
-    - "Ship more than 4 @Test methods in SystemFeaturesTests for Sprint 2 (rejected in design.md §SystemFeatures coverage scope rationale). Sprint 3 is the expansion sprint."
-    - "Ship the spec-trap fixture port for SystemFeatures' asymmetric-feature-type group in Sprint 2 (rejected in design.md §SystemFeatures 'What NOT to ship in Sprint 2'). Defer to epic-ets-06."
+    - "Implement Pat's option (a) ALONE for S-ETS-03-01 (TestNG unit test only). The CRITICAL SCENARIO requires end-to-end verification per ADR-010; structural lint is not sufficient."
+    - "Implement Pat's option (b) ALONE for S-ETS-03-01 (bash only). Defense-in-depth requires both per ADR-010; fast-feedback unit test is mandatory."
+    - "Use Pat's option (b) chained-filter-with-registration-order for S-ETS-03-02. REJECTED in design.md §wrap pattern — fragile to REST-Assured filter-order changes."
+    - "Use Pat's option (c) full-replacement for S-ETS-03-02. REJECTED — re-implements 200+ LOC of formatter; subclass is the minimal touch."
+    - "Use the illustrative jar exclusion table in ADR-009 Sprint 3 amendment as the authoritative list. Generator MUST derive empirically — the table is documentation only."
+    - "Implement option (b) distroless runtime for S-ETS-03-04. Still deferred per ADR-009 §Alternatives — Sprint 5+ at earliest."
+    - "Implement option (c) alpine refinement for S-ETS-03-04. REJECTED in ADR-009 Sprint 3 amendment — savings insufficient (50-100MB vs dedupe's 200-300MB) and musl libc compatibility risk."
+    - "Mutate REST-Assured request payloads in MaskingRequestLoggingFilter (would break authenticated IUT calls). The header swap MUST be transient (try/finally restoration mandatory)."
+    - "Sabotage against the user's worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/ for S-ETS-03-01. Use /tmp/ clones or built Docker image only (per ADR-010 + Sprint 3 contract worktree_pollution_constraint)."
+    - "Adopt the BeforeSuite SkipException pattern in testng.xml for Common (S-ETS-03-07). Defer to Sprint 4 when 4+ classes need it; Sprint 3 keeps single-block consolidation."
+    - "Ship more than 5 @Test methods in CommonTests for Sprint 3 (Sprint-1-style minimal — same risk-control rationale as Sprint 2 SystemFeatures)."
+    - "All Sprint 1+2 must_not entries continue to apply (Part 2 work, fixtures port, CITE work, frozen v1.0 modifications, ets-common version overrides without ADR, etc.)."
 
   should:
-    - "After landing each S-ETS-02-* commit, regenerate ops/test-results/sprint-ets-02-georobotix-smoke-<date>.xml and verify 12/12+ PASS. Archive the artifact to the new repo's ops/test-results/."
-    - "When refactoring the 21 bare-throw sites in S-ETS-02-02, prefer the most-specific helper (assertStatus over failWithUri; assertJsonObjectHas with String.class over assertJsonObjectHas with Object.class when type is known). Per ADR-008 §Constraints SHOULD."
-    - "Use ets-common's existing Mockito 3+ ArgumentMatchers patterns (vs deprecated Mockito 1.x Matchers) when writing VerifyETSAssert + VerifyCredentialMaskingFilter unit tests. Per ADR-006's note about d01c187 commit."
-    - "When writing SystemFeaturesTests @BeforeClass that fetches /systems, cache the response in a class-level field. The 4 @Tests should not redundantly hit the IUT. Mirror ConformanceTests.fetchConformancePage() pattern."
-    - "Pin eclipse-temurin:17-jdk-jammy by digest (FROM eclipse-temurin:17-jdk-jammy@sha256:<digest>) at S-ETS-02-05 close for reproducibility. Same for tomcat:8.5-jre17. Update digests when periodically re-pinning per ops/server.md cadence."
-    - "Document the BuildKit cache hit rate in S-ETS-02-05 close (e.g. cold 'docker build .' takes Xs; warm rebuild takes Ys; cache mount works as designed)."
-    - "If gh auth refresh -s workflow fails at S-ETS-02-05 sub-task C, document the blocker explicitly in ops/status.md AND in the story's Implementation Notes. Don't try to work around with shell tricks; that's a user-action item."
-    - "When in doubt, copy from features10@java17Tomcat10TeamEngine6 verbatim and rename. The pattern is well-trodden; innovation here is anti-value. Same as Sprint 1."
+    - "After landing each S-ETS-03-* commit, regenerate ops/test-results/sprint-ets-03-georobotix-smoke-<date>.xml and verify 12/12+ PASS. Archive to /tmp/ if running gates against fresh clones (do NOT pollute ~/docker/gir/ets-ogcapi-connectedsystems10/ worktree)."
+    - "S-ETS-03-01: pin TestNG version explicitly in pom.xml comments referencing org.testng.xml.Parser (so future migrations know the unit test depends on it)."
+    - "S-ETS-03-02: when writing VerifyMaskingRequestLoggingFilter unit tests, use ByteArrayOutputStream injection to capture the formatter output (avoids polluting test logs with masked content)."
+    - "S-ETS-03-04: include the TE 5.6.1 version in Dockerfile dedupe RUN step comments (so future TE bump knows to re-run the comm-comparison)."
+    - "S-ETS-03-04: document the BuildKit cache-hit rate behavior change (if any) post-dedupe in Implementation Notes."
+    - "S-ETS-03-07: copy the curl-verification methodology from Sprint 2 S-ETS-02-06 verbatim (proven pattern). Archive curl output BEFORE writing assertions — protects against silent IUT shape changes."
+    - "Generator batching per architecture.md §15.5 recommendation: Run 1 (-06 + -01) → Run 2 (-02 + -03 + -04) → Run 3 (-05 + -07). Aligns with file-touch graph; minimizes context switching."
+    - "When in doubt, copy from Sprint 2's analogous patterns verbatim (CredentialMaskingFilter → MaskingRequestLoggingFilter; SystemFeaturesTests → CommonTests; Sprint 2 testng.xml → Sprint 3 testng.xml). Innovation here is anti-value."
 
-risks_for_generator:
-  highest:
-    - id: "URI-CANONICALIZATION-BREAKS-SMOKE"
-      severity: high
-      description: |
-        S-ETS-02-03 changes 30-40 URI strings across spec.md + traceability.md + Java
-        @Test descriptions. If the OGC canonical form differs from what we ASSUME for any
-        single URI, the @Test description carries a wrong URI but the assertion logic
-        still passes — silent regression of audit-trail integrity. (Inherited from Pat's
-        planner-handoff; Architect concurs.)
-      mitigation: |
-        Mapping-table-first methodology mandated by Acceptance Criterion #1. Generator MUST
-        curl-verify each .adoc URL returns HTTP 200 BEFORE the sweep. Quinn verifies the
-        table during gate review. Spot-check 3 random URIs after the sweep.
-
-    - id: "ETSASSERT-REFACTOR-BREAKS-12-12-PASS"
-      severity: high
-      description: |
-        S-ETS-02-02 mechanically refactors 21 bare-throw sites. If a helper invocation
-        accidentally swaps operands in an OR check (assertJsonArrayContainsAnyOf with
-        wrong predicate ordering), or unifies assertions that should remain separate,
-        the 12/12 PASS smoke regresses silently — the test still PASSES but for the
-        wrong reason. (Inherited from Pat; Architect adds: ADR-008's per-helper unit
-        tests are the primary mitigation.)
-      mitigation: |
-        VerifyETSAssert.java unit tests cover both PASS and FAIL paths for each helper.
-        Refactor + test in lockstep: the helper passes its own unit test BEFORE any bare-
-        throw site is migrated to use it. Smoke between each test-class commit (3 commits
-        total). Generator MUST NOT batch all 21 site migrations into a single commit.
-
-  medium:
-    - id: "DOCKERFILE-MULTISTAGE-BREAKS-SMOKE"
-      severity: medium
-      description: |
-        S-ETS-02-05 rewrites the Dockerfile. Build artifacts and runtime layout may shift
-        in ways that break the smoke pipeline. Raze s03's adversarial sabotage test
-        confirmed smoke catches assertion failures cleanly; it does NOT confirm a
-        Dockerfile change is automatically caught.
-      mitigation: |
-        ADR-009 specifies the Dockerfile in executable detail (both stages, layer order,
-        USER rules, smoke-test.sh simplification). Generator follows it verbatim. Run
-        smoke END-TO-END on a clean tempdir (no ~/.m2 mount) BEFORE committing the
-        Dockerfile change.
-
-    - id: "SYSTEMFEATURES-GEOROBOTIX-EMPTY-COLLECTION"
-      severity: medium
-      description: |
-        Sprint 2 assumes GeoRobotix's /systems is non-empty. If GeoRobotix has changed,
-        the 4 @Tests may legitimately PASS-by-vacuity in misleading ways.
-      mitigation: |
-        Acceptance Criterion #1 mandates curl /systems FIRST and archive the response
-        shape into Implementation Notes. If empty/404, PIVOT to /conf/common (REQ-ETS-PART1-001)
-        as the Sprint 2 new feature class with rationale captured in generator-handoff.
-
-    - id: "GH-WORKFLOW-SCOPE-STILL-MISSING"
-      severity: medium
-      description: |
-        S-ETS-02-05 sub-task C requires gh token with 'workflow' scope. Same scope was
-        missing across S-ETS-01-01..03. (Inherited from Pat.)
-      mitigation: |
-        User-action item: orchestrator runs `gh auth refresh -s workflow` at sprint start.
-        If still blocked, S-ETS-02-05 closes with workflow file under ci/ and explicit
-        deferral note; success_criterion ci_workflow_live converges to Sprint 3+ carryover.
-
-    - id: "SCOPE-CONFLICT-INSIDE-CONFORMANCE-CORE-RACE"
-      severity: medium
-      description: |
-        S-ETS-02-02 (EtsAssert refactor) and S-ETS-02-03 (URI canonicalization) BOTH
-        touch the same 3 files: conformance/core/{LandingPageTests,ConformanceTests,
-        ResourceShapeTests}.java. If Generator runs them in parallel (or out of strict
-        sequence), the second story's commits will conflict with the first's. Pat marked
-        both as 'parallelizable: false' but did not explicitly call out the cross-story
-        file-level race.
-      mitigation: |
-        Sequential ordering is mandatory. The natural order is S-ETS-02-02 FIRST (extend
-        ETSAssert; refactor 21 sites to call helpers — touches the bodies of every @Test
-        method), then S-ETS-02-03 (update REQ_* constants — touches the static final
-        String declarations at the top of each file). Doing it in this order means
-        S-ETS-02-03's commit is a 4-12 line constant-update diff per file (clean),
-        whereas the reverse order would mean S-ETS-02-02's helper-migration commit
-        rewrites every test method body AGAIN with the now-canonical URI strings — git
-        diff noise + Quinn-bisectability hurt.
-
-  low:
-    - id: "REPRODUCIBLE-BUILD-AFTER-MULTISTAGE"
-      severity: low
-      description: |
-        S-ETS-02-05 changes the Dockerfile but the Maven build stage produces the same
-        target/*.jar artifacts. The reproducible-build sha256 should hold (per ADR-009
-        §Consequences). If it doesn't, the cause is likely a BuildKit cache layer that
-        captured an interim Maven plugin pin — not a true reproducibility regression
-        but visually alarming.
-      mitigation: |
-        Sprint 2 success_criterion reproducible_build remains true. Verify with two
-        consecutive fresh-clone builds + sha256sum diff. Document any divergence in
-        ops/test-results/ with explanatory note.
-
-    - id: "ADR-009-BUILDKIT-FALLBACK"
-      severity: low
-      description: |
-        ADR-009's --mount=type=cache requires Docker BuildKit. Some older CI environments
-        (Docker < 19.03) don't have BuildKit. If GitHub Actions runner ever defaults to
-        a non-BuildKit Docker, the cache mount silently no-ops and cold builds become
-        slow but still correct.
-      mitigation: |
-        ops/server.md should record DOCKER_BUILDKIT=1 as the canonical env var.
-        scripts/smoke-test.sh should set it explicitly. GitHub Actions modern runners
-        have BuildKit on by default; this is forward-defensive only.
-
-architectural_decisions_resolved:
-  - id: "ADR-006-CONTENT"
-    question: "What goes in ADR-006 for Jersey 1.x → Jakarta EE 9 / Jersey 3.x port?"
-    resolution: |
-      Written. Covers 6 Sprint 1 commits, references features10@java17Tomcat10TeamEngine6
-      branch as port pattern, lists 5 alternatives considered (stay on Jersey 1.x +
-      explicit dep — rejected; rewrite via JDK 11 HttpClient — rejected; skip + leave
-      unused — rejected; wait for archetype 3.x — rejected). ADR-004 amended via Group F
-      cross-reference.
-  - id: "ADR-007-CONTENT"
-    question: "What goes in ADR-007 for Dockerfile base image deviation?"
-    resolution: |
-      Written. Empirical evidence table reproduces Quinn s03 + Raze s03 verification
-      commands. 5 alternatives considered (build TE 5.6.1 from source — rejected; use
-      :latest with custom JRE 17 layer — rejected; fork production image with JDK 17 —
-      rejected for our scope, correct long-term answer; pin :1.0-SNAPSHOT — rejected;
-      backport ETS to JDK 8 — rejected). 3 secondary patches each individually
-      documented with empirical root-cause. ADR-001 amended with cross-reference.
-  - id: "ETSASSERT-API-SURFACE"
-    question: "Single helper, family of helpers, or builder-style? Specific signatures?"
-    resolution: |
-      Family of 5 type-specific static helpers (per ADR-008): assertStatus,
-      assertJsonObjectHas, assertJsonArrayContains, assertJsonArrayContainsAnyOf,
-      failWithUri. Pat proposed 4; Architect added assertJsonArrayContainsAnyOf because
-      the OR-fallback pattern (service-desc OR service-doc) appears in Sprint 1's
-      LandingPageTests and would otherwise need failWithUri (defeating the centralization).
-      Builder-style and single-mega-helper rejected per ADR-008 §Alternatives.
-  - id: "MULTI-STAGE-DOCKERFILE-PATTERN"
-    question: "Pat option (a), (b), or (c)?"
-    resolution: |
-      Option (a): eclipse-temurin:17-jdk-jammy build stage with Maven 3.9.9 + BuildKit
-      --mount=type=cache,target=/root/.m2; tomcat:8.5-jre17 runtime stage preserves
-      ADR-007's 3 secondary patches; non-root USER tomcat. Most reproducible across host
-      environments; CI cold-cache cost amortized via BuildKit; aligns with features10
-      java17 branch direction. Per ADR-009 with executable Dockerfile snippets.
-  - id: "SYSTEMFEATURES-COVERAGE-SCOPE"
-    question: "Sprint-1-style minimal-then-expand vs full-coverage day 1?"
-    resolution: |
-      Sprint-1-style minimal-then-expand. 4 @Test methods at Sprint 2 close (one per
-      Pat-enumerated SCENARIO); Sprint 3 expansion roadmap captured in design.md
-      §SystemFeatures coverage scope rationale (canonical URL, location-time, collections,
-      pagination, ~4 more for filter interactions). Pat's recommendation accepted; Architect
-      reasoning at design.md (4 bullets: pattern-extension risk control, foundational
-      shape coverage, beta-gate doesn't require full per-class depth, GeoRobotix /systems
-      shape unknown until curl-verified).
-
-surfaced_questions_resolved:
-  - id: "CREDENTIAL-MASKING-FILTER-ADR"
-    question: "Should CredentialMaskingFilter (S-ETS-02-04) warrant its own ADR?"
-    resolution: |
-      No separate ADR. Rules captured inline in design.md §"CredentialMaskingFilter
-      wiring (Sprint 2 S-ETS-02-04)" and architecture.md §14.5. Justification: the
-      implementation is wire-the-OGC-pattern-verbatim (REST-Assured Filter SPI is
-      well-trodden; logback config is 5 lines; v1.0 credential-masker.ts provides the
-      semantics verbatim). NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 carry
-      the audit weight. Decision surface too small for an ADR.
-  - id: "ADR-001-CROSS-REFERENCE-AMENDMENT"
-    question: "Amend ADR-001 (option i lightweight footnote) vs ADR-001v2 (option ii) vs leave unchanged (option iii)?"
-    resolution: |
-      Option (i): lightweight footnote in ADR-001 §Consequences "Positive" bullet 2
-      cross-referencing ADR-007. Architect applied the edit directly to
-      ADR-001-teamengine-spi-registration.md (the change is committed at this turn).
-      Generator's S-ETS-02-01 work just verifies the amendment landed; no additional
-      Generator action needed beyond commit-the-existing-edit. Rejected option (ii)
-      (ADR-001v2 supersede) because ADR-001's SPI mechanics are correct; only the
-      production-image-without-modification parenthetical was wrong. Rejected option
-      (iii) (rely on ADR-007's supersedes line alone) because a reader of ADR-001 who
-      doesn't know ADR-007 exists won't find the correction.
-
-surfaced_risks_pat_missed:
-  - id: "SCOPE-CONFLICT-INSIDE-CONFORMANCE-CORE-RACE"
+surfaced_risks:
+  - id: "GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION"
     severity: medium
     description: |
-      S-ETS-02-02 (EtsAssert refactor) and S-ETS-02-03 (URI canonicalization) BOTH touch
-      conformance/core/{LandingPageTests,ConformanceTests,ResourceShapeTests}.java. Pat
-      marked them parallelizable: false at the story level but did not call out the
-      cross-story file-level race. If Generator interleaves them, the second story's
-      commits will conflict with the first's, AND running them in the wrong order
-      doubles the diff size of the second story.
-    action: |
-      Captured in `risks_for_generator.medium.SCOPE-CONFLICT-INSIDE-CONFORMANCE-CORE-RACE`
-      with mitigation (sequential ordering S-ETS-02-02 → S-ETS-02-03 mandatory; the
-      reverse order kills git-diff cleanliness). Sam: no Sprint 2 contract change needed;
-      Generator follows the dependency_order in Pat's handoff which already implies this
-      sequence. Optionally add a note to S-ETS-02-03 file's "Dependencies" section: "Order
-      AFTER S-ETS-02-02 to keep the sweep diff clean."
+      ADR-009 Sprint 3 amendment provides an illustrative jar exclusion table
+      but EXPLICITLY mandates empirical derivation. Risk: Generator may treat
+      the illustrative table as authoritative and skip the comm-comparison step,
+      shipping a jar set that doesn't match the actual Maven dep tree at
+      Sprint 3 implementation time. Symptom: image size doesn't reach 450MB OR
+      removes a jar that breaks 12/12 PASS.
+    mitigation: |
+      Captured in constraints_for_generator.must (item 11) and must_not (item 5).
+      Acceptance criterion in S-ETS-03-04 should require archiving the empirical
+      enumeration BEFORE the Dockerfile edit (sequencing: enumerate → archive →
+      edit). Quinn verifies the archive matches the Dockerfile exclusion list at
+      gate review.
 
-  - id: "EtsAssert-EVOLUTION-CAP"
+  - id: "MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING"
     severity: low
     description: |
-      ADR-008 specifies 5 helpers; design.md §"ADR Cross-References" notes that at
-      Sprint 5+ if helper count exceeds ~12, consider splitting into ETSAssert (XML
-      legacy) + RestAssertions (new). This deferral is captured but Pat's contract
-      doesn't track it as an explicit Sprint 5+ planning input.
-    action: |
-      Sam: at Sprint 5 planning cycle, if SystemFeatures + Subsystems + Procedures +
-      Sampling have shipped without needing helpers beyond the current 5, no action.
-      If new shapes emerge (e.g. CRUD assertion patterns for write-operation classes),
-      revisit and either grow ETSAssert or split. Tracked here so the option doesn't
-      get forgotten.
+      design.md §wrap pattern's MaskingRequestLoggingFilter overrides
+      RequestLoggingFilter (request-side). REST-Assured also has
+      ResponseLoggingFilter (response-side). If the Sprint 2 baseline registered
+      both Request + Response logging filters, only the request side is being
+      hardened in Sprint 3. The response side could leak Set-Cookie or
+      Authorization-bounce headers.
+    mitigation: |
+      Generator should grep SuiteFixtureListener.java for any
+      ResponseLoggingFilter registration. If present, the same wrap pattern
+      applies — extend ResponseLoggingFilter into MaskingResponseLoggingFilter
+      with the same try/finally pattern (mirror image; ~30 LOC). If not present,
+      no action. This finding is captured here as a Sprint 3 close audit item;
+      Generator notes in Implementation Notes whether ResponseLoggingFilter
+      exists in the Sprint 2 baseline.
 
-  - id: "REPRO-BUILD-DOUBLE-VERIFICATION-AT-SPRINT-CLOSE"
+  - id: "STUB-SERVER-PORT-COLLISION-IN-CI"
     severity: low
     description: |
-      Sprint 2 success_criteria includes reproducible_build: true (carryover from Sprint
-      1). With ADR-009's multi-stage Dockerfile changing the build process, a re-verify
-      at Sprint 2 close is wise — the same-host Maven build still produces the same
-      jars (no Dockerfile influence on Maven), but a CITE SC reviewer running `docker
-      build` twice should also see byte-identical container layer SHAs. Pat's contract
-      doesn't track the docker-image reproducibility separately.
-    action: |
-      Sam: at Sprint 2 close, run two consecutive `docker build .` invocations on the
-      same commit and compare the final image SHA. If divergent, root-cause and document
-      in ops/known-issues.md. Container-layer reproducibility is harder than jar-byte
-      reproducibility (timestamps in /etc/passwd, etc.) — accept some divergence with
-      explanation if it's annotation-only.
+      ADR-010 §Risks notes the stub-server may collide with port 5000 (or
+      whatever Generator picks) on GitHub Actions runners. Mitigation in ADR
+      (ephemeral port via socket.bind(('', 0))) is correct but adds Generator
+      complexity vs hardcoded port.
+    mitigation: |
+      Hardcoded port + retry-on-collision is acceptable as a simpler fallback
+      if ephemeral-port is fragile. Generator picks pragmatically; document
+      in Implementation Notes. CI failure of dependency-skip job due to port
+      collision is recoverable (workflow re-run) and rare.
 
-confidence: 0.89
+architectural_decisions_resolved:
+  - id: "DEPENDENCY-SKIP-APPROACH"
+    question: "Pat's option (a), (b), or (c)?"
+    resolution: |
+      Option (c) BOTH. Bash sabotage canonical (CITE-SC-grade end-to-end);
+      TestNG unit test fast-feedback structural lint. Stub-server sabotage
+      preferred over testng.xml mutation. Defense-in-depth role split per
+      ADR-010. Worktree-pollution constraint embedded.
+  - id: "REST-ASSURED-LOGGING-FILTER-WRAP-PATTERN"
+    question: "Pat's option (a) subclass, (b) chained-filter, or (c) full-replacement?"
+    resolution: |
+      Option (a) subclass. MaskingRequestLoggingFilter extends RequestLoggingFilter;
+      try/finally header swap pattern (originals restored before HTTP request
+      reaches IUT). Per design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter
+      wrap pattern". Rejected (b) (fragile to filter-order changes) and (c)
+      (overkill — re-implements 200+ LOC of formatting).
+  - id: "IMAGE-SIZE-OPTIMIZATION-APPROACH"
+    question: "Pat's option (a) deps-closure dedupe, (b) distroless, or (c) alpine?"
+    resolution: |
+      Option (a) TE common-libs ↔ deps-closure dedupe. Per ADR-009 Sprint 3
+      amendment (in-place; not a new ADR — it's a continuation of the original
+      ADR-009 §Negative bullet 4 deferral). Empirical exclusion list mandated;
+      illustrative table is not authoritative. Rejected (b) distroless
+      (Sprint 5+) and (c) alpine (50-100MB savings insufficient + musl risk).
+
+surfaced_questions_resolved:
+  - id: "REST-ASSURED-WRAP-ADR-OR-DESIGN-MD"
+    question: "Should REST-Assured RequestLoggingFilter wrap warrant its own ADR or just design.md §529 amendment?"
+    resolution: |
+      design.md amendment (NOT a new ADR). Justification: (a) wrap uses well-
+      trodden REST-Assured public Filter SPI; (b) masking semantics already in
+      CredentialMaskingFilter.maskValue() from Sprint 2; (c) wrap is 30-50 LOC
+      subclass — decision surface too small per the Sprint 2 §14.5
+      NO-ADR-for-CredentialMaskingFilter precedent; (d) audit weight carried by
+      NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 + the now-mandated
+      credential-leak integration test. ADR-010 §Notes cross-references the
+      design.md section to maintain traceability.
+
+confidence: 0.91
 confidence_rationale: |
-  Higher confidence (0.89 vs Sprint 1's 0.83) because:
-    + (+) All 5 deferred decisions have direct empirical grounding from Sprint 1 evidence.
-          ADR-006/007 distill Quinn s01/s03 + Raze s01/s03 reports; ADR-008 distills the
-          21 actual bare-throw sites I read at the source level (LandingPageTests:107,
-          :144-148, :158-162, :179-184, :204-218); ADR-009 picks Pat's option (a) per
-          textbook BuildKit pattern. SystemFeatures coverage scope echoes Pat's risk-
-          control logic and is grounded in the v1.0 system-features.ts registry I read.
-    + (+) The 6 stories in Pat's contract map cleanly to the architectural deliverables;
-          no scope-rewrite signals surfaced. Generator's path is unambiguous.
-    + (+) No new external dependencies introduced by Sprint 2. ets-common:17 still the
-          single source of dep truth; logback-classic was already declared; BuildKit is
-          a Docker engine feature, not a Maven dep.
-    + (+) Architect cycle was scoped (~30-50% of Sprint 1's invocation per Pat's
-          prediction). Token usage well within budget.
-    - (-) ADR-008's `assertJsonArrayContainsAnyOf` signature uses
-          `List<Map.Entry<String, Predicate<Object>>>` which is verbose at call sites
-          (see refactoring example for LandingPageTests:179-184). A simpler API
-          (`anyOf(matcher1, matcher2, ...)` varargs) might read better but adds
-          implementation complexity. Tradeoff accepted; revisit at Sprint 3 if Generator
-          (Dana) pushes back.
-    - (-) Did not validate the multi-stage Dockerfile actually builds on this host (no
-          eclipse-temurin:17-jdk-jammy pulled, no `docker build` executed). The pattern
-          is grounded in Docker BuildKit documentation + features10 java17 branch
-          direction; runtime validation is Generator's S-ETS-02-05 work.
-    - (-) The 3 secondary patches in ADR-007 + ADR-009 are inherited from Sprint 1
-          empirics; if Tomcat 8.5 ships a future patch release that fixes the
-          VirtualWebappLoader miss, the patch becomes unnecessary but Generator won't
-          notice because the sed line remains a no-op. Low residual risk; mitigated by
-          ops/server.md base-image-cadence section S-ETS-02-05 should add.
-    - (-) SystemFeatures coverage scope (4 @Test methods) is the smallest commitment
-          that still proves the pattern extension. If Quinn or Raze flags this as
-          "PARTIAL coverage" at gate review, Sprint 3 expands. Architect accepts the
-          gate-narrowing-with-explicit-deferral risk.
+  Higher confidence (0.91 vs Sprint 2's 0.89) because:
+    + (+) All 3 deferred decisions have direct empirical grounding from Pat's
+          analysis + my prior architectural decisions (ADR-009 §Negative bullet 4
+          ANTICIPATED Sprint 3 carryover for the dedupe; design.md §529 already
+          flagged the Sprint 3 hardening; ADR-010 builds on TestNG XmlSuite API
+          which is well-documented).
+    + (+) The 7 stories in Pat's contract map cleanly to the architectural
+          deliverables; no scope-rewrite signals surfaced. Generator's path is
+          unambiguous.
+    + (+) No new external dependencies introduced. REST-Assured 5.5.0 is already
+          declared (Sprint 2); MaskingRequestLoggingFilter is pure-Java subclass
+          using public SPI.
+    + (+) Architect cycle was tightly scoped (~25 min wall-clock per the
+          mitigation plan vs Sprint 2's 30-50 min). Token usage well within
+          budget.
+    + (+) Sprint 2 quality trend is accelerating (Quinn 0.96 / Raze 0.92 best
+          single-story verdicts). Sprint 3 inherits the same tooling + patterns,
+          so quality-trend extrapolates favorably.
+    - (-) Did not validate the MaskingRequestLoggingFilter actually compiles
+          against the real REST-Assured 5.5.0 jar (no mvn invocation). The wrap
+          pattern is grounded in REST-Assured Javadoc + the existing
+          CredentialMaskingFilter pattern which DOES compile against the same
+          jar. Runtime validation is Generator's S-ETS-03-02 work.
+    - (-) Did not validate the TestNG XmlSuite API is callable from a unit test
+          (no JVM invocation). The API is documented at javadoc.io and is
+          publicly stable; runtime validation is Generator's S-ETS-03-01 work.
+    - (-) Empirical dedupe list is not pre-derived (would have required Docker
+          + mvn invocation, both blocked by the timeout-mitigation plan).
+          Generator does the comm-comparison as part of S-ETS-03-04 acceptance.
 
 residual_questions: []
 

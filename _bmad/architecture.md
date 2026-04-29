@@ -307,7 +307,8 @@ The Generator (Dana) MUST respect these or CITE SC review will reject the ETS:
 | ADR-006 | Jersey 1.x → Jakarta EE 9 / Jersey 3.x Port (Archetype Util Layer) | Accepted (post-hoc, Sprint 2) |
 | ADR-007 | Dockerfile Base Image Deviation: `tomcat:8.5-jre17` + Manual TE 5.6.1 Assembly | Accepted (post-hoc, Sprint 2) |
 | ADR-008 | EtsAssert REST/JSON Helper API Surface | Accepted (forward-looking, Sprint 2) |
-| ADR-009 | Multi-Stage Dockerfile Pattern | Accepted (forward-looking, Sprint 2) |
+| ADR-009 | Multi-Stage Dockerfile Pattern | Accepted (forward-looking, Sprint 2; Sprint 3 amendment §"Image-Size Optimization via TE common-libs ↔ deps-closure dedupe") |
+| ADR-010 | Dependency-Skip Verification Strategy: Bash Sabotage (Canonical) + TestNG Unit Test (Fast-Feedback Supplement) | Accepted (forward-looking, Sprint 3) |
 
 ## 14. Architecture v2.0.1 — Sprint 2 ratifications (2026-04-28)
 
@@ -341,6 +342,32 @@ Cross-references **§3 Component model** ("conformance.<class>.* (sprints 2..14;
 
 Cross-references **§13 ADR index**. ADR-001 §Consequences "Positive" bullet 2 amended with a lightweight footnote pointing to ADR-007. Architect chose option (i) (footnote, not full rewrite, not v2 supersede) because ADR-001's SPI registration mechanics are correct as written; only the production-image-without-modification parenthetical was wrong. Lightest touch preserves audit-trail continuity.
 
-## 15. Last reconciled
+## 15. Architecture v2.0.2 — Sprint 3 ratifications (2026-04-29)
 
-**2026-04-28** — Sprint 2 ratifications appended (this section). Original v2.0 sections 1-13 unchanged. Re-reconcile required if >30 days stale per CLAUDE.md.
+This section appends to v2.0.1 (which remains the canonical baseline). Sprint 3 ets-03 ratified 3 deferred decisions and 1 surfaced question. Cross-references to original architecture sections + Sprint 2 §14 are included for navigation.
+
+### 15.1 ADR-010 — Dependency-skip verification strategy (forward-looking)
+
+Cross-references **§14.6 SystemFeatures conformance class** (Sprint 2) — closes the deferred CRITICAL acceptance criterion #7 (live break-Core verification). Sprint 3 S-ETS-03-01 implements BOTH: (a) `scripts/verify-dependency-skip.sh` (bash sabotage with stub-server preferred over testng.xml mutation; canonical CITE-SC-grade artifact archived to `ops/test-results/sprint-ets-03-dependency-skip-evidence.xml`); (b) `VerifyDependencySkipWiring.java` TestNG unit test (structural lint via `org.testng.xml.Parser` over `XmlSuite` API; fast-feedback in `mvn test`). Defense-in-depth: structural lint catches refactor regressions; bash script catches semantic regressions. Sets precedent for Common (S-ETS-03-07) and Subsystems (Sprint 4) dependency wiring extensions. Worktree-pollution constraint embedded: sabotage operates on `/tmp/` clones OR built Docker image only — NEVER against the user's worktree at `~/docker/gir/ets-ogcapi-connectedsystems10/`. Closes Quinn s06 CONCERN-1 + Raze s06 CONCERN-1.
+
+### 15.2 ADR-009 Sprint 3 amendment — Image-size optimization via TE common-libs ↔ deps-closure dedupe
+
+Cross-references **§14.4 ADR-009** (Sprint 2). Sprint 2 shipped at ~570MB (missed 450MB target); ADR-009 §Negative bullet 4 explicitly anticipated Sprint 3 carryover. Sprint 3 S-ETS-03-04 EXTENDS Stage 1 of the Dockerfile with a `dedupe` RUN step that removes jars from `target/lib-runtime/` already provided by `teamengine-web-common-libs.zip` (extracted to `/usr/local/tomcat/lib/`). Generator MUST derive the exclusion list EMPIRICALLY (illustrative table in ADR-009 amendment is NOT the authoritative list). Acceptance: ≤ 450 MB reported via `docker images --format '{{.Size}}'`; smoke 12/12+ PASS preserved. Rejected: distroless (Sprint 5+; deferred per original §Alternatives) and alpine refinement (50-100MB savings insufficient vs dedupe's 200-300MB). Closes Quinn cleanup GAP-1 + Raze cleanup CONCERN-2.
+
+### 15.3 design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern (S-ETS-03-02)" — REST-Assured wrap
+
+Cross-references **§14.5 CredentialMaskingFilter** (Sprint 2; design.md §"CredentialMaskingFilter wiring"). Sprint 3 S-ETS-03-02 closes the unmasked side-channel Sprint 2 left open: a new `org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter` extends REST-Assured 5.5.0's `RequestLoggingFilter`, swaps masked headers in / restores originals out via try/finally (so the IUT still receives real credentials). Architect ratifies subclass pattern (Pat's option (a)) — rejects chained-filter (fragile to REST-Assured filter-order changes) and full-replacement (overkill — re-implements 200+ LOC of formatting). **NO separate ADR** (precedent: CredentialMaskingFilter NO-ADR ruling §14.5); design.md amendment is sufficient. The CredentialMaskingFilter is RETAINED in parallel for defense-in-depth FINE-level forensic logging. Credential-leak integration test (`scripts/verify-credential-leak.sh`; previously deferred per Quinn cleanup CONCERN-1) is now mandated by S-ETS-03-02.
+
+### 15.4 Surfaced question resolution — REST-Assured wrap ADR vs design.md amendment
+
+**Resolved: design.md amendment** (NOT a new ADR). Justification: (a) the wrap uses REST-Assured's well-trodden public Filter SPI; (b) the masking semantics already exist in `CredentialMaskingFilter.maskValue(...)` (Sprint 2); (c) the wrap is 30-50 LOC subclass — decision surface too small for an ADR per the Sprint 2 §14.5 NO-ADR-for-CredentialMaskingFilter precedent; (d) audit weight is carried by NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 + the now-mandated credential-leak integration test. ADR-010 §"Notes / references" cross-references the design.md section to keep traceability.
+
+### 15.5 Architecture-level guidance for Generator
+
+- **Worktree-pollution constraint**: ALL Sprint 3 work (Generator + Quinn + Raze) operates against `/tmp/` clones or archived artifacts; NEVER against `~/docker/gir/ets-ogcapi-connectedsystems10/`. Sprint 2 SystemFeatures gate-run polluted that worktree; Sprint 3 contract embeds this constraint at `worktree_pollution_constraint`.
+- **ADR cardinality**: 10 ADRs is approaching the threshold where an `_bmad/adrs/INDEX.md` navigation aid would help (Pat surfaced this risk). Architect defers the index to Sprint 4 — ADR-010 is not yet over the threshold (10 vs Pat's hypothetical 11+ trigger).
+- **Generator batching guidance**: Pat suggested 2-3 sub-agent runs (cleanup batch -01..04+06 + SystemFeatures expansion -05 + Common -07). Architect concurs; recommends specifically: **Run 1** = doc-only -06 + dependency-skip -01 (both have no Java code conflicts; -06 is fast warmup); **Run 2** = -02 + -03 + -04 (security/CI/Dockerfile triad — share Dockerfile/CI context); **Run 3** = -05 + -07 (new conformance class work + SystemFeatures expansion — share testng.xml + listener context). This sequencing aligns with the file-touch graph and minimizes Generator context switching.
+
+## 16. Last reconciled
+
+**2026-04-29** — Sprint 3 ratifications appended (§15). Sprint 2 §14 unchanged. v2.0 sections 1-13 unchanged. Re-reconcile required if >30 days stale per CLAUDE.md.

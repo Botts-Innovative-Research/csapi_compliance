@@ -2,6 +2,33 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T02:18Z — Sprint ets-03 ARCHITECTED: Alex ratified all 3 deferred decisions + 1 surfaced question in 8m wall-clock (write-handoff-FIRST mitigation worked); ADR-010 NEW + ADR-009 amended + design.md MaskingRequestLoggingFilter section + architecture v2.0.2 §15; next_agent generator confidence 0.91
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Pat's Sprint 3 handoff (`next_agent: architect`), spawn Architect (Alex) for the 3 deferred decisions + 1 surfaced question.
+- **Mitigation pattern**: 3 prior consecutive sub-agent timeouts this autonomous run (Quinn s02-sf 72m, Raze s02-sf 13m, Pat ets-03 23m). Architect briefing introduced **write-handoff-FIRST strategy** (Task 0 = author stub handoff before writing ADRs; update incrementally) + tight budget (25 min wall-clock max, 150K tokens max) + explicit no-docker/no-curl/no-mvn forbid-list.
+- **Sub-agent (recovery worked — bullet dodged)**: Alex (general-purpose, fresh context, opus). 99,438 tokens / **8m 26s wall-clock** / 23 tool uses; agentId `a281fc60d2602b97d`. **WELL UNDER tight budget** — confirms write-handoff-FIRST + tight-budget mitigation is effective.
+- **Decision picks (all per Pat's recommendations)**:
+  - **Decision 1 (dependency-skip)** = Pat's option (c) BOTH per **ADR-010 (NEW, 11KB)** — bash sabotage script (stub-server preferred over testng.xml mutation) as canonical CITE-SC-grade artifact + TestNG `XmlSuite` parser unit test as <2s structural lint. Defense-in-depth role split documented.
+  - **Decision 2 (REST-Assured wrap)** = Pat's option (a) subclass — `MaskingRequestLoggingFilter extends RequestLoggingFilter` with try/finally header swap (originals restored before HTTP request reaches IUT). Rejected (b) chained-filter (fragile) and (c) full-replacement (overkill).
+  - **Decision 3 (image-size)** = Pat's option (a) TE common-libs ↔ deps-closure dedupe per **ADR-009 amendment (+82 lines, "Image-Size Optimization" section)**. Empirical exclusion list mandated for Generator. Rejected (b) distroless (Sprint 5+) and (c) alpine (insufficient savings).
+- **Surfaced-question resolution** (REST-Assured wrap ADR vs design.md): **design.md amendment** — applies the Sprint 2 §14.5 NO-ADR-for-CredentialMaskingFilter precedent (decision surface too small; well-trodden REST-Assured public SPI; audit weight already carried by NFR-ETS-08 + integration test). ADR-010 §Notes cross-references the design.md section.
+- **Architecture v2.0.1 → v2.0.2** with new §15 (5 sub-sections: ADR-010, ADR-009 amendment, MaskingRequestLoggingFilter, surfaced-question resolution, **Generator batching guidance §15.5**). §13 ADR index updated. Last-Reconciled bumped to 2026-04-29.
+- **design.md MaskingRequestLoggingFilter section** (~112 lines) added under existing §"CredentialMaskingFilter wiring" — executable Java snippet, wiring instructions, header set rationale, unit + integration test rules.
+- **Architect-handoff** (`.harness/handoffs/architect-handoff.yaml` overwritten; Sprint 2 handoff preserved in git history): `next_agent: generator` with **confidence 0.91** (vs Sprint 2's 0.89 + Sprint 1's 0.83 — accelerating quality trend continues).
+- **Recommended Generator batching** (per architecture.md §15.5; aligns with file-touch graph):
+  - **Run 1**: S-ETS-03-06 doc cleanups + S-ETS-03-01 dependency-skip sabotage test (low coupling; -06 is doc-only; -01 is isolated to test infrastructure)
+  - **Run 2**: S-ETS-03-02 credential-leak integration + RequestLoggingFilter wrap + S-ETS-03-03 CI workflow + S-ETS-03-04 image-size optimization (touches Dockerfile + scripts/smoke-test.sh + listener/* — same file-touch cluster)
+  - **Run 3**: S-ETS-03-05 SystemFeatures expansion + S-ETS-03-07 Common conformance class (both touch conformance.* + testng.xml + spec.md + traceability.md)
+- **3 new surfaced risks Alex flagged for Generator** (captured in handoff):
+  1. **GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION** (medium) — Generator may treat ADR-009's illustrative jar table as authoritative and skip the empirical comm-comparison; mitigated via must/must_not constraints in handoff.
+  2. **MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING** (low) — only request-side hardened; if Sprint 2 baseline registered ResponseLoggingFilter, response side remains unmasked. Generator audits in Implementation Notes.
+  3. **STUB-SERVER-PORT-COLLISION-IN-CI** (low) — ADR-010 documents ephemeral-port mitigation; hardcoded fallback acceptable.
+- **Verification (orchestrator-side, post-Alex, trust-but-verify per CLAUDE.md)**: ADR-010 file present + 11KB ✅; ADR-009 modified (Sprint 3 amendment +82 lines) ✅; architecture.md modified with §15 (lines 345-360+) ✅; design.md modified (MaskingRequestLoggingFilter wrap section appended) ✅; architect-handoff.yaml has `next_agent: generator` + confidence 0.91 + status: complete ✅.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite (Sprint 3 ARCHITECTED + next-action Generator Run 1) + metrics turn 70 + Alex's 5 modified/new files.
+- **Commits this turn (new repo)**: none (architectural ratification only; no code changes).
+- **Sub-agent timeout pattern update**: 3 prior timeouts → 1 successful sub-agent run (Alex) with mitigations. Mitigations validated: write-handoff-FIRST (handoff would have landed even if Alex timed out) + tight budget (8m vs 25m budget, 99K vs 150K budget) + explicit forbid-list (no docker/curl/mvn). **Recommendation: apply same mitigations to all subsequent sub-agent briefings in this autonomous loop.**
+- **Next iteration (autonomous loop)**: spawn **Generator (Dana) Run 1** for Sprint 3 batch 1: S-ETS-03-06 doc cleanups + S-ETS-03-01 dependency-skip sabotage test. Brief will use write-result-FIRST strategy + tight budget + explicit forbid-list (per the mitigation pattern that worked for Alex). After Run 1 completes, Run 2 (S-03-02/-03/-04 cleanup batch 2) → Run 3 (S-03-05/-07 SystemFeatures expansion + Common). Then gates.
+
 ## 2026-04-29T01:13Z — Sprint ets-03 PLANNED (post-Pat-timeout recovery): 7 stories cleanup-tail-plus-common-plus-systemfeatures-expansion; next_agent architect with 3 deferred decisions
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Sprint 2 close, spawn Pat (Planner) for Sprint 3 contract authoring.

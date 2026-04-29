@@ -526,7 +526,119 @@ Register the filter in `SuiteFixtureListener.onStart()` alongside the existing R
 </configuration>
 ```
 
-**Implementation reality** (reconciled 2026-04-28T22:50Z post-Raze CONCERN-1 on Sprint 2 cleanup gate): the `CredentialMaskingFilter` does NOT mutate the outgoing REST-Assured request/response payloads (mutating Authorization headers in-flight would break authenticated IUT calls). Instead, it observes via REST-Assured's `Filter` SPI and emits a **parallel FINE-level masked log entry** alongside REST-Assured's built-in `RequestLoggingFilter` output. The filter's masking applies only to the parallel log entry; REST-Assured's own request/response logger (if attached) emits unmasked headers as a side effect. **Defense-in-depth**: logback's pattern intentionally omits `%X{*}` MDC dump, and the architect's `should` constraint #3 directs operators to attach the masking filter, NOT REST-Assured's `RequestLoggingFilter`, in any production-like configuration. **Sprint 3 hardening**: wrap or replace REST-Assured's `RequestLoggingFilter` with a masking variant so the unmasked side channel is closed; until then, the integration test (synthetic-credential smoke + zero-leak grep) is deferred and the logback pattern is the primary leak-prevention layer.
+**Implementation reality** (reconciled 2026-04-28T22:50Z post-Raze CONCERN-1 on Sprint 2 cleanup gate): the `CredentialMaskingFilter` does NOT mutate the outgoing REST-Assured request/response payloads (mutating Authorization headers in-flight would break authenticated IUT calls). Instead, it observes via REST-Assured's `Filter` SPI and emits a **parallel FINE-level masked log entry** alongside REST-Assured's built-in `RequestLoggingFilter` output. The filter's masking applies only to the parallel log entry; REST-Assured's own request/response logger (if attached) emits unmasked headers as a side effect. **Defense-in-depth**: logback's pattern intentionally omits `%X{*}` MDC dump, and the architect's `should` constraint #3 directs operators to attach the masking filter, NOT REST-Assured's `RequestLoggingFilter`, in any production-like configuration. **Sprint 3 hardening**: wrap REST-Assured's `RequestLoggingFilter` with a masking variant so the unmasked side channel is closed (see "Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern" below).
+
+#### Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern (S-ETS-03-02)
+
+**Architect ratifies: subclass-based wrap (Pat's option (a)) — NO separate ADR (precedent: CredentialMaskingFilter NO-ADR ruling).** Justification: the wrap pattern uses REST-Assured 5.5.0's public Filter SPI (well-trodden); the reusable masking semantics already live in `CredentialMaskingFilter.maskValue(...)` (Sprint 2 verbatim port from v1.0); the wrap is a 30-50 LOC subclass override. Decision surface is too small for a standalone ADR. The audit weight is carried by (a) NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 (already in spec), (b) the credential-leak integration test now mandated by S-ETS-03-02 acceptance criteria (no longer deferred), (c) ADR-010 §"Notes / references" (which cross-references this design.md section as the canonical wrap pattern reference).
+
+**Class location and pattern**:
+
+`org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter` — sibling of `CredentialMaskingFilter` in the same `listener/` subpackage. Extends REST-Assured's `io.restassured.filter.log.RequestLoggingFilter`:
+
+```java
+package org.opengis.cite.ogcapiconnectedsystems10.listener;
+
+import io.restassured.filter.FilterContext;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.response.Response;
+import io.restassured.specification.FilterableRequestSpecification;
+import io.restassured.specification.FilterableResponseSpecification;
+
+import java.io.PrintStream;
+import java.util.Set;
+
+/**
+ * REST-Assured RequestLoggingFilter variant that masks credential-bearing headers
+ * before they reach the underlying log stream.
+ *
+ * Closes the unmasked side-channel that the parallel CredentialMaskingFilter cannot.
+ * Sprint 3 hardening per S-ETS-03-02; design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter
+ * wrap pattern (S-ETS-03-02)".
+ */
+public class MaskingRequestLoggingFilter extends RequestLoggingFilter {
+
+    private final Set<String> headersToMask;
+
+    public MaskingRequestLoggingFilter(Set<String> headersToMask, PrintStream stream) {
+        super(stream);
+        this.headersToMask = Set.copyOf(headersToMask);
+    }
+
+    @Override
+    public Response filter(FilterableRequestSpecification requestSpec,
+                           FilterableResponseSpecification responseSpec,
+                           FilterContext ctx) {
+        // Snapshot original header values, replace with masked equivalents for the
+        // duration of the super.filter() call (which writes to the configured stream),
+        // then restore originals so the actual HTTP request still carries the unmasked
+        // credentials to the IUT.
+        var originals = new java.util.HashMap<String, String>();
+        for (String name : headersToMask) {
+            String value = requestSpec.getHeaders().getValue(name);
+            if (value != null) {
+                originals.put(name, value);
+                requestSpec.removeHeader(name);
+                requestSpec.header(name, CredentialMaskingFilter.maskValue(value));
+            }
+        }
+        try {
+            return super.filter(requestSpec, responseSpec, ctx);
+        } finally {
+            // Restore originals — IUT MUST receive the real credentials.
+            for (var entry : originals.entrySet()) {
+                requestSpec.removeHeader(entry.getKey());
+                requestSpec.header(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+}
+```
+
+**Why subclass + temporary header swap (not chained-filter, not full-replacement)**:
+
+1. **Subclass preserves all built-in formatting.** `RequestLoggingFilter` has 200+ LOC of payload-pretty-printing, multipart handling, query-string formatting, etc. Subclassing inherits all of it; only the header-emission step is intercepted via header swap.
+2. **Chained-filter-with-registration-order (Pat's option (b)) is fragile.** It depends on REST-Assured invoking filters in registration order (which it does, currently — `io.restassured.internal.filter.FilterContextImpl`) but a future REST-Assured release could reorder filters via SPI annotations. Subclass-based composition is contractually stable.
+3. **Replace-entirely (Pat's option (c)) is overkill.** Re-implementing 200+ LOC of formatting code for ~10 lines of masking gain creates a maintenance burden — every REST-Assured upgrade requires re-syncing the formatter. The 30-50 LOC subclass is the minimal touch.
+4. **Header swap (vs payload mutation) is restorable.** The `try/finally` pattern guarantees the IUT receives the real credential header even if `super.filter()` throws; the masked headers exist only during the formatter's read.
+
+**Wiring point**:
+
+In `SuiteFixtureListener.onStart()`, REPLACE the bare `new RequestLoggingFilter(LogDetail.ALL)` registration (currently at design.md §171 "REST Assured request lifecycle") with the masking variant:
+
+```java
+// Before (Sprint 2):
+RestAssured.filters(
+    new RequestLoggingFilter(LogDetail.ALL),  // <-- unmasked side channel
+    new CredentialMaskingFilter(Set.of("Authorization", "X-API-Key", "Cookie"))
+);
+
+// After (Sprint 3):
+RestAssured.filters(
+    new MaskingRequestLoggingFilter(
+        Set.of("Authorization", "X-API-Key", "Cookie", "Set-Cookie", "Proxy-Authorization"),
+        System.out
+    ),
+    new CredentialMaskingFilter(Set.of("Authorization", "X-API-Key", "Cookie"))  // parallel FINE log; defense-in-depth retained
+);
+```
+
+The `CredentialMaskingFilter` registration is RETAINED as defense-in-depth (parallel FINE-level log is still useful for forensic review). Both filters operate independently; both must be registered.
+
+**Header set rationale**:
+
+The MaskingRequestLoggingFilter's mask set is a SUPERSET of CredentialMaskingFilter's: adds `Set-Cookie` (response side; the formatter logs response headers too) and `Proxy-Authorization` (rare but present in some CITE harness configs). The intersection is intentional — both filters mask Authorization/X-API-Key/Cookie because they are the highest-priority credentials and a defense-in-depth approach masks them at every observation point.
+
+**Unit + integration test rules (per S-ETS-03-02 acceptance criteria)**:
+
+- Unit tests in `src/test/java/.../listener/VerifyMaskingRequestLoggingFilter.java`: cover (a) Bearer 24-char masked in formatter output, (b) X-API-Key 16-char masked, (c) Set-Cookie response header masked in response logging, (d) IUT-side header restoration verified via `requestSpec.getHeaders().getValue()` after `filter()` returns, (e) try/finally restoration even when `super.filter()` throws (mock RuntimeException).
+- Integration test (`scripts/verify-credential-leak.sh`): smoke-test.sh with synthetic `auth-credential=Bearer ABCDEFGH12345678WXYZ`; grep TestNG XML attachments + container logs + REST-Assured stdout for the literal `EFGH12345678WXYZ` (zero hits required); assert masked form `Bear...WXYZ` IS present (proving filter ran rather than dropping the header). This integration test was DEFERRED in Sprint 2 (Quinn cleanup CONCERN-1) and is now mandated by S-ETS-03-02.
+
+**Risks**:
+
+- **REST-Assured 5.6+ API drift.** `RequestLoggingFilter` constructor signature could change. Mitigation: lock REST-Assured version in pom.xml; the masking variant is a thin subclass that's easy to re-sync.
+- **Header set drift.** New credential header names (e.g. `X-Auth-Token` from a future IUT) won't be masked unless added to the Set. Mitigation: integration test runs with a representative credential set per IUT; failures surface unmasked headers.
+- **PrintStream choice.** `System.out` is the conventional REST-Assured target; some test runners may redirect it. Mitigation: SuiteFixtureListener configures the stream explicitly; tests can inject a `ByteArrayOutputStream` for assertion.
 
 #### Unit + integration test rules (per S-ETS-02-04 acceptance criteria)
 

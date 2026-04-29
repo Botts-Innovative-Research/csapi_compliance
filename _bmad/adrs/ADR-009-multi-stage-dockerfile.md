@@ -204,3 +204,85 @@ This eliminates the host `~/.m2` dependency; smoke-test runs cleanly on a runner
 - Eclipse Temurin Docker images: https://hub.docker.com/_/eclipse-temurin
 - CIS Docker Benchmark §4.1 (run as non-root): https://www.cisecurity.org/benchmark/docker
 - S-ETS-02-05 acceptance criteria (the work this ADR ratifies): `epics/stories/s-ets-02-05-dockerfile-cleanup.md`
+
+---
+
+## Sprint 3 Amendment (2026-04-29) — Image-Size Optimization via TE common-libs ↔ deps-closure dedupe
+
+**Trigger**: Sprint 2 Quinn cleanup GAP-1 + Raze cleanup CONCERN-2 surfaced that the multi-stage Dockerfile shipped at ~570MB, missing the 450MB target. The §Negative bullet 4 above explicitly anticipated this: "duplicate jars between TE common-libs and our deps removed by dedupe RUN steps if needed (defer to Sprint 3 if 450 MB is missed)." Sprint 3 S-ETS-03-04 closes this gap.
+
+### Decision (Sprint 3 increment)
+
+**Architect ratifies Pat's option (a): TE common-libs ↔ deps-closure dedupe.** Rejects (b) distroless (still deferred per §Alternatives — Sprint 5+ at earliest) and (c) alpine refinement (~50-100MB savings is insufficient; the JAR-deduplication path delivers 200-300MB and is the documented Sprint 3 carryover).
+
+### Empirical TE common-libs vs deps-closure overlap
+
+The TeamEngine 5.6.1 `teamengine-web-common-libs.zip` (extracted to `/usr/local/tomcat/lib/`) ships a base set of jars that the ETS jar's `target/lib-runtime/` (extracted to `/usr/local/tomcat/webapps/teamengine/WEB-INF/lib/`) ALSO redundantly contains. Both classpaths are loaded by Tomcat at runtime; the WEB-INF/lib copies SHADOW the common-libs copies, contributing pure bloat. The empirical overlap (per Generator's pre-Sprint-3 enumeration via `unzip -l teamengine-web-common-libs.zip | awk '{print $4}' | sort -u`) includes (verify-then-exclude pattern):
+
+| jar group | example pattern | size | rationale for exclusion |
+|---|---|---|---|
+| Jakarta Servlet API | `jakarta.servlet-api-*.jar` (~ 1MB) | low | Already provided by Tomcat 8.5 + TE common-libs; WEB-INF copy unused |
+| JAX-RS API + Jersey core | `jersey-*.jar`, `jakarta.ws.rs-api-*.jar` (~ 5-15 MB) | medium | TE common-libs provides Jersey 2.x; ETS uses Jersey 3.x → KEEP ETS copy, EXCLUDE TE copy if version conflict (Generator verifies via `find /usr/local/tomcat -name "jersey-*.jar"`) |
+| Apache Commons (lang3, io, codec) | `commons-*.jar` (~ 2-5 MB) | low | Both classpaths ship the same versions; WEB-INF copy is redundant |
+| Logging (slf4j, logback, log4j) | `slf4j-*.jar`, `logback-*.jar` (~ 3-5 MB) | low | TE common-libs provides slf4j-api; ETS provides slf4j-api + logback-classic — KEEP ETS logback, EXCLUDE WEB-INF slf4j-api duplicate |
+| XML (Xerces, JAXB, Saxon) | `xerces*.jar`, `jaxb-*.jar`, `Saxon-*.jar` (~ 50-80 MB) | **high** | TE common-libs ships Saxon-HE 9.x; ETS doesn't need XSLT — verify ETS copy is absent or remove if present |
+| TestNG | `testng-*.jar` (~ 5 MB) | low | TE common-libs provides TestNG 7.x; ETS test-scope dep should not ship to WEB-INF — verify scope=test in pom |
+| YAML / Jackson | `jackson-*.jar`, `snakeyaml-*.jar` (~ 5-10 MB) | medium | Both classpaths may ship; KEEP ETS copy (newer), EXCLUDE TE copy via filter if version conflict |
+| **Estimated total reclaim** |  | **200-300 MB** | per Quinn cleanup GAP-1 estimate |
+
+### Implementation pattern (Generator verifies empirically)
+
+S-ETS-03-04 EXTENDS Stage 1 of the Dockerfile with a `dedupe` RUN step that runs AFTER `mvn dependency:copy-dependencies` and BEFORE the final `target/lib-runtime/` is COPIED to Stage 2:
+
+```dockerfile
+# Stage 1 (builder), AFTER mvn dependency:copy-dependencies, BEFORE the COPY --from=builder:
+#
+# Dedupe: remove jars from target/lib-runtime/ that TE common-libs already provides.
+# Generator MUST first enumerate empirically:
+#   docker run --rm <stage1-image> bash -c \
+#     "comm -12 <(ls target/lib-runtime/ | sort) <(unzip -l /tmp/te-common-libs.zip | awk '{print \$4}' | xargs -n1 basename | sort)"
+# Then bake the empirical exclusion list into this RUN step.
+RUN cd target/lib-runtime \
+ && rm -f \
+    jersey-common-2.*.jar \
+    jersey-server-2.*.jar \
+    jakarta.servlet-api-*.jar \
+    commons-lang3-*.jar \
+    commons-io-*.jar \
+    slf4j-api-*.jar \
+    Saxon-HE-*.jar \
+    snakeyaml-*.jar \
+    # ... (full list per empirical enumeration; comments indicating TE common-libs version)
+ && true  # idempotent; missing jars don't fail the build
+```
+
+**The exclusion list MUST be derived empirically by Generator** (the table above is illustrative; real overlap depends on the exact Maven dep tree at S-ETS-03-04 implementation time). The acceptance criterion: `docker images --format '{{.Size}}' ets-ogcapi-connectedsystems10:latest` reports ≤ 450 MB after the dedupe step (Sprint 2 missed this; Sprint 3 closes it).
+
+### Verification approach
+
+1. **Pre-dedupe baseline**: Generator records the current image size (Sprint 2 close ~570 MB) in S-ETS-03-04 Implementation Notes.
+2. **Empirical enumeration**: Generator runs the comm-comparison commands above against an interim Stage 1 image; archives the duplicate-jar list to `ops/test-results/sprint-ets-03-04-dedupe-enumeration.txt`.
+3. **Dedupe RUN step added**: Generator commits the Dockerfile edit with the EMPIRICAL exclusion list (NOT the illustrative table above).
+4. **Smoke verification**: `scripts/smoke-test.sh` runs end-to-end against the deduped image; 12/12+ PASS preserved (no jar removed should be one the ETS code actually loads — `java.lang.NoClassDefFoundError` would surface immediately).
+5. **Size verification**: `docker images --format '{{.Size}}' ets-ogcapi-connectedsystems10:latest` reports ≤ 450 MB; archived as `ops/test-results/sprint-ets-03-04-image-size.txt`.
+
+### Why not the other options
+
+- **Option (b) distroless runtime stage**: Still deferred per original §Alternatives. Distroless saves ~150 MB by removing apt + curl + sed, but: (i) the 3 secondary patches in stage 2 (VirtualWebappLoader strip via sed; JAXB jars via curl) would need to be moved to stage 1 (added complexity); (ii) Tomcat 8.5 is not pre-installed in any distroless variant — would need to overlay TE WAR + Tomcat onto distroless/java17 (significant extra work for the marginal ~150 MB beyond what dedupe achieves). Sprint 5+ at earliest, after Common + Subsystems + Procedures conformance classes ship.
+- **Option (c) alpine multi-stage refinement**: Saves only ~50-100 MB (replacing tomcat:8.5-jre17 (~280 MB) with a custom alpine + JRE 17 + Tomcat assembly (~180-230 MB)). The savings are real but the alpine ecosystem (musl libc) introduces compatibility risk for native libs in TestNG/REST-Assured. The dedupe path achieves 2-3x more savings with zero compatibility risk. Reject.
+
+### Consequences (Sprint 3 increment)
+
+**Positive**:
+- Closes Quinn cleanup GAP-1 (image size > 450 MB target) and Raze cleanup CONCERN-2 (ADR-009 deferral language clarification).
+- Reproducible: the empirical exclusion list is committed to the Dockerfile (no runtime auto-detection magic); same input produces same output.
+- Forward-compatible with distroless future: when Sprint 5+ revisits distroless, the dedupe RUN step ports cleanly (it's an ETS-domain optimization, not a base-image-specific one).
+- Documents the empirical enumeration methodology for future TE version bumps (TE 6.x will likely have a different common-libs set; Generator re-runs the comm-comparison and updates the exclusion list).
+
+**Negative**:
+- Exclusion list is empirical and brittle to TE version changes. Mitigation: comments in the Dockerfile indicate which TE version the list was derived against; smoke-test catches NoClassDefFoundError if a removed jar is actually needed.
+- ~30 min Generator wall-clock for the empirical enumeration + verification cycle. Acceptable.
+
+**Risks**:
+- **NoClassDefFoundError from over-aggressive dedupe**. Mitigation: smoke runs end-to-end after each batch of exclusions; if any removed jar breaks 12/12 PASS, restore it and document in the exclusion list comments why it can't be excluded.
+- **TE 6.x migration invalidates the exclusion list**. Mitigation: when TE bumps to 6.x, re-run the comm-comparison; the dedupe step is the lightest-touch part of the migration plan.
