@@ -1,0 +1,276 @@
+sprint: sprint-ets-03
+story: S-ETS-03-01..07 cumulative
+gate: 4
+agent: Raze
+date: 2026-04-29
+new_repo_head: c56df10
+verdict: APPROVE_WITH_CONCERNS
+confidence: 0.93
+verdict_summary: |
+  Sprint 3 cleanup-tail-plus-common-plus-systemfeatures-expansion lands with strong
+  adversarial integrity across the cumulative 7-story scope. The HARDEST item — the
+  bash-sabotage live exec that prior Raze runs timed out attempting — is not just
+  archived but archived HONESTLY: TestNG XML at sprint-ets-03-dependency-skip-
+  sabotage-2026-04-29.xml shows total=16 / passed=0 / failed=6 / skipped=10, and
+  per-method status inspection confirms ALL FOUR SystemFeatures @Tests show
+  status="SKIP" (zero PASS, zero FAIL — i.e. the dependsOnGroups="core" wiring did
+  fire mechanically; if any SF method had been status="PASS", the wiring would have
+  been broken and Dana would have misreported, but it didn't and they didn't). The
+  Core-side FAIL evidence is grounded in concrete error messages ("expected HTTP 200,
+  got 404", "Content-Type was: text/html") proving the bogus-IUT sabotage was
+  genuinely sabotaging rather than the script lying.
+
+  Three independently-curl-verified OGC `.adoc` sources (req/json/definition,
+  req/system/collections, req/system/location-time) all return HTTP 200 with matching
+  identifiers — Dana did NOT fabricate URIs in S-ETS-03-05 or S-ETS-03-07.
+
+  PARTIAL/DEFERRED stories carry honest rationale (no paper-over):
+    - S-ETS-03-03 DEFERRED: `gh auth status` independently confirms scopes are
+      'gist','read:org','repo' with NO 'workflow' — 4th-sprint user-action blocker
+      is real; Dana's deferral artifact correctly identifies escalation territory.
+    - S-ETS-03-04 PARTIAL (3MB savings vs 113-160MB target): empirical analysis at
+      sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt is GENUINE — lists 4
+      exact-basename overlaps with sizes (1.8MB total), enumerates 14 intra-WEB-INF
+      duplicate-version artifacts with the runtime-binding caveat per ADR-009
+      §"DO NOT dedupe" rule, and clearly explains why ADR-009's 200-300MB
+      illustrative target was empirically wrong (TE common-libs are TINY because
+      the ADR-006 Jersey 3.x migration already moved the heavy jars to WEB-INF/lib;
+      so the dedupe surface is correspondingly tiny). This is exactly the right
+      kind of empirical-vs-illustrative reconciliation.
+    - S-ETS-03-02 PARTIAL→PASS-at-unit-layer: credential-leak integration test
+      executes 8/8 unit tests + grep mvn output for literal credential body (zero
+      hits) + grep surefire XML (zero hits); deeper E2E IUT-auth wiring honestly
+      deferred to Sprint 4 with explicit rationale.
+
+  Common conformance class (S-ETS-03-07): 4 @Tests, all use ETSAssert.failWithUri,
+  zero `throw new AssertionError` or `Assert.fail`, INDEPENDENT (groups="common"
+  with no dependsOnGroups), URIs cite the underlying ogcapi-common-1 + ogcapi-
+  common-2 sub-requirements per OGC `.adoc` actual identifiers (json/definition,
+  landing-page/conformance-success, json/content, collections/collections-list-
+  success). Note: the contract anticipated `/req/common/<X>` form, but Dana
+  correctly used the actual `.adoc` identifiers — this is correct adaptation, not
+  divergence (the OGC standards don't actually use `/req/common/<X>` form).
+
+  SystemFeatures expansion (S-ETS-03-05): 6 @Tests total (4 original + 2 new for
+  /req/system/collections + /req/system/location-time). The nested-properties fix
+  is implemented correctly with defense-in-depth: `nestedHasNonNull(systemItemBody,
+  "properties", "validTime")` is tried in addition to top-level `validTime`, so
+  the GeoJSON Feature shape from GeoRobotix would be detected at either path.
+  Without this dual-path check, the GeoRobotix shape (validTime nested under
+  properties) would have FAIL'd; Dana caught and patched this in commit c56df10.
+
+  Sprint 1+2 invariants preserved: schemas byte-identical (diff -r empty), SPI
+  single-FQCN line preserved, ADR-002 sha pin preserved, zero stale strings
+  (ogcapi.cs10 / ets-common:14 / teamengine-production:5.5). Surefire 61/0/0/3
+  (independently re-run in 14s; matches Dana's claim). Final smoke XML shows
+  total=22 / passed=22 / failed=0 / skipped=0 across Core (12) + SystemFeatures
+  (6) + Common (4) = 22 PASS — matches Dana's claim.
+
+  Contract modifications during Sprint 3 (Run 1 commit dcea3ba): footnote-only
+  Convention edits to Sprint 1 and Sprint 2 contracts (ops/test-results/ location
+  clarification) — semantically harmless audit-trail clarification, not contract-
+  surface mutation. Frozen-audit-artifact integrity preserved.
+
+  Three CONCERNS (non-blocking; downgrade vs the 0.96 ceiling):
+    (1) The S-ETS-03-04 result formally MISSED Sprint 3's stretch criterion
+        `image_size_under_550mb=true` (660MB delivered vs <550MB target). Dana's
+        empirical analysis correctly explains WHY the target was unrealistic
+        (ADR-009 illustrative numbers were off-by-an-order-of-magnitude given
+        post-ADR-006 layout), and PARTIAL with explicit Sprint 4 path is the
+        contract-permitted outcome — but the verdict cannot ignore that the
+        success_criterion line literally evaluates to false.
+    (2) S-ETS-03-02 `credential_leak_integration_test_green` PASSES at the unit-
+        test integration layer (8/8 PASS, zero leaks in mvn + surefire output),
+        but the design.md §529 / contract original intent was full E2E with a
+        synthetic auth-credential flowing through REST-Assured against the IUT.
+        Honest defer to Sprint 4 with rationale, but it's a partial-meets-spirit
+        rather than a literal-meets-letter close.
+    (3) S-ETS-03-03 is the FOURTH consecutive sprint deferral on the same
+        user-action blocker (S-ETS-01-01 → S-ETS-01-03 → S-ETS-02-05 → S-ETS-03-
+        03). Honest deferral, but the structural risk Pat flagged in the contract
+        (gh-workflow-scope-still-missing-4th-sprint, severity=medium) has now
+        manifested. Sprint 4 planning needs an explicit user-escalation hard-stop.
+
+gaps: []
+
+concerns:
+  - id: "CONCERN-1-IMAGE-SIZE-LITERAL-MISS"
+    severity: low
+    description: |
+      S-ETS-03-04 delivered 660MB vs Sprint 3 stretch target <550MB. Honest
+      PARTIAL with empirical analysis explaining ADR-009 illustrative-target
+      vs reality divergence. Sprint 4 carryover acceptable.
+    impact: |
+      Sprint 3 success_criterion `image_size_under_550mb` literally evaluates
+      to false. Acceptable only because Dana's empirical analysis convincingly
+      shows the 550MB target was unrealistic given post-ADR-006 (Jersey 3.x
+      migration) reality.
+    recommendation: |
+      Sprint 4: amend ADR-009 with empirical jar-list (Dana's analysis at
+      sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt is the right
+      input); revisit the 450MB / 550MB targets as either (a) honest defer
+      to distroless (Sprint 5+ per ADR-009 §Alternatives), or (b) accept
+      660MB as the new floor given the multi-jar runtime classloader
+      requirements.
+
+  - id: "CONCERN-2-S-03-02-PARTIAL-AT-INTEGRATION-LAYER"
+    severity: low
+    description: |
+      S-ETS-03-02 closes credential_leak_integration_test_green at the unit-
+      test integration layer (8/8 VerifyMaskingRequestLoggingFilter @Tests +
+      grep mvn output + grep surefire XML for literal credential body, all
+      zero hits). The original design.md §529 + contract intent was a deeper
+      E2E check with a synthetic auth-credential flowing through REST-Assured
+      against the IUT at smoke time. Dana honestly deferred the deeper E2E
+      to Sprint 4 in the credential-leak script verdict text.
+    impact: |
+      Partial-meets-spirit close. The masking filter is functionally
+      verified at the unit/integration boundary; the IUT-side end-to-end
+      smoke path (auth-credential CTL parameter wired through smoke-test.sh
+      + container-log grep) is deferred. Acceptable — the unit layer is
+      load-bearing for the masking-filter behavior; the IUT-side smoke layer
+      adds defense-in-depth not new behavior verification.
+    recommendation: |
+      Sprint 4: wire `auth-credential` CTL/TestNG suite parameter, set
+      to synthetic Bearer token in smoke-test.sh, run smoke against
+      GeoRobotix + container-log grep for literal substring (zero hits)
+      AND masked form (>=1 hit). Closes design.md §529 deferral text fully.
+
+  - id: "CONCERN-3-CI-WORKFLOW-FOURTH-CONSECUTIVE-DEFER"
+    severity: low
+    description: |
+      S-ETS-03-03 is the FOURTH consecutive sprint deferral on the same
+      gh `workflow` scope user-action blocker. gh auth status confirms
+      'gist','read:org','repo' only — no 'workflow'. Dana's deferral
+      artifact at sprint-ets-03-03-ci-workflow-deferred-2026-04-29.txt
+      correctly identifies escalation territory per Sprint 3 contract
+      risks.medium.GH-WORKFLOW-SCOPE-STILL-MISSING-4TH-SPRINT.
+    impact: |
+      Sprint 3 success_criterion `ci_workflow_live` literally false. The
+      blocker is structural (user must run `gh auth refresh -s workflow`
+      from a session where they're at the terminal). Pat's medium-severity
+      risk has manifested.
+    recommendation: |
+      Sprint 4 planning: explicit user-escalation hard-stop note. EITHER
+      the user grants the scope before Sprint 4 start (1-line cli + browser
+      OAuth) AND Sprint 4 lands the git-mv + workflow_dispatch verification
+      cleanly (~30 min Generator), OR Sprint 4 explicitly drops
+      ci_workflow_live from the Sprint contract and tracks it as a
+      perpetual-blocker outside the sprint cadence (similar to "user must
+      provision IUT" — environmental rather than story-scope).
+
+sections_evaluated:
+  - "Bash sabotage live exec evidence integrity (TestNG XML + log + per-method status cross-check)"
+  - "OGC `.adoc` URL independent verification (3 sampled URIs + 1 follow-up = 4 total)"
+  - "PARTIAL/DEFERRED stories adversarial sanity-check (S-03-03 DEFERRED honesty + S-03-04 PARTIAL honesty + S-03-02 partial-at-unit-layer honesty)"
+  - "Common conformance class adversarial inspection (4 @Tests + ETSAssert usage + INDEPENDENT group + URI form)"
+  - "Nested-properties fix correctness (S-ETS-03-05 SystemFeaturesTests defense-in-depth dual-path)"
+  - "No regression of Sprint 1 + Sprint 2 deliverables (schema diff + SPI + ADR-002 sha pin + stale-string scan)"
+  - "mvn test independent verification (surefire 61/0/0/3 confirmed)"
+  - "Sprint 3 contract success_criteria walk (16 criteria; 13 PASS + 3 PARTIAL/DEFERRED with honest rationale)"
+  - "Sub-agent timeout pattern observation (Run 2 contract modifications were footnote-only Convention edits)"
+
+verified_independently:
+  - "TestNG sabotage XML has total=16 passed=0 failed=6 skipped=10 with all 4 SystemFeatures methods status='SKIP' (zero PASS, zero FAIL — wiring works mechanically)"
+  - "Sabotage Core methods show concrete error: 'expected HTTP 200, got 404' + 'Content-Type was: text/html' (genuine sabotage, not a fabricated artifact)"
+  - "OGC .adoc URL verification — req/json/definition: HTTP 200, identifier match"
+  - "OGC .adoc URL verification — req/system/collections: HTTP 200, identifier match"
+  - "OGC .adoc URL verification — req/system/location-time: HTTP 200, identifier match"
+  - "OGC .adoc URL verification — req/json/content: HTTP 200, identifier match"
+  - "OGC .adoc URL verification — req/collections/collections-list-success: HTTP 200, identifier match (path is collections/requirements/collections/, not 20-024/, but identifier matches CommonTests constant)"
+  - "gh auth status: scopes 'gist','read:org','repo' (NO 'workflow' — DEFERRED honesty confirmed)"
+  - "Empirical dedupe analysis: actual jar names + sizes listed (4 exact-basename overlaps, 14 intra-WEB-INF duplicates with caveat) — genuine empirical work"
+  - "CommonTests source: 4 @Test methods, all using ETSAssert.failWithUri, zero `throw new AssertionError` or `Assert.fail`"
+  - "CommonTests source: groups='common', no dependsOnGroups → INDEPENDENT (per Sprint 3 contract acceptance)"
+  - "testng.xml: <dependencies> block has only <group name='systemfeatures' depends-on='core'/>, NO common dependency declaration → Common is INDEPENDENT in DAG"
+  - "SystemFeaturesTests source: 6 @Test methods (4 original + 2 new), nested-properties fix uses dual-path check (top-level OR properties.X) for both validTime AND geometry"
+  - "schemas/ diff: empty (Sprint 1 byte-identical preserved)"
+  - "META-INF/services/com.occamlab.te.spi.jaxrs.TestSuiteController: single FQCN line preserved"
+  - "pom.xml <connected-systems-yaml.sha>3fd86c73...: present (ADR-002 sha pin preserved)"
+  - "Stale-string scan: zero hits for ogcapi.cs10, ets-common:14, teamengine-production:5.5 (the 'connectedsystems-1' regex matches inside canonical OGC URI roots — that's correct, not stale)"
+  - "mvn test independent run: BUILD SUCCESS, surefire 61/0/0/3 (matches Dana's claim)"
+  - "Final smoke XML: total=22 passed=22 failed=0 skipped=0 across 5 conformance class blocks (Core×3 + SystemFeatures×1 + Common×1 + SuitePreconditions×1)"
+  - "Run 2 contract diff (commit dcea3ba): footnote-only Convention edits to sprint-ets-01.yaml + sprint-ets-02.yaml; semantically harmless audit-trail clarification"
+
+success_criteria_walk:
+  total_criteria: 16
+  pass: 13
+  partial_or_deferred_with_honest_rationale: 3
+  pass_items:
+    - "all_critical_scenarios_pass: PASS (5/5 critical scenarios)"
+    - "normal_scenario_pass_rate >= 0.90: PASS (8/8 normal scenarios)"
+    - "spec_updated: PASS (per architect-handoff and contract evidence_required)"
+    - "no_regression: PASS (Sprint 1+2 invariants verified above)"
+    - "build_green_jdk17: PASS (mvn test BUILD SUCCESS independently re-run)"
+    - "reproducible_build: PASS (Sprint 1+2 invariant; sha pin preserved)"
+    - "smoke_test_green_against_georobotix: PASS (22/22 final smoke)"
+    - "no_part2_work_in_sprint: PASS (no Part 2 commits)"
+    - "uri_mapping_fidelity_preserved: PASS (4 OGC .adoc URLs independently HTTP 200)"
+    - "spec_trap_fixtures_preserved: PASS (epic-ets-06 untouched)"
+    - "openapi_yaml_pinned_by_sha: PASS (sha pin preserved)"
+    - "zero_bare_assertionerror_in_conformance: PASS (CommonTests + SystemFeaturesTests grep clean)"
+    - "uri_form_matches_ogc_adoc_canonical: PASS (every URI verified against .adoc identifier)"
+    - "live_dependency_skip_verified: PASS (sabotage XML evidence is genuine; mechanically observed)"
+    - "common_conformance_class_passes: PASS (4/4 Common @Tests in final smoke)"
+  partial_or_deferred:
+    - "credential_leak_integration_test_green: PARTIAL — passes at unit-test+integration layer (8/8 + zero leaks in mvn output + surefire XML); deeper E2E IUT-auth wiring honestly deferred to Sprint 4 [CONCERN-2]"
+    - "rest_assured_logging_filter_wrapped: PASS-at-implementation but partial-at-verification — MaskingRequestLoggingFilter extends RequestLoggingFilter exists with 8 unit tests; the wrap pattern is in place. Note: integrating into smoke pipeline is the deferred E2E wiring above"
+    - "ci_workflow_live: DEFERRED-WITH-RATIONALE (4th consecutive sprint defer — gh workflow scope user-action blocker confirmed) [CONCERN-3]"
+    - "image_size_under_550mb: PARTIAL (660MB delivered vs <550MB target; honest empirical analysis explains ADR-009 illustrative target was unrealistic given post-ADR-006 layout) [CONCERN-1]"
+
+architect_surfaced_risks_status:
+  GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION:
+    status: "VERIFIED — Dana's empirical analysis is genuine; lists actual jar names with sizes; explains ADR-009 illustrative-vs-empirical divergence; PARTIAL outcome with Sprint 4 path is contract-permitted"
+  MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING:
+    status: "VERIFIED — MaskingRequestLoggingFilter extends RequestLoggingFilter (subclass approach per architect-ratified pattern); 8 unit tests cover the masking semantics; design.md §529 wrap-side closed (E2E IUT-auth wiring still Sprint 4 carryover)"
+  STUB-SERVER-PORT-COLLISION-IN-CI:
+    status: "WORKED-AROUND — Dana's bash sabotage took the bogus-IUT fallback path (direct point at unreachable host) rather than the stub-server approach; stub-server port-collision risk did not surface in this run; ADR-010 §'Defense-in-depth role split' approach honored. Sprint 4 deferred work to fix stub-server bind-address + docker --add-host issues for hermetic CITE-grade artifact"
+
+recommendation_next_step: |
+  ACCEPT Sprint 3 and proceed to user gate (or Sprint 4 planning per orchestrator
+  cadence). Three CONCERNS are non-blocking — all PARTIAL/DEFERRED stories carry
+  honest, verifiable rationale with empirical evidence. Sprint 3 is the strongest
+  multi-story sprint to date in terms of PARTIAL-honesty: every PARTIAL closure
+  has a concrete artifact explaining WHY (not just "we tried but X"). The 0.93
+  verdict reflects: (a) 13/16 success criteria PASS literally; (b) 3 PARTIAL/
+  DEFERRED with honest rationale (not paper-over); (c) one new HARDEST-deferred
+  test (live dependency-skip sabotage) closed cleanly; (d) Common conformance
+  class extends the architectural pattern correctly with INDEPENDENT DAG-root
+  positioning; (e) zero regression of Sprint 1+2 invariants. The 0.93 vs 0.96
+  ceiling delta comes from the 3 honest PARTIAL/DEFERRED outcomes literally
+  failing 3 of 16 success criteria — not from any integrity concern.
+
+  Sprint 4 planning carryover (per CONCERN recommendations):
+  (1) S-ETS-03-04 carryover: amend ADR-009 with empirical jar-list; reset
+      image-size target to honest floor (likely 600-660MB with multi-jar
+      runtime); defer distroless to Sprint 5+ per ADR-009 §Alternatives.
+  (2) S-ETS-03-02 carryover: wire auth-credential CTL parameter through
+      smoke-test.sh + container-log grep for full E2E credential-leak
+      integration. Closes design.md §529 fully.
+  (3) S-ETS-03-03 carryover: hard-stop user-escalation OR drop ci_workflow_live
+      from Sprint cadence (perpetual environmental blocker, not story scope).
+  (4) Stub-server bash sabotage script fixes (bind 0.0.0.0 + docker --add-host)
+      for hermetic CITE-SC-grade artifact (deferred per Dana's verdict log).
+
+prior_runs_calibration:
+  sprint_2_systemfeatures: 0.92 (best prior single-story Sprint 2 verdict)
+  sprint_2_cleanup: 0.90
+  sprint_3_cumulative: 0.93 (this run; cumulative across 7 stories)
+  delta_rationale: |
+    Slightly above the SystemFeatures 0.92 because Sprint 3 closes the HARDEST
+    Sprint 2 carryover (live dependency-skip sabotage that prior Raze runs
+    timed out attempting) AND extends to a SECOND new conformance class
+    (Common) AND maintains zero regression — broader adversarial surface
+    cleared with comparable rigor. Capped below the Quinn 0.96 ceiling
+    because 3 success criteria are PARTIAL/DEFERRED and literally evaluate
+    to false even with honest rationale.
+
+raze_self_check:
+  budget_used:
+    wall_clock_minutes: ~6
+    tokens: low (under cap)
+  bash_sabotage_avoided: true  # used archived XML + log + source inspection only
+  docker_run_avoided: true
+  mvn_clean_install_avoided: true  # only `mvn test -q` (10s)
+  user_worktree_modifications: 0
+  write_first_stub: true  # stub YAML written as first action; updated incrementally
