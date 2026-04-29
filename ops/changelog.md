@@ -2,6 +2,61 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T16:30Z — Sprint ets-04 Generator Run 2: S-ETS-04-02 image-size v2 chown attack + S-ETS-04-05 Subsystems conformance class + S-ETS-04-03 credential-leak E2E (Sprint 4 ALL 5 STORIES IMPLEMENTED)
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Pat+Alex Sprint 4 sequencing. Run 1 covered the mechanical/orchestration stories (S-04-04 sabotage fixes + S-04-01 CI PATH B); Run 2 covers the heavier remaining 3 stories (S-04-02 chown attack + S-04-05 Subsystems + S-04-03 credential-leak E2E).
+- **Sub-agent**: Dana (Generator, general-purpose, fresh context, opus). ~30 min wall-clock. Mitigation pattern continues — 5 prior sub-agent timeouts → **10 consecutive successes**. 50-min/250K budget honored.
+
+- **S-ETS-04-02 IMPLEMENTED** (REQ-ETS-CLEANUP-010, ADR-009 v2 amendment): Image-size v2 chown-layer attack. Image size 663MB → **540MB** (-123MB / **-18.6%**; <600MB Sprint 4 PASS target ACHIEVED).
+  - Dockerfile changes (committed at `2dc44d1` in `ets-ogcapi-connectedsystems10`):
+    - `groupadd/useradd tomcat` moved EARLIER in stage 2 (rarely-changes layer; cache-warm)
+    - Each `COPY --from=builder` now carries `--chown=tomcat:tomcat`
+    - Each `RUN` step that creates files now `chown`s them in the SAME RUN
+    - Standalone `RUN ... && chown -R tomcat:tomcat /usr/local/tomcat` DELETED (was the single largest layer at ~80MB COW snapshot per Sprint 3 empirical analysis)
+  - Smoke verification: 26/26 PASS preserved + zero startup ERROR/SEVERE (verified at HEAD `2dc44d1`)
+  - **Iteration**: First v2 build (539MB) had a SEVERE startup entry (`Unable to create directory for deployment: [/usr/local/tomcat/conf/Catalina/localhost]`) — root cause: early `chown` only covered `/usr/local/tomcat` (single dir, not -R) + per-extract chowns missed `/conf`, `/logs`, `/work`, `/temp`. Fix: extend post-extract chown set (+1MB → 540MB).
+  - Evidence: `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-04-02-image-size-v2-2026-04-29.txt`
+
+- **S-ETS-04-05 IMPLEMENTED** (REQ-ETS-PART1-003): Subsystems conformance class — FIRST two-level dependency chain (Subsystems→SystemFeatures→Core).
+  - Curl-verified GeoRobotix shape BEFORE writing assertions (Architect hard constraint): system `0n3rtpmuihc0` has 12 subsystems; subsystem `0nar3cl0tk3g` carries `rel=parent` link with href `.../systems/0n3rtpmuihc0?f=geojson` (the UNIQUE-to-Subsystems architectural composition invariant)
+  - Curl-verified canonical OGC URI `/req/subsystem/collection` at `requirements/subsystem/req_subcollection.adoc` (HTTP 200). Note: `/req/subsystem/parent-system-link` does NOT exist as standalone OGC requirement; asserted under requirements class `/req/subsystem` (only `collection`, `recursive-*`, `subcollection-time` exist as standalone reqs). The parent-link is implied by `requirements_class_system_components.adoc` `inherit:: /req/system` + OGC 23-001 §System Components composition rules.
+  - New `src/main/java/.../conformance/subsystems/SubsystemsTests.java` with 4 @Tests:
+    - `subsystemsCollectionReturns200` — `/req/subsystem/collection`
+    - `subsystemItemHasIdTypeLinks` — inherited `/req/system/canonical-endpoint`
+    - `subsystemItemHasCanonicalLink` — inherited `/req/system/canonical-url`
+    - **`subsystemHasParentSystemLink`** — UNIQUE-to-Subsystems under `/req/subsystem`
+  - testng.xml extended with `<group name="subsystems" depends-on="systemfeatures"/>` + `SubsystemsTests` class entry (single-block consolidation extension)
+  - VerifyTestNGSuiteDependency extended with **3 new structural lint tests** (group depends-on declared, every Subsystems @Test carries `groups="subsystems"`, Subsystems co-located with SystemFeatures in same `<test>` block) — ADR-010 v2 amendment defense-in-depth structural-lint half
+  - `@BeforeClass` SkipException fallback in SubsystemsTests cascades all 4 @Tests to SKIP if no parent system has subsystems OR `/subsystems` returns non-200 — both paths active per Architect (testng.xml cascade primary; @BeforeClass conditional inert/load-bearing depending on TestNG runtime cascade behavior)
+  - Direct TestNG smoke against GeoRobotix: **26/26 PASS** = 12 Core + 6 SF + 4 Common + **4 Subsystems**
+  - mvn test surefire **64/0/0/3** BUILD SUCCESS (was 61; +3 new VerifyTestNGSuiteDependency tests)
+  - Evidence: `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-04-05-subsystems-georobotix-2026-04-29.xml`
+
+- **S-ETS-04-03 IMPLEMENTED with live-exec deferred** (REQ-ETS-CLEANUP-011): Deeper E2E credential-leak via stub IUT (Architect DECISION-3 PATH A).
+  - `scripts/stub-iut.sh` — hermetic Python http.server stub IUT:
+    - Listens on OS-assigned ephemeral port via `socket.bind(("0.0.0.0", 0))` (per S-ETS-04-04 fix pattern)
+    - Echoes inbound `Authorization` header in 401 JSON response body AND logs to file
+    - PID-based trap cleanup per Architect-surfaced STUB-IUT-PORT-LEAK-ACROSS-SCRIPT-RUNS risk mitigation
+    - `start`/`stop`/`status` sub-commands; refuses 2nd-instance start (port-leak guard)
+  - `scripts/credential-leak-e2e-test.sh` — three-fold cross-check verifier:
+    - Spawns stub-iut.sh + runs smoke-test.sh against stub URL with synthetic `Bearer ABCDEFGH12345678WXYZ`
+    - (a) Zero unmasked-credential hits in TestNG XML + container catalina.out + smoke log
+    - (b) >=1 masked-form (`Bear***WXYZ`) hits in any test artifact (proves filter ran)
+    - (c) >=1 unmasked-credential hits in stub-IUT log (proves try/finally restoration unmasked the wire request)
+  - **Self-test of stub-iut.sh in this Generator run**: started on ephemeral port 45755, `curl -H "Authorization: Bearer SELFTEST123"` returned HTTP 401, log captured `2026-04-29T16:16:56Z GET / Authorization=Bearer SELFTEST123`, clean PID-based stop. Stub-IUT primitive PRODUCTION-READY.
+  - Live three-fold cross-check exec **DEFERRED to Quinn/Raze gate** per Sprint 4 Run 2 mitigation pattern + Sprint 3 Run 1 sabotage-test.sh deferral precedent. Unit-layer `credential-leak-integration-test.sh` (Sprint 3 S-ETS-03-02) already provides fast-feedback verification at unit level (8/8 PASS, zero literal-credential leaks).
+  - Evidence: `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-04-03-credential-leak-2026-04-29.txt`
+
+- **Spec/traceability/story Implementation Notes updated**:
+  - `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`: REQ-ETS-PART1-003 + REQ-ETS-CLEANUP-010 + REQ-ETS-CLEANUP-011 → IMPLEMENTED (pending Quinn+Raze gate close)
+  - `_bmad/traceability.md`: 3 rows updated for S-04-02 + -03 + -05
+  - 3 story files appended with detailed Implementation Notes sections
+  - `ops/status.md` + `ops/changelog.md` updated
+
+- **Sprint 4 final state**: **5 of 5 stories Implemented** (S-04-01 PATH B formal-drop + -04 sabotage fixes from Run 1; -02 image-size + -03 credential-leak + -05 Subsystems from Run 2). Two stories have live-exec deferrals to Quinn/Raze gate (S-04-03 credential-leak three-fold cross-check, S-04-05 behavioral two-level cascade verification via extended bash sabotage). Sprint 4 ready for Quinn + Raze cumulative gate runs.
+
+- **Recommendation for Sprint 4 close**: Quinn evaluator + Raze adversarial reviewer cumulative gate pass against the Sprint 4 work in `ets-ogcapi-connectedsystems10` (HEAD `2dc44d1`). Live exec gates: (1) `bash scripts/credential-leak-e2e-test.sh` (three-fold cross-check verdict), (2) extended `scripts/sabotage-test.sh` two-level cascade verification (sabotage SystemFeatures, observe Subsystems @Tests SKIP not FAIL — verifies the testng.xml `<group depends-on>` transitive cascade actually fires).
+
 ## 2026-04-29T15:55Z — Sprint ets-04 Generator Run 1: S-ETS-04-04 sabotage-script bug fixes + S-ETS-04-01 CI workflow PATH B (formal-drop) binary close
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Alex's Sprint 4 architect-handoff (`next_agent: generator`) with Pat+Alex sequencing `-04 → -01 → -03 → -02 → -05`. This Generator run covers the 2 mechanical/orchestration stories first; Generator Run 2 covers -03 + -02 + -05.

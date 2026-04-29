@@ -48,8 +48,29 @@ ADR-009 v2 amendment (or new ADR-011 superseding) records the empirical falsific
 
 ## Definition of Done
 
-- [ ] Image size <600MB OR PARTIAL with explicit rationale at 600-650MB OR GAP at >650MB
-- [ ] Smoke regression check: 22+M PASS post-optimization
-- [ ] ADR-009 amended OR new ADR-011 authored + accepted
-- [ ] Spec implementation status updated
-- [ ] Sprint 4 close artifact archived
+- [x] Image size <600MB OR PARTIAL with explicit rationale at 600-650MB OR GAP at >650MB → **PASS at 540MB**
+- [x] Smoke regression check: 22+M PASS post-optimization → **26/26 PASS** (12+6+4+4)
+- [x] ADR-009 amended OR new ADR-011 authored + accepted → in-place ADR-009 v2 amendment (Architect 2026-04-29)
+- [x] Spec implementation status updated → REQ-ETS-CLEANUP-010 → IMPLEMENTED
+- [x] Sprint 4 close artifact archived → `ops/test-results/sprint-ets-04-02-image-size-v2-2026-04-29.txt`
+
+## Implementation Notes (Sprint 4 Run 2, 2026-04-29 — Dana Generator)
+
+**Outcome**: Image size 663MB → **540MB** (-123MB / -18.6%; <600MB Sprint 4 PASS target ACHIEVED).
+
+**Approach** (per ADR-009 v2 amendment):
+1. Move `groupadd/useradd tomcat` to a new EARLY layer in stage 2 (rarely-changes; cache-warm)
+2. Add `--chown=tomcat:tomcat` to each `COPY --from=builder` directive
+3. Each `RUN` step that creates files now `chown`s in the SAME RUN (no second-layer materialization)
+4. DELETE the standalone `RUN ... && chown -R tomcat:tomcat /usr/local/tomcat`
+
+**Iteration**: First v2 build (539MB) ran smoke and got TestNG 26/26 PASS but FAILED step 8/8 due to a startup SEVERE: `Unable to create directory for deployment: [/usr/local/tomcat/conf/Catalina/localhost]`. Root cause: the early `chown tomcat:tomcat /usr/local/tomcat` (single dir, not -R) + per-extract chowns missed `/conf`, `/logs`, `/work`, `/temp`. Fix: extend post-extract chown set to include those dirs (+1MB → 540MB).
+
+**Smoke verification** (final image, 540MB, 2026-04-29 16:23):
+- TestNG total=26 passed=26 failed=0 skipped=0
+- Zero startup ERROR/SEVERE
+- SMOKE PASS
+
+**HEAD**: `2dc44d1` in `ets-ogcapi-connectedsystems10` (new repo)
+
+**Sprint 5+ next-target roadmap** (per ADR-009 v2 amendment): tier-2 version-overlap dedupe (~7-8MB additional) + alpine-variant base image (requires JDK 17 + Tomcat alpine variants and re-validation of ADR-007 patches against musl libc).

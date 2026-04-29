@@ -52,8 +52,57 @@ Third additional Part 1 conformance class beyond Core (Sprint 1) + SystemFeature
 ## Definition of Done
 
 - [ ] All listed SCENARIO-ETS-PART1-003-* PASS
-- [ ] Smoke 22+M PASS preserved against GeoRobotix
-- [ ] Two-level cascade demonstrably SKIPs (not FAILs) Subsystems when SystemFeatures FAILs
-- [ ] Spec implementation status updated
-- [ ] No regression in existing tests
-- [ ] Sprint 4 close artifacts archived
+- [x] Smoke 22+M PASS preserved against GeoRobotix → **26/26 PASS** (12 Core + 6 SF + 4 Common + 4 Subsystems)
+- [ ] Two-level cascade demonstrably SKIPs (not FAILs) Subsystems when SystemFeatures FAILs → structural lint extended (3 new VerifyTestNGSuiteDependency tests pass) covers the structural cascade; behavioral verification via extended bash sabotage DEFERRED to Quinn/Raze gate (per Sprint 3 sabotage-test.sh deferral precedent)
+- [x] Spec implementation status updated → REQ-ETS-PART1-003 → IMPLEMENTED
+- [x] No regression in existing tests → mvn test 64/0/0/3 BUILD SUCCESS (was 61; +3 new lint tests)
+- [x] Sprint 4 close artifacts archived → `ops/test-results/sprint-ets-04-05-subsystems-georobotix-2026-04-29.xml`
+
+## Implementation Notes (Sprint 4 Run 2, 2026-04-29 — Dana Generator)
+
+**GeoRobotix curl-verification (acceptance criterion #1, MUST come BEFORE writing assertions)**:
+
+```
+$ curl -sf https://api.georobotix.io/ogc/t18/api/systems → 200, items=36
+# Most systems have empty subsystems; system 0n3rtpmuihc0 has 12.
+$ curl -sL https://api.georobotix.io/ogc/t18/api/systems/0n3rtpmuihc0/subsystems
+{"items": [
+  {"type":"Feature","id":"0nar3cl0tk3g","geometry":null,
+   "properties":{"uid":"urn:osh:sensor:isa:701149:RADIO003",...,"validTime":["2021-05-20T11:56:43.444Z","now"]}},
+  ... (12 total)
+]}
+$ curl -sL https://api.georobotix.io/ogc/t18/api/systems/0n3rtpmuihc0/subsystems/0nar3cl0tk3g
+{"type":"Feature","id":"0nar3cl0tk3g","geometry":null,"properties":{...},
+ "links":[
+   {"rel":"canonical","href":".../systems/0nar3cl0tk3g","type":"application/json"},
+   {"rel":"alternate","href":".../systems/0nar3cl0tk3g?f=sml3", ...},
+   {"rel":"alternate","href":".../systems/0nar3cl0tk3g?f=html", ...},
+   {"rel":"parent","title":"Parent system","href":".../systems/0n3rtpmuihc0?f=geojson","type":"application/geo+json"},
+   {"rel":"samplingFeatures", ...},
+   {"rel":"datastreams", ...}
+ ]}
+```
+
+**OGC canonical URI verification** (also MUST come before writing assertions):
+- `/req/subsystem/collection` — verified at `requirements/subsystem/req_subcollection.adoc` (HTTP 200)
+- `/req/subsystem/{recursive-param,recursive-search-systems,recursive-search-subsystems,subcollection-time}` — verified
+- **Note**: `/req/subsystem/parent-system-link` does NOT exist as a standalone OGC requirement. The OGC source repo's `/req/subsystem/` folder defines only `collection`, `recursive-*`, and `subcollection-time`. The parent-link is implied by `requirements_class_system_components.adoc` `inherit:: /req/system` + OGC 23-001 §System Components composition rules. We assert it under the requirements class URI `/req/subsystem` (not a per-link sub-requirement). The architectural invariant ("a subsystem MUST link back to its parent") is the load-bearing semantic distinction between a System and a Subsystem in the resource graph.
+
+**Deliverables** (committed at HEAD `2dc44d1` in `ets-ogcapi-connectedsystems10`):
+
+1. `src/main/java/.../conformance/subsystems/SubsystemsTests.java` — 4 @Tests:
+   - `subsystemsCollectionReturns200` — `/req/subsystem/collection`
+   - `subsystemItemHasIdTypeLinks` — inherited `/req/system/canonical-endpoint`
+   - `subsystemItemHasCanonicalLink` — inherited `/req/system/canonical-url`
+   - `subsystemHasParentSystemLink` — UNIQUE-to-Subsystems architectural invariant under `/req/subsystem`
+2. `testng.xml` — added `<group name="subsystems" depends-on="systemfeatures"/>` (FIRST two-level chain) + `SubsystemsTests` class entry
+3. `VerifyTestNGSuiteDependency.java` — extended with 3 new structural lint tests (group depends-on declared, every Subsystems @Test carries `groups="subsystems"`, Subsystems co-located with SystemFeatures in same `<test>` block) — ADR-010 v2 amendment defense-in-depth structural-lint half
+
+**Two-level cascade approach used**: testng.xml `<group depends-on>` (Architect's recommended primary path); `@BeforeClass` SkipException fallback IS implemented in SubsystemsTests (cascades all 4 @Tests to SKIP if no parent system has subsystems OR `/subsystems` returns non-200) — conditionally inert if testng.xml cascade works as expected, load-bearing if not. **Both paths active** per ADR-010 v2 amendment defense-in-depth.
+
+**Smoke results** (direct TestNG against GeoRobotix, 2026-04-29):
+- Subsystems: 4/4 PASS (`subsystemsCollectionReturns200`, `subsystemItemHasIdTypeLinks`, `subsystemHasParentSystemLink`, `subsystemItemHasCanonicalLink`)
+- Total: 26/0/0/0 (12 Core + 6 SF + 4 Common + 4 Subsystems)
+- mvn test surefire: 64/0/0/3 BUILD SUCCESS (was 61)
+
+**HEAD**: `2dc44d1` in `ets-ogcapi-connectedsystems10`
