@@ -63,3 +63,20 @@ If this is the 4th sprint deferring, Pat flags structural concern in Sprint 4 co
 - [ ] Spec implementation status updated (REQ-ETS-CLEANUP-007 IMPLEMENTED OR PLACEHOLDER-DEFERRED)
 - [ ] Story status set to Done in this file and in `epic-ets-04-teamengine-integration.md` (OR Active-DEFERRED if pre-condition blocked)
 - [ ] Sprint 3 contract success_criterion `ci_workflow_live: true` met OR DEFERRED-WITH-RATIONALE
+
+---
+
+## Implementation Notes (2026-04-29 — Dana Run 2)
+
+**Status: DEFERRED-WITH-RATIONALE (4th-sprint defer; gh token still lacks `workflow` scope).**
+
+Pre-condition check failed: `gh auth status` shows scopes `gist, read:org, repo` — no `workflow` scope. Per Sprint 3 contract `risks.medium.GH-WORKFLOW-SCOPE-STILL-MISSING-4TH-SPRINT`, this is escalation territory.
+
+Evidence: `ops/test-results/sprint-ets-03-03-ci-workflow-deferred-2026-04-29.txt` (in new repo).
+
+USER ACTION required to unblock:
+```bash
+gh auth refresh -s workflow  # interactive — opens browser
+```
+
+Once granted, Sprint 4 Generator runs the 4-line `git mv` + push + workflow_dispatch sequence documented in the deferred-evidence file.

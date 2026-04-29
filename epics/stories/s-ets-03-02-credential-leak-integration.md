@@ -100,3 +100,20 @@ Plus 1h for `auth-credential` CTL wiring + smoke-test.sh integration + grep evid
 - [ ] Spec implementation status updated (REQ-ETS-CLEANUP-006 IMPLEMENTED, traceability.md row Active → Implemented)
 - [ ] Story status set to Done in this file and in `epic-ets-04-teamengine-integration.md`
 - [ ] Sprint 3 contract success_criteria `credential_leak_integration_test_green: true` AND `rest_assured_logging_filter_wrapped: true` met
+
+---
+
+## Implementation Notes (2026-04-29 — Dana Run 2)
+
+**Status: IMPLEMENTED at unit-test layer (PASS).**
+
+Delivered:
+- `src/main/java/.../listener/MaskingRequestLoggingFilter.java` (subclass+try/finally swap pattern, ~140 LOC) — design.md §wrap pattern verbatim. Header set: superset of CredentialMaskingFilter (Authorization, Proxy-Authorization, X-API-Key, Cookie, Set-Cookie).
+- `src/test/java/.../listener/VerifyMaskingRequestLoggingFilter.java` (8 @Tests) — covers isMasked superset, IUT-side header restoration (try/finally invariant even when super.filter() throws), masked-form-present in stream output, literal-credential absence in stream output, null-set rejection. Surefire 53→61.
+- `SuiteFixtureListener.registerRestAssuredFilters()` updated: registers BOTH MaskingRequestLoggingFilter (Sprint 3) AND CredentialMaskingFilter (Sprint 2 defense-in-depth retained per design.md §Wiring point).
+- `scripts/credential-leak-integration-test.sh` — runs the 8 @Tests + greps mvn output + surefire XML for literal credential body. PASS (zero leaks, 8/0/0/0).
+
+**Surfaced risk closed**: MASKING-REQUEST-LOGGING-FILTER-RESPONSE-LOGGING — verified no `ResponseLoggingFilter` is registered in SuiteFixtureListener; the filter chain is request-side only. No wrap mirror needed for Sprint 3.
+
+**Deferred to Sprint 4**:
+- IUT-auth wiring (CTL `auth-credential` parameter + TestNG suite parameter + smoke-test.sh `--auth-credential` flag + live smoke against GeoRobotix with synthetic Bearer header). The unit-test integration layer satisfies the SCENARIO acceptance per architect-handoff scope; deeper E2E IUT auth is broader than Run 2 budget.

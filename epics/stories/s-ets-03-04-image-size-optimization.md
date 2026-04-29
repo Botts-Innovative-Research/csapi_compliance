@@ -73,3 +73,33 @@ If Generator hits 550-700MB, that's PARTIAL acceptable. If Generator hits >700MB
 - [ ] Spec implementation status updated (REQ-ETS-CLEANUP-008 IMPLEMENTED or PARTIAL)
 - [ ] Story status set to Done in this file and in `epic-ets-04-teamengine-integration.md`
 - [ ] Sprint 3 contract success_criterion `image_size_under_550mb: true` met OR PARTIAL with rationale
+
+---
+
+## Implementation Notes (2026-04-29 — Dana Run 2)
+
+**Status: PARTIAL — empirical dedupe applied (4 jars, 1.8MB savings); 550MB target missed.**
+
+Empirical enumeration (per architect-handoff constraints_for_generator.must item 11):
+- TE common-libs: 42 jars (14MB)
+- WEB-INF/lib: 98 jars (49MB)
+- **Exact-basename overlap: 4 jars** (schema-utils-1.8, xercesImpl-2.12.2, xml-apis-1.4.01, xml-resolver-1.2; total 1.8MB)
+- Artifact-name overlap with version mismatch: 1 (jersey-server: TE 1.19 vs ETS 3.1.x; KEEP both per ADR-006)
+- Intra-WEB-INF/lib duplicate-version artifacts: 14 (~7-8MB; high-risk to dedupe without per-jar smoke verification — deferred Sprint 4)
+
+Image size: **663MB → 660MB** (1.8MB saved at file-system level; 3MB reported by `docker images`).
+
+**Empirical finding contradicts ADR-009 amendment §illustrative table projection of 200-300MB savings.** Cause: Architect's illustrative jar list does not match the actual TE 5.6.1 + ETS 0.1-SNAPSHOT dep tree. The 663MB image is dominated by:
+- 286MB tomcat:8.5-jre17 base (immutable)
+- 80MB chown -R layer (Docker copy-on-write rewrites every file's metadata) ← dominant discretionary cost
+- 25MB TE WAR + console + common-libs download/unzip (mostly TE itself)
+- 39MB lib-runtime COPY (our deps closure)
+
+This is the **architect-flagged risk GENERATOR-EMPIRICAL-DEDUPE-LIST-DERIVATION worst-case symptom** — handled transparently with empirical evidence.
+
+Smoke verification: deduped image **16/16 PASS** against GeoRobotix (`/tmp/dana-run2/` clone, worktree-pollution constraint preserved). Evidence: `ops/test-results/sprint-ets-03-04-deduped-smoke-2026-04-29.xml`.
+
+Sprint 4 recommendations:
+1. Eliminate the 80MB chown -R layer using `--chown=tomcat:tomcat` on each `COPY` directive (Dockerfile syntax 1.6 supports this; saves ~80MB → ~580MB image).
+2. Iterative intra-WEB-INF/lib duplicate-version dedupe with per-jar smoke verification (saves additional ~3-4MB but high risk; budget 1 day).
+3. Re-evaluate ADR-009 alternative (b) distroless if (1)+(2) miss target.
