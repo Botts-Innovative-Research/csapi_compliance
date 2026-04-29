@@ -102,6 +102,61 @@ must behave identically to Sprint 4 close (no auth header injected; all existing
 - [ ] Spec implementation status updated: REQ-ETS-CLEANUP-013 SPECIFIED+IMPLEMENTED; REQ-ETS-CLEANUP-011 IMPLEMENTED
 - [ ] Artifact: `ops/test-results/sprint-ets-05-01-credential-leak-full-<date>.txt` (three-fold live-exec evidence)
 
-## Implementation Notes (Sprint 5 — to be filled by Dana Generator)
+## Implementation Notes (Sprint 5 Run 1 — Dana Generator, 2026-04-29)
 
-_[Generator fills this section during Sprint 5 implementation]_
+**Status**: IMPLEMENTED (Sprint 5 Run 1, 2026-04-29; pending Quinn+Raze gate close)
+
+### Three-layer wiring (landed)
+
+1. **Bash layer** (`scripts/smoke-test.sh`, ~14 LOC including comments):
+   - When `SMOKE_AUTH_CREDENTIAL` is non-empty, `AUTH_CRED_ARGS=(--data-urlencode "auth-credential=$SMOKE_AUTH_CREDENTIAL")` is added to the existing Step 6 `curl POST /teamengine/rest/suites/{ets}/run` invocation.
+   - When unset/empty, no auth-credential parameter is sent (Sprint 1-4 unauthenticated baseline preserved).
+   - Verification: `grep -nE 'SMOKE_AUTH_CREDENTIAL|auth-credential' scripts/smoke-test.sh` returns 4 hits (was 0 at Sprint 4 close).
+
+2. **Java enum layer** (no LOC changes outside the enums themselves):
+   - **`TestRunArg`** added `AUTH_CREDENTIAL`. Critical fix: previous `toString()` was `name().toLowerCase()` which would produce `auth_credential` (with underscore). Updated to `name().toLowerCase().replace('_', '-')` so `AUTH_CREDENTIAL.toString() == "auth-credential"` matching the bash + REST API contract. The pre-existing `IUT.toString() == "iut"` is preserved (no underscore present).
+   - **`SuiteAttribute`** added `AUTH_CREDENTIAL("authCredential", String.class)`.
+
+3. **Java listener layer** (`SuiteFixtureListener.java`, ~30 LOC including javadoc):
+   - `processSuiteParameters(ISuite)`: reads `params.get(TestRunArg.AUTH_CREDENTIAL.toString())`; when non-null and non-empty, stores via `suite.setAttribute(SuiteAttribute.AUTH_CREDENTIAL.getName(), authCredential)` and logs at CONFIG level (length only — never the value, per masking discipline).
+   - `onStart(ISuite)`: after `registerRestAssuredFilters()`, reads the AUTH_CREDENTIAL attribute back off the suite and calls `configureRestAssuredAuthCredential((String) authCred)`.
+   - `configureRestAssuredAuthCredential(String)` (new package-private method): no-op on null/empty; otherwise builds `new RequestSpecBuilder().addHeader("Authorization", authCredential).build()` and assigns to `RestAssured.requestSpecification`. Wrapped in try/catch with WARN log on RuntimeException so a defensive failure does not abort suite startup (same defensive pattern as `registerRestAssuredFilters`).
+
+### Deviation from story technical notes
+
+- Story §Technical Notes step 1 said "verify auth-credential is declared as a `ctl:form-param` in `src/main/scripts/ctl/ogcapi-connectedsystems10-suite.ctl`". On reading the CTL file: it defines a `<ctl:form>` for the interactive web-UI flow ONLY. The smoke-test.sh REST flow uses `/teamengine/rest/suites/{ets}/run` directly (TeamEngine's TestSuiteController endpoint), which accepts URL-encoded parameters as TestNG suite parameters without going through the CTL form-param mechanism. CTL file required NO changes for this fix. Story acceptance still satisfied since the contract is phrased as "→ CTL parameter `auth-credential`" — the REST `--data-urlencode` IS the equivalent at the TeamEngine API layer; no CTL edit was required.
+
+### Unit test (TDD red→green)
+
+`src/test/java/.../listener/VerifyAuthCredentialPropagation.java` — 8 @Tests, all PASS:
+
+1. `testRunArg_AuthCredential_keyMatchesContract` — asserts `TestRunArg.AUTH_CREDENTIAL.toString() == "auth-credential"` (load-bearing: bash and REST API agree on this key).
+2. `suiteAttribute_AuthCredential_present` — asserts `SuiteAttribute.AUTH_CREDENTIAL.getName() == "authCredential"` and type `String.class`.
+3. `processSuiteParameters_setsAuthCredentialAttribute` — when both `iut` and `auth-credential` params present, listener calls `suite.setAttribute("authCredential", "Bearer ABCDEFGH12345678WXYZ")` (Mockito captor verification).
+4. `processSuiteParameters_noAuthCredential_noAttribute` — backward-compat: `auth-credential` absent → `setAttribute("authCredential", ...)` is NEVER called (Mockito `verify(..., never())`).
+5. `processSuiteParameters_emptyAuthCredential_noAttribute` — empty string treated as absent (defensive).
+6. `configureRestAssuredAuthCredential_setsDefaultAuthHeader` — non-null/non-empty value sets `RestAssured.requestSpecification` to non-null.
+7. `configureRestAssuredAuthCredential_nullValue_noop` — null → `requestSpecification` remains null (no Sprint 1-4 baseline change).
+8. `configureRestAssuredAuthCredential_emptyValue_noop` — empty string → no-op.
+
+TDD red→green sequence: tests written and committed first; tests fail to compile due to missing AUTH_CREDENTIAL symbols and configureRestAssuredAuthCredential method; production code added; tests now PASS.
+
+### Test count delta
+
+| Phase | mvn test surefire |
+|---|---|
+| Sprint 4 close baseline | 64 / 0 / 0 / 3 |
+| Sprint 5 Run 1 close | 72 / 0 / 0 / 3 (+8 VerifyAuthCredentialPropagation) |
+
+### Live three-fold cross-check status
+
+DEFERRED to Quinn/Raze gate per Sprint 5 Run 1 worktree-pollution + Docker-time-budget mitigation pattern (precedent: Sprint 4 Run 2 credential-leak-e2e-test.sh deferral). The structural wiring is mvn-verified. Quinn or Raze runs `bash scripts/credential-leak-e2e-test.sh` from `/tmp/<role>-fresh-sprint5/` clone with `SMOKE_OUTPUT_DIR=/tmp/<role>-fresh-sprint5/test-results/` to produce the live three-fold evidence and archive.
+
+### Acceptance criteria — at Sprint 5 Run 1 close
+
+- [x] `grep -nE 'SMOKE_AUTH_CREDENTIAL|auth-credential' scripts/smoke-test.sh` returns non-empty (4 hits)
+- [DEFERRED to gate] `scripts/credential-leak-e2e-test.sh` three-fold verdict (a)+(b)+(c) — Quinn/Raze run live
+- [x] New unit test `VerifyAuthCredentialPropagation.java` covers all 4 layers (8/8 PASS)
+- [x] `mvn test` BUILD SUCCESS surefire 72/0/0/3
+- [x] Smoke baseline preserved (mvn unit suite green; live smoke deferred to gate)
+- [DEFERRED to gate] SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-WIRING-001 / -THREE-FOLD-001 PASS (live exec)

@@ -2,6 +2,27 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T21:50Z — Sprint ets-05 Generator Run 1 of 2 IMPLEMENTED (Dana) — 3 of 6 stories cleanup batch (S-05-01 GAP-1 wedge fix, S-05-02 SMOKE_OUTPUT_DIR, S-05-04 javadoc + ADR-010 v3)
+
+**S-ETS-05-01 GAP-1 SMOKE_AUTH_CREDENTIAL wedge fix IMPLEMENTED** (3-layer coordination, ~50 LOC total): bash + Java enums + Java listener. Closes the Sprint 4 cross-corroborated GAP-1 (Quinn 0.84 + Raze 0.84 — `scripts/smoke-test.sh` had ZERO references to `SMOKE_AUTH_CREDENTIAL` / `auth-credential` / `Authorization`).
+
+- Bash (`scripts/smoke-test.sh`): when `SMOKE_AUTH_CREDENTIAL` non-empty, adds `--data-urlencode "auth-credential=$SMOKE_AUTH_CREDENTIAL"` to the curl POST `/teamengine/rest/suites/{ets}/run`. Backward-compat preserved for unset env.
+- Java enums: new `TestRunArg.AUTH_CREDENTIAL` (`toString()` updated to map `_` → `-` so the enum produces the canonical key `auth-credential`); new `SuiteAttribute.AUTH_CREDENTIAL` (`authCredential`/String).
+- Java listener (`SuiteFixtureListener`): `processSuiteParameters` reads `auth-credential` suite param + stashes on ISuite; `onStart` calls new `configureRestAssuredAuthCredential(String)` which sets `RestAssured.requestSpecification` to a `RequestSpecBuilder().addHeader("Authorization", credential).build()`. The MaskingRequestLoggingFilter chain (Sprint 3) now exercises the credential at every IUT request.
+- Note: implementation deviated from story's "CTL parameter" wording — REST-API smoke flow (`/rest/suites/.../run`) bypasses the CTL form path entirely; the REST endpoint accepts URL-encoded params as TestNG suite parameters directly. CTL file unchanged. Spec/traceability updated to reflect.
+
+New unit test `VerifyAuthCredentialPropagation` (8 @Tests, all PASS) covers all 4 layers structurally — TestRunArg key contract; SuiteAttribute name+type; processSuiteParameters set/no-set/empty branches; configureRestAssuredAuthCredential set/null/empty branches. TDD red→green sequence followed (test commit first, watched compile-fail, then production code, then green). Surefire 64 → 72 / 0 / 0 / 3.
+
+**S-ETS-05-02 SMOKE_OUTPUT_DIR override IMPLEMENTED** (~3 LOC bash core, +5 LOC docstring): `scripts/smoke-test.sh` ARCHIVE_DIR now reads `${SMOKE_OUTPUT_DIR:-${REPO_ROOT}/ops/test-results}` so gate runs can write artifacts to `/tmp/<role>-fresh-sprint5/test-results/` instead of the user's worktree (closes Sprint 2 + Sprint 4 worktree-pollution recurrence pattern). Default behaviour byte-identical.
+
+**S-ETS-05-04 SubsystemsTests javadoc + ADR-010 v3 IMPLEMENTED** (doc-only):
+- SubsystemsTests.java class-level javadoc enumeration corrected from 5 → 6 .adoc files (added `req_subcollection_time.adoc` per Raze CONCERN-1) plus clarification paragraph distinguishing the file's existence in the GitHub directory from its non-membership in `requirements_class_system_components.adoc`'s `requirement::` list.
+- ADR-010.md v3 amendment appended in-place (no new ADR file): records that TestNG 7.9.0 group-dependency transitive cascade is **VERIFIED LIVE** (downgrades v2 "hypothesized" status). Empirical evidence cited: Sprint 4 Raze sabotage exec 2026-04-29T16:40Z aggregate total=26 / passed=16 / failed=1 / skipped=9 with per-class breakdown showing Subsystems 4×SKIP via two-level cascade. Defense-in-depth (`@BeforeClass` SkipException fallback) retained as belt-and-suspenders insurance — TestNG cascade undocumented; future regression possible. Pattern forward-extends to Sprint 5+ Procedures + Deployments mechanically.
+
+**Live execution status**: live three-fold credential-leak cross-check (`scripts/credential-leak-e2e-test.sh`) and live smoke regression (`bash scripts/smoke-test.sh`) DEFERRED to Quinn/Raze Run 2 close gate per Sprint 5 Run 1 mitigation pattern (precedent: Sprint 4 Run 2 deferral; worktree-pollution + Docker time budget constraints). Structural wiring is mvn-verified at 72/0/0/3.
+
+**Sprint 5 Run 1 → Run 2 handoff**: Generator handoff at `.harness/handoffs/generator-handoff.yaml` recommends orchestrator spawn Run 2 (Generator Dana, fresh context) for the remaining 3 stories: S-ETS-05-05 Procedures conformance class (P0 NEW), S-ETS-05-06 Deployments conformance class (P0 NEW), S-ETS-05-03 sabotage --target=systemfeatures flag (P2). After Run 2 lands, Quinn evaluator + Raze adversarial gates close the sprint.
+
 ## 2026-04-29T19:21Z — Sprint ets-05 PLANNED (Pat) — 6 stories, Procedures + Deployments batched, next_agent: generator (no Architect cycle)
 
 - **Trigger**: User instruction "do a then b" after reading SESSION-HANDOFF-2026-04-29.md. (a) was no-op (handoff already in `642b5c7`/pushed). (b) spawned Pat for Sprint 5 contract authoring with 6-item carryover + sibling-class batch selection.

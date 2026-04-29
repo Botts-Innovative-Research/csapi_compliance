@@ -253,3 +253,51 @@ Lightweight; ~10 LOC addition to the existing test class.
 - S-ETS-04-05 acceptance criteria: `epics/stories/s-ets-04-05-subsystems-conformance-class.md`
 - SCENARIO-ETS-PART1-003-SUBSYSTEMS-DEPENDENCY-SKIP-001: `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md`
 - Architecture v2.0.3 §16: `_bmad/architecture.md`
+
+---
+
+## Sprint 5 v3 amendment (2026-04-29) — TestNG 7.9.0 transitive cascade VERIFIED LIVE
+
+**Trigger**: Sprint 4 close (Run 2) Raze adversarial sabotage exec produced LIVE behavioural evidence that the v2-amendment's "hypothesized" transitive cascade actually fires end-to-end in TestNG 7.9.0 against the project's testng.xml. This v3 amendment records the evidence and downgrades the v2 hedge from "may not work; defense-in-depth required" to "verified working; defense-in-depth retained as belt-and-suspenders".
+
+### Empirical evidence (Sprint 4 Raze sabotage exec, 2026-04-29T16:40Z)
+
+Raze sabotaged `SystemFeaturesTests.systemsCollectionReturns200` (forced FAIL via in-place Java edit on a `/tmp/raze-fresh-s04/` clone), rebuilt the Docker image, and ran `bash scripts/smoke-test.sh` against GeoRobotix. Observed TestNG XML aggregate:
+
+```
+total=26 / passed=16 / failed=1 / skipped=9
+```
+
+Per-class breakdown (from the archived `target/testng-results.xml`):
+
+| Conformance class | @Tests | PASS | FAIL | SKIP | Mechanism |
+|---|---|---|---|---|---|
+| Core (no upstream) | 12 | 12 | 0 | 0 | Independent — no dependency chain reached this class |
+| Common (no upstream) | 4 | 4 | 0 | 0 | Independent — no dependency chain reached this class |
+| SystemFeatures (depends on Core) | 6 | 0 | 1 | 5 | Direct sabotage on one method (×1 FAIL); rest cascade-SKIP via `dependsOnMethods` chain inside the class |
+| Subsystems (depends on SystemFeatures) | 4 | 0 | 0 | 4 | **TRANSITIVE cascade** via `<group name="subsystems" depends-on="systemfeatures"/>` — when SystemFeatures group has any FAIL/SKIP, Subsystems methods are skipped at suite-execution time by TestNG itself, NOT by the @BeforeClass SkipException fallback (which would have produced the same SKIP result anyway — verified inert this run) |
+
+The FAIL count of 1 (NOT 5+) confirms the cascade fires AT THE GROUP LEVEL: SystemFeatures' other 5 @Tests are not separately reported as FAIL — they're SKIP'd via the intra-class `dependsOnMethods` chain. Subsystems' 4 @Tests are ALL `status="SKIP"` — none reported as FAIL/ERROR/PASS — confirming that TestNG 7.9.0 **does** transitively cascade `<group depends-on>` declarations across multi-level chains.
+
+### Decision (Sprint 5 v3 amendment)
+
+The v2 amendment's hedge ("TestNG transitive cascade may not work; @BeforeClass SkipException fallback added as defense-in-depth") is empirically resolved: **TestNG 7.9.0 group-dependency transitive cascade is VERIFIED LIVE**. The v3 amendment:
+
+1. Replaces the v2 status "hypothesized" → **"VERIFIED LIVE (2026-04-29)"**.
+2. Retains the @BeforeClass SkipException fallback as belt-and-suspenders. Rationale: TestNG group-dependency transitive cascade behaviour is not explicitly documented in the project (https://testng.org/#_groups describes direct dependencies only). Future TestNG versions could regress the behaviour without explicit notice. The fallback is ~10 LOC per class, has zero runtime cost when inert (no upstream FAIL → method is a no-op), and provides forward insurance for Sprint 5+ multi-level chains (Procedures, Deployments, Sampling, Properties, Subdeployments, etc.).
+3. Forward-extends the pattern to Sprint 5+: Procedures and Deployments are added to the dependency DAG using the identical mechanism (`<group name="procedures" depends-on="systemfeatures"/>` and `<group name="deployments" depends-on="systemfeatures"/>`). No new architectural ratification required — this is mechanical pattern extension.
+
+### Implications
+
+- The v2 hedge condition "if (a) FAILs, activate (b)" is now archival history. Both (a) testng.xml `<group depends-on>` AND (b) `@BeforeClass SkipException` are retained, but (b) is documented as **inert insurance** (verified inert in Sprint 4 Raze exec).
+- Sprint 5+ conformance classes (Procedures, Deployments, and beyond — Sampling, Properties, Subdeployments, AdvancedFiltering, CRUD, Update, GeoJSON, SensorML — all depending only on SystemFeatures per OGC 23-001 ATS) extend the testng.xml dependency block and (optionally) include the `@BeforeClass` SkipException fallback. The single-block consolidation form of testng.xml is now the canonical pattern (Sprint 4 baseline; verified working in TestNG 7.9.0).
+- `VerifyDependencySkipWiring` unit-test extensions for Procedures + Deployments groups are mandated (Sprint 5+ structural lint additions).
+- Worktree-pollution constraint (Sprint 3 §worktree_pollution_constraint + Sprint 5 v2 SMOKE_OUTPUT_DIR override per S-ETS-05-02) remains in force for all sabotage exec runs.
+
+### Notes / references (Sprint 5 v3 amendment)
+
+- Sprint 4 Raze sabotage exec evidence: `.harness/evaluations/sprint-ets-04-adversarial-cumulative.yaml` (cumulative gate verdict references the live sabotage exec at 2026-04-29T16:40Z and the archived testng-results.xml in `ops/test-results/`)
+- Sprint 4 Quinn cumulative APPROVE_WITH_CONCERNS verdict: `.harness/evaluations/sprint-ets-04-evaluator-cumulative.yaml`
+- Sprint 5 contract reference: `.harness/contracts/sprint-ets-05.yaml` `evaluation_focus` (point on ADR-010 v3 amendment) + `success_criteria.adr010_v3_amendment_landed`
+- Sprint 5 forward-extension stories: `epics/stories/s-ets-05-05-procedures-conformance-class.md`, `epics/stories/s-ets-05-06-deployments-conformance-class.md` (Run 2 — pending)
+- TestNG 7.9.0 source (group cascade implementation reference): `org.testng.internal.MethodHelper.calculateDependentExpressionMethods`

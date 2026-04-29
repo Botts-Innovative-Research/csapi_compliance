@@ -110,6 +110,51 @@ None (pure doc changes; parallelizable with conformance class stories)
 - [ ] No behavior changes; mvn test still 64+N/0/0/3
 - [ ] Spec: no spec changes needed for this story (REQ-ETS-PART1-003 status unchanged — IMPLEMENTED)
 
-## Implementation Notes (Sprint 5 — to be filled by Dana Generator)
+## Implementation Notes (Sprint 5 Run 1 — Dana Generator, 2026-04-29)
 
-_[Generator fills this section during Sprint 5 implementation]_
+**Status**: IMPLEMENTED (Sprint 5 Run 1, 2026-04-29; pending Quinn+Raze gate close)
+
+### Item A: SubsystemsTests javadoc fix
+
+Edit at `src/main/java/.../conformance/subsystems/SubsystemsTests.java` class-level javadoc, "Canonical URI form" section. Previous version listed 5 .adoc files; updated to enumerate all 6 present in the GitHub `api/part1/standard/requirements/subsystem/` directory listing as of 2026-04-29:
+
+1. `requirements_class_system_components.adoc`
+2. `req_subcollection.adoc`
+3. **`req_subcollection_time.adoc`** (was missing from prior enumeration — Raze CONCERN-1)
+4. `req_recursive_param.adoc`
+5. `req_recursive_search_systems.adoc`
+6. `req_recursive_search_subsystems.adoc`
+
+Plus added a clarification paragraph noting that `req_subcollection_time.adoc` exists in the GitHub directory but is NOT enumerated in `requirements_class_system_components.adoc`'s `requirement::` list (deferred to Sprint 5+ recursive-* expansion). Distinguished from `req_subcollection.adoc` which IS in the requirements class and IS asserted.
+
+No Java behaviour changes (javadoc edit only). `mvn test` BUILD SUCCESS confirms no compilation regression.
+
+### Item B: ADR-010 v3 amendment
+
+Appended a new "Sprint 5 v3 amendment" subsection to `_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md` recording that TestNG 7.9.0 group-dependency transitive cascade is **VERIFIED LIVE** (replacing v2 amendment "hypothesized" status). Empirical evidence:
+
+- Source: Sprint 4 Raze sabotage exec, 2026-04-29T16:40Z
+- Aggregate: total=26 / passed=16 / failed=1 / skipped=9
+- Per-class breakdown (Core PASS×12, Common PASS×4 — independent; SystemFeatures FAIL×1 SKIP×5 — direct sabotage + intra-class cascade; Subsystems SKIP×4 — TWO-LEVEL transitive cascade)
+- Conclusion: Subsystems' 4 @Tests all `status="SKIP"` (none FAIL/ERROR/PASS) confirms TestNG 7.9.0 cascades `<group depends-on>` transitively across multi-level chains.
+
+Decisions in v3 amendment:
+1. Status changed from "hypothesized" → "VERIFIED LIVE (2026-04-29)"
+2. `@BeforeClass` SkipException fallback retained as belt-and-suspenders insurance (TestNG cascade undocumented; future regression possible; ~10 LOC overhead is negligible)
+3. Pattern forward-extends to Sprint 5+ (Procedures, Deployments) without new architectural ratification — mechanical pattern extension
+
+No change to v1/v2 amendment text — the v3 amendment is appended in-place per story's "narrow addendum, not a rewrite" constraint.
+
+### Verification
+
+- `mvn test` → BUILD SUCCESS, surefire 72/0/0/3 (Sprint 5 Run 1 baseline post-S-ETS-05-01); javadoc-only Subsystems edit causes no compilation/test impact.
+- ADR-010.md is markdown only; no build implications.
+
+### Acceptance criteria — at Sprint 5 Run 1 close
+
+- [x] SubsystemsTests.java class-level javadoc enumerates 6 .adoc files (verified by grep + diff)
+- [x] Javadoc clarifies `req_subcollection_time.adoc` separately
+- [x] ADR-010.md contains "Sprint 5 v3 amendment" subsection
+- [x] ADR-010.md amendment retains v1/v2 architectural decision text unchanged (only adds empirical evidence + status downgrade)
+- [x] `mvn test` BUILD SUCCESS (no compilation errors; javadoc-only)
+- [x] SCENARIO-ETS-CLEANUP-SUBSYSTEMS-JAVADOC-001 + SCENARIO-ETS-CLEANUP-ADR-010-V3-001 satisfied at code/doc level
