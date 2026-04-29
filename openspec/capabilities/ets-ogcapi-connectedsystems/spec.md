@@ -115,12 +115,19 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - **Rationale**: SystemFeatures is the foundational CS API collection — every other CS API endpoint exposes `/systems` collections, so the patterns established here (collection shape, item shape, dependency-skip wiring) propagate to Subsystems, Procedures, Sampling, Properties, Deployments. GeoRobotix serves a non-empty `/systems` collection (36 items confirmed at S-ETS-02-06 curl-verification 2026-04-28T23:30Z, Implementation Notes archive in `epics/stories/s-ets-02-06-systemfeatures-conformance-class.md`).
 - **Maps to**: PRD FR-ETS-12.
 
-#### REQ-ETS-PART1-003..013: Remaining Per-Class Conformance Suites
+#### REQ-ETS-PART1-003: Subsystems Conformance Class (Sprint 4 target)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 4 target via S-ETS-04-05)
+- **Description**: For each assertion in OGC 23-001 Annex A `/conf/subsystem/`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form `/req/subsystem/<assertion>` (e.g. `OGC-23-001 .../req/subsystem/resources-endpoint`). Generator MUST verify the canonical form via OGC `.adoc` source HTTP-200 fetch BEFORE writing assertions (continuing the S-ETS-02-03 / S-ETS-02-06 / S-ETS-03-07 URI-canonicalization discipline). Expected sub-requirements (~4-5 per OGC 23-001 Annex A `/conf/subsystem/`): (a) `/req/subsystem/resources-endpoint` — `GET /systems/{id}/subsystems` returns HTTP 200 + non-empty `items` array (if implemented by IUT; SKIP-with-reason if 404); (b) `/req/subsystem/canonical-endpoint` — `GET /subsystems/{id}` returns canonical single-item shape (id, type, links per REQ-ETS-CORE-004 base shape); (c) `/req/subsystem/canonical-url` — subsystem links contain `rel="canonical"` (absence of `rel="self"` is NOT FAIL — preserves v1.0 GH#3 fix policy from Core landing page); (d) `/req/subsystem/parent-system-link` — subsystem links contain `rel="system"` (or equivalent) referencing the parent system. The Subsystems class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.subsystems.SubsystemsTests` per design.md placeholder. Subsystems DEPENDS ON SystemFeatures via TestNG group dependency wiring (`<dependencies><group name="subsystems" depends-on="systemfeatures"/>`) — FIRST two-level dependency chain in the project (Subsystems→SystemFeatures→Core). Coverage scope at Sprint 4 close: Sprint-1-style minimal (4 @Tests covering 4 highest-priority assertions per Architect ratification — see design.md Sprint 4 ratifications); Sprint 5+ expansion adds remaining ATS items.
+- **Rationale**: Subsystems is the FIRST class to exercise a TWO-LEVEL group dependency chain (Subsystems→SystemFeatures→Core). Sprint 3 proved one-level (SystemFeatures→Core) live cascading-skip via S-ETS-03-01 sabotage exec. Subsystems extends to two levels — critical proof point before Sprint 5+ scales to remaining 10 Part 1 classes (most depend on either SystemFeatures or SystemFeatures+Common). Procedures/Sampling/Properties/Deployments are siblings of Subsystems (also depend on SystemFeatures); once Subsystems proves the two-level pattern, Sprint 5+ can BATCH 2-3 of these classes per sprint with confidence. GeoRobotix readily exercises Subsystems via `/systems/{id}/subsystems` (Generator MUST curl-verify BEFORE writing assertions).
+- **Maps to**: PRD FR-ETS-13.
+
+#### REQ-ETS-PART1-004..013: Remaining Per-Class Conformance Suites
 - **Priority**: MUST
 - **Status**: PLACEHOLDER (per-class detail deferred to future sprint planning)
-- **Description**: For each of the remaining 11 OGC 23-001 conformance classes (003=`subsystems`, 004=`deployment-features`, 005=`subdeployments`, 006=`procedure-features`, 007=`sampling-features`, 008=`property-definitions`, 009=`advanced-filtering`, 010=`create-replace-delete`, 011=`update`, 012=`geojson`, 013=`sensorml`), the ETS SHALL provide a TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004) and SystemFeatures (REQ-ETS-PART1-002): one `@Test` per ATS assertion, `description` attribute carries the OGC canonical `.adoc` requirement URI form, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails. (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27).
-- **Rationale**: PRD SC-2 requires Part 1 coverage. Placeholder REQ shape lets the planner enumerate the certification surface without front-loading per-assertion detail.
-- **Maps to**: PRD FR-ETS-13..23.
+- **Description**: For each of the remaining 10 OGC 23-001 conformance classes (004=`deployment-features`, 005=`subdeployments`, 006=`procedure-features`, 007=`sampling-features`, 008=`property-definitions`, 009=`advanced-filtering`, 010=`create-replace-delete`, 011=`update`, 012=`geojson`, 013=`sensorml`), the ETS SHALL provide a TestNG suite class structurally equivalent to Core (REQ-ETS-CORE-001..004), SystemFeatures (REQ-ETS-PART1-002), Common (REQ-ETS-PART1-001), and Subsystems (REQ-ETS-PART1-003): one `@Test` per ATS assertion, `description` attribute carries the OGC canonical `.adoc` requirement URI form, suite-level dependency declared via TestNG `dependsOnGroups` if a prerequisite class fails. (verified against `docs.ogc.org/is/23-001/23-001.html` Annex A on 2026-04-27).
+- **Rationale**: PRD SC-2 requires Part 1 coverage. Placeholder REQ shape lets the planner enumerate the certification surface without front-loading per-assertion detail. Sprint 4 unlocks two-level dependency cascade via REQ-ETS-PART1-003 (Subsystems); Sprint 5+ batches siblings (Procedures, Sampling, Properties, Deployments) using the same pattern.
+- **Maps to**: PRD FR-ETS-14..23.
 
 ### Sub-deliverable 4 — Part 2 Conformance Classes (placeholders, NOT in Sprint 1)
 
@@ -230,6 +237,7 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 > Sprint 2 introduced REQ-ETS-CLEANUP-001..004 to track cleanup work as first-class spec items.
 > Sprint 3 extends with REQ-ETS-CLEANUP-005..008 for the Sprint 2 carryover items now closing.
+> Sprint 4 extends with REQ-ETS-CLEANUP-009..012 for the Sprint 3 carryover items now closing (CI-workflow ESCALATION binary close, image-size v2 chown-layer attack, deeper E2E credential-leak smoke, sabotage-script hermetic execution fixes).
 
 #### REQ-ETS-CLEANUP-005: Live Break-Core Dependency-Skip Verification
 - **Priority**: MUST
@@ -251,9 +259,33 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 #### REQ-ETS-CLEANUP-008: Docker Image Size Optimization
 - **Priority**: SHOULD
-- **Status**: SPECIFIED (Sprint 3 target via S-ETS-03-04; Sprint 3 stretch goal)
-- **Description**: The multi-stage Dockerfile runtime image SHALL be optimized to ≤ 550 MB (Sprint 3 stretch — more permissive than ADR-009 §"Image size target" 450MB soft target). Recommended approach (per Quinn cleanup GAP-1 Option A): TE common-libs ↔ deps-closure dedupe — exclude jars in `target/lib-runtime/` that overlap with `/usr/local/tomcat/lib` (from `teamengine-web-common-libs.zip`); estimated 200-300MB savings → ~363-463MB runtime image. Architect ratifies which approach (a / b / c per Sprint 3 contract `deferred_to_architect`). PARTIAL with rationale acceptable if Generator hits 550-700MB; carryover to Sprint 4 with explicit deferral if >700MB. Smoke 12+6+N PASS preserved post-optimization.
+- **Status**: PARTIAL (Sprint 3 close: 660MB vs <550MB stretch — ADR-009 illustrative 200-300MB jar-dedupe projection EMPIRICALLY FALSIFIED at S-ETS-03-04; chown-layer 80MB attack identified for Sprint 4); EXTENDED via REQ-ETS-CLEANUP-010 (Sprint 4 v2)
+- **Description**: The multi-stage Dockerfile runtime image SHALL be optimized to ≤ 550 MB (Sprint 3 stretch — more permissive than ADR-009 §"Image size target" 450MB soft target). Recommended approach (per Quinn cleanup GAP-1 Option A): TE common-libs ↔ deps-closure dedupe — exclude jars in `target/lib-runtime/` that overlap with `/usr/local/tomcat/lib` (from `teamengine-web-common-libs.zip`); estimated 200-300MB savings → ~363-463MB runtime image. Architect ratifies which approach (a / b / c per Sprint 3 contract `deferred_to_architect`). PARTIAL with rationale acceptable if Generator hits 550-700MB; carryover to Sprint 4 with explicit deferral if >700MB. Smoke 12+6+N PASS preserved post-optimization. **Sprint 3 outcome**: 660MB (3MB savings; only 4 jars / 1.8MB exact-basename overlap on actual TE 5.6.1 + ETS 0.1-SNAPSHOT post-ADR-006 layout). Sprint 4 attacks the dominant 80MB chown layer per REQ-ETS-CLEANUP-010.
 - **Maps to**: NFR-ETS-11 (deployment topology), ADR-009.
+
+#### REQ-ETS-CLEANUP-009: CI Workflow ESCALATION (5th-sprint-defer-risk; binary close)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 4 target via S-ETS-04-01; USER ACTION required: `gh auth refresh -s workflow` OR formal-drop)
+- **Description**: REQ-ETS-CLEANUP-007 (CI workflow live at `.github/workflows/build.yml`) was DEFERRED-WITH-RATIONALE for 4 consecutive sprints (S-ETS-01-01..03 + S-ETS-02-05 + S-ETS-03-03). Raze cumulative APPROVE_WITH_CONCERNS verdict explicitly flagged as ESCALATION TERRITORY. Sprint 4 success_criterion `ci_workflow_live_or_formally_dropped` SHALL resolve to TRUE via either: (a) user grants `workflow` scope (`gh auth refresh -s workflow`) before Generator run AND Generator executes the `git mv` + workflow_dispatch verification (~30 min); OR (b) `ci_workflow_live` is FORMALLY DROPPED from sprint cadence with explicit "perpetual environmental blocker" deferral note in `ops/status.md` (Raze recommendation). No more 4-sprint-style "we'll try again" deferrals — Sprint 4 is the binary close. Pat documents alternative path for the user to adopt at any point post-Sprint-4: manual GitHub UI move via web (~5 min user-time; bypasses gh-cli-scope blocker entirely).
+- **Maps to**: NFR-ETS-02. Closes Raze cumulative CONCERN-3 + 4-sprint-defer pattern.
+
+#### REQ-ETS-CLEANUP-010: Docker Image-Size v2 Chown-Layer Attack + ADR-009 v2 Amendment
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 4 target via S-ETS-04-02)
+- **Description**: The multi-stage Dockerfile SHALL be optimized via Docker buildkit `COPY --chown=tomcat:tomcat` syntax on each `COPY` directive — eliminating the 80MB `RUN chown -R tomcat:tomcat /usr/local/tomcat` layer that Sprint 3 empirical analysis identified as the dominant cost (sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt). Acceptance: image size <600MB (Sprint 4 PASS target — empirically permissive given multi-jar runtime classloader requirements; Sprint 3 661MB baseline). PARTIAL acceptable at 600-650MB; GAP if >650MB. Smoke 22+M PASS preserved (where M = Subsystems @Test count from S-ETS-04-05). ADR-009 SHALL be amended in-place (Pat hypothesis; Architect ratifies) recording: (a) empirical falsification of the illustrative 200-300MB jar-dedupe projection; (b) chown-layer attack approach + measured delta from Sprint 3 660MB baseline; (c) 80MB-as-dominant-cost identification; (d) Sprint 5+ next-target roadmap (alpine variant per ADR-009 §Alternatives if Sprint 4 chown-attack underperforms). Iterative tier-2 version-overlap dedupe (~7-8MB additional) permitted with smoke verification per excluded version (per ADR-009 §"DO NOT dedupe" runtime-classloader-binding caveat).
+- **Maps to**: NFR-ETS-11, ADR-009 (amended).
+
+#### REQ-ETS-CLEANUP-011: Deeper E2E Credential-Leak Smoke at IUT-Auth Layer
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 4 target via S-ETS-04-03; closes Sprint 3 PARTIAL + Quinn cumulative CONCERN-1)
+- **Description**: REQ-ETS-CLEANUP-006 (CredentialMaskingFilter integration test + RequestLoggingFilter wrap) closed at the unit-test integration layer at Sprint 3 (8/8 VerifyMaskingRequestLoggingFilter @Tests + grep mvn output + grep surefire XML for literal credential body, all zero hits) but explicitly deferred the deeper E2E architect-vision: synthetic auth-credential flowing through REST-Assured against an authenticated IUT at smoke time, with grep against ops/test-results/ XML AND container catalina.out for the literal substring (zero hits) AND for the masked form (>=1 hit, proving filter ran rather than dropping the field entirely). Sprint 4 wires `auth-credential` CTL/TestNG suite parameter end-to-end in `scripts/smoke-test.sh` (or new `scripts/credential-leak-e2e-test.sh`). Architect ratifies IUT path: (a) stub IUT in /tmp/ per Sprint 3 sabotage-script pattern (Pat recommends; composable with REQ-ETS-CLEANUP-012 sabotage-script bug fixes; hermetic); (b) pivot to authenticated IUT (lower hermeticity; depends on external IUT availability); (c) extended unit-layer fallback if both stub and alternative IUT prove infeasible. Acceptance: smoke against authenticated IUT (or stub) with `auth-credential=Bearer ABCDEFGH12345678WXYZ`; grep ops/test-results/ XML + container catalina.out returns ZERO hits for `EFGH12345678WXYZ`; grep both surfaces for masked `Bear***WXYZ` returns >=1 hit. Closes design.md §529 deferral text fully.
+- **Maps to**: PRD FR-ETS-25, NFR-ETS-08. Closes Sprint 3 PARTIAL `credential_leak_integration_test_green` (deeper E2E) + Quinn cumulative CONCERN-1.
+
+#### REQ-ETS-CLEANUP-012: Sabotage-Script Hermetic-Execution Bug Fixes
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 4 target via S-ETS-04-04)
+- **Description**: Sprint 3 ADR-010 §"Defense-in-depth role split" landed the bash sabotage script (`scripts/sabotage-test.sh`) with two known bugs preventing hermetic CITE-SC-grade execution: (a) stub server binds to 127.0.0.1 (or default localhost) — should bind to 0.0.0.0 so a Docker container running smoke against `host.docker.internal:<port>` can reach the stub; (b) docker run command lacks `--add-host=host.docker.internal:host-gateway` — Docker on Linux WITHOUT Docker Desktop does NOT auto-resolve `host.docker.internal` (only Docker Desktop's macOS/Windows variants do). Both fixes are mechanical, ~5 LOC each, no architecture decision required. Acceptance: bash sabotage script runs hermetically end-to-end on Linux-without-Docker-Desktop hosts; netstat verification shows stub binding `0.0.0.0:<port>` not `127.0.0.1:<port>`; smoke container reaches stub via `host.docker.internal:<port>`. Live execution evidence archived for audit trail.
+- **Maps to**: ADR-010 §"Defense-in-depth role split" (extended to hermetic CITE-SC-grade execution).
 
 ## Acceptance Scenarios
 
@@ -517,6 +549,89 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **THEN** the item has `geometry` field (GeoJSON Geometry or null) AND/OR `properties.validTime` (string/array per OGC 23-001 §`/req/system/location-time`)
 **OR** if neither is present: SKIP-with-reason (MAY priority per v1.0 audit at `csapi_compliance/src/engine/registry/system-features.ts`; absence is NOT FAIL).
 *Maps to*: REQ-ETS-PART1-002 (modified per Sprint 3 expansion).
+
+#### SCENARIO-ETS-CLEANUP-CI-WORKFLOW-ESCALATION-001 (CRITICAL — Sprint 4)
+**GIVEN** the gh OAuth token has been a 4-consecutive-sprint user-action blocker (S-ETS-01-01..03 + S-ETS-02-05 + S-ETS-03-03)
+**WHEN** Sprint 4 closes
+**THEN** EITHER GitHub Actions UI shows at least one workflow_run on a Sprint 4 commit with `conclusion=success` (Path A — user granted scope, Generator landed `git mv`)
+**OR** `ops/status.md` documents `ci_workflow_live` as DROPPED from sprint cadence with explicit "perpetual environmental blocker" rationale + alternative path note (Path B — formal drop per Raze recommendation).
+*Maps to*: REQ-ETS-CLEANUP-007 (modified), REQ-ETS-CLEANUP-009. Closes Raze cumulative CONCERN-3 + 4-sprint-defer pattern (binary outcome — no more 4-sprint-style retries).
+
+#### SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-E2E-001 (CRITICAL — Sprint 4)
+**GIVEN** the suite at the Sprint 4 close HEAD with `auth-credential` wired end-to-end through `scripts/smoke-test.sh` (or dedicated `scripts/credential-leak-e2e-test.sh`)
+**AND** authenticated IUT (or stub IUT per Architect's ratification) requires `Authorization: Bearer ABCDEFGH12345678WXYZ`
+**WHEN** the E2E smoke runs end-to-end
+**THEN** the script exits 0
+**AND** `grep -r 'EFGH12345678WXYZ' ets-ogcapi-connectedsystems10/ops/test-results/` returns ZERO hits
+**AND** `docker logs <container> 2>&1 | grep 'EFGH12345678WXYZ'` returns ZERO hits
+**AND** `grep -rE 'Bear\*\*\*WXYZ' ets-ogcapi-connectedsystems10/ops/test-results/` returns at least one hit (proving filter ran rather than dropping the field).
+*Maps to*: REQ-ETS-CLEANUP-006 (modified), REQ-ETS-CLEANUP-011. Closes Sprint 3 PARTIAL `credential_leak_integration_test_green` (deeper E2E) + Quinn cumulative CONCERN-1.
+
+#### SCENARIO-ETS-CLEANUP-IMAGE-SIZE-V2-001 (NORMAL — Sprint 4)
+**GIVEN** the multi-stage Dockerfile at the Sprint 4 close HEAD with chown-layer attack applied (every `COPY` directive uses `--chown=tomcat:tomcat`; standalone `RUN chown -R ...` deleted)
+**WHEN** `docker build` produces the runtime image AND `docker images <smoke-built-image> --format '{{.Size}}'` runs
+**THEN** the reported size is < 600 MB (Sprint 4 PASS target via chown-layer attack)
+**OR** the reported size is 600-650 MB and the deferral rationale is captured in story Implementation Notes (PARTIAL acceptable per ADR-009 §"Negative" deferral language)
+**AND** smoke 22+M PASS preserved post-optimization (no regression).
+*Maps to*: REQ-ETS-CLEANUP-008 (modified), REQ-ETS-CLEANUP-010.
+
+#### SCENARIO-ETS-CLEANUP-ADR-009-V2-001 (NORMAL — Sprint 4)
+**GIVEN** the Sprint 4 close HEAD with ADR-009 amended (or new ADR-011 superseding) per Architect's ratification
+**WHEN** `cat _bmad/adrs/ADR-009-*.md` runs (or ADR-011 if superseding)
+**THEN** the ADR records (a) the empirical falsification of the illustrative 200-300MB jar-dedupe projection (Sprint 3 evidence at sprint-ets-03-04-empirical-dedupe-list-2026-04-29.txt cited);
+**AND** (b) the chown-layer attack approach + measured delta from Sprint 3 660MB baseline;
+**AND** (c) the 80MB-as-dominant-cost identification;
+**AND** (d) the Sprint 5+ next-target roadmap (alpine variant per ADR-009 §Alternatives if Sprint 4 chown-attack underperforms).
+*Maps to*: REQ-ETS-CLEANUP-010, REQ-ETS-SCAFFOLD-006.
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-SCRIPT-HERMETIC-001 (NORMAL — Sprint 4)
+**GIVEN** the bash sabotage script at the Sprint 4 close HEAD with two bug fixes applied (stub bind 0.0.0.0 + docker --add-host=host.docker.internal:host-gateway)
+**AND** the host is Linux without Docker Desktop
+**WHEN** `bash scripts/sabotage-test.sh` runs end-to-end
+**THEN** `netstat -tlnp | grep <stub-port>` shows `0.0.0.0:<port>` (NOT `127.0.0.1:<port>` or `localhost:<port>`)
+**AND** the smoke container reaches the stub via `host.docker.internal:<port>` (no resolution failure)
+**AND** the script exits 0 with parseable TestNG XML archive at `ops/test-results/sprint-ets-04-04-sabotage-script-hermetic-<date>.xml`
+**AND** Sprint 3 one-level cascade-skip behavior preserved (no regression).
+*Maps to*: REQ-ETS-CLEANUP-012, ADR-010 (extended).
+
+#### SCENARIO-ETS-PART1-003-SUBSYSTEMS-RESOURCES-001 (CRITICAL — Sprint 4)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**AND** Core suite has PASSED + SystemFeatures suite has PASSED (no two-level cascade-skip triggered)
+**WHEN** the Subsystems suite executes `subsystemsResourcesEndpointReturnsCollection` @Test
+**THEN** EITHER `GET /systems/{id}/subsystems` returns 200 + JSON with a non-empty `items` array
+**OR** SKIP-with-reason if `/systems/{id}/subsystems` returns 404 (IUT does not implement Subsystems)
+**AND** the @Test description references the canonical OGC `.adoc` URI for `/req/subsystem/resources-endpoint`.
+*Maps to*: REQ-ETS-PART1-003.
+
+#### SCENARIO-ETS-PART1-003-SUBSYSTEMS-CANONICAL-001 (NORMAL — Sprint 4)
+**GIVEN** at least one subsystem id discovered from `/systems/{id}/subsystems`
+**WHEN** the Subsystems suite executes `subsystemCanonicalEndpointReturnsBaseShape` @Test
+**THEN** `GET /subsystems/{id}` returns 200 + JSON with `id` (string), `type` (string), `links` (array per REQ-ETS-CORE-004 base shape)
+**AND** the @Test description references the canonical OGC `.adoc` URI for `/req/subsystem/canonical-endpoint`.
+*Maps to*: REQ-ETS-PART1-003.
+
+#### SCENARIO-ETS-PART1-003-SUBSYSTEMS-PARENT-LINK-001 (NORMAL — Sprint 4)
+**GIVEN** at least one subsystem item from `/subsystems/{id}` or `/systems/{id}/subsystems`
+**WHEN** the Subsystems suite executes `subsystemHasParentSystemLink` @Test
+**THEN** the subsystem item's `links` array contains an entry with `rel="system"` (or equivalent per OGC `.adoc`) referencing the parent system URI
+**AND** the @Test description references the canonical OGC `.adoc` URI for `/req/subsystem/parent-system-link`.
+*Maps to*: REQ-ETS-PART1-003.
+
+#### SCENARIO-ETS-PART1-003-SUBSYSTEMS-CANONICAL-URL-001 (NORMAL — Sprint 4)
+**GIVEN** at least one subsystem item from `/subsystems/{id}` or `/systems/{id}/subsystems`
+**WHEN** the Subsystems suite executes `subsystemHasCanonicalLink` @Test
+**THEN** the subsystem item's `links` array contains an entry with `rel="canonical"` per `/req/subsystem/canonical-url`
+**AND** absence of `rel="self"` is NOT FAIL (preserves v1.0 GH#3 fix policy from Core landing page).
+*Maps to*: REQ-ETS-PART1-003.
+
+#### SCENARIO-ETS-PART1-003-SUBSYSTEMS-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 4)
+**GIVEN** the Subsystems conformance class is wired with `dependsOnGroups="systemfeatures"` per Sprint 4 close
+**AND** SystemFeatures' tests are sabotaged to FAIL (e.g. extended bash sabotage script targeting SystemFeatures, or VerifyTestNGSuiteDependency.java extension exercising the two-level chain)
+**WHEN** the suite runs end-to-end (smoke OR unit-test)
+**THEN** SystemFeatures @Tests report `status="FAIL"`
+**AND** ALL Subsystems @Tests report `status="SKIP"` (NOT FAIL, NOT ERROR) — TWO-LEVEL cascade verified
+**AND** the SKIP reason references the unsatisfied `systemfeatures` group dependency.
+*Maps to*: REQ-ETS-PART1-003. Closes architect-handoff `TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK` risk; first multi-level cascade verification in the project.
 
 #### SCENARIO-ETS-WEBAPP-FREEZE-README-001 (NORMAL)
 **GIVEN** the `csapi_compliance` repo at HEAD `ab53658` plus the README reposition commit

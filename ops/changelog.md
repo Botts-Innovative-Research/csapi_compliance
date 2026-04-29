@@ -2,6 +2,34 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T15:29Z — Sprint ets-04 PLANNED (Pat write-handoff-FIRST mitigation worked — no timeout): 5 stories `subsystems-plus-sprint-3-carryover`; next_agent architect with 3 deferred decisions; confidence 0.87
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per BMAD pipeline + Sprint 3 close, Pat authors Sprint 4 contract.
+- **Sub-agent**: Pat (general-purpose, fresh context, opus). 191,971 tokens / **16m wall-clock** / 37 tool uses; agentId `a6c1e98006d5c5616`. **Within tight 35min/200K budget**. **Pat handoff timeout from Sprint 3 dodged this time** via write-handoff-FIRST stub at Task 0 + incremental updates throughout run.
+- **5 prior timeouts → 7 consecutive successes** (Alex + Dana ×3 + Quinn + Raze + Pat). Mitigation pattern reliable across all 5 BMAD roles.
+- **Sprint 4 contract** `subsystems-plus-sprint-3-carryover` (54KB; type cleanup-tail-plus-feature-expansion):
+  - **5 stories** (P0/P1/P2 = 2/2/1):
+    - **S-ETS-04-01** (P0) — CI workflow ESCALATION (4-sprint defer threshold; binary close: Path A user `gh auth refresh -s workflow` OR Path B formal-drop; **no more 5-sprint-defers**)
+    - **S-ETS-04-02** (P1) — Image-size v2 chown-layer attack (target <600MB via ~80MB savings) + ADR-009 v2 amendment with empirical falsification of illustrative table
+    - **S-ETS-04-03** (P1) — Deeper E2E credential-leak smoke at IUT-auth layer
+    - **S-ETS-04-04** (P2) — Sabotage-script 2 mechanical bug fixes (~30 min: stub bind 0.0.0.0; smoke-test.sh --add-host)
+    - **S-ETS-04-05** (P0 NEW FEATURE) — **Subsystems conformance class** (REQ-ETS-PART1-003); FIRST class to exercise TWO-LEVEL group dependency chain (Subsystems→SystemFeatures→Core)
+  - **New success_criteria**: `ci_workflow_live_or_formally_dropped`, `image_size_under_600mb`, `credential_leak_e2e_test_green`, `sabotage_script_hermetic`, `subsystems_conformance_class_passes`, `two_level_dependency_skip_verified`
+  - **Highest risks**: TWO-LEVEL-DEPENDENCY-CASCADE-MAY-NOT-WORK (high — TestNG transitive cascade undocumented; mitigation = Generator MUST verify before claiming Subsystems complete; Architect cycle to BeforeSuite SkipException if FAILs instead of SKIPs); CHOWN-LAYER-ATTACK-MAY-NOT-MATERIALIZE-EXPECTED-SAVINGS (medium); USER-ACTION-CI-WORKFLOW-5TH-SPRINT-DEFER (medium — structural escalation); GEOROBOTIX-SUBSYSTEMS-SHAPE-MISMATCH (medium)
+- **Conformance class pick: Subsystems only** (NOT Subsystems+Procedures pair, NOT Common-expansion). Pat rationale: (i) Sprint 4 has 5 carryover items — adding 2nd new class re-introduces gate-fatigue risk Sprint 3 narrowly avoided; (ii) Subsystems is FIRST class to exercise TWO-LEVEL group dependency — single-class focus lets gates validate multi-level strategy without compounding risk; (iii) Common minimal-then-expand is by-design per Quinn cumulative CONCERN-2; (iv) Procedures/Sampling/Properties/Deployments are siblings (also depend on SystemFeatures) — once Subsystems proves the two-level pattern, Sprint 5+ can BATCH 2-3 per sprint. **Subsystems is the pivot that unlocks Sprint 5+ batching.**
+- **Capability spec changes**: REQ-ETS-PART1-003 Subsystems expanded PLACEHOLDER → SPECIFIED with full SHALL block + 5 new SCENARIOs (RESOURCES, CANONICAL, PARENT-LINK, CANONICAL-URL, DEPENDENCY-SKIP). New REQ-ETS-CLEANUP-009..012 for Sprint 4 cleanup. 4 new SCENARIO-ETS-CLEANUP-* (CI-WORKFLOW-ESCALATION, CREDENTIAL-LEAK-E2E, IMAGE-SIZE-V2, ADR-009-V2, SABOTAGE-SCRIPT-HERMETIC). REQ-ETS-CLEANUP-008 status updated to PARTIAL with Sprint 3 evidence. REQ-ETS-PART1-004..013 placeholders preserved.
+- **Traceability + epics updated**: new rows for Sprint 4; per-story-into-existing-epic decomposition (Sprint 2/3 pattern); S-ETS-05-* placeholder repositioning for Sprint 5+ batching of remaining 10 Part 1 classes (Subsystems-siblings).
+- **Planner-handoff** (`status: complete`, `next_agent: architect`, confidence **0.87**). **3 architectural decisions deferred to Alex**:
+  1. ADR-009 v2 amendment (in-place, Pat hypothesis) vs new ADR-011 superseding — Pat recommends (a) per Sprint 2 NO-ADR-for-CredentialMaskingFilter precedent
+  2. Two-level dependency-skip cascade strategy: (a) extend testng.xml single-block + TestNG transitive cascade (Pat hypothesis); (b) BeforeSuite SkipException pattern per design.md "Sprint 3+ migration path"; (c) BOTH (defense-in-depth)
+  3. Deeper E2E credential-leak smoke approach: (a) stub IUT in /tmp/ (Pat recommends; composable with S-04-04 sabotage-script fixes; hermetic); (b) authenticated IUT pivot; (c) extended unit-layer fallback
+- **Plus 2 surfaced suggestions**: (a) optional 5-min Architect scratch rebuild verifying chown-layer attack materializes ~80MB savings BEFORE Generator commits; (b) Subsystems coverage scope = Sprint-1-style minimal 4 @Tests (Pat recommends for risk control on third pattern extension AND first two-level dependency chain).
+- **Estimated total Sprint 4 effort**: Generator 8-12h wall-clock + Architect 30-90 min = ~12-15h aggregate sub-agent time (vs Sprint 1's ~6h / Sprint 2's ~12h / Sprint 3's ~50min cumulative). Sprint 4 has fewer stories than Sprint 3 (5 vs 7) but more intricate per-story (two-level cascade + chown-materialization + E2E auth flow). Pat confidence 0.87.
+- **Verification (orchestrator-side, post-Pat, trust-but-verify per CLAUDE.md)**: contract file present (54KB) ✅; 5 story files present at `epics/stories/s-ets-04-{01..05}-*.md` ✅; planner-handoff.yaml updated with `sprint_number: ets-04` + `next_agent: architect` + confidence 0.87 + status: complete ✅; spec.md + traceability.md modified; 2 epic files modified.
+- **Mitigation pattern continues to work**: write-handoff-FIRST + tight budget + explicit forbid-list = 7 consecutive sub-agent successes after 5 prior timeouts. Reliable across all 5 BMAD roles (Architect, Generator, Evaluator, Adversarial, Planner). Apply to next Architect run.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite + metrics turn 75 + Pat's 9 modified/new files (contract + 5 stories + 2 epics + spec.md + traceability.md + planner-handoff.yaml).
+- **Next iteration (autonomous loop)**: spawn **Architect (Alex)** for Pat's 3 deferred decisions + 2 surfaced suggestions. Per write-handoff-FIRST mitigation pattern (proven across Alex 8m26s + 6 other successes). After Alex lands, Generator (Dana) in 1-2 batches per Pat estimate. Then gates. Then Sprint 4 closes.
+
 ## 2026-04-29T15:05Z — 🎉 Sprint ets-03 SPRINT-COMPLETE: cumulative Quinn APPROVE 0.95 (2nd-best evaluator ever) + Raze APPROVE_WITH_CONCERNS 0.93 (best Raze in this project); zero gaps; bash sabotage live exec evidence verified; PARTIAL/DEFERRED stories carry honest rationale
 
 - **Trigger**: Autonomous-loop dynamic continuation. Final Sprint 3 gate close per sprint contract `gate_4_required: true, force_run: true`.

@@ -19,10 +19,14 @@ Wire the ETS into TeamEngine 5.6.x (currently 5.6.1) via the TestNG SPI, ship a 
 | S-ETS-02-05 | (Sprint 2, CLOSED) Multi-stage Dockerfile + non-root USER + tighter `/rest/suites/<code>` parse + CI workflow `git mv` | Done (Sprint 2 PARTIAL — image size + CI workflow deferred) | REQ-ETS-TEAMENGINE-003, REQ-ETS-TEAMENGINE-005, REQ-ETS-CLEANUP-004 |
 | S-ETS-03-02 | (Sprint 3) CredentialMaskingFilter integration test + REST-Assured RequestLoggingFilter wrap | Active (Sprint 3) | REQ-ETS-CLEANUP-006, REQ-ETS-CLEANUP-003 (modified) |
 | S-ETS-03-03 | (Sprint 3) CI workflow `git mv` to `.github/workflows/build.yml` + workflow_dispatch verification | Active (Sprint 3 — USER ACTION required) | REQ-ETS-CLEANUP-007 |
-| S-ETS-03-04 | (Sprint 3) Docker image size optimization (Sprint 3 stretch <550MB) | Active (Sprint 3) | REQ-ETS-CLEANUP-008, REQ-ETS-CLEANUP-004 (modified) |
-| S-ETS-04-12 | (placeholder) docker-compose stack with healthchecks (extended beyond Sprint 1 baseline) | Backlog | REQ-ETS-TEAMENGINE-004 |
-| S-ETS-04-13 | (placeholder) CTL wrapper supports auth-type parameters end-to-end | Backlog | REQ-ETS-TEAMENGINE-002 |
-| S-ETS-04-14 | (placeholder) TeamEngine integration regression suite (CI) | Backlog | NFR-ETS-04 |
+| S-ETS-03-04 | (Sprint 3, CLOSED PARTIAL) Docker image size optimization (Sprint 3 stretch <550MB; closed at 660MB; ADR-009 illustrative table empirically falsified; chown-layer attack identified for Sprint 4) | Done PARTIAL (Sprint 3, Quinn 0.95 / Raze 0.93) | REQ-ETS-CLEANUP-008, REQ-ETS-CLEANUP-004 (modified) |
+| S-ETS-04-01 | (Sprint 4) CI workflow `git mv` ESCALATION (5th-sprint-defer-risk; binary close — Path A user-action OR Path B formal drop) | Active (Sprint 4 — USER ACTION required) | REQ-ETS-CLEANUP-007 (modified), REQ-ETS-CLEANUP-009 |
+| S-ETS-04-02 | (Sprint 4) Image-size v2: chown-layer attack (target <600MB) + ADR-009 v2 amendment | Active (Sprint 4) | REQ-ETS-CLEANUP-008 (modified), REQ-ETS-CLEANUP-010 |
+| S-ETS-04-03 | (Sprint 4) Deeper E2E credential-leak smoke (S-ETS-03-02 PARTIAL → PASS at IUT-auth layer) | Active (Sprint 4) | REQ-ETS-CLEANUP-006 (modified), REQ-ETS-CLEANUP-011, REQ-ETS-CLEANUP-003 (modified) |
+| S-ETS-04-04 | (Sprint 4) Sabotage-script bug fixes (stub bind 0.0.0.0 + docker --add-host=host.docker.internal) for hermetic CITE-SC-grade execution | Active (Sprint 4) | REQ-ETS-CLEANUP-005 (modified), REQ-ETS-CLEANUP-012 |
+| S-ETS-05-12 | (placeholder) docker-compose stack with healthchecks (extended beyond Sprint 1 baseline) | Backlog | REQ-ETS-TEAMENGINE-004 |
+| S-ETS-05-13 | (placeholder) CTL wrapper supports auth-type parameters end-to-end | Backlog | REQ-ETS-TEAMENGINE-002 |
+| S-ETS-05-14 | (placeholder) TeamEngine integration regression suite (CI) | Backlog | NFR-ETS-04 |
 
 ## Acceptance Criteria
 - [ ] ETS jar registers with TeamEngine 5.6.x (currently 5.6.1) via SPI without errors
