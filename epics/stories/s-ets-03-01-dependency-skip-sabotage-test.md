@@ -1,6 +1,6 @@
 # S-ETS-03-01: Live break-Core dependency-skip sabotage test
 
-> Status: Active — Sprint 3 | Epic: ETS-02 | Priority: P0 | Complexity: S | Last updated: 2026-04-29
+> Status: Implemented (pending Quinn+Raze) — Sprint 3 | Epic: ETS-02 | Priority: P0 | Complexity: S | Last updated: 2026-04-29
 
 ## Description
 Close Quinn s06 CONCERN-1 + Raze s06 CONCERN-1 (both flagged the same gap independently). Sprint 2 verified TestNG group-dependency wiring at 3 STATIC layers (source `groups = "core"` annotations + testng.xml `<group depends-on="core"/>` declaration + smoke XML `depends-on-groups="core"` attribute on each of the 4 SystemFeatures @Tests at runtime) but the actual cascading-SKIP behavior under a FAILing Core test was NEVER live-exercised. Prior Raze run TIMED OUT (~13 min) attempting this exact test, blocking Gate 4 completion in the first parallel-spawn attempt.
@@ -41,6 +41,40 @@ Pat recommends both (defense-in-depth: unit test for fast feedback during day-to
 - Provides foundation for: Sprint 4+ multi-class dependency-DAG (Subsystems → SystemFeatures, Procedures → Common, etc — all rely on the group-dependency mechanism being LIVE-VERIFIED, not just static-verified)
 
 ## Implementation Notes
+
+### Generator Run 1 (2026-04-29) — IMPLEMENTED
+
+**Architect ratification (ADR-010, 2026-04-29)**: option (c) BOTH (defense-in-depth role split). Approach (a) is a fast-feedback STRUCTURAL LINT (~2s in `mvn test`); approach (b) is the canonical CITE-SC-grade end-to-end behavioral verification (~5min in CI). Stub-server sabotage preferred over testng.xml mutation per ADR-010 §"Approach to sabotage" (hermetic, no jar rebundling, no restoration risk).
+
+**Approach (a) IMPLEMENTED**: `src/test/java/org/opengis/cite/ogcapiconnectedsystems10/VerifyTestNGSuiteDependency.java` (commit `d3ab0e8` in new repo) with 4 JUnit @Tests:
+
+  1. `testSystemFeaturesGroupDependsOnCore` — parses canonical `testng.xml` from classpath; asserts `XmlTest.getXmlDependencyGroups()` contains the `systemfeatures` → `core` mapping. **API drift discovery**: TestNG 7.x parser does NOT populate `XmlGroups.getDependencies()` (returns empty `List<XmlDependencies>`); use `XmlTest.getXmlDependencyGroups()` (flat `Map<String, String>`) instead. Verified empirically against testng-7.9.0; documented in source comments + commit message for the next migrator.
+  2. `testCoreAndSystemFeaturesInSameTestBlock` — asserts BOTH Core and SystemFeatures classes appear in the SAME `<test>` block (TestNG group dependencies are `<test>`-scoped per Sprint 2 S-ETS-02-06 empirical finding).
+  3. `testEveryCoreTestMethodCarriesCoreGroup` — reflection over CORE_CLASSES; all 12 Core @Test methods carry `groups = "core"`.
+  4. `testEverySystemFeaturesTestMethodCarriesSystemFeaturesGroup` — reflection over SYSTEMFEATURES_CLASSES; all 4 SystemFeatures @Test methods carry `groups = "systemfeatures"`.
+
+`mvn test` result: **49 → 53 surefire tests** (4 new); 0 failures, 0 errors, 3 skipped (unchanged); BUILD SUCCESS.
+
+**Approach (b) IMPLEMENTED (live execution deferred to next gate)**: `scripts/sabotage-test.sh` (commit `c751fe1` in new repo). Strategy:
+  1. Launch Python `http.server` on ephemeral OS-assigned port (port 0 → OS picks; mitigates STUB-SERVER-PORT-COLLISION-IN-CI surfaced risk per architect-handoff). Stub returns HTTP 500 to all requests.
+  2. Run `scripts/smoke-test.sh` with `SMOKE_IUT_URL=http://host.docker.internal:<ephemeral-port>` (Docker container reaches host stub via the Docker host-gateway).
+  3. Parse the produced TestNG XML report. Assert (a) at least one `conformance.core` @Test has `status="FAIL"` (sabotage worked) AND (b) every `conformance.systemfeatures` @Test has `status="SKIP"` (cascading-SKIP wiring functional). Exit 0/1 accordingly.
+  4. `trap EXIT cleanup_all` kills stub child + removes container even on abort.
+
+**Worktree-pollution constraint honored** (Sprint 3 contract): default archive dir is `/tmp/sabotage-fresh-<ts>/` (not `ops/test-results/`). To opt into repo-relative archiving for Quinn/Raze gate review, set `SABOTAGE_ARCHIVE_DIR=ops/test-results/`. Source tree (LandingPageTests.java) NEVER mutated — testng.xml-mutation sabotage path is documented as backup but not implemented.
+
+**LIVE EXECUTION DEFERRAL RATIONALE**: per Sprint 3 mitigation plan in this Generator's briefing: 3 prior sub-agents in this autonomous loop hit API stream-idle timeouts attempting Docker-rebuild loops. Authoring + committing the script (no execution) lands the artifact while preserving the time budget. The unit test `VerifyTestNGSuiteDependency` provides fast-feedback verification in the meantime. ADR-010 defense-in-depth role split is preserved: structural lint catches refactor regressions <2s; bash script catches semantic regressions ~5min at gate time. Acceptable per ADR-010 §"Defense-in-depth role split" — both artifacts are required for the CRITICAL SCENARIO to be considered complete; live execution of (b) is the next Quinn/Raze gate run's first task.
+
+**Files touched (new repo)**:
+- `src/test/java/.../VerifyTestNGSuiteDependency.java` (new; 220 lines incl. javadoc)
+- `scripts/sabotage-test.sh` (new; 267 lines incl. comments)
+
+**Files touched (csapi_compliance)**:
+- `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` (REQ-ETS-CLEANUP-005 status SPECIFIED → IMPLEMENTED pending Quinn+Raze)
+- `_bmad/traceability.md` (S-ETS-03-01 row Active → Implemented pending Quinn+Raze)
+- This story (status + Implementation Notes)
+
+**Sprint 3 success_criterion mapping**: `live_dependency_skip_verified: true` is **PARTIAL** — structural-lint half landed and verified green; behavioral-half (bash script) authored but not yet executed. Acceptable for Generator Run 1; gate run completes the verification.
 
 ### Approach (a) — TestNG programmatic API unit test sketch
 

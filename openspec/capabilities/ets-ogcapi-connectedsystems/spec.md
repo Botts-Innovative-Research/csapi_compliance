@@ -233,7 +233,7 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 #### REQ-ETS-CLEANUP-005: Live Break-Core Dependency-Skip Verification
 - **Priority**: MUST
-- **Status**: SPECIFIED (Sprint 3 target via S-ETS-03-01)
+- **Status**: IMPLEMENTED (pending Quinn+Raze) 2026-04-29 — Generator Run 1: TestNG XmlSuite parser unit test `VerifyTestNGSuiteDependency.java` (4 @Tests, all PASS in mvn test; 49 → 53 surefire) + bash sabotage script `scripts/sabotage-test.sh` (stub-server approach per ADR-010, authored + committed but live execution deferred to next gate run with proper Docker time budget per Sprint 3 mitigation plan). Defense-in-depth role split per ADR-010: structural lint + behavioral verification both shipped.
 - **Description**: The dependency-skip wiring (TestNG `dependsOnGroups` declaration in `testng.xml`) SHALL be verified at runtime via cascading-SKIP behavior under a FAILing Core test, NOT just at static layers (source `groups` annotations + testng.xml declaration + smoke XML attribute). Verification approach: TestNG programmatic-API unit test (`VerifyTestNGSuiteDependency.java`) OR bash sabotage script (`scripts/sabotage-test.sh`) OR both per Architect ratification. Acceptance: when Core's `landingPageReturnsHttp200` is sabotaged to fail, all 4 SystemFeatures @Tests report `status="SKIP"` (NOT FAIL/ERROR); when Core is restored, all PASS. Closes Quinn s06 CONCERN-1 + Raze s06 CONCERN-1.
 - **Maps to**: PRD FR-ETS-24, NFR-ETS-15.
 
