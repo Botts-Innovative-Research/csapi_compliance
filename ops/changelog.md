@@ -2,6 +2,36 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-29T14:50Z — Sprint ets-03 Run 3 (Generator Dana): S-03-07 Common + S-03-05 SystemFeatures expansion; 18m wall-clock; smoke 22/22 PASS (12 Core + 6 SystemFeatures + 4 Common); Sprint 3 functionally complete pending Quinn+Raze final gates
+
+- **Trigger**: Autonomous-loop dynamic continuation. Per architect §15.5 batching + Run 2 close, Dana Run 3 = -07 + -05 (mvn-only batch, no Docker work; Common new feature + SystemFeatures expansion).
+- **Sub-agent**: Dana (general-purpose, fresh context, opus). 211,846 tokens / **18m wall-clock** / 99 tool uses; agentId `addfc97aea69600ce`. Within budget (40min/150K target — 212K is +41% over 150K target due to substantive new-class authoring + GeoRobotix shape verification + 6 OGC `.adoc` URL HTTP-200 verifications + nested-properties defense-in-depth fix). Acceptable. **Mitigation pattern continues**: 5 prior timeouts → **4 consecutive successes** (Alex 8m26s/99K, Dana Run 1 11m30s/160K, Dana Run 2 13m/147K, Dana Run 3 18m/212K).
+- **Deliverables**:
+  - **New repo (3 commits since `42ca050`, HEAD `c56df10`)**:
+    - `f384509` — S-ETS-03-07 Common conformance class (CommonTests + testng.xml wiring)
+    - `bfa0e6b` — S-ETS-03-05 SystemFeatures expansion (`/req/system/collections` + `/req/system/location-time`)
+    - `c56df10` — S-ETS-03-05+07 live evidence (22/22 PASS GeoRobotix; **nested-properties fix** for GeoJSON Feature shape — `validTime` lives under `properties` not top-level; defense-in-depth helper accepts both shapes)
+  - **csapi_compliance (1 commit since `3281487`, HEAD `f3fc7b7`)**:
+    - `f3fc7b7` — Sprint 3 Run 3: S-03-{05,07} IMPLEMENTED + Common + SystemFeatures expansion; 22/22 GeoRobotix PASS
+- **S-ETS-03-07 Common IMPLEMENTED (pending Quinn+Raze)**: 4 @Test methods PASS live against GeoRobotix per OGC canonical `.adoc` URI form (4 OGC URLs HTTP-200-verified): `commonConformsToDeclaresOgcApiCommonCore`, `commonLinksHaveTypeAttribute`, `commonApiDefinitionLinkResolves`, `commonHttpAcceptHeaderHandling`. testng.xml extended with Common (**INDEPENDENT** — no `dependsOnGroups`; ran in parallel). New `conformance.common.CommonTests.java` (366 LOC formatted).
+- **S-ETS-03-05 SystemFeatures expansion IMPLEMENTED (pending Quinn+Raze)**: 2 new @Tests added to existing `SystemFeaturesTests.java` covering `/req/system/collections` + `/req/system/location-time` (2 v1.0 URIs deferred from Sprint 2). **5/5 v1.0 SystemFeatures URI coverage achieved** (was 3/5 from Sprint 2; closes v1.0 fidelity gap). Nested-properties fix: GeoRobotix items follow GeoJSON Feature shape with `validTime` under `properties` not top-level — defense-in-depth helper now accepts both; initial smoke had 1 SKIP, fix made it PASS.
+- **GeoRobotix surprises Dana surfaced**: (a) `/conformance` declares both `ogcapi-common-1/1.0/conf/core` AND `ogcapi-common-2/0.0/conf/collections` — Common fully testable, no PIVOT needed; (b) `/collections` returns 200 with `id="all_systems"` — `/req/system/collections` works via Common Part 2 path AND via landing-page `rel="systems"` link (defense-in-depth design pays off); (c) `?f=html` returns 400 "Unsupported format" — IUT explicitly handles parameter (acceptable per content-negotiation discipline).
+- **URI canonical-form audit**: 6 new OGC `.adoc` HTTP-200 verified — `/req/json/definition`, `/req/landing-page/conformance-success`, `/req/collections/collections-list-success`, `/req/json/content` (Common); `/req/system/collections`, `/req/system/location-time` (SystemFeatures expansion).
+- **Smoke 22/22 PASS** (12 Core + 6 SystemFeatures + 4 Common) against GeoRobotix; archived TestNG XML at `ops/test-results/sprint-ets-03-{common,full}-georobotix-smoke-2026-04-29.xml`.
+- **Self-adversarial summary Dana ran before reporting**: bare-throw 0 (all 24 grep matches were `ETSAssert.failWithUri` substrings — invariant preserved); URI canonical form 4 distinct OGC URIs in CommonTests all `/req/<class>/<sub>` form; @Test counts Common 4 (Sprint-1-style minimal) + SystemFeatures 6 (4 existing + 2 new); independence verified (Common no dependsOnGroups; ran parallel).
+- **Verification (orchestrator-side, post-Dana, trust-but-verify per CLAUDE.md)**: new repo HEAD `c56df10` ✅; 3 commits since `42ca050` ✅; CommonTests.java present in conformance/common/ ✅; both smoke XMLs show `total="22" passed="22" failed="0" skipped="0"` ✅; csapi_compliance HEAD `f3fc7b7` ✅.
+- **Sprint 3 final state across all 3 Generator Runs (5 of 7 stories Implemented + 1 PARTIAL + 1 DEFERRED)**:
+  - S-ETS-03-01 dependency-skip sabotage: **Implemented** (Run 1 unit test + Run 2 bash live exec PASS)
+  - S-ETS-03-02 credential-leak + RequestLoggingFilter wrap: **Implemented** (Run 2)
+  - S-ETS-03-03 CI workflow `git mv`: **DEFERRED-WITH-RATIONALE** (4th-sprint defer; user action `gh auth refresh -s workflow` still pending)
+  - S-ETS-03-04 image-size dedupe: **PARTIAL** (660MB vs 550MB stretch; ADR-009 illustrative table empirically wrong; Sprint 4 path documented)
+  - S-ETS-03-05 SystemFeatures expansion: **Implemented** (Run 3)
+  - S-ETS-03-06 doc cleanups: **Implemented** (Run 1)
+  - S-ETS-03-07 Common conformance class: **Implemented** (Run 3)
+- **Mitigation pattern validation**: 5 prior timeouts → **4 consecutive sub-agent successes**. Pattern reliable across all 4 runs. Continue applying to Quinn + Raze final Sprint 3 gates.
+- **Commits this turn (csapi_compliance, this commit)**: this changelog entry + status.md header rewrite (Sprint 3 functionally complete + Quinn+Raze final gates next) + metrics turn 73.
+- **Next iteration (autonomous loop)**: spawn **Quinn (Gate 3.5) + Raze (Gate 4) in parallel** for Sprint 3 cumulative gate close per sprint contract `gate_4_required: true, force_run: true`. Briefing must include: NO Docker round-trip per Sprint 3 contract worktree-pollution constraint; verify via `/tmp/` clones OR archived artifacts at `ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-03-*.xml`. Quinn focus: live-verify S-03-01 dependency-skip + S-03-02 credential-leak grep + per-class @Test PASS counts (smoke total 22/22). Raze focus: bare-throw audit, URI canonical form audit, smoke artifact integrity, **sanity-check that PARTIAL/DEFERRED stories carry honest rationale (don't auto-pass them)**. After both gates close, **Sprint 3 closes**.
+
 ## 2026-04-29T14:25Z — Sprint ets-03 Run 2 (Generator Dana): S-03-02 PASS + S-03-04 PARTIAL + S-03-03 DEFERRED + bash sabotage live exec PASS; 13m wall-clock — closes `live_dependency_skip_verified` PARTIAL → PASS; **ADR-009 image-size projection EMPIRICALLY WRONG**
 
 - **Trigger**: Autonomous-loop dynamic continuation. Per architect §15.5 batching + Run 1 deferred bash sabotage live exec.
