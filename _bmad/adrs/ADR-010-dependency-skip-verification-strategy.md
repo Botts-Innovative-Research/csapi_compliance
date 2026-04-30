@@ -321,7 +321,29 @@ The inference made at Sprint 5 v3 amendment is now empirically verified — the 
 
 The 2-sprint latent defect that blocked this verification was a **javac unreachable-statement compile error** in the sabotage marker injection: `throw new AssertionError(...)` as the first statement of `systemsCollectionReturns200()` made the existing `ETSAssert.assertStatus(...)` line unreachable per JLS §14.21. Sprint 5 GAP-2 `.git`-rsync-exclude masked the latent bug (Docker build never ran the .git-aware multi-stage path); Sprint 6 S-ETS-06-02 `.git` include exposed it; Sprint 7 S-ETS-07-01 Wedge 1 closed it via `if (true) throw` constant-boolean idiom (two-line shape for spring-javaformat compliance — sister commits `a17c6ec` initial single-line + `94a4971` formatter-aware fix).
 
-**Sprint 7 Sampling Features + Property Definitions extension**: Sprint 7 S-ETS-07-02 + S-ETS-07-03 add 2 more sibling classes to the SystemFeatures level (5 sibling classes total: Subsystems, Procedures, Deployments, SamplingFeatures, PropertyDefinitions). The cascade DAG is now wider but the v3 amendment's "mechanical pattern extension" guidance applies unchanged. A Sprint 8+ sabotage exec will further verify the 5-class cascade variant; the 3-class verification at Sprint 7 close is sufficient for the v3 amendment's "VERIFIED LIVE" status.
+**Sprint 7 Sampling Features + Property Definitions extension**: Sprint 7 S-ETS-07-02 + S-ETS-07-03 add 2 more sibling classes to the SystemFeatures level (5 sibling classes total: Subsystems, Procedures, Deployments, SamplingFeatures, PropertyDefinitions). The cascade DAG is now wider but the v3 amendment's "mechanical pattern extension" guidance applies unchanged. The 5-class cascade variant was VERIFIED LIVE at the Sprint 7 Raze gate (see v4 amendment below).
+
+## Sprint 8 v4 amendment (2026-04-30) — 5-class cascade VERIFIED LIVE at Sprint 7 Raze gate
+
+The Sprint 7 v3 retroval note above closed the inference gap for the 3-class cascade (Subsystems + Procedures + Deployments) at Generator run time. SamplingFeatures + PropertyDefinitions, added later in Sprint 7 (S-ETS-07-02 + S-ETS-07-03), brought the SystemFeatures-level cascade DAG width to **5 sibling classes**, but the Generator's cascade XML capture predated those two classes — leaving the 5-class variant as a forward-looking inference at Sprint 7 Generator close.
+
+**Sprint 7 Raze gate closes the 5-class inference gap**: Raze's adversarial sabotage exec from `/tmp/raze-fresh-sprint7/` at 2026-04-30T17:32Z produced a fresh cascade XML covering ALL 5 sibling classes (per `.harness/evaluations/sprint-ets-07-adversarial-cumulative.yaml` evidence_artifacts list). The Raze gate-time XML demonstrates Core+Common PASS (independent), SystemFeatures 1 FAIL + 5 SKIP (intra-class cascade from sabotaged first @Test), and all 5 sibling classes (Subsystems + Procedures + Deployments + SamplingFeatures + PropertyDefinitions) cascade-SKIP via the `<group depends-on="systemfeatures"/>` directive. Total cascade-SKIP count at the SystemFeatures level rose from Sprint 7 Generator's 12 (3 classes × 4 @Tests) to Raze gate's 25 (5 classes × ~4-5 @Tests + intra-class SF cascade).
+
+| Cascade evidence | Captured by | When | Sibling classes verified | Sibling SKIP count |
+|---|---|---|---|---|
+| Sprint 7 Generator cascade XML | Generator (Dana) `/tmp/dana-fresh-sprint7/` | 2026-04-30T16:36-37Z | 3 (Subsystems+Procedures+Deployments) | 12 |
+| **Sprint 7 Raze gate cascade XML** | **Raze adversarial gate `/tmp/raze-fresh-sprint7/`** | **2026-04-30T17:32Z** | **5 (+ SamplingFeatures + PropertyDefinitions)** | **~25** |
+
+**The "Sprint 8+ will further verify the 5-class cascade variant" sentence in the v3 retroval note above is therefore RETIRED.** The 5-class variant was verified at the Sprint 7 Raze gate; the v4 amendment records that closure. Sprint 8 carries forward only the dynamic-stdout-enumeration fix (the script's human-readable VERDICT-summary now derives the sibling list from the cascade XML signatures rather than from a hard-coded 3-class list — see S-ETS-08-01 Wedge 1).
+
+**Sprint 8 Subdeployments extension**: Sprint 8 S-ETS-08-02 adds a sixth dependent class — Subdeployments — but at a NEW level of the cascade DAG (depends-on="deployments", NOT "systemfeatures"). The cascade chain is now 3-deep: Subdeployments → Deployments → SystemFeatures → Core. When SystemFeatures is sabotaged, Subdeployments cascade-SKIPs transitively (because Deployments cascade-SKIPs and Subdeployments depends on Deployments). When Deployments is sabotaged (a NEW proof point Sprint 8+ may exercise via `--target=deployments` if desired), only Subdeployments cascade-SKIPs at that level; the other 4 SystemFeatures-level siblings PASS. The dynamic enumeration introduced in S-ETS-08-01 Wedge 1 picks up Subdeployments automatically without further script edits — `subdeployments` will appear in the sibling list whenever a sabotage cascade XML contains `conformance.subdeployments` test-method signatures.
+
+### Notes / references (Sprint 8 v4 amendment)
+
+- Sprint 7 Raze gate cascade XML: see `.harness/evaluations/sprint-ets-07-adversarial-cumulative.yaml` `evaluation_artifacts` list (`/tmp/raze-fresh-sprint7/test-results/sprint-ets-07-cascade-2026-04-30.xml` ~68KB)
+- Sprint 8 S-ETS-08-01 Wedge 1 (sabotage stdout dynamic enumeration): sister `scripts/sabotage-test.sh` python parser block — sibling enumeration now uses `re.search(r"conformance\.([a-z][a-z0-9_]*)", sig)` rather than a hard-coded 3-class tuple
+- Sprint 8 contract: `.harness/contracts/sprint-ets-08.yaml` `success_criteria.spec_req018_cites_5class_evidence` + `success_criteria.sabotage_stdout_enumerates_5_siblings`
+- spec.md REQ-ETS-CLEANUP-018 Sprint 8 amendment block (this sprint) records the same v4 closure
 
 ### Notes / references (Sprint 7 retroval)
 

@@ -1,5 +1,24 @@
 # Test Results
 
+## ETS Test Evidence (Sprint 1 onward)
+
+> **For ETS (Java/TestNG TeamEngine) test evidence, see sister repo:**
+> `ets-ogcapi-connectedsystems10/ops/test-results/` at
+> `https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10/tree/main/ops/test-results/`
+>
+> Sprint 1–8 ETS test results (cascade XMLs, smoke TestNG XMLs, sabotage logs,
+> bash -x traces, surefire output) are archived in the sister repo per
+> ADR-005 (sibling-repo architecture) and the cross-repo separation defined
+> in `_bmad/architecture.md`. This file (`csapi_compliance/ops/test-results.md`)
+> covers v1.0 web-app test results only. Sprint 8 S-ETS-08-01 Wedge 3 grep
+> archive `sprint-ets-08-01-self-audit-grep.txt` lives in `ops/test-results/`
+> in this repo (project-wide self-audit evidence; not ETS test output).
+>
+> Last web-app test update: 2026-04-17T21:30Z (sprint sess-prog-001-assertion-depth).
+> Last ETS test update: see sister repo `ops/test-results/sprint-ets-08-*`.
+
+---
+
 Last updated: 2026-04-17T21:30Z (Sprint `sess-prog-001-assertion-depth` — SCENARIO-SESS-PROG-001 PARTIAL → PASS via hermetic TC-E2E-007 with FakeEventSource + staged SSE events. ALL 6 critical scenarios from sprint-retro-eval are now PASS.)
 
 ## Verdict (Unit + Type-check): PASS — **1003 unit tests** (52 files; +20 since `rubric-6-1-sweep`: +3 api-def-fallback, +6 deployments-collections-heuristic, +9 procedures-properties-sampling-collections-missing-check; +0 since lint/traceability/URI/SESS-PROG sprints — all comment/URI/test-assertion-only)

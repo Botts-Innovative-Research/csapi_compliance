@@ -1,99 +1,192 @@
 agent: generator
 agent_role: dana
 status: complete
-sprint_number: "ets-07"
+sprint_number: "ets-08"
 sprint_run: "1 of 1"
-sprint_run_scope: ["S-ETS-07-01", "S-ETS-07-02", "S-ETS-07-03"]
-supersedes: ".harness/handoffs/generator-handoff.yaml (Sprint 6 Run 1 close 2026-04-30T15:30:00Z)"
-started_at: "2026-04-30T16:30:00Z"
-finished_at: "2026-04-30T17:00:00Z"
+sprint_run_scope: ["S-ETS-08-01", "S-ETS-08-02"]
+supersedes: ".harness/handoffs/generator-handoff.yaml (Sprint 7 close 2026-04-30T17:00:00Z)"
+started_at: "2026-04-30T20:21:38Z"
+finished_at: "2026-04-30T20:42:00Z"
 sprint_complete_after_run: true
 
-# Sprint 7 — Generator Run 1 of 1
-# All 3 stories Implemented in a single run.
-# Sister repo: c17a534 → 38b1f8a (6 commits forward; pushed to origin/main).
-# csapi_compliance: 642b5c7 → (this handoff close commit).
+# Sprint 8 — Generator Run 1 of 1
+# Both stories implemented in a single run. mvn 86 → 89; smoke 42 → 46;
+# 6-class cascade XML live-verified (5 SystemFeatures-level + 1 Subdeployments
+# transitive). Sister repo HEAD 38b1f8a → pending push (this Generator close
+# commits source + evidence); csapi HEAD 36add0a → pending push (this Generator
+# close commits spec/design/ADR/traceability/changelog/status/grep-archive
+# updates).
 
 run_summary:
   status: complete
   stories:
-    - id: "S-ETS-07-01"
-      title: "Sprint 6 carryover wedge bundle (6 wedges; sabotage javac fix + pipefail fix + cred-leak prong-b + REQ-017 status + design.md + ADR-010)"
+    - id: "S-ETS-08-01"
+      title: "Sprint 7 carryover wedge bundle (6 wedges; sabotage stdout dynamic 5-class enumeration + spec/ADR 5-class evidence + project-wide grep + ETS-pointer block + spring-javaformat pin + mvn-test-via-docker.sh wrapper)"
       status: "Implemented"
-      lines_of_code: "~80 LOC: ~25 bash + python (sabotage-test.sh + credential-leak-e2e-test.sh) + ~50 LOC design.md doc-lag close + ~30 LOC ADR-010 v3 retroval + ~10 LOC spec.md REQ-017 promotion"
-      tests_added: 0
+      lines_of_code: |
+        ~140 LOC total across 6 wedges:
+          - Wedge 1: ~50 LOC bash/python (sabotage-test.sh dynamic sibling enumeration via re.search)
+          - Wedge 2: ~25 LOC doc (spec.md REQ-018 amendment + ADR-010 v4 amendment block)
+          - Wedge 3: ~10 LOC doc (design.md line 666 INVALIDATED annotation) + 88-line grep archive
+          - Wedge 4: ~20 LOC doc (ops/test-results.md ETS-pointer block prepend)
+          - Wedge 5: ~20 LOC pom.xml (plugin pin + XML comment)
+          - Wedge 6: ~60 LOC bash (mvn-test-via-docker.sh new wrapper script)
+      tests_added: 3  # 3 new VerifyTestNGSuiteDependency lint tests for Subdeployments group (S-08-02 wires them)
       tests_deleted: 0
-      net_test_delta: 0
+      net_test_delta: 3
       wedges_closed: 6
       wedge_details:
         wedge_1:
-          severity: "HIGH P0"
-          status: "CLOSED + LIVE-VERIFIED"
-          fix: "two-line if(true)\\n\\t\\t\\tthrow new AssertionError(...) injection — defeats javac reachability AND complies with spring-javaformat"
-          attempts: 2
-          first_attempt_failure: "single-line if(true) throw FAILed Dockerfile builder stage 8/8 spring-javaformat:validate"
-          live_evidence: "sister ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml (53KB) + sprint-ets-07-01-wedge1-bash-x-trace.log (211 lines)"
-          cascade_verdict: "Core 8 PASS, Common 4 PASS, SystemFeatures 1 FAIL + 5 SKIP, Subsystems 4 SKIP, Procedures 4 SKIP, Deployments 4 SKIP — VERDICT: PASS — two-level cascade verified end-to-end"
+          severity: "MEDIUM (Raze GAP-1 Sprint 7)"
+          status: "CLOSED + LIVE-VERIFIED via 6-class cascade XML"
+          fix: |
+            Replaced hard-coded 3-class sibling tuple in scripts/sabotage-test.sh python parser block
+            with dynamic re.search(r"conformance\.([a-z][a-z0-9_]*)", sig) extraction. The parser now
+            partitions test-method signatures into INDEPENDENT_CLASSES (core, common), SABOTAGE_TARGET
+            (systemfeatures), and remaining cascade siblings (alphabetical). Stdout VERDICT-summary
+            enumerates the actual sibling list at runtime; new sibling classes (e.g. subdeployments
+            added in S-08-02) appear automatically without further script edits.
+          live_evidence:
+            cascade_xml_pre_subdeployments: "/tmp/dana-sabotage-sprint8/sprint-ets-05-03-sabotage-systemfeatures-cascade-2026-04-30T202722Z.xml (5-class cascade — initial run before S-08-02)"
+            cascade_xml_post_subdeployments: "sister ops/test-results/sprint-ets-08-cascade-2026-04-30.xml (76KB, 6-class cascade — final run includes Subdeployments transitive SKIP)"
+            sabotage_stdout: "sister ops/test-results/sprint-ets-08-01-wedge1-sabotage-stdout-2026-04-30.log"
+            sabotage_bash_x_trace: "sister ops/test-results/sprint-ets-08-01-wedge1-sabotage-bash-x-2026-04-30.log (17KB)"
+          stdout_verdict_summary_post_fix: |
+            VERDICT-summary (siblings observed: 6): core+common PASS | systemfeatures FAIL | deployments, procedures, propertydefinitions, samplingfeatures, subdeployments, subsystems SKIP
+            VERDICT: PASS -- Core+Common PASS, systemfeatures FAILed, deployments, procedures, propertydefinitions, samplingfeatures, subdeployments, subsystems cascade-SKIPped (6-class cascade verified)
         wedge_2:
-          severity: "HIGH P0"
-          status: "CLOSED — REQ-017 promoted IMPLEMENTED"
-          fix: "spec.md REQ-ETS-CLEANUP-017 status flipped from STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED → IMPLEMENTED with cascade XML evidence pointer"
-          honored_principle: "spec_status_honesty_principle — flipped ONLY AFTER live cascade XML produced (not before)"
+          severity: "LOW-MED (META-GAP-S7-1)"
+          status: "CLOSED — spec.md REQ-018 + ADR-010 v4 amendment landed"
+          fix: |
+            (a) spec.md REQ-ETS-CLEANUP-018 narrative appended Sprint 8 amendment block citing Raze
+            Sprint 7 gate-time 5-class XML and retiring the prior 3-class-only phrasing.
+            (b) ADR-010 v3 retroval "Sprint 8+ will further verify the 5-class cascade variant" sentence
+            REWRITTEN to retire the forward-looking inference; new "Sprint 8 v4 amendment" block records
+            that the 5-class variant was VERIFIED LIVE at the Sprint 7 Raze gate (per Raze cumulative
+            gate evaluation evidence_artifacts list). Includes table contrasting Generator run (3 classes,
+            12 SKIPs) vs Raze gate (5 classes, ~25 SKIPs). Notes Sprint 8 Subdeployments extension as the
+            6th cascade sibling at a NEW DAG level (Deployments-transitive, not SystemFeatures-direct).
         wedge_3:
-          severity: "MEDIUM P1"
-          status: "CLOSED + bash -x verified"
-          fix: "credential-leak-e2e-test.sh prong-b retarget — try ${SMOKE_OUTPUT_DIR}/s-ets-01-03-teamengine-container-*.log archive first, fall back to docker logs"
-          live_evidence: "sister ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log — for-loop sets SMOKE_CONTAINER_LOG_HIT to archive path, cp -f copies archive, prong-b grep finds 1 hit on synthetic Bear***WXYZ"
+          severity: "MEDIUM (META-GAP-S7-3)"
+          status: "CLOSED — project-wide grep archived at INITIAL CLOSE COMMIT TIME"
+          fix: |
+            Ran the project-wide grep across design.md + all _bmad/adrs/*.md + spec.md (15 hits total: 8
+            design.md + 0 ADRs + 6 spec.md + 1 stale design.md line 666 item (e) reference).
+            Archived adjudication at csapi ops/test-results/sprint-ets-08-01-self-audit-grep.txt (88
+            lines: search command, raw hits, hit count, per-hit adjudication, summary). Annotated
+            design.md line 666 with explicit INVALIDATED bracket retiring the deleted-test-scenario
+            reference (the 2 legacy try/finally tests + ThrowingFilterContext helper were DELETED in
+            Sprint 6 S-ETS-06-01 per Pat's S-06-03 disposition).
+          honored_principle: "generator_design_md_adr_self_audit_projectwide — SHARPENED Sprint 8 contract criterion"
+          inverts_sprint_7_pattern: |
+            Sprint 7 Generator did narrow section grep; Raze did broader audit at gate; residual stale
+            item caught only in Self-Raze follow-up (commit afc7b04). Sprint 8 INVERTS this: Generator
+            archives full grep at initial close commit; Quinn + Raze READ the archive rather than
+            performing the grep from scratch.
         wedge_4:
-          severity: "MEDIUM P1"
-          status: "CLOSED + LIVE-VERIFIED"
-          fix: "sabotage-test.sh pipefail-unreachable fix — replaced 'ls -t ... | head -1' pipeline with 'for _f in ...; do [[ -e $_f ]] && ...' idiom"
-          live_evidence: "fired correctly during Wedge 1 v1 attempt; disambiguation log line 'smoke exited non-zero with NO TestNG report — Docker build FAILED (not a sabotage-marker hit)' visible in /tmp/dana-sabotage-stdout.log"
+          severity: "LOW (Raze REC-3 / GAP-3 Sprint 7)"
+          status: "CLOSED — ETS-pointer block prepended in csapi ops/test-results.md"
+          fix: |
+            Prepended ETS-pointer header block at the top of csapi_compliance/ops/test-results.md
+            referencing sister repo ets-ogcapi-connectedsystems10/ops/test-results/ + GitHub URL.
+            Includes pointer to the Sprint 8 self-audit-grep.txt archive (which lives in csapi, not
+            sister, since it audits csapi docs). Last-updated timestamps preserved.
         wedge_5:
-          severity: "MEDIUM P1"
-          status: "CLOSED — design.md doc-lag fixed"
-          fix: "added 'Sprint 6 redesign: approach (i) — wire-side correctness via no-spec-mutation (S-ETS-06-01) — CANONICAL' subsection BEFORE old wrap-pattern code; marked old block 'Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)'; explicitly invalidated false try/finally claim"
-          honored_principle: "generator_design_md_adr_self_audit"
-          closes: "meta-Raze META-GAP-M1"
+          severity: "LOW (Quinn W3 Sprint 7)"
+          status: "CLOSED + LIVE-VERIFIED via mvn 89 BUILD SUCCESS"
+          fix: |
+            Added explicit <plugin> entry in sister pom.xml <pluginManagement> for
+            io.spring.javaformat:spring-javaformat-maven-plugin:0.0.43 (matches the version pinned
+            transitively in parent ets-common:17). Adds defense-in-depth against future parent-POM
+            bumps that could silently change formatter rules.
+          iteration_note: |
+            FIRST ATTEMPT included literal `--target=systemfeatures` CLI flag in the XML comment
+            explaining when to bump. XML 1.0 §2.5 forbids `--` (double-dash) inside comment content;
+            Maven POM parser rejected with error "Non-parseable POM /build/pom.xml: in comment after
+            two dashes (--) next character must be > not t (position: ... @268:39)". Fix: rewrote
+            comment to reference the script and target name without the literal CLI flag, with a
+            note explaining the XML 1.0 §2.5 constraint to prevent reintroduction.
+            This matches Pat's planning anticipation that Wedge 5 was "low LOC count, low risk" but
+            surfaced an XML-edge-case at first attempt; spring-javaformat-formatter-eclipse-runtime
+            jar download confirms 0.0.43 is present and used at validate-time.
         wedge_6:
-          severity: "LOW"
-          status: "CLOSED — natural fall-through (cascade XML produced)"
-          fix: "ADR-010 v3 retroval note appended recording live 3-class cascade verdict + class/PASS/FAIL/SKIP table + cascade XML evidence pointer"
-    - id: "S-ETS-07-02"
-      title: "Sampling Features /conf/sf conformance class — 4 @Tests, depends on SystemFeatures"
+          severity: "RECURRING-MEDIUM (META-GAP-S7-2 / Quinn host-PATH gap across ALL 7 ETS sprints)"
+          status: "CLOSED + LIVE-VERIFIED via 89-test BUILD SUCCESS surefire run"
+          fix: |
+            New file scripts/mvn-test-via-docker.sh in sister repo. Wraps `docker run --rm` against
+            maven:3.9-eclipse-temurin-17 (Debian-based) with the repo bind-mounted at /workspace.
+            Streams surefire stdout/stderr; exits with Maven's exit code. Runs as host UID:GID via
+            --user "$(id -u):$(id -g)" so target/ output is host-owned (avoids root-owned files in
+            bind-mount). MAVEN_CONFIG=/tmp/.m2 + MAVEN_OPTS=-Duser.home=/tmp redirect Maven's home
+            cache to a tmpfs-friendly location. Bash -x trace archived.
+          iteration_note: |
+            FIRST ATTEMPT used maven:3.9-eclipse-temurin-17-alpine. Alpine maven image does NOT
+            include git in the base layer. The pom uses buildnumber-maven-plugin which shells out
+            to `git log` for SCM revision metadata; git absence killed the build with "Cannot run
+            program git (in directory /workspace)". Fix: switched to Debian-based
+            maven:3.9-eclipse-temurin-17 (git pre-installed). Inline comment in script documents
+            the constraint to prevent reintroduction.
+          live_evidence:
+            mvn_clean_test_log: "sister ops/test-results/sprint-ets-08-mvn-clean-test-2026-04-30.log (225KB; full surefire output)"
+            mvn_via_docker_bash_x_trace: "sister ops/test-results/sprint-ets-08-01-wedge6-mvn-via-docker-bash-x-2026-04-30.log"
+            surefire_summary: "Tests run: 89, Failures: 0, Errors: 0, Skipped: 3 — BUILD SUCCESS"
+            tests_added_lint: 3  # 3 new VerifyTestNGSuiteDependency lint tests for Subdeployments group
+
+    - id: "S-ETS-08-02"
+      title: "Subdeployments /conf/subdeployment conformance class — 4 @Tests, depends on Deployments (FIRST 3-deep cascade chain in this ETS)"
       status: "Implemented"
-      lines_of_code: "~280 LOC Java + ~6 lines testng.xml + ~70 LOC VerifyTestNGSuiteDependency lint tests"
-      tests_added: 7  # 4 @Tests in SamplingFeaturesTests + 3 lint in VerifyTestNGSuiteDependency
-      smoke_results: "4 / 4 PASS against GeoRobotix at smoke 42/42"
-      sf_unique_observation: "GeoRobotix per-item shape lacks 'links' array; canonical-URL @Test uses path-based dereferenceability rather than rel=canonical link search"
-      ogc_uris_verified: ["/req/sf/resources-endpoint", "/req/sf/canonical-endpoint", "/req/sf/canonical-url"]
-      ogc_repo_folder: "sf/ (NOT 'sampling/')"
+      lines_of_code: |
+        ~470 LOC total:
+          - SubdeploymentsTests.java: ~430 LOC Java (mirrors SubsystemsTests pattern; 4 @Tests +
+            BeforeClass probe-loop + helpers)
+          - testng.xml: ~10 LOC (subdeployments group dependency + class entry + Sprint 8 comment)
+          - VerifyTestNGSuiteDependency.java: ~110 LOC (3 new lint tests + supporting constants/sets)
+          - spec.md / traceability.md / changelog / status: ~50 LOC doc
+      tests_added: 4  # 4 @Tests in SubdeploymentsTests + 3 lint were already counted in S-08-01
+      smoke_results: |
+        4 / 4 SKIP-with-reason against GeoRobotix at smoke 46/46 — IUT-state-honest SKIP policy
+        applies (HTTP 200 + items: [] empty per Generator curl-verification 2026-04-30T20:24Z).
+        Total: 40 PASS + 6 SKIP (4 new Subdeployments + 2 PropertyDefinitions empty-collection
+        precedent); failed=0.
+      ogc_uris_verified:
+        - "/req/subdeployment/collection (HTTP 200 — req_subcollection.adoc)"
+        - "/req/subdeployment (class identifier — requirements_class_subdeployments.adoc HTTP 200; declares inherit:: /req/deployment)"
+        - "/req/deployment/canonical-endpoint (INHERITED via /req/subdeployment inherit::)"
+        - "/req/deployment/canonical-url (INHERITED via /req/subdeployment inherit::)"
+      ogc_repo_folder: "subdeployment/ (singular — Generator HTTP-200-verified at OGC source 2026-04-30T20:24Z; 5 .adoc files)"
+      iut_curl_verification: |
+        2026-04-30T20:24Z (Generator):
+          - GET /conformance: declares /conf/subdeployment (singular)
+          - GET /deployments: 200 + 1 item (id=16sp744ch58g)
+          - GET /deployments/16sp744ch58g/subdeployments: 200 + items: [] (EMPTY collection)
+        IUT-state-honest SKIP applies: @BeforeClass probe-loop SKIPs all 4 @Tests with reason
+        citing the empty subdeployments collection. Future GeoRobotix release that populates
+        subdeployments would automatically promote 4 @Tests SKIP→PASS without code changes.
+      cascade_chain_verified: |
+        FIRST three-deep dependency chain in this ETS: Subdeployments → Deployments →
+        SystemFeatures → Core. testng.xml: <group name="subdeployments" depends-on="deployments"/>
+        (NOT "systemfeatures" — the SystemFeatures dependency is transitive via Deployments).
+        Sister cascade XML at ops/test-results/sprint-ets-08-cascade-2026-04-30.xml (76KB, 6-class
+        cascade) shows Subdeployments cascade-SKIPs when SystemFeatures is sabotaged; this is
+        the proof point that the 3-deep chain wires correctly at TestNG runtime.
       risks_materialized:
-        - id: "SAMPLING-FEATURES-IUT-DECLARATION"
-          status: "NOT MATERIALIZED — GeoRobotix declares /conf/sf and returns 100 items HTTP 200"
-        - id: "SAMPLING-FEATURES-ENDPOINT-PATH"
-          status: "NOT MATERIALIZED — endpoint is /samplingFeatures (camelCase)"
-    - id: "S-ETS-07-03"
-      title: "Property Definitions /conf/property conformance class — 4 @Tests, depends on SystemFeatures"
-      status: "Implemented"
-      lines_of_code: "~270 LOC Java + ~6 lines testng.xml + ~70 LOC VerifyTestNGSuiteDependency lint tests"
-      tests_added: 7  # 4 @Tests + 3 lint
-      smoke_results: "2 PASS + 2 SKIP-with-reason at smoke 42/42 (per-item @Tests SKIP because /properties returns empty items array)"
-      ogc_uris_verified: ["/req/property/resources-endpoint", "/req/property/canonical-endpoint", "/req/property/canonical-url"]
-      risks_materialized:
-        - id: "PROPERTY-DEFINITIONS-RESPONSE-SHAPE"
-          status: "MATERIALIZED IN PARTIAL FORM — GeoRobotix /properties returns HTTP 200 + items: [] (empty). SKIP-with-reason mitigation pattern accommodates gracefully without Sprint 7 escalation. If GeoRobotix populates the collection in the future no code changes required."
+        - id: "SUBDEPLOYMENTS-IUT-STATE-UNKNOWN"
+          status: "MATERIALIZED IN PARTIAL FORM — GeoRobotix returns HTTP 200 + empty items (NOT 404). SKIP-with-reason policy applies cleanly per Sprint 7 PropertyDefinitions precedent. Smoke 46/46 (40 PASS + 6 SKIP); failed=0."
+        - id: "OGC-SUBDEPLOYMENT-DIR-NAME"
+          status: "MATERIALIZED — OGC source uses subdeployment/ (singular); IUT conformance class is /conf/subdeployment (singular); class identifier per requirements_class_subdeployments.adoc is /req/subdeployment (singular). Generator implementation honours singular consistently. spec.md REQ-005 narrative records the priority correction for Pat's planning narrative which referenced the plural form."
 
 mvn_test_results:
-  before_sprint_7: "80 / 0 / 0 / 3"
-  after_sprint_7: "86 / 0 / 0 / 3"
-  net_delta: "+6 (3 SF lint tests + 3 Property lint tests)"
+  before_sprint_8: "86 / 0 / 0 / 3"
+  after_sprint_8: "89 / 0 / 0 / 3"
+  net_delta: "+3 (3 Subdeployments lint tests in VerifyTestNGSuiteDependency)"
   build_status: "BUILD SUCCESS"
+  invocation: "bash scripts/mvn-test-via-docker.sh from /tmp/dana-fresh-sprint8/"
+  artifact: "sister ops/test-results/sprint-ets-08-mvn-clean-test-2026-04-30.log (225KB)"
 
 smoke_results:
-  before_sprint_7: "34 / 34 PASS (Sprint 6 baseline)"
-  after_sprint_7: "42 / 42 (40 PASS + 2 SKIP-with-reason; failed=0)"
-  net_delta: "+8 (4 SF + 4 Property)"
+  before_sprint_8: "42 / 42 (40 PASS + 2 SKIP-with-reason — Sprint 7 baseline)"
+  after_sprint_8: "46 / 46 (40 PASS + 6 SKIP-with-reason; failed=0)"
+  net_delta: "+4 (4 Subdeployments @Tests SKIP-with-reason against IUT empty-collection state)"
   per_class_breakdown:
     core: "12 / 12 PASS"
     systemfeatures: "6 / 6 PASS"
@@ -101,85 +194,119 @@ smoke_results:
     subsystems: "4 / 4 PASS"
     procedures: "4 / 4 PASS"
     deployments: "4 / 4 PASS"
-    samplingfeatures: "4 / 4 PASS  (NEW Sprint 7)"
-    propertydefinitions: "2 PASS + 2 SKIP-with-reason  (NEW Sprint 7)"
+    samplingfeatures: "4 / 4 PASS"
+    propertydefinitions: "2 PASS + 2 SKIP-with-reason"
+    subdeployments: "0 PASS + 4 SKIP-with-reason  (NEW Sprint 8; IUT empty-collection state)"
+  artifact: "sister ops/test-results/sprint-ets-08-smoke-46-tests-2026-04-30.xml (66KB)"
+
+cascade_results:
+  cascade_xml: "sister ops/test-results/sprint-ets-08-cascade-2026-04-30.xml (76KB)"
+  cascade_class_count: 6  # 5 SystemFeatures-level direct + 1 Subdeployments transitive via Deployments
+  cascade_verdict: |
+    Core 12 PASS, Common 4 PASS, SystemFeatures 1 FAIL + 5 SKIP, Subsystems 4 SKIP, Procedures 4 SKIP,
+    Deployments 4 SKIP, SamplingFeatures 4 SKIP, PropertyDefinitions 4 SKIP, Subdeployments 4 SKIP.
+    sabotage-test.sh step 5/6 verdict "PASS — two-level cascade verified end-to-end"; new dynamic
+    enumeration produced "VERDICT-summary (siblings observed: 6): core+common PASS | systemfeatures
+    FAIL | deployments, procedures, propertydefinitions, samplingfeatures, subdeployments, subsystems
+    SKIP" — confirming both the original 5 sibling classes AND the new Subdeployments transitive SKIP.
 
 contract_success_criteria_met:
   all_critical_scenarios_pass: true
-  normal_scenario_pass_rate: "100% (all NORMAL scenarios closed in story acceptance)"
+  normal_scenario_pass_rate: "100% (all 3 NORMAL scenarios closed in story acceptance)"
   spec_updated: true
   no_regression: true
   build_green_jdk17: true
   reproducible_build: true
-  smoke_test_green_against_georobotix: true
+  smoke_test_green_against_georobotix: true  # 46/46; failed=0
   no_part2_work_in_sprint: true
   zero_bare_assertionerror_in_conformance: true
   worktree_not_polluted_at_gate: true
-  sabotage_cascade_xml_produced: true  # Wedge 1 LIVE EVIDENCE
-  credential_leak_e2e_full_pass: true  # Wedge 3 prong-b targeting bash -x verified
-  sabotage_disambiguation_block_fires: true  # Wedge 4 verified live during Wedge 1 v1 failure
-  req017_status_honesty_corrected: true  # Wedge 2
-  design_md_approach_i_documented: true  # Wedge 5
-  sampling_features_tests_implemented: true  # S-07-02
-  sampling_features_testng_wired: true
-  sampling_features_lint_tests: true
-  property_definitions_tests_implemented: true  # S-07-03
-  property_definitions_testng_wired: true
-  property_definitions_lint_tests: true
-  bash_x_trace_evidence_for_bash_changes: true  # Sprint 7 NEW process improvement
-  generator_design_md_adr_self_audit: true  # Sprint 7 NEW process improvement
-  spec_status_honesty_principle: true  # Sprint 7 NEW process improvement
+  # S-ETS-08-01 carryover wedge
+  sabotage_stdout_enumerates_5_siblings: true  # 6 actual (Subdeployments transitive bonus)
+  spec_req018_cites_5class_evidence: true
+  design_md_projectwide_grep_archived: true  # at INITIAL CLOSE COMMIT TIME
+  ops_test_results_ets_pointer_present: true
+  spring_javaformat_version_pinned: true
+  mvn_test_via_docker_script_exists: true
+  # S-ETS-08-02 Subdeployments
+  subdeployments_tests_implemented: true  # 4 @Tests, all SKIP-with-reason per IUT empty state
+  subdeployments_testng_wired: true  # depends-on="deployments" verified
+  subdeployments_lint_tests: true  # 3 lint tests in VerifyTestNGSuiteDependency
+  subdeployments_iut_state_honest: true  # SKIP-with-reason (NOT FAIL or ERROR) per HTTP 200 + empty items
+  # Sprint 8 NEW process-improvement criteria
+  generator_design_md_adr_self_audit_projectwide: true  # archived at INITIAL CLOSE COMMIT
+  bash_x_trace_evidence_for_bash_changes: true  # both new bash artifacts have trace
+  spec_status_honesty_principle: true  # REQ-019 + REQ-005 flipped IMPLEMENTED only AFTER live-exec
+  gate_independence_no_peek: "N/A — Generator does not write evaluation YAMLs (orchestrator-enforced at gate time)"
+  framing_threshold_honesty: "N/A — Generator does not assert subjective milestone framing (orchestrator-facing)"
 
 deviations_from_pat_contract:
   - description: |
-      Wedge 1 first attempt used Pat's recommended single-line `if (true) throw new AssertionError(...);`
-      shape — PASSed javac BUT FAILed spring-javaformat-maven-plugin:validate at Dockerfile builder
-      stage 8/8. Generator iterated to a two-line `if (true)\n\t\t\tthrow new AssertionError(...);`
-      shape that PASSes both checks. Sister commits: a17c6ec (single-line) → 94a4971 (two-line fix).
-      Spec/contract did not anticipate the spring-javaformat dimension — Generator's adaptation
-      preserved the JLS §14.21 reachability defeat AND added formatter compliance.
-    spec_updated_to_match: true  # spec.md REQ-018 Implementation Notes record both attempts
+      Pat's planning narrative referenced /conf/subdeployments (plural) as the conformance class
+      identifier and /req/subdeployment/parent-deployment-link as a possible parent-link sub-
+      requirement. Generator HTTP-200-verified at OGC source: directory is subdeployment/ (singular,
+      5 .adoc files); class identifier in requirements_class_subdeployments.adoc is /req/subdeployment
+      (singular); declares inherit:: /req/deployment (so canonical-endpoint, canonical-url, resources-
+      endpoint are INHERITED from /req/deployment). There is NO /req/subdeployment/parent-deployment-
+      link sub-requirement; subdeployments do not have the equivalent of Subsystems' parent-system-
+      link uniqueness — the inheritance from /req/deployment is the architectural composition
+      mechanism. IUT also declares /conf/subdeployment (singular) per Generator curl 2026-04-30T20:24Z.
+      Generator implementation uses singular consistently and the 4 @Tests use the inherited canonical
+      URIs from /req/deployment for canonical-endpoint + canonical-url; the Subdeployments-specific
+      URI is /req/subdeployment/collection (collection presence) plus the /req/subdeployment class URI
+      (3-deep cascade runtime tracer).
+    spec_updated_to_match: true  # REQ-005 narrative records the priority correction
   - description: |
-      S-07-02 SamplingFeaturesTests `samplingFeatureCanonicalUrlReturns200` adapted from rel=canonical
-      link search (Procedures + Deployments precedent) to path-based dereferenceability — GeoRobotix
-      per-item shape lacks the `links` array. Pat's contract anticipated SF-shape adaptation as a
-      MEDIUM risk but specifically called out IUT-conformance-declaration risk; the actual surfaced
-      adaptation was per-item links absence. Generator adapted via SCENARIO-ETS-PART1-007-SF-CANONICAL-URL-001
-      load-bearing assertion preserved (canonical URL must resolve to HTTP 200) with implementation
-      pivoted to path-based check.
-    spec_updated_to_match: true  # spec.md REQ-007 Implementation Notes record SF-unique observation
+      Wedge 5 first attempt used a literal `--target=systemfeatures` CLI flag inside an XML comment
+      in pom.xml. XML 1.0 §2.5 forbids `--` (double-dash) inside comment content; Maven POM parser
+      rejected with "Non-parseable POM /build/pom.xml: in comment after two dashes (--) next
+      character must be > not t". Fix: rewrote comment to reference flag without literal double-dash.
+      Spec/contract did not anticipate this XML edge case — Generator's adaptation preserved the
+      formatter version pinning rationale without reintroducing the parsing error.
+    spec_updated_to_match: false  # comment-only edit; no spec changes required
   - description: |
-      S-07-03 PropertyDefinitionsTests adapted to GeoRobotix's empty /properties collection via
-      SKIP-with-reason pattern (Pat MEDIUM risk PROPERTY-DEFINITIONS-RESPONSE-SHAPE mitigation
-      already coded into the @BeforeClass + per-item @Test fallback). 2 PASS + 2 SKIP-with-reason
-      vs Pat's anticipated 4 PASS — but the SKIP-with-reason pattern is the documented graceful
-      degradation per the contract risk mitigation. Smoke target ≥42 still met (42/42 PASS+SKIP).
-    spec_updated_to_match: true  # spec.md REQ-008 Implementation Notes record empty-IUT-state adaptation
+      Wedge 6 first attempt used maven:3.9-eclipse-temurin-17-alpine as the wrapper image. Alpine
+      maven image lacks git in the base layer; pom uses buildnumber-maven-plugin which shells out
+      to git for SCM revision metadata; build failed with "Cannot run program git". Fix: switched
+      to maven:3.9-eclipse-temurin-17 (Debian-based; git pre-installed). spec/contract did not
+      anticipate this dependency on Git in the wrapper image — Generator's adaptation documented
+      in script comments to prevent reintroduction.
+    spec_updated_to_match: false  # script comment-only documentation; no spec changes required
+
+evidence_artifacts:
+  csapi_grep_archive: "csapi ops/test-results/sprint-ets-08-01-self-audit-grep.txt (88 lines; 15 hits adjudicated; 1 stale design.md line 666 item (e) annotated INVALIDATED)"
+  sister_cascade_xml: "sister ops/test-results/sprint-ets-08-cascade-2026-04-30.xml (76KB; 6-class cascade post-Subdeployments)"
+  sister_smoke_xml: "sister ops/test-results/sprint-ets-08-smoke-46-tests-2026-04-30.xml (66KB; 40 PASS + 6 SKIP)"
+  sister_mvn_log: "sister ops/test-results/sprint-ets-08-mvn-clean-test-2026-04-30.log (225KB; mvn 89/0/0/3)"
+  sister_sabotage_stdout: "sister ops/test-results/sprint-ets-08-01-wedge1-sabotage-stdout-2026-04-30.log (6.9KB; 6-class VERDICT-summary)"
+  sister_sabotage_bash_x: "sister ops/test-results/sprint-ets-08-01-wedge1-sabotage-bash-x-2026-04-30.log (17KB)"
+  sister_mvn_via_docker_bash_x: "sister ops/test-results/sprint-ets-08-01-wedge6-mvn-via-docker-bash-x-2026-04-30.log (1.3KB)"
 
 next_agent: evaluator
 next_agent_inputs:
   - ".harness/handoffs/generator-handoff.yaml (this file)"
-  - ".harness/contracts/sprint-ets-07.yaml"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (Sprint 7 REQ updates)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (Wedge 5 doc-lag close)"
-  - "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (Wedge 6 retroval)"
-  - "_bmad/traceability.md (Sprint 7 rows IMPLEMENTED status)"
-  - "epics/stories/s-ets-07-{01,02,03}-*.md (Implementation Notes appended)"
-  - "Sister repo HEAD 38b1f8a — 6 commits ahead of c17a534"
-  - "Sister evidence: ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml"
-  - "Sister evidence: ops/test-results/sprint-ets-07-01-wedge1-bash-x-trace.log"
-  - "Sister evidence: ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log"
-  - "Sister evidence: ops/test-results/sprint-ets-07-smoke-42-tests-2026-04-30.xml"
+  - ".harness/contracts/sprint-ets-08.yaml"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (Sprint 8 REQ-019 + REQ-005 IMPLEMENTED + REQ-018 amendment)"
+  - "openspec/capabilities/ets-ogcapi-connectedsystems/design.md (Wedge 3 line 666 INVALIDATED annotation)"
+  - "_bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (Sprint 8 v4 amendment)"
+  - "_bmad/traceability.md (Sprint 8 rows IMPLEMENTED status)"
+  - "epics/stories/s-ets-08-01-sprint7-carryover-wedges.md"
+  - "epics/stories/s-ets-08-02-subdeployments-conformance-class.md"
+  - "Sister repo HEAD 38b1f8a → pending Generator commits (S-08-01 + S-08-02)"
+  - "csapi HEAD 36add0a → pending Generator commits"
+  - "All evidence artifacts listed above"
 
 self_confidence: 0.92
 concerns_flagged_for_quinn:
-  - "credential_leak_e2e_full_pass closure-proof: Quinn should still run scripts/credential-leak-e2e-test.sh end-to-end at gate (with stub-IUT + synthetic credential) to verify the script exits 0 (PASS exit code, not just bash -x targeting verified). Generator did NOT run full E2E because it requires stub-IUT + Docker container choreography (~5min); Generator instead exercised the prong-b path-targeting block via isolation bash -x (synthetic inputs), confirming the targeting fix conclusively. Full E2E exit-code verification is still appropriate at gate — the bash -x trace establishes high confidence that the full E2E will exit 0 since prong-b is the only known-failing prong from Sprint 6."
-  - "PropertyDefinitions 2-SKIP semantic: Quinn should verify the 2 SKIPs in smoke 42/42 carry the expected SKIP-with-reason text (not vacuous SKIPs). Generator confirmed via TestNG XML inspection that SKIPs are per-item @Tests against the empty /properties collection per @BeforeClass cascade design."
+  - "MVN-TEST-VIA-DOCKER first-use: Quinn should run scripts/mvn-test-via-docker.sh from /tmp/quinn-fresh-sprint8/ as Sprint 8 contract evaluation_questions_for_quinn mandates. Generator's run shows 89/0/0/3 BUILD SUCCESS via the Debian image; Quinn's independent run should reproduce. Note: the script downloads ~50-100MB of Maven deps on first run; ~30-60s download + ~30s test execution = ~60-90s total wall clock. Generator surefire log archived at sister ops/test-results/sprint-ets-08-mvn-clean-test-2026-04-30.log for cross-reference but Quinn should produce independent surefire output."
+  - "Subdeployments smoke 4 SKIPs: Quinn should verify the 4 SKIPs in smoke 46/46 carry the expected SKIP-with-reason text (not vacuous SKIPs). Generator confirmed via TestNG XML inspection that all 4 SKIPs carry the @BeforeClass cascade reason 'IUT does not expose subdeployments data for this test run' or the per-method SKIP exceptions cited at line 142+ in the cascade XML."
+  - "Project-wide grep archive: Generator archived the full grep at INITIAL CLOSE COMMIT TIME at csapi ops/test-results/sprint-ets-08-01-self-audit-grep.txt (88 lines) per the SHARPENED Sprint 8 contract criterion. Quinn should READ the archive (not re-run the grep from scratch — that would invert the Sprint 8 contract intent). Expected verification: 15 hits enumerated; design.md line 666 INVALIDATED bracket present; per-hit adjudication for all 14 OK hits."
 
 concerns_flagged_for_raze:
-  - "5-class cascade vs 3-class cascade: Sprint 7 cascade XML evidence verifies the 3-class cascade (Subsystems + Procedures + Deployments) but NOT the 5-class variant (those + SamplingFeatures + PropertyDefinitions). Sprint 7 added 2 more sibling classes after the cascade XML was captured. Raze adversarial sabotage exec at gate could re-run sabotage --target=systemfeatures to produce a 5-class cascade XML covering all current siblings. The 3-class verification is sufficient per ADR-010 v3 'mechanical pattern extension' guidance, but a 5-class re-verification would close the loop completely."
-  - "Wedge 1 spring-javaformat dependency: the two-line shape is mandated by spring-javaformat-maven-plugin 0.0.43. If a future plugin upgrade changes the formatter rules (especially around `if`-without-block style), the python injection text will need to be re-verified. Recommend a Sprint 8+ defense check that pins spring-javaformat version explicitly (currently inherited via parent POM ets-common 22)."
-  - "Wedge 5 design.md edit: Generator audited Sprint 3 hardening section but did NOT exhaustively grep csapi_compliance for OTHER stale references to super.filter() or try/finally — only the meta-Raze-flagged section (lines 531-636). Raze should grep design.md + all ADRs for any remaining stale references to ensure complete META-GAP-M1 closure."
+  - "6-class cascade vs 5-class evidence: Sprint 8 cascade XML at sister ops/test-results/sprint-ets-08-cascade-2026-04-30.xml shows 6-class cascade (5 SystemFeatures-level direct + 1 Subdeployments transitive via Deployments). Raze adversarial sabotage exec from /tmp/raze-fresh-sprint8/ with sabotage --target=systemfeatures should reproduce the same 6-class verdict via the new dynamic-enumeration parser (test the new code path, not the old hard-coded list)."
+  - "3-deep cascade chain wiring: Raze should grep sister testng.xml for `depends-on=\"deployments\"` on the subdeployments group AND `depends-on=\"systemfeatures\"` on the deployments group. Both must be present in the single-block consolidation. This proves the 3-deep chain Subdeployments → Deployments → SystemFeatures → Core is correctly wired at the testng.xml level."
+  - "Wedge 5 + Wedge 6 first-attempt iteration notes are documented honestly in spec.md REQ-019 narrative + this handoff. Raze should verify that the final pom.xml comment does NOT contain `--` (XML 1.0 §2.5 violation) and that the final scripts/mvn-test-via-docker.sh references maven:3.9-eclipse-temurin-17 (NOT the alpine variant) so the buildnumber-maven-plugin git invocation succeeds."
+  - "ADR-010 v4 amendment: Raze should verify that ADR-010 line 324 (was 'Sprint 8+ sabotage exec will further verify the 5-class cascade variant') is REWRITTEN to retire the forward-looking inference; the new Sprint 8 v4 amendment block records the closure with the Generator-vs-Raze table contrasting 3-class (Generator) vs 5-class (Raze gate) cascade evidence + Subdeployments 6-class extension at a NEW DAG level."
 
-sprint_7_ready_for_cumulative_gate_close: true
+sprint_8_ready_for_cumulative_gate_close: true
 gate_close_blockers: []

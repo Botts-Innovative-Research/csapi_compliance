@@ -1,0 +1,88 @@
+# Sprint 8 S-ETS-08-01 Wedge 3 — Generator project-wide self-audit grep
+# REQ-ETS-CLEANUP-019 / SCENARIO-ETS-CLEANUP-DESIGN-MD-PROJECTWIDE-GREP-001
+# Closes META-GAP-S7-3 (MEDIUM): Sprint 7 Generator section-scoped grep, burden shifted to Raze.
+# Run at INITIAL CLOSE COMMIT TIME (not Self-Raze follow-up — contract criterion).
+# Date: 2026-04-30T20:29:15Z
+# Generator: Dana (BMAD Developer)
+
+## Search command
+grep -n "super\.filter\|try/finally pattern guarantees\|ThrowingFilterContext\|mutate.*restore\|restore.*mutate" \
+  openspec/capabilities/ets-ogcapi-connectedsystems/design.md \
+  _bmad/adrs/*.md \
+  openspec/capabilities/ets-ogcapi-connectedsystems/spec.md
+
+## Raw hits (project-wide):
+
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:535:**Sprint 6 update (2026-04-30)**: The Sprint 3 subclass-based wrap pattern documented below was diagnosed as DEFECTIVE by Sprint 5 Raze adversarial review (GAP-1'): `super.filter()` internally calls `ctx.next()` (the actual HTTP send) WHILE the temporary masked-header swap is in effect, so the wire request carries the **masked** credential — not the original. The `try/finally` restoration block runs AFTER `ctx.next()` returns and so cannot affect the request that is already on the wire. The IUT therefore receives the masked credential string and rejects every authenticated request as 401. (This is also why the Sprint 5 GAP-2 sabotage `.git`-exclude masked the latent javac defect: the live cascade could never run.)
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:539:`MaskingRequestLoggingFilter.filter()` SHALL NOT call `super.filter()` and SHALL NOT mutate `requestSpec` headers. Instead:
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:545:5. **`super.filter()` is never invoked.** No header mutation. No `try/finally`. No restoration step (because nothing was mutated).
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:549:**`super.filter()` is no longer called**, so the `try/finally` "restoration" pattern documented further below is **historical** — the false claim *"the try/finally pattern guarantees the IUT receives the real credential header even if super.filter() throws"* (item #4 in the historical list below) is **incorrect**: under the Sprint 3 design, `super.filter()` itself emitted the request to the wire while the masked header was in place, so the try/finally could only restore the spec for any subsequent filters in the chain, not for the network round-trip already issued.
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:569:`org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter` — sibling of `CredentialMaskingFilter` in the same `listener/` subpackage. Sprint 3 baseline: Extends REST-Assured's `io.restassured.filter.log.RequestLoggingFilter`. **Sprint 6 reality**: the class still extends `RequestLoggingFilter` (for the constructor signature and any consumer code that does `instanceof`), but `filter()` no longer calls `super.filter()` — see approach (i) above for the canonical implementation.
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:605:        // duration of the super.filter() call (which writes to the configured stream),
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:618:            return super.filter(requestSpec, responseSpec, ctx);
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:635:4. **[INVALIDATED — Sprint 5 GAP-1' / Sprint 7 Wedge 5]** ~~**Header swap (vs payload mutation) is restorable.** The `try/finally` pattern guarantees the IUT receives the real credential header even if `super.filter()` throws; the masked headers exist only during the formatter's read.~~ **Sprint 5 Raze diagnosis (META-GAP)**: `super.filter()` internally calls `ctx.next()` (the actual HTTP send) while the masked header swap is in effect, so the try/finally restoration runs AFTER the wire request was already issued — the IUT receives the masked credential, not the original. This rationale was used to ratify the wrap pattern but is fundamentally incorrect. See approach (i) at the top of this section for the canonical Sprint 6+ implementation that does not call `super.filter()` and therefore needs no restoration.
+openspec/capabilities/ets-ogcapi-connectedsystems/design.md:666:- Unit tests in `src/test/java/.../listener/VerifyMaskingRequestLoggingFilter.java`: cover (a) Bearer 24-char masked in formatter output, (b) X-API-Key 16-char masked, (c) Set-Cookie response header masked in response logging, (d) IUT-side header restoration verified via `requestSpec.getHeaders().getValue()` after `filter()` returns, (e) try/finally restoration even when `super.filter()` throws (mock RuntimeException).
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:303:- **Status**: IMPLEMENTED (Sprint 6 S-ETS-06-01 — finally closes the 2-sprint-old open criterion. Sprint 5 Run 1 wired `SMOKE_AUTH_CREDENTIAL` end-to-end (REQ-ETS-CLEANUP-013) but Sprint 5 gates surfaced GAP-1' (filter ordering defect — wire carried masked form because the Sprint 3 mutate/restore try/finally pattern restored AFTER `super.filter()` had already called `ctx.next()` for HTTP transport). Sprint 6 S-ETS-06-01 implements approach (i): `MaskingRequestLoggingFilter` no longer mutates `requestSpec`; emits masked log line directly to a shadowed `PrintStream` field; calls `ctx.next(requestSpec, responseSpec)` with the unmutated spec. New `VerifyWireRestoresOriginalCredential` (4 @Tests) using `CapturingFilterContext` proves wire-side correctness via BY-VALUE header snapshot at `ctx.next` time. 2 legacy try/finally tests deleted (verified non-existent code under approach (i)); 6 mask-format / isMasked / superset / null-guard tests reclassified as wiring-only with explicit caveat. Surefire 78 → 80 / 0 fails / 0 errors / 3 skipped. Live three-fold cross-check execution remains deferred to Quinn/Raze Sprint 6 gate per established pattern; structural wire-side proof is mvn-verified. Bundled scripts changes: smoke-test.sh container-log capture timing fix (capture before any die() teardown); credential-leak-e2e-test.sh prong-b grep expanded to include `$STUB_LOGFILE`. Sister repo HEAD `c17a534`.)
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:338:- **Status**: IMPLEMENTED (Sprint 6 S-ETS-06-01 — Generator Run 1 close 2026-04-30; sister repo HEAD `c17a534`; live three-fold cross-check deferred to Quinn closure-proof exec at Sprint 6 gate. Approach (i) implemented per meta-Raze + primary-Raze consensus: (1) `MaskingRequestLoggingFilter` adds shadowed `private final PrintStream stream` field (REST-Assured 5.5.0 parent's `stream` is private final with no accessor — Plan-Raze verified via Maven Central source jar); (2) `filter()` builds masked log string from header snapshot using `CredentialMaskingFilter.maskValue` for sensitive header values, emits to shadowed PrintStream, calls `ctx.next(requestSpec, responseSpec)` directly with unmutated spec — wire carries ORIGINAL credential. `super.filter()` no longer called (parent's filter was 2 ops: log + ctx.next; we replace log with masked emission + retain ctx.next). New unit test `VerifyWireRestoresOriginalCredential` (4 @Tests) uses `CapturingFilterContext` that snapshots header values BY VALUE at `ctx.next` call time — critical: a by-reference capture would read post-restoration state and miss the bug, exactly what the legacy 16 wiring-only tests suffered. Mockito Response mock returned to satisfy non-null contract; Mockito present in pom.xml test scope (lines 152-153). 2 legacy try/finally-semantic tests in `VerifyMaskingRequestLoggingFilter` DELETED per Pat's S-06-03 finer-granularity disposition (verified non-existent code under approach (i)); 6 mask-format / isMasked / superset / null-guard tests RETAINED-AND-RECLASSIFIED with explicit "wiring-only — does NOT prove wire-side credential integrity" caveat in class javadoc. ThrowingFilterContext helper deleted (only the deleted #2 used it). Surefire 78 → 80 / 0 fails / 0 errors / 3 skipped. BUILD SUCCESS. TDD evidence: with the legacy filter, `wireCarriesOriginalAuthorizationCredential` FAILed `expected:<Bear[er ABCDEFGH12345678]WXYZ> but was:<Bear[***]WXYZ>`; under approach (i), all 4 wire-side @Tests PASS. Bundled smoke-test.sh + credential-leak-e2e-test.sh fixes also landed — see REQ-ETS-CLEANUP-011 status.)
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:339:- **Description**: `MaskingRequestLoggingFilter.filter()` SHALL NOT mutate the `requestSpec` headers before `ctx.next()` (the HTTP send). The filter SHALL: (1) snapshot sensitive header values; (2) build and emit a masked log line DIRECTLY to the configured `PrintStream` (bypassing `super.filter()` for log output); (3) call `ctx.next(requestSpec, responseSpec)` with the ORIGINAL unmutated `requestSpec`. A new unit test `VerifyWireRestoresOriginalCredential` using a `CapturingFilterContext` (NOT `StubFilterContext`) SHALL verify that the `requestSpec` passed to `ctx.next()` carries the ORIGINAL credential value. The 16 existing wiring-only unit tests (VerifyAuthCredentialPropagation 8 + VerifyMaskingRequestLoggingFilter 8) SHALL be reclassified in spec.md and Implementation Notes as "wiring-only — does NOT prove wire-side credential integrity". Acceptance: Quinn live-exec three-fold cross-check (a)+(b)+(c) all PASS; Raze adversarial wire-tap live-exec confirms wire carries unmasked credential; mvn test remains green. NOTE: existing 16 unit tests must CONTINUE to pass (no behavioral regression — the reclassification is documentation-only).
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:380:  (3) Project-wide grep across design.md + all ADR docs + spec.md for `super.filter\|try/finally pattern guarantees` with archived grep output as evidence artifact. Adjudicates design.md lines 666-667 (Raze Q12 judgment call). Closes META-GAP-S7-3 (MEDIUM): "Generator design.md self-audit was section-scoped, not project-wide."
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:413:**GIVEN** Generator has run the project-wide grep for `super.filter|try/finally pattern guarantees` across design.md, all ADR docs, and spec.md
+openspec/capabilities/ets-ogcapi-connectedsystems/spec.md:1063:**AND** the false claim "try/finally pattern guarantees the IUT receives the real credential header even if super.filter() throws" is corrected or removed
+
+## Total hit count:
+15
+
+## Per-hit adjudication (Generator):
+
+
+### design.md hits (8) — adjudication
+
+- **design.md:535** [`super.filter()` defective diagnosis]: ADJUDICATED OK — this is the "Sprint 6 update (2026-04-30)" CANONICAL block introducing approach (i). The hit is a FACTUAL RECOUNTING of the Sprint 5 Raze GAP-1' diagnosis as the rationale for approach (i). NOT stale; load-bearing for the canonical narrative.
+
+- **design.md:539** [`MaskingRequestLoggingFilter.filter() SHALL NOT call super.filter()`]: ADJUDICATED OK — CANONICAL PRESCRIPTION. States the Sprint 6+ approach (i) NORMATIVE rule. Mentions `super.filter()` only as the thing the filter MUST NOT call. Not stale.
+
+- **design.md:545** [`super.filter() is never invoked`]: ADJUDICATED OK — CANONICAL CONSEQUENCE statement under approach (i). Reaffirms 539 from the consequence side. Not stale.
+
+- **design.md:549** [historical try/finally claim is incorrect]: ADJUDICATED OK — INVALIDATING ANNOTATION. Explicitly marks the historical try/finally claim as incorrect; this is the CORRECTION text itself. Not stale.
+
+- **design.md:569** [`super.filter()` no longer called]: ADJUDICATED OK — CANONICAL. Repeats approach (i) normative prescription. Not stale.
+
+- **design.md:605** [`super.filter()` call comment]: ADJUDICATED OK — INSIDE the Historical block (line 559 §"Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)"); the super.filter mention is part of the deprecated wrap pattern code preserved verbatim for audit history. The Sprint 7 Wedge 5 INVALIDATED bracket on item #4 (line 635) covers the entire Historical section's normative claims; this is just a comment inside deprecated code, not a normative rule.
+
+- **design.md:618** [`return super.filter(requestSpec, responseSpec, ctx);`]: ADJUDICATED OK — INSIDE the Historical block (same context as 605). Deprecated Sprint 3 wrap-pattern code preserved verbatim under the "Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)" header. Not normative; no action needed.
+
+- **design.md:635** [INVALIDATED Sprint 5/Sprint 7 bracket on item #4]: ADJUDICATED OK — already explicitly marked INVALIDATED in Sprint 7 Wedge 5 close. The bracket and strike-through is the CORRECTION. Not stale.
+
+### design.md:666-667 — Sprint 7 Raze Q12 ADJUDICATION (Sprint 8 Wedge 3)
+
+- **design.md:666** [`(e) try/finally restoration even when super.filter() throws (mock RuntimeException)`]: STALE-ITEM — references a unit test scenario (e) that DOES NOT EXIST in approach (i) code. The two legacy try/finally tests in VerifyMaskingRequestLoggingFilter were DELETED in Sprint 6 S-ETS-06-01 per Pat's S-06-03 disposition (verified non-existent code under approach (i)) and the ThrowingFilterContext helper was deleted (only the deleted #2 used it). Item (e) is a phantom test scenario describing a deleted test against a deleted helper class. **REMEDIATION**: append explicit INVALIDATED annotation to the line + strike-through item (e). Sprint 7 Wedge 5 audit was section-scoped (lines 531-636) and missed this line.
+
+- **design.md:667** [integration test description]: ADJUDICATED OK — INTEGRATION test scope (`scripts/verify-credential-leak.sh`); does not reference super.filter or try/finally. Hit is on line 667 only via line 666's surrounding context if any — but the standalone grep above shows only line 666 hits. Line 667 itself does NOT match the regex. No action needed for 667.
+
+### ADR hits (0) — adjudication
+
+- No ADR files contain any of the search terms. ADR-010 was retroved at Sprint 7 Wedge 6 close and has no super.filter/try-finally language. CLEAR.
+
+### spec.md hits (6) — adjudication
+
+- **spec.md:303** (REQ-013 Status narrative): ADJUDICATED OK — historical fact recounting Sprint 5 GAP-1' (filter ordering defect). Reads "the Sprint 3 mutate/restore try/finally pattern restored AFTER super.filter() had already called ctx.next() for HTTP transport" — this is a FACTUAL RECOUNTING of the bug, not a normative claim. Approach (i) implementation note immediately follows. Not stale.
+
+- **spec.md:338** (REQ-014 Status narrative): ADJUDICATED OK — Sprint 6 S-ETS-06-01 close narrative; "super.filter() no longer called" is the CANONICAL approach (i) statement. Not stale.
+
+- **spec.md:339** (REQ-014 Description): ADJUDICATED OK — NORMATIVE prescription for approach (i): "filter SHALL NOT mutate the requestSpec headers before ctx.next()". Mentions `super.filter()` only in "bypassing super.filter() for log output". Not stale.
+
+- **spec.md:380** (REQ-019 Description Wedge 3 enumeration): ADJUDICATED OK — META-GAP-S7-3 closure narrative; the search regex itself is cited verbatim. This file (the grep archive) IS the evidence artifact this line references. Not stale.
+
+- **spec.md:413** (SCENARIO-DESIGN-MD-PROJECTWIDE-GREP GIVEN clause): ADJUDICATED OK — same as 380 but in scenario form. Not stale.
+
+- **spec.md:1063** (Sprint 7 SCENARIO description for try/finally claim correction): ADJUDICATED OK — the Sprint 7 SCENARIO that produced the Wedge 5 audit. The claim being asserted-as-corrected is the historical false claim; this scenario records its correction. Not stale.
+
+### Summary
+
+- 15 hits total: 8 design.md + 0 ADR + 6 spec.md (note: design.md:666 is the single STALE hit; design.md:667 is non-matching context that appears only because the original adversarial review at Sprint 7 Q12 referenced "lines 666-667" together).
+- 14 of 15 hits are adjudicated OK (canonical/historical-bracketed/factual-recounting/scenario-references).
+- 1 of 15 hits (design.md:666) is STALE — references a deleted test scenario (e). Remediation in this sprint: append explicit INVALIDATED annotation to line 666 retiring item (e).
+- ZERO hits in `_bmad/adrs/*.md` — the ADR corpus is clean.
+
+### Status: PROJECT-WIDE GREP ARCHIVED AT INITIAL CLOSE COMMIT (contract criterion `generator_design_md_adr_self_audit_projectwide` HONORED).
+

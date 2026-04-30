@@ -2,7 +2,44 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
-## 2026-04-30T17:33Z — 🎉 Sprint ets-07 SPRINT-COMPLETE — cumulative gates Quinn 0.91 + Raze 0.88 APPROVE_WITH_CONCERNS; 5-class cascade LIVE-VERIFIED at Raze gate; reproducibility byte-identical 4/4 jars
+## 2026-04-30T20:40Z — Sprint ets-08 SPRINT-IMPLEMENTED — Generator Run 1 of 1 — both stories landed; mvn 86 → 89; smoke 42 → 46; 6-class cascade live-verified (Subdeployments transitive)
+
+**Sprint 8 Generator Run 1 IMPLEMENTED.** S-ETS-08-01 (carryover wedge bundle, 6 wedges) + S-ETS-08-02 (Subdeployments conformance class) both landed. Sprint 7 → Sprint 8 gate-ready.
+
+**Triggered by user instruction**: Generator (Dana) invoked by orchestrator to implement Sprint 8 stories per Pat's contract `.harness/contracts/sprint-ets-08.yaml` and handoff `.harness/handoffs/planner-handoff.yaml`. Both stories landed end-to-end with full live-exec evidence per contract criteria.
+
+**S-ETS-08-01 (P1/S — 6 wedges)**:
+- Wedge 1 (sabotage stdout 5/6-class dynamic enumeration) **LIVE-VERIFIED** — `scripts/sabotage-test.sh` python parser block now uses `re.search(r"conformance\.([a-z][a-z0-9_]*)", sig)` to enumerate sibling buckets dynamically. From `/tmp/dana-fresh-sprint8/` clone: stdout `VERDICT-summary (siblings observed: 6): core+common PASS | systemfeatures FAIL | deployments, procedures, propertydefinitions, samplingfeatures, subdeployments, subsystems SKIP`. Cascade XML 76KB at sister `ops/test-results/sprint-ets-08-cascade-2026-04-30.xml` (post-Subdeployments addition: 6-class cascade including transitive Subdeployments SKIP via Deployments). Bash -x trace archived.
+- Wedge 2 (spec.md REQ-018 + ADR-010 v4 amendment) — narratives now cite Raze gate-time 5-class XML; "Sprint 8+ will further verify" sentence retired in ADR-010 v4 amendment block.
+- Wedge 3 (project-wide grep audit) — grep archive at INITIAL CLOSE COMMIT TIME at csapi `ops/test-results/sprint-ets-08-01-self-audit-grep.txt` (15 hits adjudicated; 1 stale design.md line 666 item (e) annotated INVALIDATED retiring deleted-test-scenario reference). Honors `generator_design_md_adr_self_audit_projectwide` SHARPENED contract criterion.
+- Wedge 4 (ops/test-results.md ETS-pointer block) — header block prepended in csapi pointing to sister repo GitHub URL.
+- Wedge 5 (spring-javaformat 0.0.43 pin) — explicit pluginManagement entry in sister `pom.xml`. **Iteration note**: first attempt included literal `--target=systemfeatures` CLI flag in XML comment; XML 1.0 §2.5 forbids `--` inside comments; Maven POM parser rejected with "Non-parseable POM ... in comment after two dashes". Fix: rewrote comment to reference flag without literal double-dash; same rationale preserved.
+- Wedge 6 (`scripts/mvn-test-via-docker.sh`) — wrapper script. **Iteration note**: first attempt used `maven:3.9-eclipse-temurin-17-alpine`; Alpine image lacks git which broke buildnumber-maven-plugin. Switched to Debian-based `maven:3.9-eclipse-temurin-17`. Closes 7-sprint recurring Quinn host-PATH limitation. Bash -x trace archived.
+
+**S-ETS-08-02 (P0/M — Subdeployments)**:
+- Generator HTTP-200-verified OGC `/req/subdeployment/` directory (singular per OGC source) at sprint time: 5 .adoc files; class identifier is `/req/subdeployment` declaring `inherit:: /req/deployment`.
+- Generator curl-verified GeoRobotix at sprint time: `/conf/subdeployment` (singular) declared in `/conformance`; `/deployments/16sp744ch58g/subdeployments` returns HTTP 200 + empty `items: []` array — IUT-state-honest SKIP applies (Sprint 7 PropertyDefinitions empty-items precedent + Sprint 4 Subsystems no-children precedent).
+- New `SubdeploymentsTests.java` (4 @Tests, mirrors SubsystemsTests/DeploymentsTests pattern). FIRST three-deep dependency chain: `<group name="subdeployments" depends-on="deployments"/>` creates Subdeployments → Deployments → SystemFeatures → Core. testng.xml extended with subdeployments group + SubdeploymentsTests class entry.
+- VerifyTestNGSuiteDependency extended with 3 new lint tests: `testSubdeploymentsGroupDependsOnDeployments` (verifies depends-on="deployments" not "systemfeatures"), `testEverySubdeploymentsTestMethodCarriesSubdeploymentsGroup`, `testSubdeploymentsCoLocatedWithDeployments`.
+- mvn 86 → 89/0/0/3 BUILD SUCCESS via `scripts/mvn-test-via-docker.sh` from /tmp clone. Smoke 42 → 46 against GeoRobotix (40 PASS + 6 SKIP — 4 new Subdeployments + 2 PropertyDefinitions empty; failed=0). 6-class cascade XML verified.
+
+**Risks materialized (from Pat handoff)**:
+- SUBDEPLOYMENTS-IUT-STATE-UNKNOWN (MEDIUM) — MATERIALIZED-IN-PARTIAL-FORM: GeoRobotix returns HTTP 200 + empty items, NOT 404. SKIP-with-reason policy applies cleanly per Sprint 7 PropertyDefinitions precedent.
+- OGC-SUBDEPLOYMENT-DIR-NAME (LOW) — MATERIALIZED: OGC source uses `subdeployment/` (singular); IUT conformance class is `/conf/subdeployment` (singular). Generator implementation honors singular consistently. spec.md REQ-005 narrative records the priority correction.
+- MVN-TEST-VIA-DOCKER-SCRIPT-SCOPE (LOW) — NOT MATERIALIZED at design level but Alpine vs Debian image-choice surfaced; documented in changelog.
+
+**Honored process improvements**:
+- `bash_x_trace_evidence_for_bash_changes`: BOTH new bash artifacts (sabotage python parser update + new mvn-via-docker wrapper) have separate bash -x trace archives at sister `ops/test-results/sprint-ets-08-01-wedge*-*.log`.
+- `generator_design_md_adr_self_audit_projectwide`: project-wide grep archived at INITIAL CLOSE COMMIT TIME (NOT Self-Raze follow-up). Inverts Sprint 7 pattern — Quinn + Raze read the archive rather than running the grep from scratch.
+- `spec_status_honesty_principle`: REQ-019 + REQ-005 both flipped to IMPLEMENTED only AFTER live-exec verification (cascade XML + smoke 46 + mvn 89).
+
+**Status snapshot**: 2 stories landed; mvn 89/0/0/3; smoke 46/0/6; cascade verified 6-class (5 SystemFeatures-level direct + 1 Subdeployments transitive). Sprint 8 ready for Quinn + Raze cumulative gates (parallel spawn per `gate_independence_no_peek` contract criterion).
+
+**Sister repo**: HEAD `38b1f8a` → `<S-08-01 commit>` → `<S-08-02 commit>` (this Generator close pushes both).
+
+---
+
+## 2026-04-30T17:33Z — Sprint ets-07 SPRINT-COMPLETE — cumulative gates Quinn 0.91 + Raze 0.88 APPROVE_WITH_CONCERNS; 5-class cascade LIVE-VERIFIED at Raze gate; reproducibility byte-identical 4/4 jars
 
 **Sprint 7 SPRINT-COMPLETE.** Both cumulative gates closed APPROVE_WITH_CONCERNS — first non-GAPS_FOUND Raze verdict since Sprint 4; Raze 0.88 BACK ABOVE 0.80 line for first time since Sprint 4. Quinn-Raze gap of 0.03 is project-narrowest (gate trend recovery to Sprint 1 baseline 0.91/0.88).
 
