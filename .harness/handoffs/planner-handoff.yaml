@@ -1,91 +1,136 @@
 agent: planner
 status: complete
-timestamp: "2026-04-30T16:07:31Z"
-sprint_number: "ets-07"
-sprint_name: "carryover-wedge-plus-sampling-properties"
-contract_path: ".harness/contracts/sprint-ets-07.yaml"
+timestamp: "2026-04-30T18:35:00Z"
+sprint_number: "ets-08"
+sprint_name: "carryover-wedge-plus-subdeployments"
+contract_path: ".harness/contracts/sprint-ets-08.yaml"
 triggered_by: |
-  Sprint 6 close: Quinn cumulative APPROVE_WITH_CONCERNS 0.86 / Raze cumulative GAPS_FOUND 0.78
-  / meta-Raze APPROVE_GATE_CLOSE_WITH_META_CONCERNS 0.81.
-  6 carryover wedges (2 HIGH P0 + 3 MEDIUM P1 + 1 LOW per meta-Raze adjudication).
-  Sampling + Properties twice-deferred from Sprint 5 + Sprint 6.
-supersedes: ".harness/handoffs/planner-handoff.yaml (Pat Sprint 6 handoff 2026-04-30T00:42:39Z)"
+  Sprint 7 close: Quinn cumulative APPROVE 0.91 / Raze cumulative APPROVE 0.88
+  / meta-Raze APPROVE_WITH_PROCESS_GAPS 0.86.
+  6 carryover wedges from Sprint 7 gate findings + meta-Raze process-improvement recommendations.
+  Subdeployments conformance class deferred since Sprint 5; completes 3-deep dependency cascade chain.
+supersedes: ".harness/handoffs/planner-handoff.yaml (Pat Sprint 7 handoff 2026-04-30T16:07:31Z)"
 
 # ============================================================================
-# STRATEGIC DECISION: wedge-FIRST + Sampling + Properties
+# STRATEGIC DECISIONS — Sprint 8 (4 questions from SESSION-HANDOFF-2026-04-30-EOD.md)
 # ============================================================================
-sprint_7_framing_decision:
-  decision: "wedge-first-then-feature-expansion"
-  alternatives_considered:
-    wedge_only:
-      rationale: "Sprint 6 focused wedge sprint (3 wedges + 1 class) recovered to 0.86/0.78. Sprint 7 wedges are ~50-80 LOC. Quick close + clean gate."
-      rejected_because: "Sampling + Properties are twice-deferred. The new-feature meta-pattern risk (bash scripts not stress-tested) does NOT apply — Sampling+Properties are pure Java additions, zero new bash scripts. Sprint 5's drop to 0.82/0.74 was caused by a structural defect (GAP-1'), NOT new-class scope. Continuing to defer adds technical debt without quality benefit."
-    wedge_plus_features:
-      rationale: |
-        6 wedges total ~50-80 LOC, sequenced first. Sampling+Properties are mechanical
-        pattern extensions (proven 4x: Subsystems Sprint 4, Procedures+Deployments Sprint 5).
-        GeoRobotix /samplingFeatures + /properties both HTTP 200 confirmed at planning time.
-        Two-level cascade pattern validated by ADR-010 v3. No new bash scripts in feature stories.
-        3 process improvements (bash-x trace, self-audit, status-honesty) baked into success_criteria
-        and evaluation_questions — they protect new-class work too.
-        Sprint 5's meta-pattern finding: "new bash scripts not stress-tested under failure modes"
-        does NOT apply here because the new stories are pure Java.
-      chosen: true
-  confidence: 0.87
-  key_risk: "SAMPLING-FEATURES-ENDPOINT-PATH — GeoRobotix may not declare /conf/sf in conformance; handle via @BeforeClass SkipException. No escalation needed."
+strategic_decisions:
+  q1_wedge_only_or_wedge_plus_class:
+    question: "Wedge-only Sprint 8, or wedge + 1 new conformance class?"
+    decision: "wedge-plus-1-class"
+    rationale: |
+      Sprint 7 wedge bundle is ~30-60 LOC (smaller than Sprint 7's 50-80 LOC wedge bundle).
+      Subdeployments is a clean mechanical extension of Deployments (pure Java, zero new bash scripts).
+      The new-feature meta-pattern risk that caused Sprint 5's 0.82/0.74 dip does NOT apply here
+      — it was triggered by bash scripts not stress-tested under failure modes, not by new Java classes.
+      Continuing to defer Subdeployments adds technical debt without quality benefit.
+    alternatives_considered:
+      wedge_only:
+        rejected_because: "Sprint 7 wedge bundle is smaller than Sprint 6's, leaving capacity for 1 new class."
+      wedge_plus_class:
+        chosen: true
+
+  q2_which_new_class:
+    question: "Which new conformance class?"
+    decision: "subdeployments"
+    rationale: |
+      Strongest dependency-cascade extension story: completes 3-deep chain
+      (Subdeployments→Deployments→SystemFeatures→Core). Deployments parent is IMPLEMENTED (Sprint 5).
+      More compelling than: GeoJSON (isolated/smallest scope), CRUD/Update (write-side risk),
+      AdvancedFiltering (cross-cutting complexity), SensorML (specialized encoding).
+      Creates NEW cascade proof point (Deployments-sabotage → Subdeployments-SKIP) beyond
+      Sprint 7's SystemFeatures-sabotage cascade.
+    alternatives_rejected:
+      - geojson: "Isolated, smallest scope — no cascade story"
+      - crud_update: "Write-side risk; no precedent in ETS"
+      - advanced_filtering: "Cross-cutting; structural complexity"
+      - sensorml: "Specialized encoding; limited GeoRobotix coverage"
+
+  q3_gate_independence_forbid_list:
+    question: "Add explicit 'neither gate reads the other's YAML' forbid-list to contract?"
+    decision: "yes"
+    rationale: |
+      Sprint 7 meta-Raze META-GAP S7-2 identified STRONG_PARTIAL independence (not FULL).
+      Both gates must write their YAML BEFORE reading the other's.
+      Contract now contains gate_independence_no_peek criterion requiring quinn_peek_attempted: false
+      and raze_peek_attempted: false attestation headers in each gate's YAML.
+      Enforced via parallel spawn + peer-audit at meta-Raze review time.
+    contract_criterion: "success_criteria.gate_independence_no_peek: true"
+
+  q4_generator_projectwide_grep_criterion:
+    question: "Add 'Generator design.md self-audit must be project-wide grep' success criterion?"
+    decision: "yes-and-sharpened"
+    rationale: |
+      Sprint 7 meta-Raze META-GAP S7-3: Generator did narrow section grep in S-ETS-07-01 Wedge 5.
+      Raze had to do the broader project-wide audit at gate time (after initial close commit).
+      Sharpened: Generator must archive grep output AT INITIAL CLOSE COMMIT TIME, not Self-Raze
+      follow-up. Inverts Sprint 7's pattern. Both Quinn and Raze independently verify the grep
+      archive exists before awarding PASS on this criterion.
+    contract_criterion: "success_criteria.generator_design_md_adr_self_audit_projectwide: true"
+    sharpening: "archive_at_initial_close_commit_not_self_raze_followup"
 
 stories:
-  - id: "S-ETS-07-01"
-    title: "Sprint 6 carryover wedge bundle (6 wedges, ~50-80 LOC)"
-    file: "epics/stories/s-ets-07-01-sprint6-carryover-wedges.md"
+  - id: "S-ETS-08-01"
+    title: "Sprint 7 carryover wedge bundle (6 wedges, ~30-60 LOC)"
+    file: "epics/stories/s-ets-08-01-sprint7-carryover-wedges.md"
     priority: P1
     complexity: S
-    estimated_generator_wall_clock: "1.5-2h"
-    p_tier_rationale: "P1 (not P0) because wedges are quality housekeeping, not a new capability. However they MUST be first in the sprint — S-ETS-07-02 and S-ETS-07-03 depend on Wedge 1 (javac fix) for cascade validation."
+    estimated_generator_wall_clock: "1-1.5h"
+    p_tier_rationale: "P1 (not P0) because wedges are quality housekeeping, not a new capability. MUST be first — mvn-test-via-docker.sh (Wedge 6) is required by Quinn PRIMARY verification of S-ETS-08-02."
+    sequencing: "FIRST — S-ETS-08-02 depends on Wedge 6 (mvn-test-via-docker.sh) for Quinn closure-proof verification"
 
-  - id: "S-ETS-07-02"
-    title: "Sampling Features `/conf/sf` conformance class — 4 @Tests"
-    file: "epics/stories/s-ets-07-02-sampling-features-conformance-class.md"
+  - id: "S-ETS-08-02"
+    title: "Subdeployments `/conf/subdeployments` conformance class — 4 @Tests"
+    file: "epics/stories/s-ets-08-02-subdeployments-conformance-class.md"
     priority: P0
     complexity: M
     estimated_generator_wall_clock: "45-60min"
-
-  - id: "S-ETS-07-03"
-    title: "Property Definitions `/conf/property` conformance class — 4 @Tests"
-    file: "epics/stories/s-ets-07-03-property-definitions-conformance-class.md"
-    priority: P0
-    complexity: M
-    estimated_generator_wall_clock: "30-45min"
+    sequencing: "SECOND — after S-ETS-08-01 (depends on mvn-test-via-docker.sh)"
 
 next_agent: "generator"
 next_agent_rationale: |
-  All Sprint 7 planning artifacts are on disk. No outstanding architecture decisions.
+  All Sprint 8 planning artifacts are on disk. No outstanding architecture decisions.
   Three reasons no Architect cycle is needed:
-  (1) Wedge fixes: all fix surfaces precisely bounded by gate evidence (< 5 LOC each except Wedge 5 doc-edit).
-  (2) Sampling+Properties: mechanical ADR-010 v3 pattern extension; same as Procedures+Deployments in Sprint 5.
-  (3) No new architectural decisions surfaced at planning time (GeoRobotix endpoints confirmed HTTP 200;
-      OGC requirement URIs confirmed HTTP 200; cascade pattern proven).
-  Architect escalation condition: only if Generator discovers that /conf/sf or /conf/property requires
-  a new SKIP semantics pattern not already in codebase. Probability: low.
+  (1) Wedge fixes: all fix surfaces precisely bounded by gate evidence (exact file:line, exact LOC estimates).
+  (2) Subdeployments: mechanical ADR-010 v3 pattern extension; mirrors SubsystemsTests.java Sprint 4 pattern.
+  (3) No new architectural decisions surfaced at planning time.
+      OGC requirement directory raw.githubusercontent.com/.../requirements/subdeployment/ NOTED but
+      Generator must HTTP-200-verify individual .adoc files at implementation time per URI-canonicalization
+      discipline (continuing S-ETS-02-03 and all subsequent classes).
+  Architect escalation condition: only if Generator discovers Subdeployments requires a new SKIP semantics
+  pattern not already in codebase (e.g., nested resource ID resolution differs from Subsystems pattern).
+  Probability: low — IUT state unknown at planning time but pattern is established.
 
 # ============================================================================
-# PROCESS IMPROVEMENTS — baked into contract
+# PROCESS IMPROVEMENTS — baked into Sprint 8 contract
 # ============================================================================
 process_improvements:
-  location: ".harness/contracts/sprint-ets-07.yaml process_improvements block + success_criteria"
+  location: ".harness/contracts/sprint-ets-08.yaml process_improvements block + success_criteria"
   summary:
     bash_x_trace:
       contract_criterion: "success_criteria.bash_x_trace_evidence_for_bash_changes: true"
-      evaluation_enforcement: "evaluation_questions_for_quinn + evaluation_questions_for_raze each require bash -x trace artifact for respective modified script"
-      addresses: "Sprint 6 GAP-Q1 (wrong grep target) + GAP-3 (pipefail unreachable) — both were bash defects that bash -n + visual inspection missed"
+      evaluation_enforcement: "evaluation_questions_for_quinn + evaluation_questions_for_raze each require separate bash -x trace artifact for their respective modified script"
+      addresses: "Sprint 7 carryover: bash -x trace discipline (continued from Sprint 7 contract)"
+      tightened: "Both gates must independently run bash -x and archive SEPARATE trace files (tightened from Sprint 7 single-trace pattern)"
     design_md_self_audit:
-      contract_criterion: "success_criteria.generator_design_md_adr_self_audit: true"
-      evaluation_enforcement: "evaluation_questions for both gates require design.md audit"
-      addresses: "Sprint 6 META-GAP-M1 (design.md §Sprint 3 hardening stale post-Sprint 6 redesign)"
+      contract_criterion: "success_criteria.generator_design_md_adr_self_audit_projectwide: true"
+      evaluation_enforcement: "Generator MUST archive project-wide grep output at INITIAL CLOSE COMMIT TIME; both Quinn and Raze verify artifact exists"
+      addresses: "Sprint 7 meta-Raze META-GAP S7-3 (Generator did narrow section grep; Raze had to do broader audit at gate time)"
+      sharpened: "project-wide (not just section-grep) + at initial close commit (not Self-Raze follow-up)"
     spec_status_honesty:
       contract_criterion: "success_criteria.spec_status_honesty_principle: true"
-      evaluation_enforcement: "Quinn MUST read spec.md REQ-017 status before and after; Raze audits spec.md status for new REQs"
-      addresses: "Sprint 6 META-GAP-M2 (REQ-017 IMPLEMENTED with live-exec UNVERIFIED); Sprint 5 META-RAZE M-3 (recurring pattern)"
+      evaluation_enforcement: "Quinn MUST read spec.md REQ-ETS-PART1-005 status; Raze audits spec.md status for new REQs; IMPLEMENTED only after live-exec verification"
+      addresses: "Sprint 6 META-GAP-M2 (recurring pattern); Sprint 7 honored it for REQ-017 — continue discipline for REQ-ETS-PART1-005"
+    gate_independence:
+      contract_criterion: "success_criteria.gate_independence_no_peek: true"
+      evaluation_enforcement: "Each gate YAML header must contain quinn_peek_attempted: false / raze_peek_attempted: false; meta-Raze audits attestation"
+      addresses: "Sprint 7 meta-Raze META-GAP S7-2 (STRONG_PARTIAL independence; Raze may have read Quinn's YAML before completing)"
+      new_in_sprint_8: true
+    framing_threshold_honesty:
+      contract_criterion: "success_criteria.framing_threshold_honesty: true"
+      evaluation_enforcement: "Orchestrator framing must describe substantive outcomes; meta-Raze diagnostic thresholds must NOT be elevated to contractual milestones"
+      addresses: "Sprint 7 meta-Raze META-GAP S7-4 (orchestrator framing gap — meta-Raze diagnostic thresholds described as contractual milestones)"
+      new_in_sprint_8: true
 
 # ============================================================================
 # OUTPUTS
@@ -93,133 +138,116 @@ process_improvements:
 outputs:
   - path: ".harness/handoffs/planner-handoff.yaml"
     type: "planner-handoff"
-    note: "Task 0 stub written at 15:58:30Z; finalized at 16:07:31Z."
+    note: "Task 0 stub written at 18:23:46Z; finalized at 18:35:00Z."
 
-  - path: ".harness/contracts/sprint-ets-07.yaml"
+  - path: ".harness/contracts/sprint-ets-08.yaml"
     type: "sprint-contract"
-    note: "3 stories; 14 critical + 2 normal scenarios; differentiated Quinn/Raze live-execs (Quinn = credential-leak PASS; Raze = cascade XML); gate_4_required: true; 3 process improvements in success_criteria; worktree_pollution_constraint continued."
+    note: "2 stories; 8 critical + 3 normal scenarios; differentiated Quinn/Raze live-execs (Quinn PRIMARY = mvn-test-via-docker.sh; Raze PRIMARY = sabotage stdout 5-class); gate_4_required: true; 5 success criteria (3 carried forward + 2 new); gate_independence_no_peek + framing_threshold_honesty NEW; worktree_pollution_constraint continued."
 
-  - path: "epics/stories/s-ets-07-01-sprint6-carryover-wedges.md"
+  - path: "epics/stories/s-ets-08-01-sprint7-carryover-wedges.md"
     type: "story"
-    note: "P1/S — 6 Sprint 6 carryover wedges; precise fix surface, LOC estimates, bash idioms, bash -x verification mandate"
+    note: "P1/S — 6 Sprint 7 carryover wedges; precise fix surface, LOC estimates; Wedge 6 (mvn-test-via-docker.sh) closes 7-sprint recurring Quinn limitation"
 
-  - path: "epics/stories/s-ets-07-02-sampling-features-conformance-class.md"
+  - path: "epics/stories/s-ets-08-02-subdeployments-conformance-class.md"
     type: "story"
-    note: "P0/M — Sampling Features /conf/sf; GeoRobotix confirmed; OGC /req/sf/* confirmed; ADR-010 v3 mechanical extension"
-
-  - path: "epics/stories/s-ets-07-03-property-definitions-conformance-class.md"
-    type: "story"
-    note: "P0/M — Property Definitions /conf/property; GeoRobotix confirmed; OGC /req/property/* confirmed"
+    note: "P0/M — Subdeployments /conf/subdeployments; completes 3-deep cascade chain; GeoRobotix IUT state unknown at planning time (IUT-state-honest SKIP policy applies); OGC /req/subdeployment/ directory noted but Generator must HTTP-200-verify"
 
   - path: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
     type: "spec-update"
-    note: "REQ-ETS-CLEANUP-017 status corrected to STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED (mandatory META-GAP-M2 action); REQ-ETS-CLEANUP-018 + REQ-ETS-PART1-007..008 SPECIFIED; Sprint 7 scenarios added (9 critical + 2 normal for wedge story; 10 critical for new conformance classes)"
+    note: "REQ-ETS-CLEANUP-019 SPECIFIED (Sprint 7 carryover wedge bundle); REQ-ETS-PART1-005 expanded PLACEHOLDER → SPECIFIED; 11 new SCENARIO-* items (8 CRITICAL + 3 NORMAL)"
 
   - path: "_bmad/traceability.md"
     type: "traceability-update"
-    note: "REQ-ETS-CLEANUP-017 row corrected to STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED; REQ-ETS-PART1-005 + FR-ETS-19..23 backlog rows renumbered to Sprint 8+; REQ-ETS-PART1-007..008 Sprint 7 Active rows added; REQ-ETS-CLEANUP-018 Sprint 7 Active row added"
-
-  - path: "epics/epic-ets-04-teamengine-integration.md"
-    type: "epic-update"
-    note: "S-ETS-07-01 carryover wedge story added as Active Sprint 7"
-
-  - path: "epics/epic-ets-02-part1-classes.md"
-    type: "epic-update"
-    note: "S-ETS-07-02 (SF) + S-ETS-07-03 (Property) Active Sprint 7; old S-ETS-06-01..03 backlog placeholders renumbered"
+    note: "REQ-ETS-CLEANUP-019 Sprint 8 Active row added; REQ-ETS-PART1-005 Backlog row updated to Sprint 8 Active"
 
 spec_changes:
   new_reqs:
-    - "REQ-ETS-CLEANUP-018 (Sprint 6 carryover wedge bundle close — 6 wedges)"
-    - "REQ-ETS-PART1-007 (Sampling Features /conf/sf)"
-    - "REQ-ETS-PART1-008 (Property Definitions /conf/property)"
+    - "REQ-ETS-CLEANUP-019 (Sprint 7 carryover wedge bundle — 6 wedges, SPECIFIED)"
   modified_reqs:
-    - "REQ-ETS-CLEANUP-017 (status corrected IMPLEMENTED → STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED; Sprint 7 promotion target)"
-    - "REQ-ETS-CLEANUP-016 (automated credential-leak script PASS after prong-b fix)"
+    - "REQ-ETS-PART1-005 (Subdeployments — PLACEHOLDER → SPECIFIED; Sprint 8 target; S-ETS-08-02)"
   new_scenarios:
-    # S-ETS-07-01 carryover wedges (4 critical + 2 normal)
-    - "SCENARIO-ETS-CLEANUP-SABOTAGE-JAVAC-FIX-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-SABOTAGE-PIPEFAIL-FIX-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-CRED-LEAK-PRONG-B-FIX-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-REQ017-STATUS-HONESTY-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-DESIGN-MD-WRAP-PATTERN-001 (NORMAL)"
-    - "SCENARIO-ETS-CLEANUP-ADR010-V4-OR-RETROVAL-001 (NORMAL)"
-    # S-ETS-07-02 Sampling Features (5 critical)
-    - "SCENARIO-ETS-PART1-007-SF-RESOURCES-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-007-SF-CANONICAL-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-007-SF-CANONICAL-URL-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-007-SF-DEPENDENCY-SKIP-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-007-SF-SMOKE-NO-REGRESSION-001 (CRITICAL)"
-    # S-ETS-07-03 Property Definitions (5 critical)
-    - "SCENARIO-ETS-PART1-008-PROP-RESOURCES-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-008-PROP-CANONICAL-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-008-PROP-CANONICAL-URL-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-008-PROP-DEPENDENCY-SKIP-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-008-PROP-SMOKE-NO-REGRESSION-001 (CRITICAL)"
-    # Total: 14 critical + 2 normal = 16 scenarios
+    # S-ETS-08-01 carryover wedges (3 critical + 3 normal)
+    - "SCENARIO-ETS-CLEANUP-019-SABOTAGE-STDOUT-5CLASS-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-019-MVN-DOCKER-HOST-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-019-SPEC-ADR-EVIDENCE-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-019-GREP-ARCHIVE-001 (NORMAL)"
+    - "SCENARIO-ETS-CLEANUP-019-TEST-RESULTS-POINTER-001 (NORMAL)"
+    - "SCENARIO-ETS-CLEANUP-019-JAVAFORMAT-PIN-001 (NORMAL)"
+    # S-ETS-08-02 Subdeployments (5 critical)
+    - "SCENARIO-ETS-PART1-005-SUBDEP-RESOURCES-001 (CRITICAL)"
+    - "SCENARIO-ETS-PART1-005-SUBDEP-CANONICAL-001 (CRITICAL)"
+    - "SCENARIO-ETS-PART1-005-SUBDEP-CANONICAL-URL-001 (CRITICAL)"
+    - "SCENARIO-ETS-PART1-005-SUBDEP-DEPENDENCY-SKIP-001 (CRITICAL)"
+    - "SCENARIO-ETS-PART1-005-SUBDEP-SMOKE-NO-REGRESSION-001 (CRITICAL)"
+    # Total: 8 critical + 3 normal = 11 scenarios
 
 surfaced_risks:
-  - id: "SAMPLING-FEATURES-ENDPOINT-PATH"
+  - id: "SUBDEPLOYMENTS-IUT-STATE-UNKNOWN"
     severity: medium
     description: |
-      GeoRobotix may not declare /conf/sf in conformance declaration.
-      Mitigation: Generator reads /conformance first; uses @BeforeClass SkipException if absent.
-  - id: "PROPERTY-DEFINITIONS-ITEM-SHAPE"
-    severity: medium
+      GeoRobotix IUT state for /deployments/16sp744ch58g/subdeployments is UNKNOWN at planning time.
+      If endpoint returns 404 OR /conf/subdeployments not declared in conformance, ALL 4 new @Tests
+      SKIP-with-reason (IUT-state-honest SKIP policy). This is NOT a failure — smoke baseline preserved.
+      Generator must curl-verify BOTH endpoints at implementation time before writing assertions.
+  - id: "OGC-SUBDEPLOYMENT-DIR-NAME"
+    severity: low
     description: |
-      Property definitions may have different response shape than system resources.
-      Mitigation: Generator curl-verifies /properties/{id} shape before asserting fields.
-  - id: "SABOTAGE-MARKER-INJECTION-GENERALITY"
-    severity: medium
+      OGC directory may be `subdeployment/` (singular) vs `subdeployments/` (plural).
+      Generator must verify via HTTP-200 fetch before writing @Test description attributes.
+      Fallback: if parent-deployment-link .adoc absent, 4-@Test structure is correct baseline.
+  - id: "MVN-TEST-VIA-DOCKER-SCRIPT-SCOPE"
+    severity: low
     description: |
-      `if (true) throw` is the JLS §14.21 standard idiom; should work.
-      If javac still rejects, escalate to Raze option 2 (replace method body entirely).
-      Mitigation: Generator tests in /tmp clone immediately after applying fix.
+      Wedge 6 (mvn-test-via-docker.sh) is a new bash script — the only new bash in Sprint 8.
+      Must be bash -x trace verified per process improvement criterion.
+      Scope: ~20-30 LOC; wraps existing docker/mvn pattern; no new Docker layers.
 
 blockers: []
 
-confidence: 0.87
+confidence: 0.86
 confidence_rationale: |
-  (+) All 6 carryover wedges precisely bounded by gate evidence (exact file:line, exact LOC estimates,
-      exact bash idioms provided in story Technical Notes).
-  (+) GeoRobotix /samplingFeatures + /properties both HTTP 200 confirmed at planning time —
-      IUT readiness is de-risked.
-  (+) OGC /req/sf/* + /req/property/* HTTP 200 confirmed at planning time.
-  (+) Sampling+Properties are mechanical ADR-010 v3 pattern extensions (proven 4x prior sprints).
-  (+) 3 process improvements are CONTRACT CRITERIA, not just recommendations — evaluation_questions
-      enforce them independently for Quinn and Raze.
-  (+) Strategic decision (wedge + 2 classes) is well-grounded: meta-pattern risk (bash scripts) does
-      not apply to pure Java feature stories; Sprint 5 data shows new-class scope was not the cause
-      of the 0.82/0.74 dip.
-  (+) Write-handoff-FIRST mitigation: stub written at 15:58:30Z; all 7 artifacts written before budget;
-      final handoff at 16:07:31Z. Turn wall-clock: ~9 minutes.
-  (-) OGC /req/sf/* path confirmed via `sf/` directory at raw.githubusercontent.com but exact .adoc
-      requirement counts not enumerated — Generator must curl-verify individual files at implementation time.
-  (-) design.md Wedge 5 is a doc-only change but requires careful surgical edit around lines 531-636.
-      Generator must not accidentally delete the historical code block; must preserve it with "Historical"
-      label for audit trail.
-  (-) Sprint 7 is a 3-story sprint (larger than Sprint 6's 3-wedge sprint). Generator wall-clock estimate
-      is 3-4h. Gate wall-clock estimate: Quinn ~30-35min, Raze ~35-40min.
+  (+) All 6 carryover wedges precisely bounded by gate evidence (exact file:line, LOC estimates,
+      exact fix descriptions in story Technical Notes).
+  (+) Subdeployments is the most mechanically straightforward of the backlog options — direct
+      mirror of SubsystemsTests.java Sprint 4 (proven pattern, 4th iteration).
+  (+) 5 process improvement criteria are CONTRACT CRITERIA, not just recommendations (2 new:
+      gate_independence_no_peek + framing_threshold_honesty).
+  (+) Differentiated live-execs properly balanced: Quinn PRIMARY = mvn-test-via-docker.sh
+      (closure-proof, addresses 7-sprint recurring limitation); Raze PRIMARY = sabotage stdout
+      5-class enumeration (addresses S7-1 meta-gap).
+  (+) Write-handoff-FIRST mitigation applied: stub written at 18:23:46Z; finalized at 18:35:00Z.
+  (-) GeoRobotix IUT state for /subdeployments is UNKNOWN — Generator must verify at implementation
+      time. Both PASS and IUT-state-honest SKIP outcomes are acceptable.
+  (-) OGC /req/subdeployment/ individual .adoc counts not enumerated at planning time — Generator
+      must HTTP-200-verify each file before writing @Test description attributes.
+  (-) Wedge 6 (mvn-test-via-docker.sh) is the only new bash script in Sprint 8; adds bash -x
+      verification overhead but is ~20-30 LOC (smallest bash script in any sprint).
 
 estimated_effort: |
-  Sprint 7 Generator wall-clock estimate: 3-4h
-    - S-ETS-07-01 (carryover wedges + bash verification): ~1.5-2h
-    - S-ETS-07-02 (Sampling Features + lint tests): ~45-60min
-    - S-ETS-07-03 (Property Definitions + lint tests): ~30-45min
-  vs Sprint 6's 2-3h (Sprint 7 has more bash verification overhead from process improvements
-  + 2 new conformance classes, but wedges are smaller than Sprint 6's 30-50 LOC Java rewrite).
+  Sprint 8 Generator wall-clock estimate: 2-2.5h
+    - S-ETS-08-01 (carryover wedges + mvn-test-via-docker.sh + bash -x): ~1-1.5h
+    - S-ETS-08-02 (Subdeployments + lint tests + OGC URI verify): ~45-60min
+  vs Sprint 7's 3-4h (Sprint 8 is a 2-story sprint; wedge bundle smaller; 1 new class vs 2).
 
   Gate wall-clock estimate:
-    Quinn (cred-leak PASS + bash -x trace + mvn + smoke ≥42): ~30-35min
-    Raze (sabotage cascade XML + bash -x trace + class inspection + mvn + regression): ~35-40min
+    Quinn (mvn-test-via-docker.sh PRIMARY + bash -x trace + smoke ≥42): ~30-35min
+    Raze (sabotage stdout 5-class PRIMARY + bash -x trace + class inspection + regression): ~35-40min
     Total gate time: ~65-75min
 
-orchestrator_handoff_note: |
-  Pat (Planner) Sprint 7 handoff authored 2026-04-30T16:07:31Z.
-  Write-handoff-FIRST mitigation: stub written at 15:58:30Z; finalized at 16:07:31Z. ~9 min turn.
-  All 7 deliverables complete; no outstanding planning items.
-  Next agent: generator (Dana). No Architect cycle required.
+summary: |
+  Sprint 8 is a 2-story sprint: wedge bundle (S-ETS-08-01 P1/S) + Subdeployments conformance class
+  (S-ETS-08-02 P0/M). Strategic Q1: wedge+class (Sprint 7 wedges smaller than Sprint 7's own wedge
+  bundle, creating capacity). Q2: Subdeployments chosen — completes 3-deep cascade chain, closest
+  mechanical analog to proven SubsystemsTests.java pattern. Q3: gate_independence_no_peek added —
+  explicit forbid-list requiring peek_attempted: false attestation in each gate YAML header.
+  Q4: generator_design_md_adr_self_audit_projectwide sharpened — grep archive required at INITIAL
+  CLOSE COMMIT TIME, not Self-Raze follow-up. Two new success criteria (Q3+Q4) join 3 carried-forward
+  criteria from Sprint 7. 11 new SCENARIO-* items (8 CRITICAL + 3 NORMAL). Confidence: 0.86.
 
-  ORCHESTRATOR NOTE: REQ-ETS-CLEANUP-017 status has been corrected to
-  STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED per meta-Raze META-GAP-M2 mandatory action.
-  This corrects the spec.md status-honesty issue that Sprint 6 Generator left as IMPLEMENTED.
-  ops/status.md should reflect this correction.
+orchestrator_handoff_note: |
+  Pat (Planner) Sprint 8 handoff authored 2026-04-30T18:35:00Z.
+  Write-handoff-FIRST mitigation: stub written at 18:23:46Z; finalized at 18:35:00Z. ~11 min turn.
+  All 5 deliverables complete; no outstanding planning items.
+  Next agent: generator (Dana). No Architect cycle required.
+  Story sequencing MANDATORY: S-ETS-08-01 FIRST (Wedge 6 = mvn-test-via-docker.sh required by
+  Quinn for S-ETS-08-02 closure-proof). Do not attempt S-ETS-08-02 until S-ETS-08-01 is committed.

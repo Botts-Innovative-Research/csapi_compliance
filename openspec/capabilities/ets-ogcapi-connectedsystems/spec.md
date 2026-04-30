@@ -368,6 +368,120 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 - **Property-Definitions-unique implementation note**: GeoRobotix `/properties` returns HTTP 200 + `items: []` (empty). Per defense-in-depth + Pat MEDIUM risk mitigation, per-item @Tests SKIP-with-reason rather than FAIL when items empty (the OGC requirement is at the endpoint-existence + response-shape layer; population is IUT-state-dependent). If GeoRobotix populates the collection in the future, no code changes required — the same @Tests will exercise the cached single-property body.
 - **Maps to**: PRD FR-ETS-18; twice-deferred from Sprint 5 + Sprint 6 (see REQ-ETS-PART1-007 rationale).
 
+> Sprint 8 adds REQ-ETS-CLEANUP-019 (Sprint 7 carryover wedge bundle) and expands REQ-ETS-PART1-005 (Subdeployments) from PLACEHOLDER to SPECIFIED. Stories S-ETS-08-01..02 are Active Sprint 8.
+
+#### REQ-ETS-CLEANUP-019: Sprint 7 Carryover Wedge Bundle (Sprint 8)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 8 target — S-ETS-08-01; assigned 2026-04-30 by Pat)
+- **Description**: Bundle fix for 6 Sprint 7 gate-identified defects and process improvements:
+  (1) `scripts/sabotage-test.sh` stdout VERDICT-summary tabulator fix — replace hard-coded 3-class sibling enumeration with dynamic lookup from cascade XML or testng.xml group declarations. Closes Raze GAP-1 (MEDIUM): "human-readable VERDICT-summary enumerates 3 siblings; actual sibling count is 5 post-Sprint 7."
+  (2) spec.md REQ-ETS-CLEANUP-018 narrative updated to cite Raze gate-time 5-class XML evidence (not just Generator's 3-class XML); ADR-010 v4 amendment block retiring "Sprint 8+ will further verify the 5-class cascade" sentence (already verified at Sprint 7 Raze gate). Closes META-GAP-S7-1 (LOW-MED): "spec.md REQ-018 + ADR-010 lines 322-324 still cite 3-class as load-bearing when 5-class is already proven."
+  (3) Project-wide grep across design.md + all ADR docs + spec.md for `super.filter\|try/finally pattern guarantees` with archived grep output as evidence artifact. Adjudicates design.md lines 666-667 (Raze Q12 judgment call). Closes META-GAP-S7-3 (MEDIUM): "Generator design.md self-audit was section-scoped, not project-wide."
+  (4) `ops/test-results.md` (csapi_compliance) ETS-pointer block — prefix note pointing to sister repo `ops/test-results/`. Closes Raze REC-3 / GAP-3 (LOW): "ops/test-results.md stale 13 days — ETS evidence migrated to sister repo."
+  (5) spring-javaformat version explicitly pinned in sister `pom.xml`. Closes Quinn W3 (LOW): defense-in-depth against future version drift that could invalidate two-line sabotage marker.
+  (6) `scripts/mvn-test-via-docker.sh` wrapper in sister repo. Closes META-GAP-S7-2 / Quinn W1 (RECURRING-MEDIUM): "Quinn cannot run mvn lifecycle outside Docker across ALL 7 ETS sprints." Gives Quinn host-side independent mvn handle for Sprint 8+.
+- **Maps to**: meta-Raze sprint-ets-07-meta-review.yaml META-GAP-S7-1, META-GAP-S7-2, META-GAP-S7-3 + sprint-ets-07-adversarial-cumulative.yaml GAP-1, GAP-3 + sprint-ets-07-evaluator-cumulative.yaml W1, W3.
+
+#### REQ-ETS-PART1-005: Subdeployments Conformance Class (`/conf/subdeployments`) (Sprint 8 target)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 8 target — S-ETS-08-02; assigned 2026-04-30 by Pat; was PLACEHOLDER since Sprint 5)
+- **Description**: For `/conf/subdeployments`, the ETS SHALL provide at least one TestNG `@Test` method whose `description` attribute starts with the OGC canonical `.adoc` requirement URI form `/req/subdeployment/<assertion>`. Generator MUST verify canonical URI form via OGC `.adoc` source HTTP-200 fetch before writing assertions. Expected sub-requirements at `raw.githubusercontent.com/opengeospatial/ogcapi-connected-systems/master/api/part1/standard/requirements/subdeployment/` (Generator must HTTP-200 verify each at sprint time): `req_resources_endpoint.adoc`, `req_canonical_url.adoc`, `req_canonical_endpoint.adoc`, possibly `req_parent_deployment_link.adoc`. The class lives at `org.opengis.cite.ogcapiconnectedsystems10.conformance.subdeployments.SubdeploymentsTests`. Subdeployments DEPENDS ON Deployments via `<group name="subdeployments" depends-on="deployments"/>` — this creates the 3-deep cascade chain Subdeployments→Deployments→SystemFeatures→Core. Coverage scope Sprint 8: Sprint-1-style minimal (4 @Tests per pattern): (a) GET /deployments/{id}/subdeployments HTTP 200 + non-empty items; (b) GET /subdeployments/{id} canonical shape; (c) rel=canonical link or path-based dereferenceability; (d) 3-deep cascade runtime tracer; (e) parent-deployment-link @Test if OGC /req/subdeployment/parent-deployment-link exists. If GeoRobotix does not declare /conf/subdeployments in conformance OR returns 404 for /deployments/{id}/subdeployments, all @Tests SKIP-with-reason (IUT-state-honest per sprint policy).
+- **Rationale**: Subdeployments completes the deepest dependency chain in Part 1. Deployments (S-ETS-05-06, Sprint 5 IMPLEMENTED) is the parent. Subdeployments→Deployments→SystemFeatures→Core is the same structural depth as the Subsystems→SystemFeatures→Core chain proven at Sprint 4, extended one level. Completing this chain proves the n-level cascade pattern scales to 3 levels.
+- **Maps to**: PRD FR-ETS-15.
+
+### Acceptance Scenarios for Sprint 8
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-STDOUT-5CLASS-001 (CRITICAL)
+**GIVEN** `scripts/sabotage-test.sh --target=systemfeatures` is run from a /tmp clone
+**WHEN** the cascade XML is produced and the script prints the VERDICT-summary to stdout
+**THEN** the stdout VERDICT-summary enumerates ALL sibling classes that received SKIP verdict
+**AND** the enumeration includes at minimum: subsystems, procedures, deployments, samplingfeatures, propertydefinitions (5 classes)
+**AND** the enumeration is derived dynamically from the cascade XML or testng.xml group declarations, NOT hard-coded
+**AND** the script exits 0 (cascade XML produced successfully).
+*Maps to*: REQ-ETS-CLEANUP-019, Raze GAP-1 (Sprint 7).
+
+#### SCENARIO-ETS-CLEANUP-SPEC-REQ018-5CLASS-EVIDENCE-001 (CRITICAL)
+**GIVEN** spec.md REQ-ETS-CLEANUP-018 narrative and ADR-010 dependency-skip-verification-strategy.md
+**WHEN** a reviewer reads the current state of these two documents
+**THEN** spec.md REQ-018 narrative cites Raze gate-time 5-class cascade XML as the high-water-mark evidence (not just Generator's 3-class XML)
+**AND** ADR-010 no longer contains the sentence "Sprint 8+ sabotage exec will further verify the 5-class cascade" (this has been retired, as the 5-class cascade was verified at Sprint 7 Raze gate)
+**AND** ADR-010 contains an explicit v4 amendment block or updated retroval note recording the Sprint 7 Raze gate 5-class outcome.
+*Maps to*: REQ-ETS-CLEANUP-019, META-GAP-S7-1.
+
+#### SCENARIO-ETS-CLEANUP-DESIGN-MD-PROJECTWIDE-GREP-001 (CRITICAL)
+**GIVEN** Generator has run the project-wide grep for `super.filter|try/finally pattern guarantees` across design.md, all ADR docs, and spec.md
+**WHEN** Quinn or Raze reads the archived grep output evidence artifact
+**THEN** the grep output file exists (e.g. `ops/test-results/sprint-ets-08-01-self-audit-grep.txt` in sister repo or csapi_compliance)
+**AND** every hit line is accounted for: either annotated INVALIDATED, marked historical, or explicitly adjudicated as "non-stale because..."
+**AND** design.md lines 666-667 (unit test rules referencing try/finally) are explicitly adjudicated with an annotation at the hit line.
+*Maps to*: REQ-ETS-CLEANUP-019, META-GAP-S7-3.
+
+#### SCENARIO-ETS-CLEANUP-TEST-RESULTS-ETS-POINTER-001 (NORMAL)
+**GIVEN** `ops/test-results.md` in csapi_compliance repo
+**WHEN** a reviewer reads the top of the file
+**THEN** the file begins with an ETS-pointer block identifying the sister repo `ets-ogcapi-connectedsystems10/ops/test-results/` as the canonical location for Sprint 1+ ETS test evidence
+**AND** the pointer block includes the GitHub URL for the sister repo test-results directory.
+*Maps to*: REQ-ETS-CLEANUP-019, Raze GAP-3 (Sprint 7).
+
+#### SCENARIO-ETS-CLEANUP-SPRING-JAVAFORMAT-PINNED-001 (NORMAL)
+**GIVEN** `pom.xml` in the sister repo
+**WHEN** a reviewer inspects the build plugin configuration
+**THEN** `spring-javaformat-maven-plugin` has an explicit version declaration in pluginManagement
+**AND** the version matches the currently-used version (verified via `mvn help:effective-pom`)
+**AND** a comment references Sprint 7 lesson (two-line `if (true)` sabotage marker shape).
+*Maps to*: REQ-ETS-CLEANUP-019, Quinn W3 (Sprint 7).
+
+#### SCENARIO-ETS-CLEANUP-MVN-TEST-VIA-DOCKER-001 (NORMAL)
+**GIVEN** `scripts/mvn-test-via-docker.sh` exists in the sister repo
+**WHEN** Quinn runs `bash scripts/mvn-test-via-docker.sh` from `/tmp/quinn-fresh-sprint8/`
+**THEN** the script exits 0
+**AND** Maven surefire output is visible in stdout
+**AND** the surefire summary shows the current expected test count (≥89: 86 baseline + 3 subdeployment lint tests) with 0 failures and 0 errors.
+*Maps to*: REQ-ETS-CLEANUP-019, META-GAP-S7-2, Quinn recurring mvn host PATH gap.
+
+#### SCENARIO-ETS-PART1-005-SUBDEP-RESOURCES-001 (CRITICAL)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**AND** the IUT declares `/conf/subdeployments` in `/conformance`
+**WHEN** the Subdeployments suite executes `GET /deployments/{id}/subdeployments`
+**THEN** the response is HTTP 200
+**AND** the body is parseable JSON containing an `items` array (or equivalent collection wrapper per OGC /req/subdeployment/resources-endpoint)
+**AND** the items array is non-empty.
+**OR IF** the IUT does NOT declare `/conf/subdeployments` OR returns 404
+**THEN** all Subdeployments @Tests SKIP with reason citing the missing conformance declaration or 404 response.
+*Maps to*: REQ-ETS-PART1-005.
+
+#### SCENARIO-ETS-PART1-005-SUBDEP-CANONICAL-001 (CRITICAL)
+**GIVEN** the IUT declares `/conf/subdeployments` and `GET /deployments/{id}/subdeployments` returns non-empty items
+**WHEN** the Subdeployments suite executes `GET /subdeployments/{firstId}`
+**THEN** the response is HTTP 200
+**AND** the body has `id` (string), `type` (string), and `links` (array per REQ-ETS-CORE-004 base shape)
+**AND** these fields match the canonical-endpoint shape per `/req/subdeployment/canonical-endpoint`.
+*Maps to*: REQ-ETS-PART1-005.
+
+#### SCENARIO-ETS-PART1-005-SUBDEP-CANONICAL-URL-001 (CRITICAL)
+**GIVEN** the IUT declares `/conf/subdeployments` and a first subdeployment item exists
+**WHEN** the Subdeployments suite checks the canonical URL assertion per `/req/subdeployment/canonical-url`
+**THEN** either the item's `links` array contains a `rel=canonical` link OR the path-based URL `/subdeployments/{id}` returns HTTP 200 (defense-in-depth fallback per SamplingFeatures precedent)
+**AND** absence of `rel=self` is NOT a FAIL (preserves v1.0 GH#3 fix policy).
+*Maps to*: REQ-ETS-PART1-005.
+
+#### SCENARIO-ETS-PART1-005-SUBDEP-DEPENDENCY-SKIP-001 (CRITICAL)
+**GIVEN** the Deployments group produces at least one FAIL verdict
+**WHEN** the Subdeployments suite attempts to run
+**THEN** all Subdeployments `@Test` methods emit SKIP with reason citing `dependency deployments not satisfied`
+**AND** the testng.xml `<group name="subdeployments" depends-on="deployments"/>` wiring is present
+**AND** VerifyTestNGSuiteDependency lint tests for the subdeployments group all pass.
+*Maps to*: REQ-ETS-PART1-005, REQ-ETS-CLEANUP-005 (3-deep cascade extension).
+
+#### SCENARIO-ETS-PART1-005-SUBDEP-SMOKE-NO-REGRESSION-001 (CRITICAL)
+**GIVEN** the Sprint 8 Generator run is complete (S-ETS-08-01 + S-ETS-08-02 both landed)
+**WHEN** `scripts/smoke-test.sh` runs from a /tmp clone against GeoRobotix
+**THEN** the script exits 0
+**AND** total PASS + SKIP ≥ 46 (42 Sprint 7 baseline + ≥4 new subdeployments @Tests, whether PASS or SKIP-with-reason)
+**AND** failed = 0
+**AND** no regression in existing 8 conformance classes (core, common, systemfeatures, subsystems, procedures, deployments, samplingfeatures, propertydefinitions).
+*Maps to*: REQ-ETS-PART1-005.
+
 ## Acceptance Scenarios
 
 ### CRITICAL Scenarios (Sprint 1 gating)
