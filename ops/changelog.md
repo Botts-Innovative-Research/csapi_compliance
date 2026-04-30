@@ -35,7 +35,9 @@ Rolling 2-week work log. Remove entries older than 2 weeks.
 
 **Status snapshot**: 2 stories landed; mvn 89/0/0/3; smoke 46/0/6; cascade verified 6-class (5 SystemFeatures-level direct + 1 Subdeployments transitive). Sprint 8 ready for Quinn + Raze cumulative gates (parallel spawn per `gate_independence_no_peek` contract criterion).
 
-**Sister repo**: HEAD `38b1f8a` → `<S-08-01 commit>` → `<S-08-02 commit>` (this Generator close pushes both).
+**Sister repo**: HEAD `38b1f8a` → `fcff76b` (S-08-01 wedges 1+5+6 source/script/pom) → `b349edf` (S-08-02 Subdeployments + lint tests + smoke evidence). Pushed.
+
+**csapi**: HEAD `0c18b36` (Pat planning) → `c1ef9e3` (Dana SPRINT-IMPLEMENTED — spec/design/ADR/traceability/changelog/status/handoff/grep-archive) → `65053a7` (orchestrator metrics turn 97). Pushed.
 
 ---
 
