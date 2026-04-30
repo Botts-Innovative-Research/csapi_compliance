@@ -24,9 +24,9 @@ Implement TestNG suite classes for all 14 OGC 23-001 conformance classes, with e
 | S-ETS-04-05 | (Sprint 4, CLOSED) Implement CS API Subsystems (`/conf/subsystem`) conformance class — first TWO-LEVEL dependency chain | Done (Sprint 4, Quinn 0.84 / Raze 0.84 APPROVE_WITH_GAPS — 4 @Tests PASS 26/26 smoke) | REQ-ETS-PART1-003 |
 | S-ETS-05-05 | (Sprint 5) Implement CS API Procedures (`/conf/procedure-features`) conformance class — geometry=null invariant unique assertion | Active (Sprint 5) | REQ-ETS-PART1-006 |
 | S-ETS-05-06 | (Sprint 5) Implement CS API Deployments (`/conf/deployment-features`) conformance class — deployed-system-resource SKIP-with-reason | Active (Sprint 5) | REQ-ETS-PART1-004 |
-| S-ETS-06-01 | (placeholder) Implement `/conf/sampling-features` suite (sibling; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-007 |
-| S-ETS-06-02 | (placeholder) Implement `/conf/property-definitions` suite (sibling; depends on SystemFeatures) | Backlog | REQ-ETS-PART1-008 |
-| S-ETS-06-03 | (placeholder) Implement `/conf/subdeployments` suite | Backlog | REQ-ETS-PART1-005 |
+| S-ETS-07-02 | **(Sprint 7 Active)** Implement `/conf/sf` (Sampling Features) suite — depends on SystemFeatures; GeoRobotix /samplingFeatures HTTP 200 confirmed | **Active (Sprint 7)** | REQ-ETS-PART1-007 |
+| S-ETS-07-03 | **(Sprint 7 Active)** Implement `/conf/property` (Property Definitions) suite — depends on SystemFeatures; GeoRobotix /properties HTTP 200 confirmed | **Active (Sprint 7)** | REQ-ETS-PART1-008 |
+| S-ETS-08-01 | (placeholder) Implement `/conf/subdeployments` suite | Backlog | REQ-ETS-PART1-005 |
 | S-ETS-07-01 | (placeholder) Implement `/conf/advanced-filtering` suite | Backlog | REQ-ETS-PART1-009 |
 | S-ETS-07-02 | (placeholder) Implement `/conf/create-replace-delete` suite | Backlog | REQ-ETS-PART1-010 |
 | S-ETS-07-03 | (placeholder) Implement `/conf/update` suite | Backlog | REQ-ETS-PART1-011 |

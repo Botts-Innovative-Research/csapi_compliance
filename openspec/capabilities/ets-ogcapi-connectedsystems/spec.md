@@ -342,9 +342,31 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 #### REQ-ETS-CLEANUP-017: Sabotage Three-Class Cascade Live-Exec Verified (Sprint 6 — GAP-2 fix)
 - **Priority**: SHOULD
-- **Status**: IMPLEMENTED (Sprint 6 S-ETS-06-02 — Generator Run 1 close 2026-04-30; sister repo HEAD `c17a534`; live cascade verification deferred to Raze adversarial sabotage exec at Sprint 6 gate). The structural fix landed: `scripts/sabotage-test.sh` rsync at line ~205 no longer excludes `.git/` from the temp worktree, so `Dockerfile COPY .git ./.git` (per ADR-002 git-commit-sha pinning) succeeds. Honest log message conditional captures smoke exit code and disambiguates Docker build failure (no TestNG report produced) from smoke @Test failure (report present). bash -n PASS; --help / --target=foo paths preserved. Live exec at gate is expected to produce a cascade XML showing Core+Common all PASS, SystemFeatures 1×FAIL + Nx SKIP, Subsystems+Procedures+Deployments all SKIP — closing the ADR-010 v3 forward-extends claim at the live-exec layer.
+- **Status**: STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED (Sprint 6 close 2026-04-30; structural `.git` include fix landed sister `c25e44a..c17a534`; live cascade unverified because Sprint 5 S-ETS-05-03 sabotage-marker injection produces `javac` unreachable-statement compile error — `throw new AssertionError(...)` as first statement makes existing `ETSAssert.assertStatus(...)` unreachable per JLS §14.21; Sprint 5 GAP-2 `.git`-exclude previously masked this latent bug; Sprint 7 S-ETS-07-01 targets full close via `if (true) throw` idiom; cross-reference Raze HIGH GAP-1 sprint-ets-06-adversarial-cumulative.yaml + meta-Raze META-GAP-M2 sprint-ets-06-meta-review.yaml). **Status-honesty note**: future readers MUST NOT read this as IMPLEMENTED — the live cascade XML has NOT been produced. Sprint 7 S-ETS-07-01 is the next gate-verified close target.
 - **Description**: After the rsync `.git` include fix in `scripts/sabotage-test.sh` (S-ETS-06-02), the sabotage script `--target=systemfeatures` SHALL run end-to-end at gate time producing a cascade XML showing: Core+Common all PASS; SystemFeatures 1×FAIL + Nx SKIP; Subsystems+Procedures+Deployments all SKIP. This closes the ADR-010 v3 "forward-extends to Procedures + Deployments" claim at the live-exec layer (v3 amendment was empirical inference; this provides direct evidence). The sabotage log message SHALL correctly distinguish Docker build failure from smoke @Test failure.
 - **Maps to**: ADR-010 §"Defense-in-depth role split". Closes GAP-2 from Sprint 5 Raze cumulative GAPS_FOUND 0.74 + Quinn cumulative APPROVE_WITH_CONCERNS 0.82 (cross-corroborated; reclassified from HIGH → MEDIUM per meta-Raze severity calibration).
+
+> Sprint 7 adds REQ-ETS-CLEANUP-018 (Sprint 6 carryover wedge bundle) and REQ-ETS-PART1-007..008 (Sampling Features + Property Definitions — twice-deferred from Sprints 5+6). Stories S-ETS-07-01..03 are Active Sprint 7.
+
+#### REQ-ETS-CLEANUP-018: Sprint 6 Carryover Wedge Bundle (Sprint 7)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 7 S-ETS-07-01 target)
+- **Description**: Bundle fix for 4 Sprint 6 gate-identified defects: (1) `scripts/sabotage-test.sh` sabotage-marker injection javac unreachable-statement fix — change bare `throw new AssertionError(...)` to `if (true) throw new AssertionError(...)` (~1-3 LOC python); (2) `scripts/sabotage-test.sh` pipefail-unreachable disambiguation block fix — replace `ls` pipeline with glob-safe `for` idiom (~3-5 LOC bash); (3) `scripts/credential-leak-e2e-test.sh` prong-b retarget — try smoke-test.sh's archived container log first, fall back to docker logs (~5-8 LOC bash); (4) `openspec/capabilities/ets-ogcapi-connectedsystems/design.md` §Sprint 3 hardening wrap-pattern doc-lag fix — add Sprint 6 approach (i) subsection, mark old super.filter() code as historical, correct false try/finally claim (~30-50 LOC doc). Acceptance: `bash scripts/sabotage-test.sh --target=systemfeatures` produces cascade XML end-to-end (Wedge 1 close); `credential_leak_e2e_full_pass` automated script returns PASS exit 0 (Wedge 3 close); bash -x trace confirms disambiguation block fires on Docker build failure path (Wedge 2 close); design.md no longer contains the false try/finally claim (Wedge 5 close).
+- **Maps to**: meta-Raze sprint-ets-06-meta-review.yaml META-GAP-M1, META-GAP-M2 (HIGH recalibrated). Closes Raze HIGH GAP-1, MEDIUM GAP-3 + Quinn MEDIUM GAP-Q1 from sprint-ets-06-adversarial-cumulative.yaml + sprint-ets-06-evaluator-cumulative.yaml.
+
+#### REQ-ETS-PART1-007: Sampling Features Conformance Class (`/conf/sf`)
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 7 S-ETS-07-02 target)
+- **Description**: Implement `SamplingFeaturesTests.java` in `conformance/samplingfeatures/`. The Sampling Features conformance class (OGC 23-001 `/conf/sf`) covers sampling features associated with observed systems. SHALL follow the established two-level cascade pattern: `<group name="samplingfeatures" depends-on="systemfeatures"/>` + `@BeforeClass SkipException` fallback (belt-and-suspenders per ADR-010 v3). Acceptance: ≥4 @Tests (collection HTTP 200, canonical endpoint, canonical URL, dependency-skip wiring); all PASS against GeoRobotix (confirmed `/samplingFeatures` HTTP 200 with 100+ items 2026-04-30); testng.xml updated; VerifyTestNGSuiteDependency extended with 3 lint tests; smoke total increases from 34 to ≥38.
+- **OGC requirement prefix**: `/req/sf/` (HTTP 200 verified at raw.githubusercontent.com 2026-04-30)
+- **Maps to**: PRD FR-ETS-17; twice-deferred from Sprint 5 (wedge-deferred) + Sprint 6 (wedge sprint, excluded).
+
+#### REQ-ETS-PART1-008: Property Definitions Conformance Class (`/conf/property`)
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 7 S-ETS-07-03 target)
+- **Description**: Implement `PropertyDefinitionsTests.java` in `conformance/propertydefinitions/`. The Property Definitions conformance class (OGC 23-001 `/conf/property`) covers Observable Property definitions. SHALL follow the established two-level cascade pattern: `<group name="propertydefinitions" depends-on="systemfeatures"/>` + `@BeforeClass SkipException` fallback. Acceptance: ≥4 @Tests (collection HTTP 200, canonical endpoint, canonical URL, dependency-skip wiring); all PASS against GeoRobotix (confirmed `/properties` HTTP 200 2026-04-30); testng.xml updated; VerifyTestNGSuiteDependency extended with 3 lint tests; smoke total increases from ≥38 (post S-ETS-07-02) to ≥42.
+- **OGC requirement prefix**: `/req/property/` (HTTP 200 verified; `/req/property/canonical-url` + `/req/property/resources-endpoint` confirmed 2026-04-30)
+- **Maps to**: PRD FR-ETS-18; twice-deferred from Sprint 5 + Sprint 6 (see REQ-ETS-PART1-007 rationale).
 
 ## Acceptance Scenarios
 
@@ -884,6 +906,128 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **THEN** the log message reads `"Docker build FAILED"` or equivalent (NOT `"smoke exited non-zero (EXPECTED — SystemFeatures FAIL on first @Test)"`)
 **AND** when the Docker build succeeds but smoke exits non-zero due to the sabotage marker @Test FAIL, the log message reads `"smoke exited non-zero (EXPECTED — SystemFeatures FAIL on first @Test)"`.
 *Maps to*: REQ-ETS-CLEANUP-015 (improved UX).
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-JAVAC-FIX-001 (CRITICAL — Sprint 7)
+**GIVEN** `scripts/sabotage-test.sh --target=systemfeatures` is run from a /tmp clone at Sprint 7 HEAD
+**WHEN** the python injector injects `if (true) throw new AssertionError("SABOTAGED ...")` as the first statement of `systemsCollectionReturns200()`
+**THEN** Docker build step 8/8 (`mvn clean package`) succeeds without `unreachable statement` compile error
+**AND** the smoke run produces a TestNG XML cascade report
+**AND** the cascade report shows Core+Common all PASS, SystemFeatures 1×FAIL + Nx SKIP, Subsystems+Procedures+Deployments all SKIP.
+*Maps to*: REQ-ETS-CLEANUP-017 (live acceptance), REQ-ETS-CLEANUP-018.
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-PIPEFAIL-FIX-001 (CRITICAL — Sprint 7)
+**GIVEN** `scripts/sabotage-test.sh --target=systemfeatures` is run where Docker build fails (e.g. injected compile error path)
+**WHEN** the disambiguation block is reached after `SMOKE_EXIT_CODE` capture
+**THEN** the script does NOT exit prematurely before the disambiguation log message fires
+**AND** the log contains `"Docker build FAILED"` (not a sabotage-marker hit message)
+**AND** bash -x trace evidence confirms the disambiguation block at lines ~287-298 is reachable.
+*Maps to*: REQ-ETS-CLEANUP-018.
+
+#### SCENARIO-ETS-CLEANUP-CRED-LEAK-PRONG-B-FIX-001 (CRITICAL — Sprint 7)
+**GIVEN** `scripts/credential-leak-e2e-test.sh` is run from a /tmp clone with `SMOKE_AUTH_CREDENTIAL='Bearer ABCDEFGH12345678WXYZ'`
+**WHEN** the three-fold cross-check executes
+**THEN** the script exits 0 (PASS exit code, not FAIL)
+**AND** prong (b) finds ≥1 `Bear***WXYZ` hit (in smoke-test.sh's archived container log, not the vacuous post-teardown docker logs output)
+**AND** prongs (a) and (c) continue to PASS as in Sprint 6 manual verification.
+*Maps to*: REQ-ETS-CLEANUP-018, REQ-ETS-CLEANUP-011 (automated script now matches semantic PASS).
+
+#### SCENARIO-ETS-CLEANUP-REQ017-STATUS-HONESTY-001 (CRITICAL — Sprint 7)
+**GIVEN** spec.md REQ-ETS-CLEANUP-017 status text
+**WHEN** an agent reads the status before Sprint 7 live-exec completes
+**THEN** the status reads `STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED` (not `IMPLEMENTED`)
+**AND** the status text cross-references Raze HIGH GAP-1 + meta-Raze META-GAP-M2
+**WHEN** Sprint 7 S-ETS-07-01 closes with live cascade XML produced
+**THEN** Generator promotes status to `IMPLEMENTED (Sprint 7 S-ETS-07-01)` with cascade XML evidence.
+*Maps to*: REQ-ETS-CLEANUP-017, REQ-ETS-CLEANUP-018. spec-anchored-development status-honesty principle.
+
+#### SCENARIO-ETS-CLEANUP-DESIGN-MD-WRAP-PATTERN-001 (NORMAL — Sprint 7)
+**GIVEN** `openspec/capabilities/ets-ogcapi-connectedsystems/design.md` §"Sprint 3 hardening" lines ~531-636
+**WHEN** a reader reads the section
+**THEN** a "Sprint 6 redesign: approach (i)" subsection appears BEFORE the old code block
+**AND** the old Java code block is labelled "Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i))"
+**AND** the false claim "try/finally pattern guarantees the IUT receives the real credential header even if super.filter() throws" is corrected or removed
+**AND** the deleted try/finally unit-test descriptions are marked as historical or removed.
+*Maps to*: REQ-ETS-CLEANUP-018. Closes meta-Raze META-GAP-M1.
+
+#### SCENARIO-ETS-CLEANUP-ADR010-V4-OR-RETROVAL-001 (NORMAL — Sprint 7)
+**GIVEN** ADR-010 v3 amendment claims "TestNG 7.9.0 transitive cascade VERIFIED LIVE (2026-04-29)" via Sprint 4 2-class chain
+**WHEN** Sprint 7 S-ETS-07-01 Wedge 1 produces a 3-class cascade XML
+**THEN** ADR-010 receives a "Sprint 7 live-verification note" confirming the 3-class cascade was produced (retroactively validating v3's forward-extends claim)
+**AND** the note records the cascade XML archive path and date.
+**OR** if Wedge 1 does not close in Sprint 7, ADR-010 receives a v4 amendment noting "3-class live-verification attempt failed in Sprint 6 due to sabotage-marker compile error; Sprint 7 carryover".
+*Maps to*: REQ-ETS-CLEANUP-017, REQ-ETS-CLEANUP-018. Closes meta-Raze META-GAP-M3.
+
+#### SCENARIO-ETS-PART1-007-SF-RESOURCES-001 (CRITICAL — Sprint 7)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**AND** the IUT declares `/conf/sf` in its conformance declaration
+**WHEN** `SamplingFeaturesTests` executes `GET /samplingFeatures`
+**THEN** the response is HTTP 200
+**AND** the response body contains a non-empty `features` or `items` array.
+*Maps to*: REQ-ETS-PART1-007, OGC requirement `/req/sf/resources-endpoint`.
+
+#### SCENARIO-ETS-PART1-007-SF-CANONICAL-001 (CRITICAL — Sprint 7)
+**GIVEN** at least one sampling feature exists in the collection
+**WHEN** `SamplingFeaturesTests` retrieves the first sampling feature at `GET /samplingFeatures/{id}`
+**THEN** the response is HTTP 200
+**AND** the response body contains `id`, `type`, and a `links` array.
+*Maps to*: REQ-ETS-PART1-007.
+
+#### SCENARIO-ETS-PART1-007-SF-CANONICAL-URL-001 (CRITICAL — Sprint 7)
+**GIVEN** a sampling feature resource at `GET /samplingFeatures/{id}`
+**WHEN** the `links` array is inspected
+**THEN** at least one link with `rel=canonical` is present
+**AND** the href equals `{api_root}/samplingFeatures/{id}`.
+*Maps to*: REQ-ETS-PART1-007, OGC requirement `/req/sf/canonical-url`.
+
+#### SCENARIO-ETS-PART1-007-SF-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 7)
+**GIVEN** the testng.xml declares `<group name="samplingfeatures" depends-on="systemfeatures"/>`
+**WHEN** SystemFeatures group has any FAIL or SKIP
+**THEN** all SamplingFeaturesTests `@Test` methods are SKIPped by TestNG
+**AND** the @BeforeClass SkipException fallback also fires as belt-and-suspenders defense-in-depth.
+*Maps to*: REQ-ETS-PART1-007, ADR-010 v3.
+
+#### SCENARIO-ETS-PART1-007-SF-SMOKE-NO-REGRESSION-001 (CRITICAL — Sprint 7)
+**GIVEN** the TeamEngine + ETS Docker container is running post-Sprint 7
+**WHEN** `scripts/smoke-test.sh` executes against GeoRobotix
+**THEN** existing 34 @Tests (Core + SystemFeatures + Common + Subsystems + Procedures + Deployments) all continue to PASS
+**AND** ≥4 new SamplingFeaturesTests @Tests PASS
+**AND** total smoke PASS ≥ 38.
+*Maps to*: REQ-ETS-PART1-007, REQ-ETS-TEAMENGINE-005.
+
+#### SCENARIO-ETS-PART1-008-PROP-RESOURCES-001 (CRITICAL — Sprint 7)
+**GIVEN** the IUT is `https://api.georobotix.io/ogc/t18/api`
+**WHEN** `PropertyDefinitionsTests` executes `GET /properties`
+**THEN** the response is HTTP 200
+**AND** the response body contains a non-empty collection of property definitions.
+*Maps to*: REQ-ETS-PART1-008, OGC requirement `/req/property/resources-endpoint`.
+
+#### SCENARIO-ETS-PART1-008-PROP-CANONICAL-001 (CRITICAL — Sprint 7)
+**GIVEN** at least one property definition exists in the collection
+**WHEN** `PropertyDefinitionsTests` retrieves the first property at `GET /properties/{id}`
+**THEN** the response is HTTP 200
+**AND** the response body contains `id`, `type`, and a `links` array.
+*Maps to*: REQ-ETS-PART1-008.
+
+#### SCENARIO-ETS-PART1-008-PROP-CANONICAL-URL-001 (CRITICAL — Sprint 7)
+**GIVEN** a property definition resource at `GET /properties/{id}`
+**WHEN** the `links` array is inspected
+**THEN** at least one link with `rel=canonical` is present
+**AND** the href equals `{api_root}/properties/{id}`.
+*Maps to*: REQ-ETS-PART1-008, OGC requirement `/req/property/canonical-url`.
+
+#### SCENARIO-ETS-PART1-008-PROP-DEPENDENCY-SKIP-001 (CRITICAL — Sprint 7)
+**GIVEN** the testng.xml declares `<group name="propertydefinitions" depends-on="systemfeatures"/>`
+**WHEN** SystemFeatures group has any FAIL or SKIP
+**THEN** all PropertyDefinitionsTests `@Test` methods are SKIPped by TestNG.
+*Maps to*: REQ-ETS-PART1-008, ADR-010 v3.
+
+#### SCENARIO-ETS-PART1-008-PROP-SMOKE-NO-REGRESSION-001 (CRITICAL — Sprint 7)
+**GIVEN** the TeamEngine + ETS Docker container is running post-Sprint 7
+**WHEN** `scripts/smoke-test.sh` executes against GeoRobotix
+**THEN** existing ≥38 @Tests (post S-ETS-07-02) all continue to PASS
+**AND** ≥4 new PropertyDefinitionsTests @Tests PASS
+**AND** total smoke PASS ≥ 42.
+*Maps to*: REQ-ETS-PART1-008, REQ-ETS-TEAMENGINE-005.
 
 #### SCENARIO-ETS-WEBAPP-FREEZE-README-001 (NORMAL)
 **GIVEN** the `csapi_compliance` repo at HEAD `ab53658` plus the README reposition commit
