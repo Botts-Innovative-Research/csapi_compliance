@@ -2,6 +2,49 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-30T15:30Z — Sprint ets-06 Generator Run 1 of 1 IMPLEMENTED (Dana) — All 3 wedge stories landed; mvn 80/0/0/3; sister HEAD `c17a534`; live-execs gate-deferred
+
+**Sprint 6 ALL 3 STORIES IMPLEMENTED** in a single Generator run. Sprint complete pending Quinn evaluator (closure-proof three-fold live-exec) + Raze adversarial (cascade live-exec + adversarial wire-tap option_a) cumulative gates.
+
+**S-ETS-06-01 MaskingRequestLoggingFilter approach (i) wire-fix IMPLEMENTED** (~50 LOC Java rewrite + 4 new wire-side @Tests + 2 try/finally tests deleted; sister repo commits `3ccc24e` + `cb87feb`):
+
+- `MaskingRequestLoggingFilter.java` rewritten per approach (i) per Sprint 5 meta-Raze + primary-Raze consensus. No spec mutation; shadowed `private final PrintStream stream` field (REST-Assured 5.5.0 parent's stream is private final with no accessor — Plan-Raze verified via Maven Central source jar). `filter()` builds masked log line from header snapshot using `CredentialMaskingFilter.maskValue` for sensitive header values; emits to shadowed PrintStream; calls `ctx.next(requestSpec, responseSpec)` directly with unmutated spec — wire carries ORIGINAL credential. `super.filter()` bypassed entirely (parent was 2 ops: log + ctx.next; we replace log + retain ctx.next via explicit invocation). Defensive try/catch around log build wraps fallback "log-emission failed" line. Javadoc rewritten with rationale + TODO for any rest-assured upgrade past 5.5.x.
+- New `VerifyWireRestoresOriginalCredential` test class — 4 @Tests: `wireCarriesOriginalAuthorizationCredential` (primary; CapturingFilterContext snapshots header values BY VALUE at ctx.next time and asserts Authorization=`Bearer ABCDEFGH12345678WXYZ`, NOT `Bear***WXYZ`); `wireCarriesOriginalApiKeyAndCookie` (multi-header); `filterDoesNotMutateRequestSpec` (companion structural assertion); `streamOutputContainsMaskedFormNotLiteralCredential` (prong (b) at unit-test layer). Mockito `mock(Response.class)` returned to satisfy non-null Response contract; Mockito present in pom.xml test scope (lines 152-153). **TDD evidence**: under the legacy filter, `wireCarriesOriginalAuthorizationCredential` FAILed `expected:<Bear[er ABCDEFGH12345678]WXYZ> but was:<Bear[***]WXYZ>` — proving the snapshot-at-ctx.next pattern catches the Sprint 5 GAP-1' bug. Under approach (i), all 4 PASS.
+- `VerifyMaskingRequestLoggingFilter` audited per Pat's S-06-03 finer-granularity DoD: 2 try/finally-semantic tests (`filter_restoresOriginalAuthorizationHeaderAfterMaskedSuperFilterCall`, `filter_restoresOriginalApiKeyAndCookieEvenWhenSuperFilterThrows`) DELETED — they verified non-existent code under approach (i). 6 mask-format / isMasked / superset / null-guard tests RETAINED-AND-RECLASSIFIED with explicit "wiring-only — does NOT prove wire-side credential integrity" caveat in class javadoc + cross-reference to VerifyWireRestoresOriginalCredential. ThrowingFilterContext helper deleted.
+- Bundled `scripts/smoke-test.sh` container-log capture timing fix: capture `docker logs $CONTAINER_NAME` to LOG_FILE BEFORE the failed/total parse die() triggers (which call cleanup_silent and tear down the container). Pre-Sprint-6 the log was empty post-die because container was already removed; prong (a) of credential-leak three-fold passed vacuously and prong (b) grep-missed.
+- Bundled `scripts/credential-leak-e2e-test.sh` prong (b) grep target expanded to include `$STUB_LOGFILE` (CONCERN-2 from Sprint 5 Raze).
+
+**S-ETS-06-02 sabotage-test.sh rsync .git fix + honest log message IMPLEMENTED** (~5 LOC bash; sister repo commit `c17a534`):
+
+- `scripts/sabotage-test.sh` line 205 rsync no longer excludes `.git/` from temp worktree (Option A per Pat + Plan-Raze; sister `.git` measured 5.2MB via `du -sh` — well under any reasonable size threshold). cp -a fallback path also updated for symmetry: `rm -rf "$SABOTAGE_WORKTREE/.git" "$SABOTAGE_WORKTREE/target"` → `rm -rf "$SABOTAGE_WORKTREE/target"`.
+- Honest log message conditional: smoke exit code captured into `SMOKE_EXIT_CODE`; presence/absence of TestNG report disambiguates Docker build failure ("Docker build FAILED (not a sabotage-marker hit)" + advisory) from smoke @Test failure ("EXPECTED — SystemFeatures FAIL on first @Test").
+- bash -n PASS; --help / --target=foo paths preserved.
+
+**S-ETS-06-03 wire-side unit test spec reclassification IMPLEMENTED** (csapi_compliance documentation-only):
+
+- `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-013 — added "Implementation notes amended (Sprint 6 S-ETS-06-03 / META-GAP-1 reclassification)" block stating the 8 VerifyAuthCredentialPropagation + 6 retained VerifyMaskingRequestLoggingFilter tests are wiring-only and CANNOT detect filter-ordering defects; wire-side proof lives in VerifyWireRestoresOriginalCredential.
+- spec.md REQ-ETS-CLEANUP-016 status promoted SPECIFIED → IMPLEMENTED (Sprint 6 S-ETS-06-01 evidence detailed).
+- spec.md REQ-ETS-CLEANUP-011 status promoted to IMPLEMENTED (no longer pending; Sprint 6 finally closes the 2-sprint-old open criterion).
+- spec.md REQ-ETS-CLEANUP-015 status promoted IMPLEMENTED-PARTIAL → FULLY-IMPLEMENTED.
+- spec.md REQ-ETS-CLEANUP-017 status promoted SPECIFIED → IMPLEMENTED.
+- `_bmad/traceability.md` — REQ-ETS-CLEANUP-011/-013/-015/-016/-017 rows updated with Sprint 6 implementation status, sister repo HEAD `c17a534`, scenario list expanded, evidence narrative.
+- `epics/stories/s-ets-05-01-credential-leak-wiring-fix.md` Implementation Notes addendum: explicit wiring-only caveat + cross-reference to VerifyWireRestoresOriginalCredential.
+- `epics/stories/s-ets-06-{01,02,03}-*.md` Implementation Notes sections appended with full Sprint 6 evidence.
+
+**Test count**: surefire **78 → 80 / 0 failures / 0 errors / 3 skipped** (+4 VerifyWireRestoresOriginalCredential, -2 try/finally tests). BUILD SUCCESS.
+
+**Live execution deferred per Sprint 5 Run 2 precedent**: Generator does NOT run `scripts/credential-leak-e2e-test.sh` (Quinn's gate-time closure-proof live-exec) or `scripts/sabotage-test.sh --target=systemfeatures` cascade verification (Raze's gate-time adversarial sabotage live-exec).
+
+**Worktree-pollution constraint honored**: no Docker exec; no live smoke against user worktree; no test-results/ writes to ets-ogcapi-connectedsystems10/.
+
+**Mitigation pattern continues — write-handoff-FIRST stub committed at run start (`cf55df5`); 19 consecutive sub-agent successes**.
+
+**Sister repo commits** (3): `3ccc24e` (S-06-01 Java filter approach (i) + new wire-side test + audit) → `cb87feb` (S-06-01 bash bundles: smoke-test.sh capture timing + credential-leak-e2e-test.sh prong-b grep) → `c17a534` (S-06-02 sabotage rsync .git + honest log). All pushed to origin/main.
+
+**Generator self-confidence**: 0.92 — fix surfaces precisely bounded by Plan-Raze source inspections; approach (i) verified by 3 independent reviewers + TDD red-green-clean evidence. Concerns flagged for gates: (a) Quinn closure-proof exec must observe non-vacuous container.log (timing fix should produce content); (b) Raze adversarial wire-tap option_a (manual stub-iut + targeted REST-Assured request) is the genuine-independence path — option_b fallback EXPLICITLY DISALLOWED per contract.
+
+**Sprint 6 ready for cumulative gate close**: yes (all 3 stories Implemented; sister repo + csapi_compliance both ready for Quinn + Raze runs from /tmp/<role>-fresh-sprint6/ clones).
+
 ## 2026-04-30T00:50Z — Sprint ets-06 PLANNED (Pat) — WEDGE SPRINT — 3 stories closing the 2-sprint-old credential-leak defect; next_agent: generator (no Architect cycle)
 
 - **Trigger**: User instruction "2" (from prior option list) — spawn Pat for Sprint 6 with corrected 3-item carryover + differentiated-live-execs briefing per meta-Raze recommendations.

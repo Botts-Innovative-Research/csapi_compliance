@@ -160,3 +160,23 @@ DEFERRED to Quinn/Raze gate per Sprint 5 Run 1 worktree-pollution + Docker-time-
 - [x] `mvn test` BUILD SUCCESS surefire 72/0/0/3
 - [x] Smoke baseline preserved (mvn unit suite green; live smoke deferred to gate)
 - [DEFERRED to gate] SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-WIRING-001 / -THREE-FOLD-001 PASS (live exec)
+
+## Implementation Notes addendum (Sprint 6 S-ETS-06-03 META-GAP-1 reclassification — 2026-04-30)
+
+The 8 `VerifyAuthCredentialPropagation` unit tests landed in this story verify **STRUCTURAL WIRING ONLY**. They exercise:
+- `TestRunArg.AUTH_CREDENTIAL` key value (`"auth-credential"`)
+- `SuiteAttribute.AUTH_CREDENTIAL` name + type
+- `SuiteFixtureListener.processSuiteParameters` set/no-set/empty branches (Mockito verify)
+- `SuiteFixtureListener.configureRestAssuredAuthCredential` set/null/empty branches
+
+They do **NOT** exercise wire-side filter ordering. The `Mockito.verify(suite).setAttribute(...)` and `RestAssured.requestSpecification != null` checks confirm the wiring layers were called, but they cannot detect the filter-ordering defect that GAP-1' (Sprint 5 Raze 0.74 + meta-Raze 0.83 META-GAP-1) exposed: the `MaskingRequestLoggingFilter.filter()` could mutate `requestSpec` before `super.filter()` calls `ctx.next()` for HTTP transport, AND restore in finally — the Mockito verify would still PASS while the wire was poisoned.
+
+**Wire-side proof lives in `VerifyWireRestoresOriginalCredential`** (Sprint 6 S-ETS-06-01 / REQ-ETS-CLEANUP-016). That test class uses a `CapturingFilterContext` that snapshots header values BY VALUE at `ctx.next` call time (a by-reference capture would read the post-restoration state and miss the bug — exactly what the legacy 16 wiring-only tests suffered).
+
+**Future readers MUST NOT** conflate the 8/8 wiring PASS count from this story with credential safety. Sprint 5 GAP-1' demonstrated that all 16 wiring tests (8 from this story + 8 from `VerifyMaskingRequestLoggingFilter`) could PASS while the wire carried the masked form to the IUT. The wiring-only / wire-side distinction is now reflected in:
+- spec.md REQ-ETS-CLEANUP-013 implementation notes
+- spec.md REQ-ETS-CLEANUP-016 status block
+- `VerifyMaskingRequestLoggingFilter` class javadoc (post Sprint 6 audit; 2 try/finally tests deleted, 6 retained as wiring-only)
+- `VerifyAuthCredentialPropagation` continues to exist as wiring-only proof (no class-level javadoc edit needed; the spec.md note is the authoritative classification).
+
+Reference: `.harness/evaluations/sprint-ets-05-meta-review.yaml` §META-GAP-1; `.harness/contracts/sprint-ets-06.yaml` SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001.

@@ -89,3 +89,32 @@ Update `epics/stories/s-ets-05-01-credential-leak-wiring-fix.md` Implementation 
 - [ ] No regression: mvn test count increments by at least 1 (VerifyWireRestoresOriginalCredential class)
 - [ ] REQ-ETS-CLEANUP-016 implementation notes updated in spec.md
 - [ ] Generator wall-clock: ≤30 minutes (unit test + spec text edits)
+
+## Implementation Notes (Sprint 6 Generator Run 1 — 2026-04-30)
+
+**Status**: IMPLEMENTED
+
+**Sequencing**: Per Pat's recommended sequence, this story landed AFTER S-ETS-06-01. The wire-side test (`VerifyWireRestoresOriginalCredential`) was implemented as part of S-ETS-06-01 (DoD shared); this story's deliverable is the spec.md + story-notes documentation update.
+
+**Documentation updates**:
+
+1. `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-013 — added an "Implementation notes amended (Sprint 6 S-ETS-06-03 / META-GAP-1 reclassification)" block. Excerpt:
+   > The 8 `VerifyAuthCredentialPropagation` unit tests verify STRUCTURAL WIRING ONLY ... they do NOT exercise wire-side filter ordering. Likewise the 6 retained `VerifyMaskingRequestLoggingFilter` tests (post Sprint 6 S-06-01 audit; 2 try/finally-semantic tests deleted) verify mask-format / `isMasked()` / header-set membership but use a `StubFilterContext` returning null from `ctx.next()` and CANNOT detect filter-ordering defects. **Wire-side credential integrity is proven only by `VerifyWireRestoresOriginalCredential` (REQ-ETS-CLEANUP-016, Sprint 6 S-ETS-06-01)** which uses a `CapturingFilterContext` snapshotting header values BY VALUE at `ctx.next` time. Future readers MUST NOT conflate the wiring-only PASS count with credential safety; the Sprint 5 GAP-1' bug demonstrated that 16 wiring tests can all PASS while the wire is poisoned.
+
+2. `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-016 — Status promoted SPECIFIED → IMPLEMENTED with detailed evidence (approach (i) implementation, sister repo HEAD `c17a534`, surefire 78 → 80, TDD red-then-green evidence, 2 try/finally tests deleted, ThrowingFilterContext deleted, defensive try/catch in log build).
+
+3. `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-011 — Status promoted to IMPLEMENTED (no longer "pending Quinn+Raze gate close — pending GAP-1'"); now reads "Sprint 6 S-ETS-06-01 — finally closes the 2-sprint-old open criterion."
+
+4. `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-015 — Status promoted IMPLEMENTED-PARTIAL → FULLY-IMPLEMENTED (Docker build path fixed; bash -n PASS; live cascade gate-deferred).
+
+5. `openspec/capabilities/ets-ogcapi-connectedsystems/spec.md` REQ-ETS-CLEANUP-017 — Status promoted SPECIFIED → IMPLEMENTED (rsync .git fix + honest log message landed; live cascade gate-deferred).
+
+6. `_bmad/traceability.md` — REQ-ETS-CLEANUP-011, -013, -015, -016, -017 rows updated with Sprint 6 implementation status, sister repo HEAD `c17a534`, scenario list expanded, evidence narrative.
+
+7. `epics/stories/s-ets-05-01-credential-leak-wiring-fix.md` — Implementation Notes section appended with the wiring-only caveat + cross-reference to VerifyWireRestoresOriginalCredential.
+
+8. `epics/stories/s-ets-06-01-masking-filter-wire-fix.md`, `s-ets-06-02-sabotage-rsync-git-fix.md`, `s-ets-06-03-wire-side-unit-test-reclassify.md` (this file) — Implementation Notes sections appended.
+
+**Behavioral regression check**: existing 14 wiring-only tests (8 VerifyAuthCredentialPropagation + 6 retained VerifyMaskingRequestLoggingFilter) ALL still PASS in mvn test. No test code was modified by this story; only class-level javadoc + spec.md / story narrative. The `VerifyMaskingRequestLoggingFilter` class's REWRITE in S-ETS-06-01 (deleting 2 try/finally tests + adding wiring-only caveat to retained tests) is the implementation-side counterpart; the spec/doc updates here mirror that change.
+
+**No standalone story commit in csapi_compliance**: per the dependency relationship (S-06-03 amends what S-06-01 produces), the spec.md + traceability + story-notes changes are bundled into the Sprint 6 summary commit alongside the generator-handoff close.

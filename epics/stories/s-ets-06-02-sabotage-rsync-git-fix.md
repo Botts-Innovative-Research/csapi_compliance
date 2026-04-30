@@ -89,3 +89,33 @@ Generator should read the full script flow to identify the correct variable name
 - [ ] REQ-ETS-CLEANUP-017 status SPECIFIED in spec.md (IMPLEMENTED when gate produces live cascade XML)
 - [ ] No regression: bash -n PASS; --help exits 0; --target=foo exits 2 (all existing sub-paths preserved)
 - [ ] Generator wall-clock: ≤20 minutes (this is a 1-2 LOC fix + log message improvement)
+
+## Implementation Notes (Sprint 6 Generator Run 1 — 2026-04-30)
+
+**Status**: IMPLEMENTED (live cascade verification deferred to Raze adversarial sabotage exec at Sprint 6 gate)
+
+**Sister repo commit**: `c17a534` — sabotage-test.sh rsync .git fix + honest log message
+
+**Option A applied** (Pat's recommendation; sister `.git` measured 5.2MB via `du -sh` at Generator start, well under any reasonable size threshold):
+
+```diff
+-    rsync -a --exclude='.git/' --exclude='target/' --exclude='node_modules/' \
++    rsync -a --exclude='target/' --exclude='node_modules/' \
+       --exclude='ops/test-results/*.xml' --exclude='ops/test-results/*.log' \
+       "$REPO_ROOT/" "$SABOTAGE_WORKTREE/"
+```
+
+The cp -a fallback path also updated for symmetry: `rm -rf "$SABOTAGE_WORKTREE/.git" "$SABOTAGE_WORKTREE/target"` → `rm -rf "$SABOTAGE_WORKTREE/target"` (no longer strips .git from the cp-fallback temp tree either).
+
+**Honest log message conditional** at step 4: smoke exit code captured into `SMOKE_EXIT_CODE` via `|| SMOKE_EXIT_CODE=$?`. After the smoke run, the script tries to locate the latest TestNG report; presence/absence disambiguates failure modes:
+- No report + non-zero exit → "Docker build FAILED (not a sabotage-marker hit)" + advisory message about COPY/.git or other Docker errors; then `die`.
+- Report present + non-zero exit → "EXPECTED — SystemFeatures FAIL on first @Test" (the legitimate sabotage-cascade outcome).
+- Report present + zero exit → silent (proceeds to cascade parse).
+
+**Verification**:
+- `bash -n scripts/sabotage-test.sh` PASS (syntax clean).
+- `bash scripts/sabotage-test.sh --help` exits 0 with usage banner unchanged.
+- `bash scripts/sabotage-test.sh --target=foo` exits 2 with the existing FATAL message unchanged.
+- Live cascade execution NOT run by Generator — gate-deferred per Sprint 5 Run 2 precedent (Raze's gate-time adversarial sabotage live-exec).
+
+**No regression risk**: the `.git`-include change increases temp-tree size by ~5.2MB (negligible vs the existing target/ exclude that prunes ~tens of MB). The honest log message only applies when smoke fails; the success path is unchanged.

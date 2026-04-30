@@ -125,3 +125,44 @@ This approach was considered but is REJECTED because `RequestLoggingFilter.strea
 - [ ] Prong (b) grep expanded to include stub-IUT log
 - [ ] design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern" updated to reflect the fix (the javadoc claim "IUT receives the real credential header" is now actually true)
 - [ ] S-06-03 finer-granularity disposition — Generator audits the 8 VerifyMaskingRequestLoggingFilter tests; DELETES the ones that verify try/finally semantics that approach (i) eliminates; KEEPS and reclassifies (as "wiring-only") the ones that verify mask format, isMasked(), and DEFAULT_HEADERS_TO_MASK set membership. (Plan-Raze recommendation: partial-delete is healthier than preserving tests for non-existent code.)
+
+## Implementation Notes (Sprint 6 Generator Run 1 — 2026-04-30)
+
+**Status**: IMPLEMENTED (live three-fold deferred to Quinn closure-proof exec at Sprint 6 gate)
+
+**Sister repo commits**:
+- `3ccc24e` — MaskingRequestLoggingFilter approach (i) wire-fix + new VerifyWireRestoresOriginalCredential + VerifyMaskingRequestLoggingFilter audit
+- `cb87feb` — smoke-test.sh container-log capture timing fix + credential-leak-e2e-test.sh prong-b grep expansion
+- Sister repo HEAD post-S-06-01: `cb87feb` (subsequently `c17a534` after S-06-02)
+
+**Approach (i) implementation** (`MaskingRequestLoggingFilter.java`):
+1. Added `private final PrintStream stream` field shadowing the parent's `private final PrintStream stream` (REST-Assured 5.5.0; no accessor — Plan-Raze verified via Maven Central source-jar inspection). Captured in the 2-arg constructor via `this.stream = stream` after `super(stream)`.
+2. `filter()` rewritten: no try/finally, no spec mutation. Builds `StringBuilder logLine = new StringBuilder("Request: ")` containing HTTP method + URI on the first line, then one indented `Header=Value` line per header. Sensitive header values are passed through `CredentialMaskingFilter.maskValue` for log emission only; non-sensitive headers pass through unchanged. Defensive try/catch around the log build wraps a fallback "log-emission failed" line so a logging-side failure never breaks the actual request.
+3. `return ctx.next(requestSpec, responseSpec)` — call delegated to next filter / transport with unmutated requestSpec. Wire carries ORIGINAL credential.
+4. `super.filter()` removed entirely. Per Plan-Raze source inspection, parent filter was 2 ops (`RequestPrinter.print` + `return ctx.next`); we replace the log emission and retain the ctx.next call.
+5. Javadoc rewritten: now accurately describes approach (i); explains shadowed-PrintStream-field rationale; documents the `super.filter` bypass with a TODO for any rest-assured upgrade past 5.5.x.
+
+**VerifyWireRestoresOriginalCredential** (4 @Tests) — `src/test/java/.../listener/VerifyWireRestoresOriginalCredential.java`:
+- `wireCarriesOriginalAuthorizationCredential` — primary; asserts the Authorization header value snapshotted DURING ctx.next equals `Bearer ABCDEFGH12345678WXYZ` (not `Bear***WXYZ`).
+- `wireCarriesOriginalApiKeyAndCookie` — multi-header coverage.
+- `filterDoesNotMutateRequestSpec` — companion: post-filter spec carries originals (subsumes the legacy try/finally invariant which is now vacuous).
+- `streamOutputContainsMaskedFormNotLiteralCredential` — prong (b) at unit-test layer; masked form present in stream output, literal credential middle absent.
+
+`CapturingFilterContext` records header values BY VALUE at ctx.next time (via `req.getHeaders().forEach(...)` into a `Map<String, String>`) — NOT by-reference. **Critical**: an initial draft of the test stored the FilterableRequestSpecification ref and read header values at assertion time; with the legacy filter this passed because the try/finally had restored originals before assertion. Snapshot-by-value at ctx.next call time is the only structurally-sound pattern; documented in the field javadoc to prevent future regressions.
+
+**VerifyMaskingRequestLoggingFilter audit** (Pat's S-06-03 finer-granularity DoD):
+- DELETED `filter_restoresOriginalAuthorizationHeaderAfterMaskedSuperFilterCall` — verified try/finally semantics that approach (i) eliminates; testing non-existent code under the new implementation.
+- DELETED `filter_restoresOriginalApiKeyAndCookieEvenWhenSuperFilterThrows` — same rationale; also eliminated `ThrowingFilterContext` helper (only this test used it).
+- RETAINED-AND-RECLASSIFIED `isMasked_authorizationHeaderRecognized` (case-insensitivity), `isMasked_supersetOfCredentialMaskingFilterDefaults`, `isMasked_nonCredentialHeaderNotMasked`, `filter_streamOutputContainsMaskedFormNotLiteralCredential` (mask format), `filter_apiKeyMaskedInStreamOutput` (mask format), `constructor_nullHeaderSetThrows` — all add explicit "wiring-only — does NOT prove wire-side credential integrity" caveat in class javadoc + cross-reference to VerifyWireRestoresOriginalCredential.
+
+**Bundled bash fixes**:
+- `scripts/smoke-test.sh` — added `docker logs "$CONTAINER_NAME" > "$LOG_FILE" 2>&1 || true` IMMEDIATELY after the TestNG-stats parse and BEFORE the `total=0` / `failed>0` `die()` triggers (which call `cleanup_silent` and tear down the container). Pre-Sprint-6 the log was empty post-die because the container was already removed. Step 8 still does a refresh capture for any post-parse log lines. Capture is non-fatal (`|| true`).
+- `scripts/credential-leak-e2e-test.sh` — prong (b) grep target expanded to include `$STUB_LOGFILE` (CONCERN-2 from Sprint 5 Raze). Now sums hits across container.log + testng-results.xml + smoke.log + stub-iut.log; any one ≥1 satisfies the prong.
+
+**TDD evidence**: with the legacy filter (Sprint 3 implementation), `wireCarriesOriginalAuthorizationCredential` FAILed: `expected:<Bear[er ABCDEFGH12345678]WXYZ> but was:<Bear[***]WXYZ>`. With approach (i), all 4 wire-side @Tests PASS. This proves the snapshot-at-ctx.next test pattern actually catches the GAP-1' bug — closing the META-GAP-1 concern that the existing 16 wiring tests could PASS while the wire was poisoned.
+
+**mvn test result**: 78 → 80 / 0 failures / 0 errors / 3 skipped. BUILD SUCCESS. (+4 VerifyWireRestoresOriginalCredential tests; -2 try/finally tests deleted from VerifyMaskingRequestLoggingFilter.)
+
+**Live execution deferred**: per Sprint 5 Run 2 deferral precedent, Generator does NOT run the credential-leak three-fold cross-check (`scripts/credential-leak-e2e-test.sh`) — that's Quinn's gate-time closure-proof live-exec. Generator does NOT run sabotage-test.sh --target=systemfeatures cascade verification — that's Raze's gate-time adversarial sabotage live-exec.
+
+**Risk note**: approach (i) bypasses `super.filter()`. If REST-Assured is upgraded past 5.5.x and the parent's filter() method gains additional behavior between log emission and `ctx.next` (e.g. retry logic, response caching, interceptor chaining), the bypass MUST be re-evaluated. TODO comment added to the javadoc.
