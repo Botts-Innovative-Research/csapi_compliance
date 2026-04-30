@@ -24,13 +24,16 @@ Wire the ETS into TeamEngine 5.6.x (currently 5.6.1) via the TestNG SPI, ship a 
 | S-ETS-04-02 | (Sprint 4) Image-size v2: chown-layer attack (target <600MB) + ADR-009 v2 amendment | Active (Sprint 4) | REQ-ETS-CLEANUP-008 (modified), REQ-ETS-CLEANUP-010 |
 | S-ETS-04-03 | (Sprint 4) Deeper E2E credential-leak smoke (S-ETS-03-02 PARTIAL → PASS at IUT-auth layer) | Active (Sprint 4) | REQ-ETS-CLEANUP-006 (modified), REQ-ETS-CLEANUP-011, REQ-ETS-CLEANUP-003 (modified) |
 | S-ETS-04-04 | (Sprint 4, CLOSED) Sabotage-script bug fixes (stub bind 0.0.0.0 + docker --add-host=host.docker.internal) for hermetic CITE-SC-grade execution | Done (Sprint 4, PASS) | REQ-ETS-CLEANUP-005 (modified), REQ-ETS-CLEANUP-012 |
-| S-ETS-05-01 | (Sprint 5) GAP-1 wedge fix: wire SMOKE_AUTH_CREDENTIAL through smoke-test.sh → CTL → Java → REST-Assured header | Active (Sprint 5) | REQ-ETS-CLEANUP-013, REQ-ETS-CLEANUP-011 (modified) |
-| S-ETS-05-02 | (Sprint 5) Worktree-pollution mitigation v2: SMOKE_OUTPUT_DIR override in smoke-test.sh | Active (Sprint 5) | REQ-ETS-CLEANUP-014 |
-| S-ETS-05-03 | (Sprint 5) sabotage-test.sh --target=systemfeatures mode (native flag for gate invocation) | Active (Sprint 5) | REQ-ETS-CLEANUP-015 |
-| S-ETS-05-04 | (Sprint 5) SubsystemsTests javadoc fix (6 not 5 .adoc files) + ADR-010 v3 amendment (cascade VERIFIED LIVE) | Active (Sprint 5) | REQ-ETS-PART1-003 (minor doc) |
-| S-ETS-06-05 | (placeholder) docker-compose stack with healthchecks (extended beyond Sprint 1 baseline) | Backlog | REQ-ETS-TEAMENGINE-004 |
-| S-ETS-06-06 | (placeholder) CTL wrapper supports auth-type parameters end-to-end | Backlog | REQ-ETS-TEAMENGINE-002 |
-| S-ETS-06-07 | (placeholder) TeamEngine integration regression suite (CI) | Backlog | NFR-ETS-04 |
+| S-ETS-05-01 | (Sprint 5) GAP-1 wedge fix: wire SMOKE_AUTH_CREDENTIAL through smoke-test.sh → CTL → Java → REST-Assured header | **PARTIAL / REOPENED** — wiring mechanically correct; filter-ordering defect exposed (MaskingRequestLoggingFilter mutates requestSpec before ctx.next wire-send). Sprint 6 S-ETS-06-01 fixes filter. | REQ-ETS-CLEANUP-013, REQ-ETS-CLEANUP-011 (modified) |
+| S-ETS-05-02 | (Sprint 5) Worktree-pollution mitigation v2: SMOKE_OUTPUT_DIR override in smoke-test.sh | Done (Sprint 5, PASS — verified SMOKE_OUTPUT_DIR works in 2 live execs at gate; user worktree clean) | REQ-ETS-CLEANUP-014 |
+| S-ETS-05-03 | (Sprint 5) sabotage-test.sh --target=systemfeatures mode (native flag for gate invocation) | **PARTIAL / REOPENED** — flag mechanics correct (injection, pollution-guard, exit codes); Docker build fails on COPY .git missing. Sprint 6 S-ETS-06-02 fixes rsync. | REQ-ETS-CLEANUP-015 |
+| S-ETS-05-04 | (Sprint 5) SubsystemsTests javadoc fix (6 not 5 .adoc files) + ADR-010 v3 amendment (cascade VERIFIED LIVE) | Done (Sprint 5, PASS) | REQ-ETS-PART1-003 (minor doc) |
+| S-ETS-06-01 | **(Sprint 6 WEDGE)** MaskingRequestLoggingFilter wire-fix: log masked form directly; ctx.next(originalSpec); new VerifyWireRestoresOriginalCredential test; 16 wiring-only tests reclassified; container-log capture timing fix bundled | **Active (Sprint 6)** | REQ-ETS-CLEANUP-016, REQ-ETS-CLEANUP-011 (closes), REQ-ETS-CLEANUP-013 (amended notes) |
+| S-ETS-06-02 | **(Sprint 6 WEDGE)** sabotage-test.sh rsync .git include fix (~1-2 LOC) + log message honest-failure detection; enables three-class cascade live-exec verification | **Active (Sprint 6)** | REQ-ETS-CLEANUP-017, REQ-ETS-CLEANUP-015 (promotes to FULLY-IMPLEMENTED) |
+| S-ETS-06-03 | **(Sprint 6 WEDGE)** Wire-side unit test reclassification: spec.md + story notes amended; VerifyWireRestoresOriginalCredential companion story | **Active (Sprint 6)** | REQ-ETS-CLEANUP-016 (spec-side) |
+| S-ETS-07-05 | (placeholder) docker-compose stack with healthchecks (extended beyond Sprint 1 baseline) | Backlog | REQ-ETS-TEAMENGINE-004 |
+| S-ETS-07-06 | (placeholder) CTL wrapper supports auth-type parameters end-to-end | Backlog | REQ-ETS-TEAMENGINE-002 |
+| S-ETS-07-07 | (placeholder) TeamEngine integration regression suite (CI) | Backlog | NFR-ETS-04 |
 
 ## Acceptance Criteria
 - [ ] ETS jar registers with TeamEngine 5.6.x (currently 5.6.1) via SPI without errors

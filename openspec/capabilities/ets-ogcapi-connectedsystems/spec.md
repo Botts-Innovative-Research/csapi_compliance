@@ -326,9 +326,24 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 
 #### REQ-ETS-CLEANUP-015: sabotage-test.sh --target=\<class\> Flag
 - **Priority**: SHOULD
-- **Status**: IMPLEMENTED (Sprint 5 Run 2, S-ETS-05-03; sister repo HEAD `c25e44a` 2026-04-29; pending Quinn+Raze gate close. `scripts/sabotage-test.sh` extended with `--target=core | --target=systemfeatures | --help` argument parsing; default `core` preserves Sprint 3 + 4 backward-compatible HTTP-500 stub-server sabotage. New `--target=systemfeatures` mode: rsync-copies repo to /tmp/sabotage-fresh-<ts>/worktree/, Python-based sed-patches first @Test of SystemFeaturesTests.java (more robust than BSD/GNU sed for multi-line regex), grep-verifies sabotage marker landed AND grep-verifies user worktree UNMODIFIED (worktree-pollution guard), runs smoke from temp tree with SMOKE_OUTPUT_DIR override, parses cascade pattern asserting Core+Common all PASS / SystemFeatures has 1 FAIL / Subsystems+Procedures+Deployments all SKIP. Bash syntax verified (`bash -n`); --help renders usage; --target=foo exits 2. Live exec deferred to Quinn/Raze gate per Sprint 5 mitigation pattern.)
+- **Status**: IMPLEMENTED-PARTIAL (Sprint 5 Run 2, S-ETS-05-03; DOCKER-BUILD-BROKEN at gate — Sprint 5 Raze/Quinn/meta-Raze cross-corroborate GAP-2: rsync --exclude='.git/' strips .git from temp tree; Dockerfile COPY .git ./.git fails. Structural flag mechanics correct (--help, --target=foo exit-code, sabotage marker injection, worktree-pollution guard all work). **Sprint 6 S-ETS-06-02 fixes the Docker build path (~1-2 LOC rsync change + log message improvement)**; full IMPLEMENTED pending Sprint 6 gate live cascade verification.)
 - **Description**: `scripts/sabotage-test.sh` SHALL accept a `--target=<class-name>` argument (e.g. `--target=systemfeatures`). When provided, the script SHALL patch the first `@Test` method of the target class in a temporary copy of the source tree (not the user's worktree), recompile, run smoke, archive the TestNG XML cascade evidence, and restore without modifying the original. Acceptance: `bash scripts/sabotage-test.sh --target=systemfeatures` runs end-to-end without manual Java edits; produced XML shows SystemFeatures FAIL + dependents SKIP; original SystemFeaturesTests.java is unmodified after the run.
 - **Maps to**: ADR-010 §"Defense-in-depth role split" (behavioral verification at gate). Closes Raze Sprint 4 carryover recommendation.
+
+> Sprint 6 is a WEDGE SPRINT extending with REQ-ETS-CLEANUP-016..017 for the 2 cross-corroborated HIGH gaps (masking filter wire-corruption + sabotage Docker build) + META-GAP-1 (wire-side unit test reclassification). NO new conformance classes in Sprint 6. Sampling + Properties deferred to Sprint 7+.
+
+#### REQ-ETS-CLEANUP-016: MaskingRequestLoggingFilter Wire-Side Correctness (Sprint 6 — GAP-1' fix)
+- **Priority**: MUST
+- **Status**: SPECIFIED (Sprint 6 S-ETS-06-01; re-opens REQ-ETS-CLEANUP-011 which CANNOT close until this req is IMPLEMENTED)
+- **Description**: `MaskingRequestLoggingFilter.filter()` SHALL NOT mutate the `requestSpec` headers before `ctx.next()` (the HTTP send). The filter SHALL: (1) snapshot sensitive header values; (2) build and emit a masked log line DIRECTLY to the configured `PrintStream` (bypassing `super.filter()` for log output); (3) call `ctx.next(requestSpec, responseSpec)` with the ORIGINAL unmutated `requestSpec`. A new unit test `VerifyWireRestoresOriginalCredential` using a `CapturingFilterContext` (NOT `StubFilterContext`) SHALL verify that the `requestSpec` passed to `ctx.next()` carries the ORIGINAL credential value. The 16 existing wiring-only unit tests (VerifyAuthCredentialPropagation 8 + VerifyMaskingRequestLoggingFilter 8) SHALL be reclassified in spec.md and Implementation Notes as "wiring-only — does NOT prove wire-side credential integrity". Acceptance: Quinn live-exec three-fold cross-check (a)+(b)+(c) all PASS; Raze adversarial wire-tap live-exec confirms wire carries unmasked credential; mvn test remains green. NOTE: existing 16 unit tests must CONTINUE to pass (no behavioral regression — the reclassification is documentation-only).
+- **Wiring-only caveat for REQ-ETS-CLEANUP-013 (Sprint 5 wiring fix)**: The 8 VerifyAuthCredentialPropagation unit tests from REQ-ETS-CLEANUP-013 verify structural wiring (wiring-only — META-GAP-1 per sprint-ets-05-meta-review.yaml). Wire-side credential integrity is proven only by VerifyWireRestoresOriginalCredential (this REQ).
+- **Maps to**: PRD FR-ETS-25, NFR-ETS-08. Closes GAP-1' from Sprint 5 Raze cumulative GAPS_FOUND 0.74 + Quinn cumulative APPROVE_WITH_CONCERNS 0.82. Closes the 2-sprint-old `credential_leak_e2e_full_pass` success criterion (open since Sprint 4 GAP-1 → Sprint 5 GAP-1').
+
+#### REQ-ETS-CLEANUP-017: Sabotage Three-Class Cascade Live-Exec Verified (Sprint 6 — GAP-2 fix)
+- **Priority**: SHOULD
+- **Status**: SPECIFIED (Sprint 6 S-ETS-06-02; depends on REQ-ETS-CLEANUP-015 Docker build fix)
+- **Description**: After the rsync `.git` include fix in `scripts/sabotage-test.sh` (S-ETS-06-02), the sabotage script `--target=systemfeatures` SHALL run end-to-end at gate time producing a cascade XML showing: Core+Common all PASS; SystemFeatures 1×FAIL + Nx SKIP; Subsystems+Procedures+Deployments all SKIP. This closes the ADR-010 v3 "forward-extends to Procedures + Deployments" claim at the live-exec layer (v3 amendment was empirical inference; this provides direct evidence). The sabotage log message SHALL correctly distinguish Docker build failure from smoke @Test failure.
+- **Maps to**: ADR-010 §"Defense-in-depth role split". Closes GAP-2 from Sprint 5 Raze cumulative GAPS_FOUND 0.74 + Quinn cumulative APPROVE_WITH_CONCERNS 0.82 (cross-corroborated; reclassified from HIGH → MEDIUM per meta-Raze severity calibration).
 
 ## Acceptance Scenarios
 
@@ -796,6 +811,78 @@ This capability does NOT define web-app endpoints, UI components, REST APIs, or 
 **THEN** ALL DeploymentsTests @Tests report `status="SKIP"` (NOT FAIL, NOT ERROR)
 **AND** the SKIP reason references the unsatisfied `systemfeatures` group dependency.
 *Maps to*: REQ-ETS-PART1-004. Extends the TWO-LEVEL cascade pattern to Deployments.
+
+#### SCENARIO-ETS-CLEANUP-MASKING-WIRE-FIX-001 (CRITICAL — Sprint 6)
+**GIVEN** `MaskingRequestLoggingFilter.filter()` has been redesigned per S-ETS-06-01 (approach i: no requestSpec mutation before ctx.next)
+**AND** the suite runs `scripts/credential-leak-e2e-test.sh` with `SMOKE_AUTH_CREDENTIAL=Bearer ABCDEFGH12345678WXYZ` against the stub-IUT
+**WHEN** the three-fold cross-check executes
+**THEN** (a) ZERO unmasked literal hits for `EFGH12345678WXYZ` in TestNG XML + container log + smoke log
+**AND** (b) AT LEAST ONE masked-form hit for `Bear***WXYZ` in log output (filter ran — log confirms masking at log time)
+**AND** (c) AT LEAST ONE unmasked-credential hit for `Bearer ABCDEFGH12345678WXYZ` in stub-IUT log (wire carried the ORIGINAL credential)
+**AND** the filter's own log output confirms the masked form was emitted at log time.
+*Maps to*: REQ-ETS-CLEANUP-016. Closes the 2-sprint-old `credential_leak_e2e_full_pass` criterion (open since Sprint 4 GAP-1 → Sprint 5 GAP-1').
+
+#### SCENARIO-ETS-CLEANUP-MASKING-WIRE-TEST-001 (CRITICAL — Sprint 6)
+**GIVEN** a `CapturingFilterContext` test harness that records the `requestSpec` passed to `ctx.next()`
+**AND** a `MaskingRequestLoggingFilter` instance configured with DEFAULT_HEADERS_TO_MASK
+**AND** a request spec carrying `Authorization: Bearer ABCDEFGH12345678WXYZ`
+**WHEN** `filter.filter(requestSpec, responseSpec, capturingCtx)` is called
+**THEN** the captured spec's `Authorization` header value equals `Bearer ABCDEFGH12345678WXYZ` (the ORIGINAL value)
+**AND** the log output (captured PrintStream) contains the masked form `Bear***WXYZ` (proving the filter logged the masked form)
+**AND** the captured spec DOES NOT contain `Bear***WXYZ` as the Authorization header value.
+*Maps to*: REQ-ETS-CLEANUP-016. This is the wire-side unit test that VerifyMaskingRequestLoggingFilter's StubFilterContext cannot provide.
+
+#### SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-CLOSE-001 (CRITICAL — Sprint 6)
+**GIVEN** Sprint 6 lands the MaskingRequestLoggingFilter fix (S-ETS-06-01) AND the container-log capture timing fix (bundled)
+**WHEN** `scripts/credential-leak-e2e-test.sh` runs from `/tmp/<role>-fresh-sprint6/` with `SMOKE_OUTPUT_DIR=/tmp/<role>-fresh-sprint6/test-results/`
+**THEN** the script exits 0 with overall verdict PASS
+**AND** prong (a): ZERO unmasked literal hits in TestNG XML + container log + smoke log (container log is now captured BEFORE teardown — not vacuously empty)
+**AND** prong (b): AT LEAST ONE masked-form `Bear***WXYZ` hit in container log (filter emits masked form during smoke)
+**AND** prong (c): AT LEAST ONE unmasked `Bearer ABCDEFGH12345678WXYZ` hit in stub-IUT log (wire carries original credential).
+*Maps to*: REQ-ETS-CLEANUP-016, REQ-ETS-CLEANUP-011 (finally IMPLEMENTED after Sprint 4 + Sprint 5 carryover).
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-DOCKER-FIX-001 (CRITICAL — Sprint 6)
+**GIVEN** `scripts/sabotage-test.sh` rsync line has been fixed to include `.git/` in the temp worktree (S-ETS-06-02)
+**WHEN** `bash scripts/sabotage-test.sh --target=systemfeatures` runs from `/tmp/<role>-fresh-sprint6/`
+**THEN** the Docker build step succeeds (no `COPY .git ./.git: not found` error)
+**AND** the smoke run executes against the sabotaged temp tree
+**AND** the cascade XML shows Core+Common PASS, SystemFeatures 1×FAIL+Nx SKIP, Subsystems+Procedures+Deployments all SKIP
+**AND** the script exits 0 with cascade verdict PASS.
+*Maps to*: REQ-ETS-CLEANUP-017, REQ-ETS-CLEANUP-015 (promoted from PARTIAL to FULLY-IMPLEMENTED).
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-CASCADE-THREE-CLASS-001 (CRITICAL — Sprint 6)
+**GIVEN** the sabotage --target=systemfeatures script runs successfully (SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-DOCKER-FIX-001)
+**WHEN** the cascade XML is parsed
+**THEN** all Core @Tests (12) show status="PASS"
+**AND** all Common @Tests (4) show status="PASS"
+**AND** SystemFeatures @Tests show at least 1 FAIL + at least 5 SKIP (within-class cascade)
+**AND** ALL Subsystems @Tests (4) show status="SKIP"
+**AND** ALL Procedures @Tests (4) show status="SKIP"
+**AND** ALL Deployments @Tests (4) show status="SKIP"
+**AND** no FAIL appears in Subsystems/Procedures/Deployments (SKIP, not FAIL, is required — a FAIL would indicate a different defect from cascade failure).
+*Maps to*: REQ-ETS-CLEANUP-017, ADR-010 v3 "forward-extends to Procedures + Deployments" (live-exec confirmation).
+
+#### SCENARIO-ETS-CLEANUP-WIRE-SIDE-TEST-001 (CRITICAL — Sprint 6)
+**GIVEN** a `CapturingFilterContext` class in `src/test/java/` that implements `FilterContext` and records the `requestSpec` passed to `ctx.next()`
+**WHEN** `mvn test` runs
+**THEN** `VerifyWireRestoresOriginalCredential` test class is present and all its @Test methods PASS
+**AND** the test asserts that the captured requestSpec Authorization header equals the ORIGINAL credential (not the masked form)
+**AND** the test is identified as a "wire-side test" in its class javadoc (distinct from wiring-only StubFilterContext tests).
+*Maps to*: REQ-ETS-CLEANUP-016.
+
+#### SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 (NORMAL — Sprint 6)
+**GIVEN** spec.md REQ-ETS-CLEANUP-013 implementation notes and story S-ETS-05-01 Implementation Notes
+**WHEN** a developer reads the implementation status
+**THEN** the notes explicitly state: "VerifyAuthCredentialPropagation (8 tests) + VerifyMaskingRequestLoggingFilter (8 tests) = 16 unit tests are wiring-only — use StubFilterContext returning null from ctx.next(); they CANNOT detect filter-ordering defects (wire-side ordering is not exercised)"
+**AND** the notes reference VerifyWireRestoresOriginalCredential as the wire-side proof test.
+*Maps to*: REQ-ETS-CLEANUP-016.
+
+#### SCENARIO-ETS-CLEANUP-SABOTAGE-LOG-HONEST-001 (NORMAL — Sprint 6)
+**GIVEN** `scripts/sabotage-test.sh --target=systemfeatures` is running
+**WHEN** the Docker build step fails (if it were to fail, e.g. in CI with a broken environment)
+**THEN** the log message reads `"Docker build FAILED"` or equivalent (NOT `"smoke exited non-zero (EXPECTED — SystemFeatures FAIL on first @Test)"`)
+**AND** when the Docker build succeeds but smoke exits non-zero due to the sabotage marker @Test FAIL, the log message reads `"smoke exited non-zero (EXPECTED — SystemFeatures FAIL on first @Test)"`.
+*Maps to*: REQ-ETS-CLEANUP-015 (improved UX).
 
 #### SCENARIO-ETS-WEBAPP-FREEZE-README-001 (NORMAL)
 **GIVEN** the `csapi_compliance` repo at HEAD `ab53658` plus the README reposition commit

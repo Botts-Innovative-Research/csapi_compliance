@@ -1,220 +1,211 @@
 agent: planner
 status: complete
-timestamp: "2026-04-29T19:18:21Z"
-sprint_number: "ets-05"
-sprint_name: "procedures-deployments-plus-sprint-4-carryover"
-contract_path: ".harness/contracts/sprint-ets-05.yaml"
+timestamp: "2026-04-30T00:42:39Z"
+sprint_number: "ets-06"
+sprint_name: "masking-filter-fix-wedge-sprint"
+contract_path: ".harness/contracts/sprint-ets-06.yaml"
 triggered_by: |
-  Sprint 4 close (5 stories shipped; Quinn cumulative APPROVE_WITH_CONCERNS 0.84 +
-  Raze cumulative APPROVE_WITH_GAPS 0.84; both gates corroborate GAP-1: S-ETS-04-03
-  SMOKE_AUTH_CREDENTIAL wiring missing from smoke-test.sh). 6-item carryover from
-  SESSION-HANDOFF-2026-04-29.md + batched sibling conformance classes per the
-  now-proven TWO-LEVEL cascade strategy (Subsystems→SystemFeatures→Core live-verified
-  by Raze sabotage run 2026-04-29T16:40Z).
-supersedes: ".harness/handoffs/planner-handoff.yaml (Sprint 4 planner handoff 2026-04-29T15:11:45Z)"
+  Sprint 5 close: Quinn cumulative APPROVE_WITH_CONCERNS 0.82 / Raze cumulative GAPS_FOUND 0.74
+  (first sub-0.80 Raze score in project history) / meta-Raze APPROVE_GATE_CLOSE_WITH_META_CONCERNS 0.83.
+  2 cross-corroborated HIGH gaps (reclassified: GAP-2 → MEDIUM by meta-Raze) + 1 meta-gap (META-GAP-1).
+  Adversarial meta-reviewer directs Sprint 6 as mandatory wedge sprint. NO new conformance classes.
+supersedes: ".harness/handoffs/planner-handoff.yaml (Pat Sprint 5 handoff 2026-04-29T19:18:21Z)"
 
-conformance_class_pick: "Procedures (REQ-ETS-PART1-006) + Deployments (REQ-ETS-PART1-004) — 2 classes"
-conformance_class_rationale: |
-  Pat picks 2 classes, NOT 3, for Sprint 5:
-  (i) Gate-fatigue trend: Sprint 4 dropped 0.95/0.93 → 0.84/0.84 due to GAP-1 structural
-      defect shipped to gate. With 6 carryover items (3 at HIGH/MEDIUM complexity — GAP-1
-      wiring fix, worktree-pollution mitigation v2, sabotage --target mode), adding a THIRD
-      new class would over-load the sprint surface.
-  (ii) Assertion surfaces: Procedures (5 OGC sub-reqs; /req/procedure/ — UNIQUE: geometry=null
-       invariant) + Deployments (5 OGC sub-reqs; /req/deployment/ — UNIQUE: deployed-system-
-       resource SKIP-with-reason) together represent ~8-10 @Tests — manageable gate verification.
-  (iii) GeoRobotix serves both: /procedures returns 19 items (164p7ed8l47g) and /deployments
-       returns 1 item (16sp744ch58g) — both verified 2026-04-29.
-  (iv) Sampling + Properties deferred to Sprint 6 — same DAG position; safe to batch there.
-  Pat's "Subsystems pivot" thesis validated: Sprint 5 executes the first two-class batch.
+wedge_sprint_rationale: |
+  Sprint 5 primary Raze score 0.74 + GAPS_FOUND is the FIRST sub-0.80 Raze verdict in project
+  history. credential_leak_e2e_full_pass has been open for 2 consecutive sprints:
+    Sprint 4 GAP-1: wiring MISSING (smoke-test.sh never read SMOKE_AUTH_CREDENTIAL)
+    Sprint 5 GAP-1': wiring PRESENT but MaskingRequestLoggingFilter ordering DEFECTIVE
+                     (filter mutates requestSpec to masked form BEFORE ctx.next HTTP send)
+  Sprint 6 is the THIRD attempt. A feature-expansion sprint (Sampling + Properties) would
+  obscure whether the credential-leak gap is truly closed. Wedge sprint is mandatory.
+  Sampling + Properties explicitly deferred to Sprint 7+.
 
-carryover_disposition:
-  - item: "GAP-1 wedge (S-ETS-04-03 PARTIAL)"
+sprint_5_status_reframe: |
+  Orchestrator should reframe Sprint 5 from "SPRINT-COMPLETE with Sprint 6 wedges" to:
+  "PARTIAL-CLOSE: 5/6 stories ship clean; credential-leak-e2e-full-pass remains OPEN
+  (Sprint 4 + Sprint 5 carryover); Sprint 6 designated WEDGE-SPRINT to close 2 HIGH/MEDIUM
+  gaps before next batch expansion." Per meta-Raze framing recommendation.
+
+stories:
+  - id: "S-ETS-06-01"
+    title: "MaskingRequestLoggingFilter wire-fix (P0 / M complexity)"
+    file: "epics/stories/s-ets-06-01-masking-filter-wire-fix.md"
     priority: P0
-    story: S-ETS-05-01
-    disposition: "INCLUDED — highest priority; closes credential-leak E2E defect found at gate"
-  - item: "Worktree-pollution mitigation v2 (SMOKE_OUTPUT_DIR)"
+    complexity: M
+    estimated_effort: "1.5-2h Generator wall-clock"
+    fix_surface: "MaskingRequestLoggingFilter.java lines 105-141 + smoke-test.sh container-log timing + credential-leak-e2e-test.sh prong-b grep"
+    new_tests: "VerifyWireRestoresOriginalCredential (CapturingFilterContext — non-stub)"
+
+  - id: "S-ETS-06-02"
+    title: "sabotage-test.sh rsync .git include fix (P1 / S complexity)"
+    file: "epics/stories/s-ets-06-02-sabotage-rsync-git-fix.md"
     priority: P1
-    story: S-ETS-05-02
-    disposition: "INCLUDED — structural fix for recurrent gate-time worktree contamination"
-  - item: "sabotage-test.sh --target=systemfeatures mode"
-    priority: P2
-    story: S-ETS-05-03
-    disposition: "INCLUDED — enables gate invocation without Java edits; sequence last"
-  - item: "SubsystemsTests javadoc fix (6 not 5 .adoc files)"
-    priority: P2
-    story: S-ETS-05-04
-    disposition: "INCLUDED — bundled with ADR-010 v3 amendment in single S story"
-  - item: "ADR-010 v3 amendment (cascade VERIFIED LIVE)"
-    priority: P2
-    story: S-ETS-05-04
-    disposition: "INCLUDED — bundled with javadoc fix; narrow addendum, no architectural decision change"
-  - item: "Two-level cascade proven → Sprint 5+ batched siblings unblocked"
-    priority: P0
-    story: "S-ETS-05-05 + S-ETS-05-06"
-    disposition: "EXECUTING — Procedures + Deployments batched as Sprint 5's new feature work"
+    complexity: S
+    estimated_effort: "20-30min Generator wall-clock"
+    fix_surface: "scripts/sabotage-test.sh line 205 (remove --exclude='.git/') + line ~266 (log message conditional)"
 
-ci_workflow_decision: |
-  gh auth status confirms scopes still 'gist', 'read:org', 'repo' — 'workflow' ABSENT
-  (verified 2026-04-29T19:06Z). Path B formal-drop from Sprint 4 confirmed still valid.
-  CI carryover CANCELLED — no new CI story in Sprint 5. ci_workflow_live remains
-  PERMANENTLY DROPPED from sprint cadence per Sprint 4 S-ETS-04-01 binary close.
+  - id: "S-ETS-06-03"
+    title: "Wire-side unit test spec reclassification (P1 / S complexity)"
+    file: "epics/stories/s-ets-06-03-wire-side-unit-test-reclassify.md"
+    priority: P1
+    complexity: S
+    estimated_effort: "15-20min Generator wall-clock"
+    fix_surface: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md + epics/stories/s-ets-05-01-credential-leak-wiring-fix.md"
 
 architect_cycle_needed: false
 architect_cycle_rationale: |
-  Sprint 5 routes directly to Generator. No deferred decisions requiring Architect:
-  (1) GAP-1 fix: pure implementation, no competing approaches to arbitrate.
-  (2) Procedures + Deployments: mechanical pattern extension of Subsystems; Sprint-1-style
-      minimal scope is established precedent (ratified at Sprint 4 for Subsystems; no
-      re-ratification needed for siblings in same dependency tier).
-  (3) ADR-010 v3: narrow addendum, not a new decision — Generator adds the empirical
-      evidence section without Architect approval.
-  (4) SMOKE_OUTPUT_DIR + sabotage --target: pure test-infrastructure; no architectural concern.
-  Architect deferred triggers: (a) new dependency pattern (e.g. class depending on BOTH
-  SystemFeatures AND Common); (b) testng.xml BeforeSuite SkipException migration when 6+
-  classes make single-block consolidation unwieldy; (c) Common expansion or Part 2 decision.
+  Sprint 6 routes DIRECTLY to Generator. Three reasons:
+  (1) Filter fix approach (i) is uniquely identified by 3 independent reviewers (Quinn + primary Raze +
+      meta-Raze). No competing approaches remain open. Meta-Raze source inspection at lines 105-139
+      confirmed the diagnosis. No arbitration needed.
+  (2) rsync fix: 1-2 LOC bash change. No architectural decision.
+  (3) Spec reclassification: documentation-only. No code decision.
+  Escalate to Architect only if: (a) approach (i) requires >50 LOC of RequestLoggingFilter format
+  reimplementation; OR (b) CapturingFilterContext requires a new test framework dependency not in
+  current pom.xml. Both probabilities: low.
+
+differentiated_live_exec_design: |
+  Per meta-Raze process recommendation: Sprint 6 contract designs DIFFERENT live-execs for
+  Quinn vs Raze to maximize independence and reduce briefing-induced attack-surface overlap.
+
+  Quinn PRIMARY exec (CLOSURE PROOF):
+    scripts/credential-leak-e2e-test.sh — full three-fold cross-check (a)+(b)+(c) against
+    stub-IUT from /tmp/quinn-fresh-sprint6/. This is the acceptance test for GAP-1' fix.
+    Quinn archives the credential-leak closure proof to /tmp/quinn-fresh-sprint6/sprint-ets-06-
+    credential-leak-closure-<date>.txt.
+
+  Raze PRIMARY exec (ADVERSARIAL CASCADE):
+    scripts/sabotage-test.sh --target=systemfeatures from /tmp/raze-fresh-sprint6/. This is
+    the acceptance test for GAP-2 fix. Raze archives the cascade XML showing three-class SKIP.
+
+  Raze SECONDARY exec (ADVERSARIAL WIRE-TAP):
+    Independently verify stub-IUT receives original credential via a targeted request (NOT
+    through credential-leak-e2e-test.sh). Different attack surface from Quinn's closure-proof.
+    Could be: start stub-iut.sh manually, send targeted REST-Assured request, inspect stub log.
+
+  Result: Quinn owns credential-leak closure evidence; Raze owns cascade evidence + independent
+  wire-tap. Cross-corroboration is genuine (different scripts; different verification angles).
 
 next_agent: "generator"
 next_agent_rationale: |
-  All Sprint 5 planning artifacts are on disk. No architectural decisions outstanding.
-  Generator (Dana) should read: sprint contract, 6 story files, updated spec.md,
-  updated traceability.md, updated epic files, and the Sprint 4 gate reports for GAP-1
-  context. Pat's GeoRobotix shape data is provided in the contract and story files for
-  Procedures + Deployments (Generator must re-verify at sprint time).
-
-next_agent_inputs:
-  - ".harness/contracts/sprint-ets-05.yaml"
-  - ".harness/handoffs/planner-handoff.yaml (this file)"
-  - "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md (REQ-ETS-PART1-004 + -006 SPECIFIED; REQ-ETS-CLEANUP-013..015 added; Sprint 5 scenarios added)"
-  - "_bmad/traceability.md (S-ETS-05-01..06 + REQ-ETS-CLEANUP-013..015 rows added; PART1-004..013 split into individual entries)"
-  - "epics/epic-ets-02-part1-classes.md (Sprint 5 stories + new placeholders added)"
-  - "epics/epic-ets-04-teamengine-integration.md (Sprint 5 stories added; S-ETS-04-04 closed)"
-  - "epics/stories/s-ets-05-01-credential-leak-wiring-fix.md"
-  - "epics/stories/s-ets-05-02-smoke-output-dir-override.md"
-  - "epics/stories/s-ets-05-03-sabotage-target-flag.md"
-  - "epics/stories/s-ets-05-04-doc-javadoc-adr010-v3.md"
-  - "epics/stories/s-ets-05-05-procedures-conformance-class.md"
-  - "epics/stories/s-ets-05-06-deployments-conformance-class.md"
-  - ".harness/evaluations/sprint-ets-04-evaluator-cumulative.yaml (Quinn 0.84 — GAP-1 detail)"
-  - ".harness/evaluations/sprint-ets-04-adversarial-cumulative.yaml (Raze 0.84 — GAP-1 detail + sabotage evidence)"
+  All Sprint 6 planning artifacts are on disk. No outstanding decisions.
+  Generator (Dana) starts from sister repo HEAD c25e44a (Sprint 5 Run 2 close).
+  Primary source file to read FIRST: MaskingRequestLoggingFilter.java lines 105-141
+  (already read by Pat at planning time; lines are as described in the story).
+  Generator must NOT run docker build/run/pull per contract forbid list.
 
 outputs:
   - path: ".harness/handoffs/planner-handoff.yaml"
     type: "planner-handoff"
-    note: "This file — stub written as Task 0, finalized at turn end. Status: complete."
-  - path: ".harness/contracts/sprint-ets-05.yaml"
+    note: "This file — stub written as Task 0 at 00:33:45Z; finalized at 00:42:39Z."
+  - path: ".harness/contracts/sprint-ets-06.yaml"
     type: "sprint-contract"
-    note: "6 stories; 5 new success_criteria (credential_leak_e2e_full_pass, procedures_conformance_class_passes, deployments_conformance_class_passes, worktree_not_polluted_at_gate, adr010_v3_amendment_landed); gate_4_required: true; risks (high: GAP-1-WIRING-FIX-COMPLEXITY-UNDERESTIMATE, TWO-CLASS-BATCH-GATE-FATIGUE); worktree_pollution_constraint mandating SMOKE_OUTPUT_DIR; next_agent: generator (no Architect cycle)."
-  - path: "epics/stories/s-ets-05-01-credential-leak-wiring-fix.md"
+    note: "3 stories; 7 critical + 3 normal scenarios; differentiated Quinn/Raze live-execs; gate_4_required: true; 2 HIGH risks identified; worktree_pollution_constraint; next_agent: generator."
+  - path: "epics/stories/s-ets-06-01-masking-filter-wire-fix.md"
     type: "story"
-    note: "P0; GAP-1 wedge fix; ~5 LOC bash + ~30-50 LOC Java + VerifyAuthCredentialPropagation unit test"
-  - path: "epics/stories/s-ets-05-02-smoke-output-dir-override.md"
+    note: "P0/M — filter fix + VerifyWireRestoresOriginalCredential + container-log timing fix + prong-b grep expansion"
+  - path: "epics/stories/s-ets-06-02-sabotage-rsync-git-fix.md"
     type: "story"
-    note: "P1; SMOKE_OUTPUT_DIR override; ~10 LOC bash"
-  - path: "epics/stories/s-ets-05-03-sabotage-target-flag.md"
+    note: "P1/S — rsync .git include fix (~1-2 LOC) + log message honest-failure conditional"
+  - path: "epics/stories/s-ets-06-03-wire-side-unit-test-reclassify.md"
     type: "story"
-    note: "P2; sabotage --target=systemfeatures; ~30-50 LOC bash; sequence last"
-  - path: "epics/stories/s-ets-05-04-doc-javadoc-adr010-v3.md"
-    type: "story"
-    note: "P2; doc-only; SubsystemsTests javadoc 6 .adoc files + ADR-010 v3 amendment empirical evidence"
-  - path: "epics/stories/s-ets-05-05-procedures-conformance-class.md"
-    type: "story"
-    note: "P0; Procedures class; 4-5 @Tests; /req/procedure/location geometry=null unique assertion; GeoRobotix 19 items verified"
-  - path: "epics/stories/s-ets-05-06-deployments-conformance-class.md"
-    type: "story"
-    note: "P0; Deployments class; 4-5 @Tests; /req/deployment/deployed-system-resource SKIP-with-reason; GeoRobotix 1 item"
+    note: "P1/S — spec.md + story notes reclassification; CapturingFilterContext design referenced"
   - path: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
     type: "spec-update"
-    note: "REQ-ETS-PART1-004..013 block split: 004 (Deployments SPECIFIED) + 005 (Subdeployments placeholder) + 006 (Procedures SPECIFIED) + 007..013 (Remaining placeholder). REQ-ETS-CLEANUP-013..015 added. 15 new SCENARIO-ETS-PART1-004-* + SCENARIO-ETS-PART1-006-* + SCENARIO-ETS-CLEANUP-* Sprint 5 scenarios added."
+    note: "REQ-ETS-CLEANUP-015 status updated to PARTIAL-IMPLEMENTED with Sprint 6 fix target; REQ-ETS-CLEANUP-016 (wire-side correctness) + REQ-ETS-CLEANUP-017 (cascade live-exec) SPECIFIED; Sprint 6 scenarios added (7 critical + 3 normal); wedge-sprint note added before new REQs."
   - path: "_bmad/traceability.md"
     type: "traceability-update"
-    note: "PART1-004..013 placeholder row split into individual rows for 004 (S-ETS-05-06 Active), 005 (backlog), 006 (S-ETS-05-05 Active), 007..013 (backlog). CLEANUP-013..015 rows added (Active Sprint 5). S-ETS-04-04 + S-ETS-04-05 noted as Done Sprint 4."
-  - path: "epics/epic-ets-02-part1-classes.md"
-    type: "epic-update"
-    note: "S-ETS-04-05 marked Done Sprint 4. S-ETS-05-05 (Procedures Active) + S-ETS-05-06 (Deployments Active) added. Old placeholders renumbered to S-ETS-06-* and S-ETS-07-* (Sampling, Properties, Subdeployments, AdvancedFiltering, CRUD, Update, GeoJSON, SensorML)."
+    note: "REQ-ETS-CLEANUP-015 updated to PARTIAL; REQ-ETS-CLEANUP-016..017 rows added (Specified Sprint 6); S-ETS-06-01..03 Active Sprint 6; backlog placeholders renumbered S-ETS-07-01..10 for Subdeployments + Sampling + Properties etc."
   - path: "epics/epic-ets-04-teamengine-integration.md"
     type: "epic-update"
-    note: "S-ETS-04-04 marked Done Sprint 4. S-ETS-05-01..04 (4 carryover stories Active Sprint 5) added. Old placeholders renumbered to S-ETS-06-05..07."
+    note: "S-ETS-05-01 + S-ETS-05-03 marked PARTIAL/REOPENED. S-ETS-06-01..03 (3 Sprint 6 wedge stories) added. Backlog placeholders renumbered S-ETS-07-05..07."
 
 spec_changes:
   new_reqs:
-    - "REQ-ETS-PART1-004 (Deployments — expanded from PLACEHOLDER to SPECIFIED)"
-    - "REQ-ETS-PART1-006 (Procedures — expanded from PLACEHOLDER to SPECIFIED)"
-    - "REQ-ETS-CLEANUP-013 (SMOKE_AUTH_CREDENTIAL wiring — GAP-1 wedge fix)"
-    - "REQ-ETS-CLEANUP-014 (SMOKE_OUTPUT_DIR override — worktree-pollution mitigation v2)"
-    - "REQ-ETS-CLEANUP-015 (sabotage --target flag)"
+    - "REQ-ETS-CLEANUP-016 (MaskingRequestLoggingFilter wire-side correctness — approach i; VerifyWireRestoresOriginalCredential)"
+    - "REQ-ETS-CLEANUP-017 (sabotage three-class cascade live-exec verified — Docker build path fixed)"
   modified_reqs:
-    - "REQ-ETS-CLEANUP-011 (re-opened from PARTIAL IMPLEMENTED → target IMPLEMENTED when GAP-1 fix lands)"
-    - "REQ-ETS-PART1-003 (minor doc amendment — javadoc accuracy; no behavior change)"
-    - "REQ-ETS-PART1-004..013 block (refactored into individual entries for 004+006; remainder stays placeholder)"
+    - "REQ-ETS-CLEANUP-011 (re-opened → target IMPLEMENTED when Sprint 6 closes three-fold cross-check)"
+    - "REQ-ETS-CLEANUP-015 (PARTIAL-IMPLEMENTED → target FULLY-IMPLEMENTED after rsync fix)"
+    - "REQ-ETS-CLEANUP-013 (implementation notes amended: 8 wiring-only tests documented as wiring-only)"
   new_scenarios:
-    - "SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-WIRING-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-001 (CRITICAL)"
-    - "SCENARIO-ETS-CLEANUP-SMOKE-OUTPUT-DIR-001 (NORMAL)"
-    - "SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-001 (NORMAL)"
-    - "SCENARIO-ETS-CLEANUP-SUBSYSTEMS-JAVADOC-001 (NORMAL)"
-    - "SCENARIO-ETS-CLEANUP-ADR-010-V3-001 (NORMAL)"
-    - "SCENARIO-ETS-PART1-006-PROCEDURES-RESOURCES-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-006-PROCEDURES-LOCATION-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-006-PROCEDURES-DEPENDENCY-SKIP-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-001 (NORMAL)"
-    - "SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-URL-001 (NORMAL)"
-    - "SCENARIO-ETS-PART1-004-DEPLOYMENTS-RESOURCES-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPENDENCY-SKIP-001 (CRITICAL)"
-    - "SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-001 (NORMAL)"
-    - "SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-URL-001 (NORMAL)"
-    - "SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPLOYED-SYSTEM-001 (NORMAL)"
+    - "SCENARIO-ETS-CLEANUP-MASKING-WIRE-FIX-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-MASKING-WIRE-TEST-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-CLOSE-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-DOCKER-FIX-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-SABOTAGE-CASCADE-THREE-CLASS-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-WIRE-SIDE-TEST-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 (NORMAL)"
+    - "SCENARIO-ETS-CLEANUP-SABOTAGE-LOG-HONEST-001 (NORMAL)"
 
 surfaced_risks:
-  - id: "GAP-1-WIRING-FIX-COMPLEXITY-UNDERESTIMATE"
+  - id: "MASKING-FILTER-APPROACH-I-COMPLETENESS"
     severity: "high"
-    description: "S-ETS-05-01 involves coordinated changes across bash, CTL XML, Java fixture, and unit tests. If CTL → Java chain has additional gaps beyond the bash layer, effort could balloon. Mitigation: Generator reads each layer in sequence (CTL file, SuiteFixtureListener, CommonFixture, REST-Assured setup) before writing any fix."
-  - id: "TWO-CLASS-BATCH-GATE-FATIGUE"
+    description: |
+      Bypassing super.filter() means Generator must reproduce the log output (at minimum
+      the masked header form) directly. If the format is too sparse, Raze may flag it as
+      architecturally incomplete. If Generator tries to fully reproduce RequestLoggingFilter's
+      200+ LOC, implementation may grow large or fragile. Mitigation: minimal format first
+      (header names + masked values + HTTP method + URL); expand only if gate flags it.
+  - id: "CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE"
     severity: "high"
-    description: "Sprint 5 introduces 2 new conformance classes. If either has a defect (wrong URI form, missing dependency wiring), Quinn+Raze may drop confidence below 0.80 for the first time. Mitigation: Sprint-1-style minimal (4 @Tests each); curl-verify GeoRobotix shapes before writing assertions; adapt-to-IUT-shape pattern for any mismatch."
-  - id: "GEOROBOTIX-PROCEDURES-LOCATION-INVARIANT"
+    description: |
+      VerifyWireRestoresOriginalCredential needs CapturingFilterContext to return a Response.
+      If Mockito is not in pom.xml test scope, Generator must implement a stub Response inline.
+      Mitigation: Generator reads pom.xml test deps; implements anonymous class Response stub
+      if Mockito absent.
+  - id: "SABOTAGE-GIT-TEMP-TREE-SIZE"
     severity: "medium"
-    description: "GeoRobotix procedure items return type=Feature; if geometry is non-null, the /req/procedure/location assertion FAILs at the IUT level (not an ETS bug). Pat did not explicitly check geometry value. Generator MUST verify before writing the assertion."
-  - id: "GEOROBOTIX-DEPLOYMENTS-SINGLE-ITEM"
-    severity: "medium"
-    description: "GeoRobotix /deployments returns 1 item. deployed-system-resource assertion requires checking /conformance for encoding class — if absent, SKIP-with-reason. Generator must handle single-item shape without assuming multiple items."
+    description: |
+      Removing --exclude='.git/' causes rsync to copy .git into temp tree. If .git is >50MB,
+      performance degrades. Mitigation: Generator checks .git size with du -sh before removing
+      the exclude; uses Option B (explicit cp -a) if >50MB.
 
-confidence: 0.86
+confidence: 0.88
 confidence_rationale: |
-  (+) Sprint 4 Subsystems proved the two-level cascade LIVE — Procedures + Deployments are
-      mechanical extensions, not proof-of-concepts; low novelty risk on the conformance side.
-  (+) Pat performed Pat-time GeoRobotix shape verification (both endpoints 200/non-empty)
-      and OGC .adoc canonical URI verification for both classes — Generator has accurate inputs.
-  (+) 6-item carryover has clear scoping (all 6 included; 4 are S/M complexity; 2 are P0 new features).
-  (+) No Architect cycle needed — route directly to Generator; eliminates one agent hop.
-  (+) Write-handoff-FIRST mitigation in effect: stub written as Task 0; all 8 artifacts written
-      before budget exhaustion. Turn completed in ~13 minutes wall-clock.
-  (-) GAP-1 wiring fix (S-ETS-05-01) involves 3-layer coordination; complexity could be higher
-      than estimated if CTL → Java chain has gaps. Architect is not pre-reviewing; Generator risk.
-  (-) Two-class batch is FIRST two-class batch in this project; gate verification of 2 new classes
-      simultaneously is untested (Sprint 4 proved single-class; Sprint 5 extends to two).
-  (-) GeoRobotix geometry value for /procedures/{id} was NOT verified by Pat at planning time —
-      a medium-risk omission that Generator must close before writing the /req/procedure/location
-      assertion.
+  (+) Three independent reviewers (Quinn 0.82 + primary Raze 0.74 + meta-Raze 0.83) all
+      corroborate the two gaps and the fix approaches. The fix surfaces are PRECISELY BOUNDED
+      by source-code inspection: MaskingRequestLoggingFilter.java lines 105-141 (confirmed)
+      + sabotage-test.sh line 205 rsync (confirmed). No architectural ambiguity.
+  (+) Approach (i) for the filter fix is uniquely identified (meta-Raze, primary Raze, Quinn
+      all converge on "do not mutate requestSpec before ctx.next"). No competing approaches.
+  (+) Meta-Raze severity reclassification (GAP-2 HIGH → MEDIUM) gives Pat clear priority:
+      S-ETS-06-01 (P0) is the load-bearing fix; S-ETS-06-02 (P1) is important but not
+      blocking if Generator time is short.
+  (+) Differentiated live-exec design (Quinn = closure proof; Raze = cascade + wire-tap)
+      directly addresses meta-Raze's Sprint 5 process recommendation. Higher independence
+      value than Sprint 5's same-script co-targeting.
+  (+) Write-handoff-FIRST mitigation: stub written at 00:33:45Z; all 6 artifacts written
+      before budget; turn completed in ~9 minutes wall-clock.
+  (-) S-ETS-06-01's CapturingFilterContext / mock-Response design carries implementation
+      risk (pom.xml test-framework dependency check required). Generator is not pre-reviewing
+      with Architect — if escalation triggers fire, there's one agent hop added mid-sprint.
+  (-) The filter redesign changes a load-bearing authentication mechanism that has existed
+      since Sprint 3. A subtle regression (e.g. filter no longer logs body content that
+      REST-Assured normally logs) could be flagged by Raze as a new concern even if the
+      wire-credential correctness is fixed.
 
 estimated_effort: |
-  Sprint 5 Generator wall-clock estimate: 3-5h
-    - S-ETS-05-01 (GAP-1 wiring fix): ~1-2h (bash + Java + unit test)
-    - S-ETS-05-02 (SMOKE_OUTPUT_DIR): ~15-30min (bash only)
-    - S-ETS-05-04 (javadoc + ADR-010 v3): ~20-30min (doc edits)
-    - S-ETS-05-05 (Procedures class): ~45-60min (pattern well-established; new geometry assertion)
-    - S-ETS-05-06 (Deployments class): ~30-45min (mirrors Procedures; single-item handling)
-    - S-ETS-05-03 (sabotage --target flag): ~30-45min (bash; sequence last)
-  vs Sprint 4's 8-12h (Sprint 5 is pattern extension; GAP-1 fix is bounded; no new proof-of-concept).
+  Sprint 6 Generator wall-clock estimate: 2-3h
+    - S-ETS-06-01 (filter fix + wire-side test + bash bundled fixes): ~1.5-2h
+    - S-ETS-06-02 (rsync fix + log message): ~20-30min
+    - S-ETS-06-03 (spec reclassification text): ~15-20min
+  vs Sprint 5's 3-5h (Sprint 6 has no new conformance classes; fix surfaces are precisely
+  bounded; no proof-of-concept work required).
 
-  Gate runs estimate: Quinn ~20min + Raze ~25min = ~45min total (within 30-min-per-gate target
-  since worktree-pollution mitigation v2 eliminates the recovery step that added time in Sprint 4).
+  Gate runs estimate:
+    Quinn (closure proof + code inspection + mvn + smoke): ~25-30min
+    Raze (adversarial cascade + wire-tap + mvn + regression): ~30-35min
+    Total gate time: ~55-65min (within 30-min-per-gate-per-role target; each role ~30min)
 
 orchestrator_handoff_note: |
-  This planner-handoff.yaml was authored by Pat (Planner sub-agent, fresh context) at
-  2026-04-29T19:18:21Z. Write-handoff-FIRST mitigation: stub written at 19:05:07Z; all 8
-  artifact deliverables landed before budget; final handoff finalized at 19:18:21Z.
-  Turn wall-clock: ~13 minutes. All deliverables complete; no outstanding planning items.
-  Next agent: generator. No Architect cycle required.
+  Pat (Planner) Sprint 6 handoff authored 2026-04-30T00:42:39Z.
+  Write-handoff-FIRST mitigation: stub written at 00:33:45Z; 6 artifact deliverables landed
+  before budget; final handoff finalized at 00:42:39Z. Turn wall-clock: ~9 minutes.
+  All deliverables complete; no outstanding planning items.
+  Next agent: generator (Dana). No Architect cycle required.
+  Sprint 5 status should be reframed as "PARTIAL-CLOSE" per meta-Raze recommendation
+  (orchestrator handles ops/status.md update; Pat flags for awareness).
 
 blockers: []
