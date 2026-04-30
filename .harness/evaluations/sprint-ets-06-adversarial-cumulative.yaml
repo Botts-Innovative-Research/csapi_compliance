@@ -1,0 +1,383 @@
+adversarial_reviewer: raze
+sprint: ets-06
+sprint_name: "masking-filter-fix-wedge-sprint"
+status: complete
+verdict: GAPS_FOUND
+score: 0.78
+evaluation_timestamp: "2026-04-30T15:35:00Z"
+sister_repo_head: "c17a534"
+csapi_compliance_head_at_review_start: "642b5c7"
+quinn_peek_attempted: false  # independence honored
+
+# Sprint 6 trend comparison
+trend:
+  sprint_4_raze: 0.84
+  sprint_5_raze: 0.74   # GAPS_FOUND — first sub-0.80 in project history
+  sprint_6_raze_this: 0.78
+  trajectory: "rebound from 0.74 → 0.78; the wedge sprint MOSTLY closed GAP-1' at the wire layer (the headline question — see below) but introduced + masked a NEW HIGH gap (GAP-2-RESIDUAL-1: Sprint 5 sabotage-marker injection produces unreachable-statement compile error, which Sprint 5 GAP-2 .git-exclude masked) and exposed a script-level pipefail edge case that defeats Sprint 6's own honest-log-message claim. Did NOT recover above 0.80 — wedge incompletely landed."
+
+headline_question:
+  question: "Did credential_leak_e2e_full_pass close at the wire layer (independent of Quinn's closure-proof)?"
+  answer: "YES — independently verified by Raze adversarial wire-tap (option_a). At sister repo HEAD c17a534, with stub-iut.sh listening on ephemeral port 46351, a targeted REST-Assured request through MaskingRequestLoggingFilter with SMOKE_AUTH_CREDENTIAL='Bearer ABCDEFGH12345678WXYZ' resulted in (a) the stub-IUT log capturing the ORIGINAL credential 'Bearer ABCDEFGH12345678WXYZ' (1 hit on $LITERAL_LEAK_PROBE), AND (b) the filter's PrintStream output containing the masked form 'Authorization=Bear***WXYZ' (no literal leak). This is a different attack surface from Quinn's credential-leak-e2e-test.sh closure-proof — Raze ran NO scripts; just stub + REST-Assured + filter directly. The wire genuinely carries the original credential under approach (i)."
+
+live_exec_1_sabotage_three_class_cascade:
+  status: FAIL
+  command: "bash scripts/sabotage-test.sh --target=systemfeatures (with SABOTAGE_TMPDIR=/tmp/raze-sabotage-sprint6/, SMOKE_OUTPUT_DIR=/tmp/raze-fresh-sprint6/test-results/)"
+  exit_code: 2
+  cascade_xml_produced: false
+  archive: "/tmp/raze-fresh-sprint6/test-results/sprint-ets-06-cascade-three-class-2026-04-30-FAILED.log"
+  failure_mode: |
+    Sprint 6 GAP-2 .git-exclude fix DID land — `COPY .git ./.git` succeeded (#13 CACHED).
+    But the Docker build then failed at builder 8/8 (`mvn clean package`) with:
+    `[ERROR] /build/.../SystemFeaturesTests.java:[210,17] unreachable statement`
+    The Sprint 5 S-ETS-05-03 sabotage-marker injection technique inserts
+    `throw new AssertionError("SABOTAGED ...")` AS THE FIRST STATEMENT inside
+    `systemsCollectionReturns200()`, which makes the existing
+    `ETSAssert.assertStatus(...)` line below it UNREACHABLE — javac rejects with
+    a hard compilation error (Java's spec-mandated unreachable-statement check).
+    Sprint 5 never noticed because the .git-exclude killed the Docker build at
+    `COPY .git` BEFORE `mvn package` ran. Sprint 6 fixed the .git issue, exposing
+    the deeper Sprint 5 latent bug. The cascade three-class XML cannot be produced
+    until the marker-injection technique is repaired (e.g. inject a single-statement
+    REPLACEMENT that compiles, or use `if (true) throw ...` to defeat reachability
+    analysis, or use a try/catch wrapper).
+  predicate_for_verdict: "GAP-2 is INCOMPLETELY closed. The .git wedge fix is correct in isolation but the cascade live-exec end-to-end remains broken. REQ-ETS-CLEANUP-017's stated acceptance ('cascade XML produced showing 3-class SKIP') is UNVERIFIED at the live-exec layer."
+
+live_exec_2_adversarial_wire_tap_option_a:
+  status: PASS
+  approach: "option_a (manual stub-iut + targeted REST-Assured request via mvn test exec); option_b (re-running credential-leak-e2e-test.sh or reading Quinn's archived stub log) was DISALLOWED by contract and was NOT used."
+  setup: |
+    1. Started stub-iut.sh on ephemeral port 46351 (PIDFILE/PORTFILE in /tmp/).
+    2. Wrote a single ad-hoc JUnit test class (RazeAdversarialWireTap) inside
+       /tmp/raze-fresh-sprint6/src/test/java/.../listener/ that wires
+       MaskingRequestLoggingFilter (with shadowed PrintStream) into RestAssured
+       via replaceFiltersWith(), then issues a GET to http://127.0.0.1:46351
+       with Authorization=Bearer ABCDEFGH12345678WXYZ.
+    3. Ran via `mvn test -Dtest=RazeAdversarialWireTap -Draze.stub.port=46351`.
+    4. Stopped stub-iut.sh; deleted RazeAdversarialWireTap.java; clone clean.
+  observed:
+    response_status: 401
+    response_body: "{\"error\": \"stub-iut authentication required\", \"received_authorization\": \"Bearer ABCDEFGH12345678WXYZ\"}"
+    filter_stream_output: "Request: GET http://127.0.0.1:46351/raze-wiretap-probe\\n\\tAuthorization=Bear***WXYZ\\n\\tAccept=*/*\\n\\tContent-Type=application/json"
+    stub_iut_log_line: "2026-04-30T15:24:55Z GET /raze-wiretap-probe Authorization=Bearer ABCDEFGH12345678WXYZ"
+    literal_credential_in_stub_log: "1 hit (ORIGINAL Bearer ABCDEFGH12345678WXYZ)"
+    masked_form_in_filter_stream: "1 hit (Bear***WXYZ)"
+    literal_credential_in_filter_stream: "0 hits (no leak)"
+  conclusion: "The wire genuinely carries the ORIGINAL credential under approach (i). The masking is at log-time only; the HTTP transport sees the unmangled Authorization header. Independent of Quinn's three-fold closure-proof attack surface — Raze never ran credential-leak-e2e-test.sh; just stub + filter + targeted REST-Assured request."
+
+per_story_adversarial_probes:
+  S-ETS-06-01:
+    title: "MaskingRequestLoggingFilter approach (i) wire-fix"
+    verdict: APPROVE
+    structural_inspection_pass: true
+    findings: |
+      Read MaskingRequestLoggingFilter.java filter() lines 178-207 directly:
+      - Filter does NOT call super.filter() (verified by absence of `super.filter(`
+        in the body; only `super(stream)` in the constructor — which propagates the
+        stream field upwards but doesn't invoke parent's filter chain).
+      - Filter does NOT mutate requestSpec before ctx.next (no .removeHeader, no
+        .header( assignment, no .replaceHeaders — only `.getHeaders()` reads).
+      - Masked log line is built from a header snapshot via
+        `requestSpec.getHeaders().forEach(...)` and emitted to `this.stream` directly.
+      - Final `return ctx.next(requestSpec, responseSpec)` passes the UNMUTATED spec.
+      - Defensive try/catch wraps log build with fallback emission — does NOT mask
+        wire-side correctness (the ctx.next call is OUTSIDE the try block).
+
+      Read VerifyWireRestoresOriginalCredential.java lines 209-242:
+      - CapturingFilterContext records header values BY VALUE into
+        `Map<String,String> capturedHeadersAtNextCall` at ctx.next call time
+        (line 236: `req.getHeaders().forEach(h -> this.capturedHeadersAtNextCall.put(h.getName(), h.getValue()))`).
+      - Returns `mock(Response.class)` (not null) — Mockito present in pom.xml.
+      - Test class field javadoc explicitly notes the by-VALUE-vs-by-REFERENCE
+        pitfall and documents the redesign rationale (matches Generator's deviation
+        narrative re: TDD red-phase false-positive caught).
+
+      Test count audit: VerifyWireRestoresOriginalCredential has 4 @Test methods
+      (matches Dana's claim: wireCarriesOriginalAuthorizationCredential,
+      wireCarriesOriginalApiKeyAndCookie, filterDoesNotMutateRequestSpec,
+      streamOutputContainsMaskedFormNotLiteralCredential).
+    mvn_test_evidence: "80 tests / 0 failures / 0 errors / 3 skipped — BUILD SUCCESS in /tmp/raze-fresh-sprint6/ (and identical 80/0/0/3 in /tmp/raze-fresh-sprint6-bis/)."
+
+  S-ETS-06-02:
+    title: "sabotage-test.sh rsync .git fix + honest log message"
+    verdict: APPROVE_WITH_GAPS
+    rsync_fix_landed: true
+    rsync_fix_evidence: "scripts/sabotage-test.sh lines 212-219: `--exclude='.git/'` removed from rsync; `cp -a` fallback now keeps .git too (only target/ removed). Sister .git size: 5.2MB (negligible per Plan-Raze)."
+    target_foo_rejection: "PASS — `bash scripts/sabotage-test.sh --target=foo` exits 2 with explicit `[sabotage-test FATAL] unsupported --target value: --target=foo` message + valid options listed."
+    bash_n_pass: true
+    honest_log_message_gaps: |
+      The conditional in sabotage-test.sh lines 287-298 IS structurally present
+      and looks correct on first read (SMOKE_EXIT_CODE captured via `|| ...`;
+      LATEST_REPORT presence/absence disambiguates). HOWEVER, in actual
+      execution against my probe, the disambiguation log message NEVER FIRES
+      because the immediately-preceding LATEST_REPORT assignment line:
+        LATEST_REPORT="$(ls -t "${SABOTAGE_TMPDIR}/test-results"/s-ets-01-03-...xml 2>/dev/null | head -1)"
+      under `set -eo pipefail` exits the script with code 2 when `ls` fails to
+      match (no .xml present yet because Docker build failed). bash -x trace
+      confirms: the script jumps directly from `LATEST_REPORT=` to `cleanup_all`,
+      skipping the entire disambiguation block. Pipefail-vs-failable-pipeline
+      bug. See GAP-3 below.
+
+  S-ETS-06-03:
+    title: "Wire-side unit test spec reclassification"
+    verdict: APPROVE
+    audit_honesty:
+      verifymaskingrequestloggingfilter_test_count_at_c25e44a_baseline: 8
+      verifymaskingrequestloggingfilter_test_count_at_c17a534_HEAD: 6
+      delta: -2
+      claim_matches_observation: true
+      throwingfiltercontext_helper_deleted: true
+      stubfiltercontext_helper_retained_for_6_remaining_tests: true
+      reclassification_javadoc_present: "yes — class-level javadoc lines 22-33 explicitly note `wiring-only — does NOT prove wire-side credential integrity` and cross-reference VerifyWireRestoresOriginalCredential."
+    spec_md_reclassification:
+      req_013_amended: "yes — `Implementation notes amended (Sprint 6 S-ETS-06-03 / META-GAP-1 reclassification)` block at line 318 explicitly states StubFilterContext limitation + cross-reference to VerifyWireRestoresOriginalCredential."
+      req_016_implementation_notes_explicit: "yes — line 338 + 340 explicit caveats."
+    behavioral_regression_check: "8 VerifyAuthCredentialPropagation tests still PASS (preserved from Sprint 5); 6 retained VerifyMaskingRequestLoggingFilter tests still PASS. Total still 80/0/0/3."
+
+# ----- Adversarial code/structural inspection invariants -----
+adversarial_invariants:
+  super_filter_bypass: "CONFIRMED — `super.filter(` not called anywhere in MaskingRequestLoggingFilter.java; only `super(stream)` constructor delegation. Hot path is filter() builds masked log + ctx.next(unmutatedSpec)."
+  finally_block_relied_upon: "NO — there is no try/finally for header restoration; the finally invariant is now vacuous (nothing is mutated). A try/catch wraps log emission only (defensive log-emission failure handling, not wire-correctness)."
+  capturing_filter_context_returns_null: "NO — returns `mock(Response.class)` (line 241 of VerifyWireRestoresOriginalCredential.java). Mockito in pom.xml test scope (verified)."
+  capturing_filter_context_by_value_snapshot: "YES — `capturedHeadersAtNextCall` is `Map<String,String>` populated at ctx.next call time via `req.getHeaders().forEach(h -> map.put(h.getName(), h.getValue()))` (line 236). NOT by-reference. This is the structural pattern the Generator deviation_from_pat_contract entry caught during TDD red-phase."
+  zero_bare_assertionerror_in_conformance: "CONFIRMED — `grep -rEn 'throw[[:space:]]+new[[:space:]]+AssertionError\\(|Assert\\.fail\\(' src/main/java/.../conformance/` returns 0 hits at HEAD c17a534. Discipline preserved."
+  user_worktree_clean_post_gate: "CONFIRMED — `git status --short` empty in ~/docker/gir/ets-ogcapi-connectedsystems10/ at HEAD c17a534 after all Raze probes."
+  no_new_conformance_class: "CONFIRMED — `ls src/main/java/.../conformance/` shows ONLY {common, core, deployments, procedures, subsystems, systemfeatures}. No SamplingTests, PropertiesTests, SubdeploymentsTests. Wedge constraint honored."
+  reproducible_jar:
+    primary_md5: "58b8433b20e8b219b673b7c685603d90"
+    bis_md5: "58b8433b20e8b219b673b7c685603d90"
+    byte_identical: true
+    primary_size: 264192
+    bis_size: 264192
+
+# ----- Architect-surfaced risks: materialized? mitigated? -----
+architect_surfaced_risks_status:
+  MASKING-FILTER-APPROACH-I-COMPLETENESS:
+    severity_at_plan: high
+    materialized: false
+    mitigated: true
+    notes: "Generator implemented a MINIMAL log format (HTTP method + URI + indented Header=Value rows). Filter stream output observed in wire-tap probe matches the format exactly. Prong (b) grep finds Bear***WXYZ in the output. No log-aesthetic-parity attempt was made (correctly, per Pat's mitigation guidance)."
+  CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE:
+    severity_at_plan: medium
+    materialized: false
+    mitigated: true
+    notes: "mock(Response.class) returned cleanly; no NPE; ResponseBuilder fallback not needed. Generator caught a separate by-VALUE vs by-REFERENCE pitfall in TDD red phase (documented in deviations_from_pat_contract); this was NOT the planned risk but is a structurally important pattern."
+  SUPER-FILTER-BYPASS-REST-ASSURED-VERSION-DRIFT:
+    severity_at_plan: medium
+    materialized: false
+    mitigated: true
+    notes: "Filter javadoc lines 56-66 + 90-94 document the bypass rationale and the rest-assured-5.5.x version pin assumption + a TODO for any upgrade past 5.5.x. Pom.xml rest-assured.version pin assumed intact (not verified by Raze; Quinn likely covers)."
+  SABOTAGE-GIT-TEMP-TREE-SIZE:
+    severity_at_plan: low
+    materialized: false
+    mitigated: true
+    notes: ".git copied without observed performance issue; temp worktree creation step completed in ~1s."
+  CONTAINER-LOG-CAPTURE-TIMING-FIX-SIDE-EFFECT:
+    severity_at_plan: low
+    materialized: unknown
+    mitigated: not_verified_at_gate
+    notes: "Live exec NOT performed (smoke against GeoRobotix is Quinn's domain). Source inspection confirms `docker logs $CONTAINER_NAME > $LOG_FILE 2>&1 || true` is at line 215, BEFORE the die() triggers at lines 218-219. Structurally sound."
+  # Additional risk surfaced by Raze adversarial review (not pre-planned)
+  SABOTAGE-MARKER-UNREACHABLE-STATEMENT-LATENT-FROM-SPRINT-5:
+    severity_at_plan: not_planned
+    materialized: yes
+    mitigated: no
+    notes: "See GAP-1 below. Generator did not catch this; Plan-Raze did not catch this; Sprint 5 GAP-2 .git-exclude masked it. This is the most serious structural weakness in Sprint 6."
+  SABOTAGE-HONEST-LOG-MESSAGE-PIPEFAIL-EDGE:
+    severity_at_plan: not_planned
+    materialized: yes
+    mitigated: no
+    notes: "See GAP-3 below. The Sprint 6 honest-log-message conditional looks correct under static reading but is unreachable under `set -eo pipefail` due to the immediately-preceding LATEST_REPORT pipeline."
+
+# ----- GAPs found -----
+gaps:
+  - id: GAP-1
+    severity: HIGH
+    title: "Sabotage-marker injection produces UNREACHABLE-STATEMENT compile error; Sprint 5 GAP-2 .git-exclude masked it; cascade live-exec for systemfeatures cannot run end-to-end"
+    description: |
+      Sprint 5 S-ETS-05-03's python sed-patch (line 232 of sabotage-test.sh)
+      injects `throw new AssertionError("SABOTAGED ...")` as the FIRST statement
+      of `systemsCollectionReturns200()`. The original
+      `ETSAssert.assertStatus(this.systemsResponse, 200, REQ_RESOURCES_ENDPOINT)`
+      below it then becomes UNREACHABLE under JLS rules; javac rejects with
+      a hard compilation error (`unreachable statement`).
+
+      Sprint 5 never observed this because the rsync `--exclude='.git/'` killed
+      the Docker build at `COPY .git ./.git` BEFORE `mvn package` had a chance
+      to compile the patched file. Sprint 6 fixed the .git issue (correctly!),
+      exposing this latent Sprint 5 bug.
+
+      Consequence: REQ-ETS-CLEANUP-017's acceptance criterion ("cascade XML
+      produced showing 3-class SKIP") is UNVERIFIED at the live-exec layer
+      because the script fails before producing any XML. The structural .git
+      fix is necessary but NOT sufficient.
+
+      Fix surface: scripts/sabotage-test.sh line ~232 python script. Replace
+      bare `throw new AssertionError(...)` with `if (true) throw new
+      AssertionError(...)` (defeats javac reachability analysis), or
+      replace the original method body entirely (drop the now-unreachable
+      assertStatus line), or wrap in try { } catch (Throwable t) { throw t; }.
+    cross_corroboration_prediction: "MEDIUM-HIGH likelihood Quinn flags this if she ran live cascade; unknown if her script suite included the cascade probe. Quinn's primary live-exec (credential-leak-e2e-test.sh) is unaffected by this gap. If Quinn's secondary did NOT exercise sabotage --target=systemfeatures end-to-end, only Raze flags it."
+    blocking_for_sprint_close: "ARGUABLE — does NOT block GAP-1' wire-side closure (which is the headline question); but DOES block clean closure of REQ-ETS-CLEANUP-017 / GAP-2. Recommend address in Sprint 7 wedge-2 or as fast-follow patch."
+    archive_evidence: "/tmp/raze-fresh-sprint6/test-results/sprint-ets-06-cascade-three-class-2026-04-30-FAILED.log + /tmp/raze-sab-trace.log (bash -x trace)"
+
+  - id: GAP-2
+    severity: MEDIUM
+    title: "REQ-ETS-CLEANUP-017 status is IMPLEMENTED in spec.md but live-exec at gate failed"
+    description: |
+      spec.md line 345 declares REQ-ETS-CLEANUP-017 status `IMPLEMENTED` with
+      the rationale that the structural fix landed and live cascade verification
+      was deferred to Raze. Raze's live-exec FAILED (see GAP-1). Per the
+      sprint-anchored discipline, status should be DEFERRED-LIVE-EXEC or
+      PARTIAL until the cascade XML can be produced.
+
+      This is a status-honesty gap, not a code gap — but the spec.md text is
+      load-bearing for future agents reading the sprint close.
+    fix_surface: "spec.md line 345 — change `IMPLEMENTED` to e.g. `STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED` with cross-reference to GAP-1 above; update the description to note the unreachable-statement failure mode."
+    cross_corroboration_prediction: "MEDIUM likelihood Quinn flags this if she audits spec.md vs live-exec evidence. If Quinn doesn't run cascade, she may accept Generator's IMPLEMENTED claim at face value."
+
+  - id: GAP-3
+    severity: MEDIUM
+    title: "Sprint 6 honest-log-message conditional is unreachable under `set -eo pipefail`"
+    description: |
+      The conditional block at scripts/sabotage-test.sh lines 287-298 is
+      structurally well-designed (SMOKE_EXIT_CODE capture + presence/absence
+      of TestNG report) BUT the LATEST_REPORT assignment immediately above it:
+
+        LATEST_REPORT="$(ls -t "${SABOTAGE_TMPDIR}/test-results"/s-ets-01-03-teamengine-smoke-*.xml 2>/dev/null | head -1)"
+
+      runs as a PIPELINE under `set -eo pipefail`. When the glob doesn't match
+      (the common case after Docker build failure — no XML exists yet), the
+      `ls` step exits non-zero, pipefail propagates, and the script EXITS
+      with code 2 BEFORE reaching the disambiguation log message. bash -x
+      trace confirms: control jumps from `LATEST_REPORT=` directly to
+      `cleanup_all`, skipping lines 289-298 entirely.
+
+      Consequence: Sprint 6 S-ETS-06-02's claimed honest log message
+      ("Docker build FAILED (not a sabotage-marker hit)") never fires in
+      the actual Docker-build-failure mode it was designed to disambiguate.
+
+      Fix surface: wrap the assignment with `set +o pipefail` / `set -o pipefail`
+      pair, OR use a different idiom: `LATEST_REPORT=""; for f in
+      "${SABOTAGE_TMPDIR}/test-results"/s-ets-01-03-teamengine-smoke-*.xml;
+      do [[ -f "$f" ]] && LATEST_REPORT="$f"; done`, OR use `compgen -G`.
+    cross_corroboration_prediction: "LOW-MEDIUM likelihood Quinn flags this — depends on whether she traced bash -x or just read the static script. Quinn's domain is the credential-leak closure-proof; cascade scripts are Raze's primary."
+
+  - id: GAP-4
+    severity: LOW
+    title: "Reproducibility check did not include the multi-stage Docker jar"
+    description: |
+      Raze byte-compared `target/ets-ogcapi-connectedsystems10-0.1-SNAPSHOT.jar`
+      across two clones (md5 58b8433b... matched). However, the all-in-one
+      `*-aio.jar` (39MB, used by TeamEngine) was NOT compared. The aio jar
+      embeds dependency jars and is more sensitive to repackager-side
+      timestamp drift; if it differs across builds, the `byte_identical` claim
+      is incomplete. Sprint invariant should compare BOTH jars or explicitly
+      scope to the SNAPSHOT jar.
+    fix_surface: "Future Quinn / Raze invariant: md5sum both *.jar artefacts."
+    cross_corroboration_prediction: "Quinn likely covers reproducibility too — independence is preserved if both flag this as LOW or one of us is silent."
+
+# ----- CONCERNs (informational, not blocking) -----
+concerns:
+  - id: CONCERN-1
+    title: "Container-log capture timing fix not live-verified by Raze"
+    description: "smoke-test.sh line 215 `docker logs > $LOG_FILE` placement is structurally sound (BEFORE die() triggers at 218-219), but Raze did not run a live smoke (Quinn's domain). If Quinn's three-fold cross-check shows non-vacuous container.log content, the timing fix worked; if container.log is still empty, structural placement was correct but a different bug ate the content."
+  - id: CONCERN-2
+    title: "REST-Assured filter chain ordering with replaceFiltersWith()"
+    description: "Raze's wire-tap probe used `RestAssured.replaceFiltersWith(filter)` — replacing the global filter chain. In production wiring, `SuiteFixtureListener.registerRestAssuredFilters()` adds MaskingRequestLoggingFilter alongside CredentialMaskingFilter (parallel FINE log). If chain ordering matters (e.g. CredentialMaskingFilter mutates the spec BEFORE MaskingRequestLoggingFilter sees it), the wire-tap probe wouldn't catch it. Quinn's live three-fold cross-check (with full filter chain) is the authoritative end-to-end probe."
+  - id: CONCERN-3
+    title: "Sprint 5 GAP-2 `.git`-exclude latency"
+    description: "GAP-1 (unreachable-statement) was hidden in Sprint 5 by GAP-2 (.git-exclude). This pattern — fixing one gap to expose another — is structurally common but risky for confidence calibration. Future wedge sprints should explicitly flag any 'masking-relationships' between gaps in the sprint contract."
+
+# ----- Adversarial strengths under attack (held up under probing) -----
+adversarial_strengths_held:
+  - "Approach (i) filter redesign is structurally correct — super.filter() bypass + ctx.next(unmutatedSpec) verified by source inspection AND independent wire-tap (option_a)."
+  - "VerifyWireRestoresOriginalCredential uses by-VALUE Map snapshot at ctx.next time — correctly defeats the by-reference false-positive that Generator caught in TDD red-phase. The pattern is documented in field javadoc for future readers."
+  - "Test count audit honest: 8 → 6 in VerifyMaskingRequestLoggingFilter (verified by `git show c25e44a:` vs `git show c17a534:`). ThrowingFilterContext helper deleted as claimed. Reclassification language present in spec.md REQ-013 + REQ-016 + class javadoc + cross-reference."
+  - "mvn test 80/0/0/3 reproduced in TWO independent clones (/tmp/raze-fresh-sprint6/ + /tmp/raze-fresh-sprint6-bis/). BUILD SUCCESS both times. Byte-identical SNAPSHOT jar (md5 58b8433b...) confirms reproducibility invariant for the primary artifact."
+  - "Zero bare AssertionError / Assert.fail in conformance code (strict regex grep returns 0 hits). ADR-008 discipline preserved across Sprint 6's filter redesign."
+  - "User worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/ is CLEAN at HEAD c17a534 after all Raze probes (rebuild-from-/tmp pattern + SMOKE_OUTPUT_DIR mitigation honored)."
+  - "No new conformance class landed — wedge constraint enforced. Subsystems/Procedures/Deployments/SystemFeatures/Core/Common are the only six conformance subdirs."
+  - "Sabotage --target=foo rejection works correctly — exits 2 with explicit FATAL message and valid options listed."
+  - "Spec.md REQ-ETS-CLEANUP-016 IMPLEMENTED + REQ-ETS-CLEANUP-013 amended + REQ-ETS-CLEANUP-011 IMPLEMENTED + REQ-ETS-CLEANUP-015 FULLY-IMPLEMENTED — status promotions present with detailed evidence narrative (NOT cosmetic flag flips)."
+
+# ----- Score derivation -----
+score_derivation:
+  base_score: 1.00
+  deductions:
+    - "-0.10 GAP-1 HIGH (sabotage cascade live-exec broken; REQ-ETS-CLEANUP-017 acceptance unverified end-to-end)"
+    - "-0.05 GAP-2 MEDIUM (spec.md status IMPLEMENTED is overconfident given GAP-1; status-honesty)"
+    - "-0.05 GAP-3 MEDIUM (honest-log-message conditional unreachable due to pipefail; the very feature Sprint 6 added does not actually fire)"
+    - "-0.02 GAP-4 LOW (reproducibility check incomplete — only SNAPSHOT jar compared, not aio jar)"
+  score: 0.78
+  trajectory_note: "0.74 → 0.78 — partial rebound. Sprint 6 substantively closed GAP-1' (the headline credential-leak issue) at the wire layer, BUT exposed/introduced GAP-1 (sabotage cascade now broken at the Java compile level) and GAP-3 (its own pipefail bug). The wedge sprint succeeded at its primary objective (wire-side credential safety) but failed to fully close the secondary objective (cascade live-exec verification). Honest verdict required: not above 0.80."
+
+# ----- Comparative trend with Sprint 4 + 5 -----
+sprint_5_vs_sprint_6:
+  sprint_5_summary: "Raze 0.74 GAPS_FOUND: GAP-1' (filter ordering — wire poisoned) HIGH; GAP-2 (sabotage Docker build broken) HIGH→MEDIUM (recalibrated by meta-Raze); CONCERNs about container-log timing + prong-b grep."
+  sprint_6_progress:
+    GAP-1-prime_status: CLOSED  # wire-side proven by code inspection + wire-tap (option_a)
+    GAP-2_status: PARTIALLY-CLOSED  # .git-exclude fix landed; but GAP-1-NEW exposed
+    container_log_timing: "structural fix landed (line 215 placement); live not verified by Raze"
+    prong_b_grep_expansion: "structural fix landed (STUB_LOGFILE added); live verified independently in Quinn's domain"
+  net_progress: "POSITIVE but INCOMPLETE — primary wedge objective achieved; secondary wedge objective broken in a new way"
+
+# ----- Primary attack surfaces probed (independence claim) -----
+attack_surfaces_probed_by_raze:
+  - "Source code inspection (4 files) at HEAD c17a534 in /tmp/raze-fresh-sprint6/ — no overlap with Quinn"
+  - "mvn test 80/0/0/3 in /tmp/raze-fresh-sprint6/ AND /tmp/raze-fresh-sprint6-bis/ — independent reproducibility check"
+  - "byte-comparison of SNAPSHOT jars across two clones — md5 match"
+  - "live sabotage --target=systemfeatures cascade exec — Raze's primary; failed at javac compile (GAP-1)"
+  - "live wire-tap option_a (manual stub-iut + ad-hoc JUnit class + targeted REST-Assured request via mvn test) — Raze's secondary; PASSED"
+  - "git status verification of user worktree post-probes — Raze independence honor"
+  - "bash -x trace of sabotage-test.sh — Raze surfaced GAP-3 pipefail unreachability"
+  - "test-class @Test count audit at c25e44a baseline vs c17a534 HEAD via git show — Raze verified Dana's 8→6 claim"
+quinn_attack_surfaces_predicted:
+  - "credential-leak-e2e-test.sh closure-proof (three-fold (a)+(b)+(c)) — different attack surface from Raze's wire-tap"
+  - "smoke against GeoRobotix (live) — Raze did not run"
+  - "spec.md cross-reference audit — likely overlaps Raze"
+  - "test count and code structural inspection — likely overlaps Raze"
+no_overlap_invariant: "Raze did NOT run credential-leak-e2e-test.sh; did NOT run live smoke against GeoRobotix; did NOT read Quinn's archived stub log. Genuine independence preserved."
+
+# ----- Final verdict -----
+verdict_rationale: |
+  GAPS_FOUND with score 0.78. The wedge sprint substantively closed GAP-1'
+  at the wire layer (the headline question), independently verified by Raze
+  via option_a wire-tap — the wire genuinely carries the original Bearer
+  ABCDEFGH12345678WXYZ credential while the filter's PrintStream output
+  carries Bear***WXYZ masked form. mvn test 80/0/0/3 reproducible across
+  two clones; byte-identical SNAPSHOT jar; zero bare AssertionError in
+  conformance; user worktree clean. Strong primary deliverable.
+
+  However, two new HIGH/MEDIUM gaps surfaced:
+  (1) The Sprint 5 sabotage-marker injection technique (untouched by Sprint 6)
+      produces a JAVAC unreachable-statement compile error once Sprint 6's .git
+      fix lets the Docker build proceed past the `COPY .git` step. The cascade
+      live-exec for systemfeatures now fails at builder 8/8 (mvn package)
+      instead of at builder 6/8 (COPY .git). Different failure point, equivalent
+      net effect: cascade XML never produced; REQ-ETS-CLEANUP-017's acceptance
+      is unverified at the live-exec layer.
+  (2) Sprint 6's own honest-log-message conditional in scripts/sabotage-test.sh
+      is unreachable under `set -eo pipefail` — the immediately-preceding
+      LATEST_REPORT pipeline kills the script before the disambiguation logic
+      can fire. The very feature Sprint 6 added doesn't actually fire when it's
+      meant to.
+
+  These gaps do NOT block Sprint 6 close (the headline credential-leak issue
+  is genuinely closed) but they do prevent recovery above 0.80 Raze trend.
+  Recommend Sprint 7 / wedge-2 or a fast-follow patch close GAP-1 (~5-10 LOC
+  python/script change) and GAP-3 (~3 LOC bash). Sprint 6's primary objective
+  achieved; secondary objectives partial.
+
+  Trend: 0.74 (Sprint 5) → 0.78 (Sprint 6). Rebound but not full recovery —
+  honest verdict required, not gold-plated.
+
+self_confidence: 0.88
+
+files_written:
+  - ".harness/evaluations/sprint-ets-06-adversarial-cumulative.yaml (this file)"
+artifacts_archived:
+  - "/tmp/raze-fresh-sprint6/test-results/sprint-ets-06-cascade-three-class-2026-04-30-FAILED.log"
+  - "/tmp/raze-stub-iut.log (option_a wire-tap evidence — original credential captured)"
+  - "/tmp/raze-mvn-pri.log + /tmp/raze-mvn-bis.log (mvn test 80/0/0/3 in two independent clones)"
+  - "/tmp/raze-sab-trace.log (bash -x trace surfacing GAP-3 pipefail unreachability)"
