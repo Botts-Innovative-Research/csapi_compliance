@@ -1,0 +1,786 @@
+---
+# Sprint ets-07 meta-review (meta-Raze)
+# Reviewer: meta-Raze (fresh context, artifact-only, has NEVER seen Generator/Quinn/Raze/orchestrator session contexts)
+meta_reviewer: raze (meta-scope)
+meta_review_target: sprint-ets-07-cumulative-gate-close
+status: complete
+evaluation_started: "2026-04-30T17:48:39Z"
+evaluation_completed: "2026-04-30T18:14:00Z"
+csapi_compliance_head_at_meta_start: "3b6729e"
+sister_repo_head: "38b1f8a"
+quinn_verdict_under_review: "APPROVE_WITH_CONCERNS 0.91"
+raze_verdict_under_review: "APPROVE_WITH_CONCERNS 0.88"
+
+# ---------------------------------------------------------------------------
+# Final verdict
+# ---------------------------------------------------------------------------
+verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score: 0.86
+confidence: 0.85
+
+verdict_summary: |
+  Sprint 7's primary objectives are MATERIALLY ACHIEVED and the SPRINT-COMPLETE
+  framing the orchestrator has staged in the working tree is HONEST. Both gate
+  verdicts (Quinn 0.91 + Raze 0.88) are substantively correct on the artifact
+  evidence. Sprint 7 most resembles Sprint 6 (SPRINT-COMPLETE-WITH-WEDGES,
+  meta-Raze APPROVE_WITH_META_CONCERNS), NOT Sprint 5 (PARTIAL-CLOSE). The 6
+  carryover wedges are CLOSED end-to-end including the headline Wedge 1 that
+  was a 2-sprint-old structural defect. The 3 NEW Sprint 7 process-improvement
+  contract criteria (bash_x_trace_evidence, design_md_adr_self_audit,
+  spec_status_honesty) were SUBSTANTIVELY ENFORCED — though with caveats
+  detailed below.
+
+  However, 4 META-CONCERNS warrant explicit Sprint 8 carryover:
+
+  (M-1) Independence is STRONG-PARTIAL. Quinn's evaluator YAML mtime is
+        17:28:38Z; Raze's is 17:32:33Z (Raze finished AFTER Quinn). Both
+        agents claim peek=false, but the file-system ordering means it is
+        STRUCTURALLY POSSIBLE that Raze read Quinn's verdict before
+        finalizing — orchestrator's parallel-spawn design relies on agent
+        self-discipline. The differentiated live-execs DID work as designed
+        (Quinn ran cred-leak script + smoke; Raze ran 5-class cascade +
+        2-clone reproducibility) — these are genuinely different attack
+        surfaces. The 0.03 score gap (project-narrowest) is more plausibly
+        explained by both gates landing their primary objective cleanly than
+        by collusion. But the orchestrator's framing "first non-GAPS_FOUND
+        Raze since Sprint 4" implies independence-as-strong; the more
+        accurate framing is "differentiated execs + parallel spawn produced
+        convergent verdicts."
+
+  (M-2) Process-improvement enforcement is HONORED but with one NEAR-MISS:
+        generator_design_md_adr_self_audit was honored at the explicitly-
+        flagged section (lines 533-603) but Generator's deviations table
+        confirms a residual stale item #4 was caught only in a SECOND
+        commit (`afc7b04`) after the initial Generator close commit
+        (`5e1f1b8`) — Self-Raze rather than initial-pass-complete. The
+        principle says "in same sprint" which was honored; but the spirit
+        is "during initial close." Generator's own concerns_flagged_for_raze
+        item #3 explicitly states "Generator audited Sprint 3 hardening
+        section but did NOT exhaustively grep csapi_compliance for OTHER
+        stale references." Raze's Q12 audit confirms remaining references
+        are inside the Historical-bracketed section, but a complete grep
+        across spec.md + ADR-010 + design.md + traceability.md was not
+        performed by either gate. NEAR-MISS, not failure.
+
+  (M-3) Headline framing tension between "3-class" and "5-class" cascade.
+        Spec.md REQ-018 line 345 declares status IMPLEMENTED with cascade
+        XML showing **3-class** evidence. ADR-010 lines 322-324 say
+        "Sprint 8+ sabotage exec will further verify the 5-class cascade
+        variant; the 3-class verification at Sprint 7 close is sufficient
+        for the v3 amendment's VERIFIED LIVE status." Raze's gate-time
+        cascade XML (68KB at /tmp/raze-fresh-sprint7/) PROVED 5-class
+        cascade. So the orchestrator's status.md headline "5-CLASS CASCADE
+        LIVE-VERIFIED at Raze gate (NOT just Generator's 3-class XML)" is
+        accurate. But this means the contract success criterion as written
+        (`sabotage_cascade_xml_produced: true`) is OVER-MET — Pat's
+        contract treated 3-class as sufficient; Raze went above. This is
+        good news. But the spec.md REQ-018 narrative + ADR-010 lines 322-324
+        now have spec-drift risk: documents reference "3-class" when
+        Sprint 7 has 5-class evidence available. Sprint 8 should record
+        the 5-class evidence path in spec.md and either retire the
+        ADR-010 "Sprint 8+ will further verify" sentence (already
+        verified) or add an ADR-010 v4 amendment. This is Raze's GAP-2
+        (LOW) — meta-review CONFIRMS LOW but flags as recurring spec-drift.
+
+  (M-4) Two latent gaps that BOTH primary gates missed:
+        (a) The Raze GAP-1 "stdout VERDICT-summary undercounts 3-of-5
+            siblings" finding indicates the sabotage script was
+            INCOMPLETELY UPDATED in Sprint 7 (Wedges 1+4 were source-fixes
+            but Wedge X for verdict-tabulator was not in Pat's contract).
+            This is a CONTRACT GAP — Pat's contract did not anticipate
+            that adding 2 new sibling classes would invalidate the
+            stdout summary. Future planners should add a "verify human-
+            readable artifact paths after structural changes" check.
+        (b) Quinn's `mvn_test: NOT_RUN_LOCALLY` is a RECURRING limitation
+            across ALL 7 ETS sprints — Quinn cannot independently run
+            mvn lifecycle on host (no PATH). Quinn marks "HIGH-STRUCTURAL"
+            confidence but the live-exec is gate-deferred to Docker-baked
+            path. Sprint 8 should land a `scripts/mvn-test-via-docker.sh`
+            wrapper that gives Quinn a host-side independent mvn handle.
+            Quinn's own warning #1 acknowledges this; orchestrator's
+            framing does NOT explicitly enumerate this as a recurring
+            gap — it is treated as Sprint 7 specific. This is a META-
+            gap-pattern.
+
+  Net: SPRINT-COMPLETE framing is HONEST and APPROVED. The 4 meta-concerns
+  are well-bounded Sprint 8 carryover items. Score arithmetic checks pass.
+  No reframing to PARTIAL-CLOSE warranted (Sprint 5 precedent: primary
+  objective OPEN; here all primary objectives CLOSED).
+
+# ---------------------------------------------------------------------------
+# Independence audit (Quinn vs Raze)
+# ---------------------------------------------------------------------------
+independence_assessment:
+  parallel_spawn_preserved_independence: STRONG_PARTIAL
+  evidence_for_independence:
+    - "Quinn ran in /tmp/quinn-fresh-sprint7/; Raze ran in /tmp/raze-fresh-sprint7/ + /tmp/raze-fresh-sprint7-bis/. 3 distinct working directories. No shared state."
+    - "Differentiated primary live-execs HONORED: Quinn ran credential-leak-e2e-test.sh + smoke-test.sh + scope-creep grep. Raze ran sabotage-test.sh --target=systemfeatures + 2-clone reproducibility build + adversarial code inspection. Pat's differentiated-live-exec amendment continues to work."
+    - "Quinn's evaluator-cumulative.yaml header timestamp 2026-04-30T17:26:22Z. Raze's adversarial-cumulative.yaml header timestamp 2026-04-30T17:30:33Z. Quinn started/finished BEFORE Raze."
+    - "Quinn explicitly defers cascade XML re-verification to Raze (5 deferral points in raze_handoff_notes). Raze independently produced the cascade XML. The deferral is a DESIGNED DIFFERENTIATION, not evasion."
+    - "Quinn surfaced 3 warnings (mvn host PATH absent, 5-class not Quinn-time verified, spring-javaformat dependency). Raze surfaced 3 GAPs (stdout verdict undercount, ADR-010 retroval understatement, ops/test-results.md staleness). Different attention surfaces — minimal double-counting."
+  evidence_against_full_independence:
+    - "File-system mtime ordering: Quinn yaml mtime 13:28:38 (host time, 17:28:38Z); Raze yaml mtime 13:32:33 (17:32:33Z). Raze finalized AFTER Quinn. STRUCTURALLY POSSIBLE for Raze to have read Quinn's YAML before finalizing — though both report quinn_peek_attempted=false equivalent (no explicit field in Sprint 7 YAMLs but contract directive applies)."
+    - "Both gates were briefed via Pat-authored contract evaluation_questions blocks. Both gates' attention surfaces (read SamplingFeaturesTests + PropertyDefinitionsTests; verify spec.md REQ-007 + 008 + 017 status; verify testng.xml; verify VerifyTestNGSuiteDependency lint) overlap by design — Pat directed both to the same source files for coverage."
+    - "Both gates' verdict scores converge (0.91 + 0.88 = 0.03 gap, project-narrowest across 7 sprints). This convergence is plausibly real (both gates landed their primary live-exec cleanly) but it is also the convergence shape that briefing-induced attention overlap would produce. The project gap history (0.03 → 0.04 → 0.02 → 0.00 → 0.08 → 0.08 → 0.03) shows narrow gaps in sprints where there were FEW substantive defects (Sprints 1-4) and wider gaps when defects existed (Sprints 5-6). Sprint 7's narrow gap is consistent with substantively-clean close, not with collusion."
+  meta_finding: |
+    Independence is materially STRONGER than Sprint 5 (M-1 STRONG_PARTIAL)
+    and on par with Sprint 6 (M-1 STRONG_PARTIAL). Pat's differentiated-
+    live-exec design is now a 3-sprint pattern (Sprint 5+6+7) and is
+    delivering as designed. The Sprint 7 0.03 gap is most plausibly a
+    real-substantive-clean-close signal, not a collusion signal. But the
+    file-system ordering means a strict zero-information-flow guarantee
+    cannot be established from artifacts alone; orchestrator should rely
+    on agent self-discipline + contract directive.
+  attack_surface_overlap_count: "MEDIUM (Quinn + Raze both inspected SF/Property test classes + testng.xml + spec.md status; differentiated execs are non-overlapping — net overlap acceptable)"
+
+# ---------------------------------------------------------------------------
+# Orchestrator framing audit
+# ---------------------------------------------------------------------------
+orchestrator_framing_audit:
+  framing_in_status_md_head_quoted: |
+    "🎉 Sprint ets-07 SPRINT-COMPLETE 2026-04-30T17:33Z (cumulative gates Quinn 0.91 APPROVE_WITH_CONCERNS + Raze 0.88 APPROVE_WITH_CONCERNS — first non-GAPS_FOUND Raze since Sprint 4; Raze BACK ABOVE 0.80 line for first time since Sprint 4; Quinn-Raze gap 0.03 is project-narrowest)."
+
+  framing_in_changelog_quoted: |
+    "🎉 Sprint ets-07 SPRINT-COMPLETE — cumulative gates Quinn 0.91 + Raze 0.88 APPROVE_WITH_CONCERNS; 5-class cascade LIVE-VERIFIED at Raze gate; reproducibility byte-identical 4/4 jars"
+
+  framing_in_metrics_turn_93_quoted: |
+    "Sprint 7 = SPRINT-COMPLETE with substantively-clean gate close (1 MED + 5 LOW gaps for Sprint 8 cleanup; no blockers; no overrides)."
+
+  framing_assessment: HONEST
+  rationale: |
+    SPRINT-COMPLETE is the right verdict. All primary objectives closed:
+    - 6 Sprint 6 carryover wedges all CLOSED end-to-end (live evidence for
+      Wedge 1 cascade XML; Wedge 3 prong-b retarget verified by Quinn
+      script-PASS exit 0; Wedge 2 status honesty followed at gate; Wedge 4
+      pipefail fix confirmed reachable; Wedge 5 design.md doc-lag landed;
+      Wedge 6 ADR-010 retroval landed)
+    - 2 new conformance classes added (SamplingFeatures + PropertyDefinitions)
+      with Sampling 4/4 PASS and Property 2 PASS + 2 SKIP-with-reason
+      (graceful degradation per contract MEDIUM-risk mitigation)
+    - 3 NEW process-improvement contract criteria substantively HONORED
+    - smoke 42/42 with failed=0; mvn 80→86 surefire delta arithmetic plausible
+    - reproducibility byte-identical across 2 clones
+    - worktree clean pre+post on both repos
+
+    Sprint 7 is NOT analogous to Sprint 5 PARTIAL-CLOSE (where the primary
+    `credential_leak_e2e_full_pass` criterion was OPEN at close). Sprint 7
+    closes cleanly on all primary criteria. It is most analogous to Sprint 6
+    SPRINT-COMPLETE-WITH-WEDGES (where the headline objective closed but 4
+    secondary gaps surfaced) — except Sprint 7 has SMALLER and FEWER
+    secondary gaps (1 MEDIUM + 5 LOW vs Sprint 6's 1 HIGH + 2 MEDIUM + 1
+    LOW + 2 MEDIUM Quinn).
+
+  framing_overstatement_check:
+    "0.80 line back above":
+      assessment: HONEST_BUT_NEEDS_NUANCE
+      rationale: |
+        Raze 0.88 IS arithmetically above 0.80. The "0.80 line" was a
+        Sprint 5 META-RAZE FRAMING LINE (per Sprint 6 meta-review M-3),
+        NOT a contractual gate threshold. Orchestrator's framing
+        "BACK ABOVE 0.80 line for first time since Sprint 4" treats it
+        AS-IF a contractual milestone. This is INTERPRETIVE STRETCH —
+        the 0.80 line was meta-Raze's diagnostic threshold for "below
+        this is a quality concern," and Raze 0.88 is well clear of
+        that. But framing it as a milestone elevates the framing line
+        to contractual status. This is the SAME shape concern as
+        Sprint 5 M-3 (meta-Raze observation that the framing line had
+        not been previously contractual). Sprint 7 orchestrator has
+        partially absorbed the meta-Raze line into framing language;
+        Sprint 8 orchestrator should drop the "0.80 line" framing and
+        replace with: "Raze 0.88 + Quinn 0.91 reflect substantively-
+        clean close; gap of 0.03 is consistent with both gates landing
+        their primary objective."
+    "first non-GAPS_FOUND Raze since Sprint 4":
+      assessment: ACCURATE
+      rationale: |
+        Sprint 5 Raze: GAPS_FOUND. Sprint 6 Raze: GAPS_FOUND. Sprint 7
+        Raze: APPROVE_WITH_CONCERNS. Statement is verified accurate.
+    "Quinn-Raze gap 0.03 is project-narrowest":
+      assessment: ACCURATE
+      rationale: |
+        Historical gap series per Sprint 5 + 6 meta-review YAMLs:
+        Sprint 1: 0.03 — Quinn 0.91, Raze 0.88
+        Sprint 2: 0.04
+        Sprint 3: 0.02 — wait, Sprint 6 meta-review says 0.02
+        Sprint 4: 0.00
+        Sprint 5: 0.08
+        Sprint 6: 0.08
+        Sprint 7: 0.03
+        Statement "project-narrowest" is INCORRECT IF Sprint 3's gap
+        was 0.02 — that would make Sprint 3 the narrowest. Cross-check
+        Sprint 5 meta-review line 437: "sprint_3: Quinn 0.95 / Raze 0.93
+        (gap 0.02)". Sprint 4 gap 0.00. So "project-narrowest" is
+        FACTUALLY INCORRECT — Sprint 4 (0.00) and Sprint 3 (0.02) both
+        had narrower gaps. This is a FRAMING ERROR.
+
+  framing_understatement_check:
+    "5-class cascade LIVE-VERIFIED at Raze gate":
+      assessment: ACCURATE_BUT_HEADLINE_BURIES_GAP_1
+      rationale: |
+        Raze's cascade XML did demonstrate 5-class cascade-SKIP. But Raze's
+        OWN GAP-1 (MEDIUM) is "sabotage-test.sh stdout VERDICT-summary
+        tabulator does not enumerate 5-class cascade — only 3-class."
+        Headline says "5-class verified" at the XML layer (true). It does
+        NOT mention that the human-readable stdout still says "3-class."
+        Future readers reading only status.md will conclude 5-class is
+        end-to-end verified including human-readable summary; the truth
+        is that a debugging human reading sabotage stdout will still see
+        "3-class verdict." This is a HEADLINE-LEVEL OMISSION. Sprint 8
+        REC-1 (~5-10 LOC bash fix) closes this; until then orchestrator
+        framing should add a parenthetical: "(XML evidence; sabotage
+        stdout summary still reports 3-class — Sprint 8 REC-1)."
+
+  framing_commit_timing:
+    state_at_meta_start: "status.md / changelog.md / metrics.md MODIFIED in working tree (uncommitted); Quinn + Raze YAMLs UNTRACKED."
+    sprint_6_precedent: "Sprint 6 orchestrator updated framing AFTER meta-review validated (commits 034b8f8 + d67b9de)."
+    sprint_7_observation: "Orchestrator has DRAFTED framing PRE-meta-review but NOT committed — same shape as Sprint 6. Meta-review can still influence final commit. Recommended: orchestrator amends framing to drop 'project-narrowest gap' (incorrect) and add 'XML 5-class but stdout summary still 3-class — Sprint 8 REC-1' parenthetical before committing."
+
+  net_framing_assessment: HONEST_WITH_TWO_FACTUAL_NUANCES
+  required_corrections_before_commit:
+    - "Drop or correct 'Quinn-Raze gap 0.03 is project-narrowest' — Sprint 4 was 0.00 and Sprint 3 was 0.02; Sprint 7 is third-narrowest (or narrowest-amongst-sub-0.95-Raze-sprints)."
+    - "Add headline parenthetical or footnote noting Raze GAP-1: sabotage stdout VERDICT-summary still reports 3-class enumeration; XML evidence is 5-class; Sprint 8 REC-1 closes the human-readable layer."
+  recommended_corrections_optional:
+    - "Drop 'BACK ABOVE 0.80 line' framing (treats meta-Raze diagnostic threshold as contractual milestone). Replace with substantive description."
+
+# ---------------------------------------------------------------------------
+# Sprint 7 process improvement enforcement audit (NEW — first sprint with these criteria)
+# ---------------------------------------------------------------------------
+process_improvement_audit:
+  bash_x_trace_evidence_for_bash_changes:
+    contract_text: |
+      "Generator MUST run bash -x for any modified bash scripts (sabotage-
+      test.sh + credential-leak-e2e-test.sh) and capture the trace as an
+      evidence artifact. Quinn + Raze MUST verify trace evidence exists."
+    generator_compliance:
+      sabotage_bash_x_trace: "/home/nh/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-07-01-wedge1-bash-x-trace.log (14474 bytes; 211 lines per Raze) — VERIFIED ON DISK"
+      cred_leak_bash_x_trace: "/home/nh/docker/gir/ets-ogcapi-connectedsystems10/ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log (1375 bytes) — VERIFIED ON DISK"
+    quinn_independent_verification:
+      cred_leak: |
+        Quinn YAML lines 105-108: "method: Static inspection (lines 138-149 +
+        186-197 of credential-leak-e2e-test.sh) + runtime evidence from stdout
+        transcript". Quinn CONFIRMED bash -x targeting via STATIC INSPECTION
+        + runtime stdout (i.e. Quinn ran the script end-to-end and observed
+        the prong-b targeting via the verbose output) — NOT a fresh `bash -x`
+        re-execution by Quinn. Quinn captured archive at /tmp/quinn-fresh-
+        sprint7/cred-leak-bash-x-2026-04-30.log. Verification depth: PARTIAL
+        (Quinn observed runtime evidence + static path inspection; did not
+        run `bash -x` from scratch independently).
+      sabotage: "Quinn DEFERRED to Raze per differentiated-live-exec design."
+    raze_independent_verification:
+      sabotage: |
+        Raze YAML line 16: "VERIFIED — bash -x trace at /tmp/raze-fresh-
+        sprint7/sab-bash-x-2026-04-30.log (211 lines)". Raze ran fresh bash -x
+        and captured to a NEW path under /tmp/raze-fresh-sprint7/. This is
+        an INDEPENDENT bash -x re-execution. Verification depth: FULL.
+      cred_leak: "Raze DEFERRED to Quinn per differentiated-live-exec design."
+    independent_verification_count: "1 of 2 scripts had FULL bash -x re-exec by a gate (Raze on sabotage). The other (Quinn on cred-leak) was static inspection + runtime-stdout observation. Generator's archived bash -x trace was the load-bearing evidence for both Quinn cred-leak and Raze sabotage."
+    verdict: HONORED_WITH_CAVEATS
+    caveat: |
+      Contract text says "Quinn + Raze MUST verify trace evidence exists."
+      That is HONORED end-to-end. But the spirit of the criterion (catch
+      bash defects via independent trace verification) is partially diluted
+      because Quinn relied on static inspection + Generator's archived
+      trace + runtime stdout for the cred-leak script — Quinn did not
+      execute `bash -x` from scratch on the cred-leak script. If Sprint 6
+      GAP-Q1 (wrong grep target) had recurred in a more subtle form,
+      Quinn's static-inspection-only path might have missed it. Sprint 8+
+      contracts should specify "BOTH gates run bash -x independently from
+      /tmp/<role>-fresh-<sprint>/ and produce SEPARATE trace archives."
+
+  generator_design_md_adr_self_audit:
+    contract_text: |
+      "When Generator modifies a Java filter or architectural component,
+      Generator MUST grep design.md and all ADR docs for references to the
+      OLD pattern. Any stale references MUST be updated or marked
+      historical in the SAME sprint."
+    generator_compliance:
+      explicitly_flagged_section: "design.md lines 533-603 (Sprint 3 hardening) — UPDATED with approach (i) subsection added BEFORE old block; old block marked Historical; false try/finally claim invalidated. Wedge 5 commit 5e1f1b8."
+      residual_stale_item_4: "design.md line 635 item #4 of Sprint 3 ratification list — caught in commit afc7b04 (Self-Raze, AFTER initial close commit). Generator's deviations table reports this as 'Self-Raze caught residual stale item' — explicitly flagged."
+      generator_concerns_flagged_for_raze_3: |
+        "Wedge 5 design.md edit: Generator audited Sprint 3 hardening section
+        but did NOT exhaustively grep csapi_compliance for OTHER stale
+        references to super.filter() or try/finally — only the meta-Raze-
+        flagged section (lines 531-636). Raze should grep design.md + all
+        ADRs for any remaining stale references to ensure complete
+        META-GAP-M1 closure."
+      raze_q12_audit: |
+        Raze ran the requested grep. Result: "design.md 535-635 thoroughly
+        audited. All stale references either (a) explicitly INVALIDATED with
+        strikethrough+annotation (line 635 item #4) OR (b) inside the
+        explicit 'Historical (Sprint 3 baseline — superseded by Sprint 6
+        approach (i) above)' subsection. Lines 666-667 reference historical
+        try/finally in unit-test rules but are UNDER the line 559 Historical
+        section header. Spec.md lines 303, 338, 339 reference the historical
+        defect in IMPLEMENTED REQ narrative (explaining the bug fixed); line
+        948 is a SCENARIO assertion enforcing the fix — neither is a residual."
+    independent_verification_count: "1 of 2 gates ran the full grep audit (Raze on Q12). Quinn's audit was scoped to lines 531-636 only (per evaluation_questions_for_quinn). Both gates verdict PASS."
+    verdict: HONORED_WITH_CAVEATS
+    caveat: |
+      The principle says "in same sprint" — that was honored (residual
+      caught in commit afc7b04 still within Sprint 7). But the SPIRIT of
+      the principle (catch ALL stale references during initial close) was
+      NEAR-MISSED. Generator's own concerns_flagged_for_raze item 3
+      acknowledges the audit was scoped to the meta-Raze-flagged section.
+      Raze did the broader audit at gate time and reported clean — but
+      this means the BURDEN OF COMPLETE CLOSURE shifted from Generator
+      to Raze. Sprint 8+ contracts should specify "Generator self-audit
+      MUST grep design.md + ALL ADR docs + spec.md for old-pattern
+      references at initial close commit time, not as a follow-up."
+    closes_meta_raze_sprint_6_meta_gap_m1: YES (substantively)
+    new_residual: |
+      Raze Q12 mentions design.md lines 666-667 (unit-test rules
+      referencing historical try/finally). Raze classified these as
+      "UNDER the Historical section header" (line 559). Meta-review
+      independent inspection: lines 666-667 are 100+ lines BELOW the
+      "Historical" header at line 559; whether they are bracketed-by-
+      header or are independent stale references is a judgment call.
+      Recommend Sprint 8 explicit grep + decision.
+
+  spec_status_honesty_principle:
+    contract_text: |
+      "REQ status updates in spec.md REQUIRE live-exec verification.
+      If live-exec is gate-deferred, REQ status stays PARTIAL-IMPLEMENTED
+      or STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED until gate verifies."
+    generator_compliance:
+      req_017_promotion: |
+        Pat's contract corrected REQ-017 from IMPLEMENTED to STRUCTURAL-
+        IMPLEMENTED-LIVE-EXEC-FAILED at planning time (Sprint 6 carryover
+        finding). Generator's commit 5e1f1b8 promoted REQ-017 back to
+        IMPLEMENTED at the SAME time as Wedge 1 cascade XML was
+        produced (sister commit c68b803). Status promotion was tied to
+        evidence path citation in spec.md line 345. spec.md line 345
+        explicitly cites "sister repo ops/test-results/sprint-ets-07-01-
+        wedge1-sabotage-cascade-2026-04-30.xml (53KB)".
+      req_007_008_promotion: |
+        REQ-ETS-PART1-007 + 008 promoted to IMPLEMENTED in commit 5e1f1b8.
+        Smoke 42/42 evidence at sister ops/test-results/sprint-ets-07-
+        smoke-42-tests-2026-04-30.xml (file mtime 12:45 = 16:45Z, BEFORE
+        Generator's csapi commit at 12:56 = 16:56Z). Live-exec evidence
+        produced BEFORE status promotion in spec.md.
+    quinn_audit:
+      verdict_q11_status_check: |
+        Quinn YAML scenario SCENARIO-ETS-CLEANUP-REQ017-STATUS-HONESTY-001:
+        PASS. "Generator honored spec_status_honesty_principle: promotion
+        from STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED to IMPLEMENTED
+        occurred ONLY AFTER evidence file path was cited."
+    raze_audit:
+      verdict_q11_status: PASS
+    verdict: HONORED
+    rationale: |
+      Status was promoted ONLY after evidence was produced, with evidence
+      paths cited in spec.md REQ narrative. This is the cleanest of the
+      3 process improvements and was verifiably enforced end-to-end.
+    closes_meta_raze_sprint_6_meta_gap_m2: YES (cleanly)
+
+  net_process_improvement_assessment: |
+    All 3 NEW process-improvement contract criteria were SUBSTANTIVELY
+    enforced. spec_status_honesty_principle is the cleanest (HONORED).
+    bash_x_trace and design_md_adr_self_audit are HONORED_WITH_CAVEATS —
+    Generator's archived trace + Raze's independent run satisfied the
+    bash-x criterion at the contract-text layer, but only Raze did a
+    fresh independent re-exec. design_md self-audit caught the explicitly-
+    flagged section but missed a residual that Generator caught via
+    Self-Raze AFTER the initial close commit. Sprint 7 demonstrates the
+    process-improvement contract criteria DO catch defects at gate time;
+    Sprint 8+ should tighten the verification protocols to require
+    fully-independent re-execution.
+
+# ---------------------------------------------------------------------------
+# Gap corroboration analysis
+# ---------------------------------------------------------------------------
+gap_corroboration_analysis:
+  quinn_warnings:
+    - "(W1) mvn lifecycle not run on host (mvn not on PATH)"
+    - "(W2) 5-class cascade not yet verified at Quinn-time (3-class only)"
+    - "(W3) spring-javaformat dependency on two-line if(true) throw shape"
+  raze_gaps:
+    - "(GAP-1 MEDIUM) sabotage-test.sh stdout VERDICT-summary tabulator does not enumerate 5-class"
+    - "(GAP-2 LOW) ADR-010 v3 retroval understates Sprint 7 achievement (3-class wording vs 5-class achieved)"
+    - "(GAP-3 LOW) csapi_compliance ops/test-results.md stale 13 days"
+  double_count_check:
+    quinn_w2_vs_raze_gap_1_2: |
+      Quinn W2 ("5-class not yet Quinn-time verified") and Raze GAP-2
+      ("ADR-010 retroval understates 5-class") and Raze GAP-1 ("stdout
+      summary undercounts 5-class") all touch the 5-class theme but at
+      DIFFERENT layers:
+      - Quinn W2: Quinn's own verification scope (acknowledges Quinn ran
+        from /tmp clone but did not exec sabotage cascade — defers to Raze)
+      - Raze GAP-1: sabotage stdout SUMMARY layer (XML correct; human-
+        readable layer wrong)
+      - Raze GAP-2: ADR-010 doc layer (says "3-class sufficient; Sprint 8
+        will further verify" — but Sprint 7 already further verified)
+      DIFFERENT defects, SAME META-PATTERN: Sprint 7 gates revealed 5-class
+      capability that the contract did not anticipate. NO DOUBLE-COUNT.
+    quinn_w1_vs_raze_gap_3: |
+      Quinn W1 (mvn host PATH) and Raze GAP-3 (ops/test-results.md stale)
+      both touch CLAUDE.md compliance but at different points:
+      - Quinn W1: Quinn's own Step 4 verification limitation
+      - Raze GAP-3: Step 5 E2E evidence canonical doc staleness
+      DIFFERENT defects. NO DOUBLE-COUNT.
+    quinn_w3_vs_raze_findings: |
+      No Raze finding overlaps Quinn W3 (spring-javaformat). Quinn-only.
+  net: NO_DOUBLE_COUNT
+  triangulation_signal: |
+    Quinn's 3 warnings + Raze's 3 GAPs are DIFFERENT defects on different
+    surfaces. The structural shape is similar to Sprint 6 (Quinn surfaced
+    GAP-Q1 in cred-leak script; Raze surfaced GAP-3 in sabotage script).
+    This is a STRONG independence signal — different attention paths.
+
+# ---------------------------------------------------------------------------
+# Severity recalibration
+# ---------------------------------------------------------------------------
+severity_recalibration:
+  raze_gap_1_medium:
+    raze_severity: MEDIUM
+    meta_severity: MEDIUM (CONFIRMED)
+    rationale: |
+      Sabotage stdout VERDICT-summary undercounting 5-class is a real
+      human-readable defect: a debugging human reading the stdout will
+      conclude 3-class cascade instead of 5-class. But the XML evidence
+      is canonical and correct. MEDIUM is appropriate — not HIGH because
+      the canonical artifact is right; not LOW because debugging
+      ergonomics matter.
+  raze_gap_2_low:
+    raze_severity: LOW
+    meta_severity: LOW (CONFIRMED)
+    rationale: |
+      Doc-lag, no functional impact. Sprint 8 v4 amendment closes.
+  raze_gap_3_low:
+    raze_severity: LOW
+    meta_severity: LOW-leaning-MEDIUM
+    rationale: |
+      ops/test-results.md staleness has been an issue since 2026-04-17 —
+      that predates ALL ETS sprints. CLAUDE.md step 5 mandate has been
+      WEAK across all 7 ETS sprints. This is a SLOW-BURN process gap
+      that's only now being flagged by Raze. Recalibration: stays LOW
+      for Sprint 7 close but should be flagged as RECURRING-LOW for
+      Sprint 8+ — until ETS evidence has a canonical home, csapi-
+      compliance Step 5 is permanently weak. Either add an ETS pointer
+      block to ops/test-results.md OR mark csapi-compliance as
+      "no-host-tests project" and update CLAUDE.md to scope Step 5 to
+      sister repo for ETS work.
+  quinn_warnings:
+    quinn_w1_meta_severity: "RECURRING-MEDIUM (Quinn cannot run mvn on host across all ETS sprints — pattern, not Sprint 7 specific)"
+    quinn_w2_meta_severity: "LOW (already addressed by Raze's gate-time 5-class achievement)"
+    quinn_w3_meta_severity: "LOW (defense-in-depth, not Sprint 7 blocker)"
+  net_recalibration_outcome: |
+    Most severities are correctly calibrated. Only Raze GAP-3 should be
+    flagged as RECURRING-LOW (process gap across all ETS sprints, not
+    Sprint 7 specific). Quinn's W1 should be acknowledged in framing
+    as a recurring limitation across all ETS sprints — not described
+    as Sprint 7 specific.
+
+# ---------------------------------------------------------------------------
+# Latent gaps both primary gates missed
+# ---------------------------------------------------------------------------
+meta_gaps_found:
+  - id: META-GAP-S7-1
+    severity: low-medium
+    title: "Spec.md REQ-018 narrative still references 3-class cascade as load-bearing evidence"
+    description: |
+      spec.md REQ-ETS-CLEANUP-018 line 353 narrative reads "live 3-class
+      cascade XML produced end-to-end". ADR-010 lines 322-324 read "the
+      3-class verification at Sprint 7 close is sufficient for the v3
+      amendment's VERIFIED LIVE status." Raze's gate-time 5-class XML
+      (68KB at /tmp/raze-fresh-sprint7/) is NOT cited in spec.md or
+      ADR-010 — both still reference Generator's 3-class XML (53KB).
+      Spec drift: documentation lags actual evidence. Future readers will
+      conclude 3-class is the high-water-mark when 5-class evidence
+      exists.
+    why_both_gates_missed_it: |
+      Quinn defers cascade XML re-verification to Raze (per
+      differentiated-live-exec design); Quinn did not audit ADR-010 v3
+      retroval text against Raze's gate-time achievement. Raze's GAP-2
+      is closely related but Raze framed it as "ADR-010 understates
+      Sprint 7 achievement" (LOW) — Raze did not cross-reference
+      spec.md REQ-018 narrative which has the same drift.
+    sprint_8_action: |
+      In Sprint 8, update spec.md REQ-018 narrative + ADR-010 v3 to
+      cite Raze's gate-time 5-class XML evidence path
+      (/tmp/raze-fresh-sprint7/test-results/sprint-ets-07-cascade-
+      2026-04-30.xml — but note: /tmp/ is ephemeral; archive to
+      sister repo first). Mechanical: ~10 LOC text edits.
+    blocks_sprint_close: false
+    closes_existing_raze_gap_2: PARTIALLY (Raze GAP-2 covers ADR-010 only; this meta-gap extends to spec.md REQ-018)
+
+  - id: META-GAP-S7-2
+    severity: low
+    title: "Recurring Quinn mvn-on-host limitation across all ETS sprints"
+    description: |
+      Quinn's `mvn_test: NOT_RUN_LOCALLY` is a pattern visible in
+      every ETS sprint Quinn evaluator YAML. Quinn marks "HIGH-
+      STRUCTURAL" confidence and defers mvn lifecycle to Docker-baked
+      path, which is REASONABLE. But the gap means Quinn lacks an
+      independent host-side check on the surefire counts. Across 7
+      sprints this has accumulated as a permanent independence gap.
+      Quinn's own Sprint 7 W1 + suggestion to add scripts/mvn-test-
+      via-docker.sh wrapper acknowledges this. Neither prior meta-
+      review explicitly catalogued this as a recurring pattern.
+    why_both_gates_missed_it: |
+      Quinn flags it AS an issue — not as a recurring pattern. Raze
+      doesn't have the limitation (Raze can build via Docker) so
+      doesn't flag the analogue. Orchestrator's framing treats it as
+      Sprint 7 specific.
+    sprint_8_action: |
+      Land scripts/mvn-test-via-docker.sh wrapper in sister repo. Update
+      CLAUDE.md to direct Quinn to use this wrapper. Update Sprint 8
+      contract evaluation_questions_for_quinn to require host-side
+      independent mvn handle.
+    blocks_sprint_close: false
+
+  - id: META-GAP-S7-3
+    severity: medium
+    title: "Generator self-audit grep scope was section-scoped, not project-wide"
+    description: |
+      generator_design_md_adr_self_audit principle requires Generator to
+      grep design.md + ALL ADR docs + spec.md for stale references.
+      Generator's deviations table acknowledges audit was scoped to the
+      meta-Raze-flagged section (lines 531-636) only. Self-Raze caught
+      one residual via narrow inspection (item #4 line 635) — but a
+      project-wide grep for `super.filter\|try/finally pattern guarantees`
+      across all docs was not performed by Generator. Raze ran the
+      broader audit at gate time (Q12) and found design.md lines 666-667
+      reference historical try/finally — Raze classified these as
+      "bracketed by Historical section header at line 559" — a judgment
+      call. The audit responsibility shifted from Generator to Raze.
+    why_both_gates_missed_it: |
+      Quinn's audit was section-scoped per evaluation_questions_for_quinn
+      (Q "design.md audit: grep design.md lines ~531-636"). Raze's
+      audit was broader but stopped at the design.md scope; Raze did
+      not cross-grep spec.md or all ADRs for other stale references.
+    sprint_8_action: |
+      Sprint 8 contract should specify Generator MUST run the full grep
+      audit at initial close commit time AND archive the grep results
+      as evidence. Quinn + Raze re-verify rather than perform-from-
+      scratch.
+    blocks_sprint_close: false
+
+  - id: META-GAP-S7-4
+    severity: low
+    title: "0.80 line absorbed into framing language without explicit downgrade"
+    description: |
+      The "0.80 line" was a Sprint 5 META-RAZE FRAMING LINE — explicitly
+      a meta-Raze diagnostic threshold for "below this is a quality
+      concern," NOT a contractual gate threshold. Sprint 7 orchestrator
+      framing reads "BACK ABOVE 0.80 line for first time since Sprint 4"
+      — this elevates the framing line to contractual milestone status.
+      Sprint 6 meta-review M-3 flagged this exact pattern: "the 0.80
+      threshold cited in the prompt was a Sprint 5 META-RAZE FRAMING
+      LINE, not a contractual gate threshold." Sprint 7 orchestrator
+      did not absorb this caution.
+    why_both_gates_missed_it: |
+      Both gates produce numeric scores; orchestrator interprets them
+      against historical context. Neither gate audits orchestrator
+      framing — that's meta-Raze's job.
+    sprint_8_action: |
+      Drop "0.80 line" framing language. Replace with substantive
+      description ("substantively-clean close" or "Raze APPROVE_WITH_
+      CONCERNS for first time since Sprint 4").
+    blocks_sprint_close: false
+
+# ---------------------------------------------------------------------------
+# Comparison to prior meta-reviews
+# ---------------------------------------------------------------------------
+comparison_to_prior_meta_reviews:
+  sprint_5_meta_review:
+    verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+    framing_outcome: "Sprint 5 reframed from SPRINT-COMPLETE to PARTIAL-CLOSE"
+    primary_objective_state: "credential_leak_e2e_full_pass OPEN at close"
+    most_resembles_sprint_7: NO
+    rationale: "Sprint 5's primary objective was OPEN. Sprint 7's primary objectives are all CLOSED. Different shape."
+  sprint_6_meta_review:
+    verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+    framing_outcome: "Sprint 6 SPRINT-COMPLETE-WITH-WEDGES VALIDATED"
+    primary_objective_state: "credential_leak_e2e_full_pass CLOSED at wire layer"
+    most_resembles_sprint_7: YES
+    rationale: |
+      Sprint 6 closed primary + surfaced 4 secondary gaps. Sprint 7
+      closes primary (6 wedges + 2 new classes) + surfaces 1 MEDIUM +
+      5 LOW secondary gaps. SAME shape, smaller residual. Sprint 7
+      is the natural successor verdict to Sprint 6.
+  sprint_7_meta_review_self:
+    verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+    framing_outcome: "Sprint 7 SPRINT-COMPLETE-WITH-SPRINT-8-CARRYOVER (orchestrator should add framing nuance per recommendations)"
+    primary_objective_state: "ALL primary criteria CLOSED with end-to-end live evidence; 3 process improvements substantively enforced"
+    quality_trend: |
+      Project gate trend: 0.91/0.88 → 0.96/0.92 → 0.95/0.93 → 0.84/0.84
+      → 0.82/0.74 → 0.86/0.78 → 0.91/0.88. Sprint 7 returns to Sprint 1
+      baseline; this is a HONEST RECOVERY signal. The recovery is the
+      headline observation; the framing-line stretch is a minor caveat.
+
+# ---------------------------------------------------------------------------
+# Independent reproducer (cheap GAP-3 reproduction)
+# ---------------------------------------------------------------------------
+independent_reproducer_findings:
+  reproducer_target: "Raze GAP-3 (csapi_compliance/ops/test-results.md staleness)"
+  command: 'stat -c "%y %n" /home/nh/docker/gir/csapi_compliance/ops/test-results.md'
+  result: |
+    "2026-04-17 17:14:02.572181481 -0400" — 13 days stale (today 2026-04-30).
+    First line of file reads: "Last updated: 2026-04-17T21:30Z (Sprint
+    sess-prog-001-assertion-depth)". Predates ALL 7 ETS sprints. Raze's
+    GAP-3 finding REPRODUCED EXACTLY.
+  meta_finding: |
+    Raze's GAP-3 is correct and reproducible. Severity LOW is appropriate
+    for Sprint 7 close (no functional impact) but the gap has been
+    accumulating across all 7 ETS sprints — Sprint 8 should resolve it
+    once and not let it accumulate further. Recalibrate to RECURRING-LOW.
+  reproducer_path: "(direct stat — no /tmp clone needed)"
+  budget_used: "<1 minute, ~500 tokens"
+
+  not_attempted_more_expensive_reproducers:
+    - "GAP-1 (sabotage stdout VERDICT-summary undercounts) — would require ~5min /tmp clone + sabotage script run; deferred to budget."
+    - "5-class cascade XML reproduction — would require ~10min Docker build cycle; deferred to budget. Raze already produced the canonical evidence."
+
+# ---------------------------------------------------------------------------
+# Recommendations for orchestrator
+# ---------------------------------------------------------------------------
+recommendations_for_orchestrator:
+  framing_amendments_before_commit:
+    1: |
+      Drop "Quinn-Raze gap 0.03 is project-narrowest" — this is FACTUALLY
+      INCORRECT. Sprint 4 had gap 0.00; Sprint 3 had gap 0.02. Sprint 7's
+      0.03 is third-narrowest. Replace with "Quinn-Raze gap 0.03 reflects
+      strong convergence on substantively-clean close" or simply omit
+      the comparative claim.
+    2: |
+      Add headline parenthetical or footnote: "5-class cascade verified
+      at XML evidence layer; sabotage stdout VERDICT-summary still
+      enumerates 3-class only — Sprint 8 REC-1 (~5-10 LOC bash) closes
+      the human-readable layer per Raze GAP-1."
+    3: |
+      Optional: drop "BACK ABOVE 0.80 line" framing (treats meta-Raze
+      diagnostic threshold as contractual milestone). Replace with
+      substantive description. Sprint 6 meta-review M-3 flagged this
+      pattern; Sprint 7 absorbed it without explicit downgrade.
+
+  sprint_8_carryover_items:
+    1: "REC-1 (Raze): scripts/sabotage-test.sh extend verdict-summary tabulator to enumerate all sibling classes dynamically. ~5-10 LOC bash."
+    2: "REC-2 (Raze): ADR-010 v4 amendment recording Sprint 7 gate-time 5-class XML evidence path. Also update spec.md REQ-018 narrative (META-GAP-S7-1)."
+    3: "REC-3 (Raze): ops/test-results.md sweep — add ETS-sprint pointer block. Resolves recurring-LOW gap."
+    4: "REC-4 (Raze): wire-tap option_a Sprint 8 deferred verification."
+    5: "Quinn W1 (META-GAP-S7-2): land scripts/mvn-test-via-docker.sh wrapper in sister repo for Quinn host-side independent mvn handle."
+    6: "Quinn W3: pin spring-javaformat version explicitly in sister pom.xml."
+    7: "META-GAP-S7-3: Sprint 8 contract require Generator project-wide grep at initial close commit (not Self-Raze follow-up)."
+
+  process_improvements_for_sprint_8_contract:
+    1: |
+      bash_x_trace verification: tighten contract text to require BOTH
+      gates run independent bash -x re-execution from /tmp/<role>-fresh-
+      <sprint>/ and produce SEPARATE trace archives. Static inspection +
+      runtime stdout observation is INSUFFICIENT.
+    2: |
+      generator_design_md_adr_self_audit: tighten to require initial-
+      close-commit-time project-wide grep with archived grep results
+      as evidence artifact. Quinn + Raze re-verify rather than perform-
+      from-scratch.
+    3: |
+      Add NEW process improvement criterion: "framing_threshold_honesty"
+      — orchestrator framing language SHOULD NOT elevate meta-Raze
+      diagnostic thresholds (e.g. 0.80 line) to contractual milestone
+      status. Sprint 7 absorbed Sprint 5's framing line into framing
+      language without explicit downgrade.
+
+  meta_review_enforcement:
+    sprint_7_outcome: "Meta-review run; framing amendments recommended; orchestrator should adopt before committing turn 93 + status.md + changelog.md."
+    sprint_5_pattern: "Reframe to PARTIAL-CLOSE — orchestrator complied."
+    sprint_6_pattern: "Validate SPRINT-COMPLETE-WITH-WEDGES — orchestrator complied."
+    sprint_7_pattern_recommended: "Validate SPRINT-COMPLETE with 2 framing nuances — orchestrator should adopt before commit."
+
+  net_recommendation: |
+    Orchestrator may KEEP the SPRINT-COMPLETE framing. Orchestrator
+    SHOULD AMEND two factual claims (project-narrowest gap incorrect;
+    5-class headline buries Raze GAP-1 stdout layer) before committing
+    turn 93 metrics row and ops/status.md / ops/changelog.md. The
+    SPRINT-IMPLEMENTED + Quinn 0.91 + Raze 0.88 + 5-class cascade XML
+    + 6-wedge close + 2 new classes + 3 process improvements honored
+    headlines are all HONEST and load-bearing.
+
+# ---------------------------------------------------------------------------
+# Severity summary
+# ---------------------------------------------------------------------------
+severity_summary:
+  blockers: 0
+  reframings_required: 0
+  framing_corrections_recommended: 2  # 0.03 gap claim + 5-class headline parenthetical
+  meta_gaps_found: 4  # M-S7-1 spec drift; M-S7-2 recurring Quinn mvn limitation; M-S7-3 Generator audit scope; M-S7-4 0.80 line absorbed
+  severity_recalibrations: 1  # Raze GAP-3 RECURRING-LOW
+
+# ---------------------------------------------------------------------------
+# Worktree-pollution post-meta check
+# ---------------------------------------------------------------------------
+worktree_pollution_post_meta_check:
+  sister_repo_status_s_at_meta_completion: ""
+  sister_repo_head_at_meta_completion: "38b1f8a"
+  sister_repo_unmodified_during_meta: TRUE
+  csapi_repo_modifications: |
+    Only this file (.harness/evaluations/sprint-ets-07-meta-review.yaml)
+    is added by meta-review. ops/changelog.md, ops/metrics.md, ops/status.md
+    were already modified at meta-review start (orchestrator's pending
+    Sprint 7 close framing). Quinn + Raze evaluation YAMLs were already
+    untracked at meta-review start.
+  meta_review_self_compliance: PASS
+
+# ---------------------------------------------------------------------------
+# Self-confidence + budget
+# ---------------------------------------------------------------------------
+self_confidence: 0.85
+self_confidence_rationale: |
+  (+) GAP-3 reproduced independently via direct stat command — confirms
+      Raze's finding deterministic.
+  (+) File-system mtime ordering of Quinn/Raze YAMLs verified directly
+      via stat — independence assessment grounded in observable evidence.
+  (+) Score arithmetic checked against historical project gap series;
+      "project-narrowest" claim verified incorrect (Sprint 4 0.00; Sprint 3 0.02).
+  (+) ADR-010 lines 322-324 read directly to verify spec drift narrative;
+      spec.md REQ-018 line 353 read directly to verify drift extends
+      beyond Raze's GAP-2.
+  (+) Process-improvement audit grounded in direct file inspection
+      (Generator handoff deviations table; Quinn YAML lines 105-108;
+      Raze YAML line 16; sister evidence file mtimes).
+  (-) Did NOT independently re-execute sabotage cascade XML — Raze
+      already produced canonical evidence; redundant.
+  (-) Did NOT independently grep design.md lines 666-667 to adjudicate
+      whether they are bracketed by line 559 Historical header (judgment
+      call — flagged for Sprint 8 explicit decision).
+  (-) Did NOT audit each of the 14 CRITICAL scenarios against actual
+      smoke XML evidence — relied on Quinn's verdict + Raze's
+      independent code inspection. Sprint 7 gates have BOTH inspected
+      these; meta-review's value-add is meta-scope, not scenario re-audit.
+  (-) Sprint 5 + Sprint 6 meta-review precedents documented PROJECT
+      gap series; Sprint 7's 0.03 vs project-narrowest claim required
+      cross-check vs Sprint 5 meta-review yaml line 437 — that cross-
+      check is one source for the historical gap series; if that
+      source has an error, my gap-series claim inherits it.
+
+budget_used:
+  wall_clock_minutes: ~26
+  tokens_estimated: ~120K (under 150K cap)
+  forbid_list_compliance:
+    user_worktree_modifications: 0
+    docker_pull: 0
+    /tmp_clones: 0  # Used direct stat reproducer instead — sufficient for GAP-3
+    sister_repo_modifications: 0
+    git_commit_push: 0  # meta-review YAML only; orchestrator commits
+
+# ---------------------------------------------------------------------------
+# Files written
+# ---------------------------------------------------------------------------
+files_written:
+  - ".harness/evaluations/sprint-ets-07-meta-review.yaml (this file)"
+
+# ---------------------------------------------------------------------------
+# Final verdict
+# ---------------------------------------------------------------------------
+verdict_final: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score_final: 0.86
+confidence_final: 0.85
+recommended_orchestrator_action: |
+  KEEP the SPRINT-COMPLETE framing. AMEND two factual claims before
+  committing turn 93 metrics + status.md + changelog.md:
+  (1) "Quinn-Raze gap 0.03 project-narrowest" → "Quinn-Raze gap 0.03
+       reflects strong convergence on substantively-clean close" (Sprint 3
+       had 0.02; Sprint 4 had 0.00).
+  (2) Add 5-class headline parenthetical: "(XML evidence; sabotage stdout
+       VERDICT-summary still enumerates 3-class — Sprint 8 REC-1)".
+  Optional: drop "BACK ABOVE 0.80 line" framing (Sprint 6 meta-review M-3
+  pattern recurrence). Sprint 8 carryover items as enumerated.
