@@ -1,0 +1,879 @@
+meta_reviewer: raze (meta-scope)
+meta_review_target: sprint-ets-06-cumulative-gate-close
+status: complete
+evaluation_started: "2026-04-30T15:39:19Z"
+evaluation_completed: "2026-04-30T16:02:00Z"
+csapi_compliance_head: "3be49ce"
+sister_repo_head: "c17a534"
+quinn_verdict_under_review: "APPROVE_WITH_CONCERNS 0.86"
+raze_verdict_under_review: "GAPS_FOUND 0.78"
+
+# ---------------------------------------------------------------------------
+# Final verdict + score
+# ---------------------------------------------------------------------------
+verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score: 0.81
+
+verdict_summary: |
+  Both Quinn 0.86 + Raze 0.78 verdicts are SUBSTANTIVELY CORRECT and the
+  cumulative gate close is APPROVED with 4 META-CONCERNS. Independent
+  third-clone reproduction (this meta-review) confirms Raze's HIGH GAP-1
+  (sabotage javac unreachable statement) reproduces deterministically with
+  the exact error message Raze reported (`SystemFeaturesTests.java:[210,17]
+  unreachable statement` at builder 8/8, mvn clean package). Independent
+  bash-context test confirms Raze's MEDIUM GAP-3 (pipefail unreachability)
+  reproduces — `LATEST_REPORT="$(ls -t … | head -1)"` under `set -eo
+  pipefail` does kill the script with exit 2 when the glob doesn't match,
+  meaning the disambiguation block at lines 287-298 never fires in the
+  actual Docker-build-failure case it was designed to handle. Both gaps are
+  third-corroborated.
+
+  Sprint 6 IS materially complete on the headline credential-leak closure
+  (wire-layer GAP-1' is structurally closed for the first time after 3
+  sprint attempts; this is the strongest closure event in the project's
+  recent history). But two NEW gaps surfaced as side-effects of the wedge:
+  (a) Sprint 5's latent sabotage-marker compile bug, masked for one sprint
+  by Sprint 5 GAP-2's .git-exclude wedge, is now exposed as Sprint 6 HIGH
+  GAP-1 (cascade live-exec broken at javac); (b) Sprint 6's own honest-log
+  conditional doesn't fire under pipefail (Sprint 6 GAP-3). The wedge sprint
+  succeeded at its primary objective (wire-side credential safety) but
+  introduced two secondary-objective failures that prevent Raze from
+  recovering above the 0.80 line.
+
+  The four META-CONCERNS:
+
+  (M-1) Independence is BETTER than Sprint 5 but still partial. Pat's
+        differentiated live-exec amendment (Quinn = closure-proof; Raze =
+        sabotage cascade + wire-tap option_a) genuinely improved
+        independence at the EVIDENCE layer (different scripts, different
+        artifacts) — meta-Raze Sprint 5 M-1 was substantively addressed.
+        Both gates produced GAPs in different scripts (Quinn GAP-Q1 in
+        credential-leak-e2e-test.sh; Raze GAP-3 in sabotage-test.sh) which
+        is a STRONG independence signal. The wire-side closure-proof
+        triangulates 3 ways (Quinn manual three-fold + Raze option_a
+        wire-tap + this meta-review's third-corroboration via reproduced
+        sabotage-build-failure-mode-only) — far better than Sprint 5's
+        co-targeted same-script runs.
+
+  (M-2) Severity calibration is MOSTLY CORRECT but two adjustments needed:
+        Raze MEDIUM GAP-2 (REQ-ETS-CLEANUP-017 IMPLEMENTED status with
+        live-exec UNVERIFIED) should arguably be HIGH because it's a
+        status-honesty issue with structural implications — spec.md now
+        states REQ-017 IMPLEMENTED while the cascade XML acceptance
+        criterion is provably unverified live. Future readers cannot tell
+        REQ-017's live-acceptance is open. This is the same shape as
+        Sprint 5's original framing flattening that meta-Raze flagged in
+        M-3. Quinn MEDIUM GAP-Q1 (script returns FAIL despite structural
+        fix) is correctly calibrated MEDIUM; the underlying credential-leak
+        fix IS structurally closed at the wire layer (third-corroborated).
+
+  (M-3) Sprint 6 framing should be SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES
+        (NOT PARTIAL-CLOSE) because the headline objective (close GAP-1' at
+        wire layer after 3 sprint attempts) IS genuinely closed. The 4
+        secondary GAPs (Quinn's GAP-Q1/-Q2 + Raze's GAP-1/-2/-3/-4) are
+        real but they don't reopen GAP-1'. They constitute NEW work, not
+        regressions of GAP-1'. Sprint 5's PARTIAL-CLOSE framing was honest
+        because credential_leak_e2e_full_pass was OPEN (third sprint
+        attempt). Sprint 6 closes the WIRE LAYER of that criterion; the
+        orchestration-script-flag layer is a new follow-up wedge. This is
+        a different shape than Sprint 5. The orchestrator's metrics turn
+        88 row uses "SPRINT-COMPLETE with Sprint 7 wedges identified"
+        which is the correct framing — this is more honest than "PARTIAL
+        REBOUND" alone implies. The Raze 0.78 score is BELOW 0.80 but the
+        0.80 threshold was a Sprint 5 META-RAZE FRAMING LINE, not a
+        contractual gate threshold. The Sprint 6 score reflects two NEW
+        secondary gaps; it does NOT reflect failure of the primary
+        objective. Verdict: SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES with the
+        Sprint 7 wedges being (a) sabotage javac fix; (b) sabotage pipefail
+        fix; (c) credential-leak script prong-b retarget; (d) REQ-017
+        spec.md status-honesty correction.
+
+  (M-4) META-GAPS both gates collectively missed: (a) design.md §"Sprint 3
+        hardening: MaskingRequestLoggingFilter wrap pattern" lines 533-603
+        is NOT updated for Sprint 6 approach (i) — line 533 still says
+        "Architect ratifies: subclass-based wrap (Pat's option (a))",
+        line 586 still shows `return super.filter(requestSpec, responseSpec,
+        ctx);`, line 603 still claims "the IUT receives the real credential
+        header even if super.filter() throws" (the Sprint 3 false claim
+        Sprint 5 GAP-1' diagnosed). Plan-Raze flagged this as the
+        DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION risk; Generator self-audit
+        was supposed to catch it; neither Quinn nor Raze verified it.
+        (b) ADR-010 v3 says "TestNG 7.9.0 transitive cascade VERIFIED LIVE
+        (2026-04-29)" via Sprint 4 Raze evidence — but that was a 2-class
+        chain (Subsystems → SystemFeatures → Core). Sprint 5 added
+        Procedures + Deployments creating a 3-class chain (Procedures →
+        SystemFeatures → Core). Sprint 6 was supposed to live-verify the
+        3-class cascade via REQ-017 / cascade_three_class_verified
+        criterion — but the sabotage javac defect prevented live execution.
+        ADR-010 v3 is still TECHNICALLY accurate (it claims 2-class verified
+        live + forward-extends to 3-class as mechanical pattern extension),
+        but a v4 amendment noting "3-class cascade live-verification
+        attempt failed at javac compile in Sprint 6; mechanical-pattern
+        inference holds but is unverified live" would be more honest.
+
+independence_assessment:
+  parallel_spawn_preserved_independence: STRONG_PARTIAL
+  evidence_for_independence:
+    - "Quinn ran in /tmp/quinn-fresh-sprint6/ + /tmp/quinn-fresh-sprint6-mvn/ + /tmp/quinn-fresh-sprint6-smoke/; Raze ran in /tmp/raze-fresh-sprint6/ + /tmp/raze-fresh-sprint6-bis/. 5 distinct working directories. No shared state."
+    - "Quinn's quinn_peek_attempted=false; Raze's quinn_peek_attempted=false (independence directive honored on both sides)."
+    - "Quinn ran credential-leak-e2e-test.sh (closure-proof three-fold) — DID NOT run sabotage-test.sh --target=systemfeatures. Raze ran sabotage-test.sh --target=systemfeatures (cascade three-class) — DID NOT run credential-leak-e2e-test.sh. PRIMARY EXEC NON-OVERLAP CONFIRMED — Pat's differentiated-live-exec amendment delivered as designed."
+    - "Raze took option_a wire-tap (manual stub-iut + ad-hoc JUnit class RazeAdversarialWireTap + targeted REST-Assured request through MaskingRequestLoggingFilter directly) — option_b was explicitly DISALLOWED per Pat amendment AMEND-5 and Raze honored. This is a different attack surface from Quinn's full credential-leak-e2e-test.sh script flow. Pat amendment AMEND-5 worked as intended."
+    - "Quinn surfaced GAP-Q1 in credential-leak-e2e-test.sh (prong-b grep target misdirection). Raze surfaced GAP-3 in sabotage-test.sh (pipefail unreachability). DIFFERENT SCRIPTS, DIFFERENT CONTROL-FLOW PATTERNS. The fact that BOTH gates surfaced bash defects in Sprint 6's own scripts is a strong independence signal — they did not converge on the same defect."
+  evidence_against_full_independence:
+    - "Both gates were briefed via the same Pat-authored contract with the same evaluation_questions blocks. While the live-execs were differentiated, the *attention surfaces* (read MaskingRequestLoggingFilter.java, audit test count 8→6 in VerifyMaskingRequestLoggingFilter, verify pom.xml mockito presence, etc.) overlap by design."
+    - "Both gates verified the wire-tap PASS independently: Quinn via prong (c) of three-fold (12 unmasked Bearer hits in stub-iut.log archived at /tmp/credential-leak-e2e-2026-04-30T151722Z/stub-iut.log); Raze via option_a wire-tap (1 unmasked Bearer hit in /tmp/raze-stub-iut.log). Different scripts produced the same observation — wire carries original credential. CROSS-CORROBORATION at the conclusion layer; independent reasoning at the inference layer."
+  meta_finding: |
+    Independence is materially STRONGER than Sprint 5's. Pat's amendment
+    AMEND-5 (option_a primary; option_b disallowed for the secondary
+    wire-tap) and the differentiated-live-exec design (Quinn = closure;
+    Raze = cascade) genuinely produced TWO DISTINCT EVIDENCE SETS for the
+    wire-side closure proof. The fact that Quinn surfaced a bug in
+    credential-leak-e2e-test.sh while Raze surfaced a bug in
+    sabotage-test.sh — different scripts, different control-flow patterns
+    — is a stronger independence signal than Sprint 5 produced. Meta-Raze
+    Sprint 5 M-1 ("two independent gates" overstated independence) was
+    substantively addressed.
+  attack_surfaces_overlap_count: "low (3 of ~12 surfaces overlap: source-inspection of MaskingRequestLoggingFilter.java, mvn test count audit, spec.md status verification — these overlaps are DESIRABLE because they cross-corroborate the headline closure)"
+
+# ---------------------------------------------------------------------------
+# GAP corroboration — are Quinn GAP-Q1 + Raze GAP-3 same or different?
+# ---------------------------------------------------------------------------
+gap_corroboration_assessment:
+  quinn_gap_q1:
+    script: scripts/credential-leak-e2e-test.sh
+    line: 127
+    failure_mode: "Script greps $ARCHIVE_DIR/container.log (which is empty post-teardown stub) instead of smoke-test.sh's archived $SMOKE_OUTPUT_DIR/s-ets-01-03-teamengine-container-*.log (where the masked form actually lands). Prong (b) returns 0 hits despite the structural fix being correct."
+    severity: medium
+    surface_type: "wrong-target grep (control-flow runs to completion; produces incorrect verdict)"
+  raze_gap_3:
+    script: scripts/sabotage-test.sh
+    line: 288
+    failure_mode: "LATEST_REPORT pipeline assignment under `set -eo pipefail` exits the script with code 2 when the glob doesn't match, BEFORE reaching the disambiguation block at lines 289-298. The very feature Sprint 6 added (honest log message disambiguating Docker build failure from smoke @Test failure) doesn't fire when it's needed."
+    severity: medium
+    surface_type: "control-flow termination (pipefail propagation kills script before disambiguation)"
+  same_root_cause: false
+  same_class_of_defect: PARTIALLY |
+    Both are bash defects in Sprint 6's own scripts, but in DIFFERENT
+    SCRIPTS and DIFFERENT FAILURE MODES. Quinn's GAP-Q1 is a wrong-target
+    issue (script reaches the right code path but greps the wrong file).
+    Raze's GAP-3 is a control-flow termination issue (script exits before
+    reaching the right code path). They do NOT share a root cause.
+    However, they DO share a meta-pattern: "Sprint 6 ships shell scripts
+    that haven't been adversarially stress-tested under their own failure
+    modes." The Generator wrote both fixes correctly *under the assumption
+    that the surrounding bash flow would deliver the right artifacts at
+    the right time*; both assumptions were violated by environmental
+    realities (smoke-test.sh's cleanup_silent runs synchronously before
+    docker logs; ls failure under pipefail kills the script before the
+    branch fires).
+  meta_pattern_finding: |
+    The shared meta-pattern matters for Sprint 7+: any Sprint 6 wedge that
+    bundles a Java fix + a bash patch should mandate `bash -x` trace
+    verification of the BASH PATH at gate time (not just `bash -n` syntax
+    check + visual inspection). Plan-Raze's gameability mitigation
+    recommendation included "diff scripts/* between sprint-5-close and
+    sprint-6-close" but did not include "trace bash -x of expected failure
+    paths." Adding the latter to Sprint 7 contract would have caught both
+    GAP-Q1 and GAP-3 at Generator time.
+  triangulation_signal: |
+    Quinn + Raze surfacing different bash defects in different scripts is
+    a STRONG independence signal — they did not converge on the same
+    defect surface. This corroborates that the parallel spawn preserved
+    independence. If Quinn had surfaced GAP-3 too (or Raze had surfaced
+    GAP-Q1), it would suggest the briefings telegraphed the surface; the
+    fact that they each found a different one suggests genuinely
+    different attention paths.
+
+# ---------------------------------------------------------------------------
+# Severity calibration
+# ---------------------------------------------------------------------------
+severity_calibration_check:
+  raze_high_gap_1_sabotage_javac:
+    raze_severity: HIGH
+    meta_severity: HIGH (CONFIRMED)
+    rationale: |
+      HIGH is correctly calibrated. This GAP falsifies a primary Sprint 6
+      success criterion (sabotage_target_flag_works_fully + cascade_three_
+      class_verified — both PASS_DEFERRED in Quinn's verdict, FAIL in
+      Raze's). The cascade XML cannot be produced; ADR-010 v3's 3-class
+      forward-extends claim is unverified live. Third-corroboration
+      reproduced (this meta-review) — exact error message
+      `SystemFeaturesTests.java:[210,17] unreachable statement` reproduces
+      deterministically. The fix surface is small (~5-10 LOC python in
+      sabotage-test.sh line 232 — replace bare `throw new AssertionError(...)`
+      with `if (true) throw new AssertionError(...)` to defeat javac
+      reachability analysis, OR use try/catch wrapper, OR replace the method
+      body entirely). Should NOT shift higher than HIGH (HIGHEST would
+      imply project-blocking; the headline GAP-1' is closed and Sprint 7
+      can ship Sampling+Properties without this fix).
+    fix_simpler_than_raze_suggests: |
+      Raze suggests three options. The simplest is `if (true) throw new
+      AssertionError("SABOTAGED ...");` — this is the standard Java idiom
+      for injecting unreachable-then-reachable code; javac's reachability
+      analysis treats `if (constant-expression)` as reachable in both
+      branches (JLS §14.21 — "A switch statement... an if statement
+      where the condition is a constant expression"). My quick test
+      (sabotage script line 231 patches the python to inject `if (true)
+      throw new AssertionError(...);` instead of bare `throw new
+      AssertionError(...);`) — this would pass javac reachability AND
+      preserve the sabotage semantics (test still throws when invoked).
+      ~1-3 LOC python edit.
+  raze_medium_gap_2_req017_status_overconfident:
+    raze_severity: MEDIUM
+    meta_severity: HIGH (RECALIBRATE +1)
+    rationale: |
+      Recalibrate UP from MEDIUM to HIGH. spec.md REQ-ETS-CLEANUP-017 line
+      345 declares status `IMPLEMENTED` with the rationale "live cascade
+      verification deferred to Raze adversarial sabotage exec at Sprint 6
+      gate". Raze's live exec FAILED. Per the spec-anchored development
+      discipline, status should be `STRUCTURAL-IMPLEMENTED-LIVE-EXEC-
+      FAILED` or similar. This is the SAME class of defect that meta-Raze
+      Sprint 5 M-3 flagged: status-honesty matters because future agents
+      reading the close cannot tell that REQ-017's live-acceptance is
+      open. The structural implication is more serious than MEDIUM
+      suggests — REQ-017 is the load-bearing requirement for ADR-010 v3's
+      3-class cascade verification claim.
+    proposed_status_text: |
+      Recommend Sprint 7 carryover or fast-follow patch: change spec.md
+      line 345 from "Status: IMPLEMENTED" to "Status: STRUCTURAL-
+      IMPLEMENTED-LIVE-EXEC-FAILED (Sprint 6 close 2026-04-30; structural
+      .git fix landed sister c25e44a..c17a534; live cascade unverified
+      because Sprint 5 sabotage-marker injection produces javac
+      unreachable-statement compile error — Sprint 5 GAP-2 .git-exclude
+      previously masked this latent bug; cross-reference Raze HIGH GAP-1
+      sprint-ets-06-adversarial-cumulative.yaml + meta-review meta_gap_
+      M-2)."
+  raze_medium_gap_3_pipefail_unreachable:
+    raze_severity: MEDIUM
+    meta_severity: MEDIUM (CONFIRMED)
+    rationale: |
+      MEDIUM is correctly calibrated. Independent bash test confirmed:
+      under `set -eo pipefail`, `LATEST_REPORT="$(ls -t glob-no-match
+      2>/dev/null | head -1)"` exits the script with code 2 when ls
+      returns non-zero (no glob match). This kills the script before
+      lines 289-298 can fire. The disambiguation log message Sprint 6
+      added doesn't fire in the actual Docker-build-failure case it was
+      designed to handle. This is a real defect with real impact (the
+      script's reported failure mode is misleading) but it doesn't
+      block Sprint 6 close — the underlying cascade is broken anyway
+      (HIGH GAP-1), so the disambiguation doesn't matter until GAP-1
+      is fixed. Fix surface ~3 LOC bash (use `compgen -G` or wrap with
+      `set +o pipefail` / `set -o pipefail`).
+  raze_low_gap_4_aio_jar_reproducibility:
+    raze_severity: LOW
+    meta_severity: LOW (CONFIRMED)
+    rationale: |
+      LOW is correctly calibrated. The byte-identical jar invariant is a
+      project-wide success criterion; the SNAPSHOT jar matched md5
+      across two clones. The aio jar (39MB) was not compared. This is a
+      test-of-the-test concern; not blocking.
+  quinn_medium_gap_q1_prong_b_misdirected:
+    quinn_severity: MEDIUM
+    meta_severity: MEDIUM (CONFIRMED) |
+      MEDIUM is correctly calibrated. Quinn correctly noted the script-
+      failure-vs-structural-fix ASYMMETRY: the underlying GAP-1' is
+      closed at the wire layer (third-corroborated), but the orchestration
+      script returns FAIL exit 1 because prong-(b) grep targets the wrong
+      file. Raising this to HIGH would conflate "script reports wrong
+      verdict" with "structural fix incorrect" — Quinn correctly avoided
+      that conflation. The fix is ~3-5 LOC bash. Sprint 7 carryover.
+  quinn_low_gap_q2_stub_log_grep_no_op:
+    quinn_severity: LOW
+    meta_severity: LOW (CONFIRMED)
+    rationale: |
+      LOW is correctly calibrated. Cosmetic; should be removed or
+      redirected when GAP-Q1 is fixed. Bundle into the GAP-Q1 fix.
+  net_calibration_outcome: |
+    Raze MEDIUM GAP-2 should shift to HIGH. All other severities are
+    correctly calibrated. Net Raze score should remain 0.78 because the
+    severity recalibration is offset by the third-corroboration of HIGH
+    GAP-1 (which strengthens the GAP) and the simpler-fix observation
+    (which weakens it slightly). Net effect on cumulative gate close:
+    no score change recommended; status-honesty in spec.md REQ-017 is
+    the practical action item.
+
+# ---------------------------------------------------------------------------
+# Headline framing accuracy
+# ---------------------------------------------------------------------------
+headline_framing_check:
+  quinn_headline_text: "GAP-1' (the 2-sprint-old credential-leak filter-ordering defect open since Sprint 4 GAP-1 → Sprint 5 GAP-1') IS CLOSED AT THE WIRE LAYER."
+  contract_success_criterion_text: "credential_leak_e2e_full_pass: true # THREE-FOLD (a)+(b)+(c) all PASS"
+  contract_evaluation_focus_text: |
+    "Did GAP-1' close completely? Quinn MUST run scripts/credential-leak-e2e-test.sh
+    from /tmp/quinn-fresh-sprint6/ as the CLOSURE PROOF live-exec."
+  honesty_assessment: HONEST_WITH_NUANCE
+  rationale: |
+    Quinn's headline is HONEST. The contract's `credential_leak_e2e_full_
+    pass` success criterion is verbally specified as "three-fold (a)+(b)+(c)
+    all PASS" — Quinn's manual three-fold across the CORRECT artifacts
+    (after recognizing GAP-Q1's wrong-grep-target issue) shows all three
+    prongs PASS. Quinn called this PASS_WITH_CONCERN to flag that the
+    AUTOMATED script returns FAIL exit 1 due to GAP-Q1 (wrong grep target).
+    This is the right level of nuance.
+
+    The phrase "wire-side credential safety achieved" is also accurate:
+    prong (c) shows 12 unmasked Bearer hits in stub-IUT log, meaning the
+    wire genuinely carries the original credential. Raze's option_a wire-
+    tap independently confirmed this (1 unmasked Bearer hit in stub log,
+    1 masked Bear***WXYZ hit in filter PrintStream output). My third-
+    corroboration (this meta-review) does NOT independently re-verify the
+    wire layer (I focused on the sabotage cascade reproduction); but I
+    audited the source code and confirmed the structural pattern: filter()
+    builds masked log line + ctx.next(unmutated requestSpec) — the wire
+    can only carry the original because the spec is never mutated.
+  remaining_question: |
+    Is "wire-side credential safety" the SAME as
+    "credential-leak-e2e-full-pass"? The success criterion verbally requires
+    three-fold (a)+(b)+(c) PASS via the automated script. With GAP-Q1, the
+    automated script returns FAIL. So at the strict-script-verdict layer,
+    the criterion is NOT met. Quinn correctly captured this nuance with
+    `PASS_WITH_CONCERN` in the success_criteria_verdict block.
+
+    However, the SEMANTIC LAYER of the criterion (zero unmasked credentials
+    in test artifacts AND masked form in container log AND original
+    credential at wire) is met. Future readers should not conflate "script
+    bug GAP-Q1 means GAP-1' is open" — GAP-1' is the FILTER ORDERING
+    defect; that defect is closed. GAP-Q1 is a NEW defect in the
+    closure-proof script; it doesn't reopen GAP-1'.
+
+    The orchestrator's metrics turn 88 framing ("credential_leak_e2e_full_
+    pass CLOSED at wire layer") is honest IF readers understand "wire
+    layer" = "load-bearing semantic layer" not "automated-script-verdict
+    layer." A more precise framing: "credential_leak_e2e_full_pass:
+    PASS_WITH_CONCERN — semantic three-fold PASS via manual grep across
+    correct artifacts; automated script returns FAIL due to GAP-Q1
+    follow-up needed in Sprint 7."
+  recommendation: |
+    Orchestrator should preserve the headline-framing nuance from Quinn
+    when communicating to user: closure is at the SEMANTIC layer; Sprint 7
+    needs ~3-5 LOC bash to make the AUTOMATED script return PASS as well.
+
+# ---------------------------------------------------------------------------
+# Sprint complete vs partial close adjudication
+# ---------------------------------------------------------------------------
+sprint_complete_vs_partial_close_adjudication:
+  verdict: SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES
+  rationale: |
+    Sprint 6 framing should be SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES (the
+    framing the orchestrator already used in turn 88 metrics row). NOT
+    PARTIAL-CLOSE. Reasoning:
+
+    (1) The headline objective — close credential_leak_e2e_full_pass at
+        the wire layer after 3 sprint attempts (Sprint 4 GAP-1 → Sprint 5
+        GAP-1' → Sprint 6 fix) — IS MATERIALLY ACHIEVED. The wire genuinely
+        carries the original Bearer credential under approach (i); the
+        masked form lands in the filter's log output only; three independent
+        evidence sets corroborate (Quinn manual three-fold + Raze option_a
+        wire-tap + this meta-review's source-code audit + sabotage-build
+        reproduction).
+
+    (2) The 4 GAPs (Quinn GAP-Q1/-Q2 + Raze GAP-1/-2/-3/-4) DO NOT REOPEN
+        GAP-1'. They are NEW work surfaces, not regressions. Specifically:
+        - Quinn GAP-Q1 + GAP-Q2: bugs in the closure-proof script's grep
+          targets. Underlying fix is correct; script verdict is wrong.
+        - Raze GAP-1: Sprint 5 latent sabotage-marker bug exposed by
+          Sprint 6 .git fix. Different defect than GAP-1'.
+        - Raze GAP-2: spec.md status-honesty issue tied to GAP-1.
+        - Raze GAP-3: pipefail unreachability in Sprint 6's own
+          honest-log-message conditional. Different defect than GAP-1'.
+        - Raze GAP-4: aio jar reproducibility test-coverage gap. LOW.
+
+    (3) Sprint 5 PARTIAL-CLOSE precedent (Raze 0.74) was the right framing
+        because credential_leak_e2e_full_pass was the SAME criterion as
+        Sprint 4 GAP-1 — a 2-sprint-old open structural defect. The
+        criterion was OPEN. Sprint 6 closes it at the wire layer; the
+        automated-script-verdict-flag is a NEW criterion. Different shape.
+
+    (4) The 0.80 threshold cited in the prompt was a Sprint 5 META-RAZE
+        FRAMING LINE (the meta-Raze observation that Raze's verdict
+        crossed below 0.80 for the first time signaled a quality shift).
+        It was not a contractual gate threshold. Sprint 6's Raze 0.78 is
+        BELOW that line, but the score reflects two NEW secondary-
+        objective gaps; it does NOT reflect failure of the primary
+        objective. The Sprint 5 meta-Raze line is now superseded by the
+        more nuanced framing: "Raze < 0.80 means new gaps surfaced; not
+        necessarily that the primary objective failed."
+
+    (5) The 4 carryover Sprint 7 wedges are well-bounded:
+        - Sabotage javac fix (~5 LOC python; unblocks 3-class cascade
+          live-verification)
+        - Sabotage pipefail fix (~3 LOC bash; unblocks honest-log-message)
+        - Credential-leak script prong-b retarget (~3-5 LOC bash;
+          unblocks automated three-fold PASS)
+        - REQ-017 spec.md status-honesty correction (~5 LOC text edit;
+          unblocks status-honesty)
+        Total: ~15-20 LOC. Trivial Sprint 7 wedge or fast-follow patch.
+
+    (6) Sprint 6 is honestly framed as SPRINT-COMPLETE because the wedge
+        sprint discipline was honored: NO new conformance classes; NO
+        scope creep; spec/code/traceability synchronized; worktree
+        clean; Plan-Raze concerns substantively addressed (Pat
+        amendments AMEND-1 through AMEND-5 all landed). The 4 secondary
+        gaps are work surfaces for Sprint 7, not blockers for Sprint 6.
+
+    Therefore: SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES is the correct framing.
+    The Sprint 5 PARTIAL-CLOSE precedent does NOT apply because Sprint 5's
+    primary objective (close credential_leak_e2e_full_pass) was OPEN at
+    Sprint 5 close, whereas Sprint 6's primary objective IS closed.
+  evidence_supporting_verdict:
+    - "Quinn manual three-fold PASS at the wire layer (12 unmasked Bearer hits in stub-IUT log; 12 masked Bear***WXYZ hits in container log)"
+    - "Raze option_a wire-tap independently confirms wire-side correctness"
+    - "MaskingRequestLoggingFilter source code audit confirms no spec mutation; ctx.next(unmutated requestSpec) — wire structurally cannot carry masked form"
+    - "VerifyWireRestoresOriginalCredential 4/4 PASS in mvn surefire (TDD red-then-green caught a structural test-design pitfall during implementation)"
+    - "Zero new conformance classes (wedge constraint enforced)"
+    - "Smoke 34/34 PASS preserved (no regression)"
+    - "User worktree git status --short empty post-gate"
+  evidence_against_verdict:
+    - "Raze 0.78 < 0.80 — Sprint 5 meta-Raze framing line crossed for the second consecutive sprint"
+    - "spec.md REQ-017 IMPLEMENTED status with live-exec UNVERIFIED is a status-honesty issue"
+    - "4 secondary GAPs is non-trivial — could be argued as PARTIAL-CLOSE if accumulating GAPs are weighted heavily"
+  net_recommendation: |
+    SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES is the right framing. The
+    orchestrator's turn 88 metrics row already used this framing; it's
+    the honest call. The Sprint 7 wedge follow-ups should be explicitly
+    enumerated in the Sprint 7 contract (or as a fast-follow patch
+    sprint) so future readers can trace what's still open.
+
+# ---------------------------------------------------------------------------
+# HIGH GAP-1 reproduction (third-corroboration)
+# ---------------------------------------------------------------------------
+live_exec_reproduction:
+  status: REPRODUCED
+  command: |
+    git clone /home/nh/docker/gir/ets-ogcapi-connectedsystems10 /tmp/raze-meta-fresh-sprint6
+    cd /tmp/raze-meta-fresh-sprint6
+    SABOTAGE_TMPDIR=/tmp/raze-meta-sabotage-sprint6/ \
+    SMOKE_OUTPUT_DIR=/tmp/raze-meta-fresh-sprint6/test-results/ \
+    bash scripts/sabotage-test.sh --target=systemfeatures
+  result: |
+    Docker build failed at builder 8/8 (mvn clean package) with exact error:
+    `[ERROR] /build/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/systemfeatures/SystemFeaturesTests.java:[210,17] unreachable statement`
+    `[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project ets-ogcapi-connectedsystems10: Compilation failure`
+    Exit code 0 (sabotage-test.sh's trap cleanup ran; the underlying mvn package call inside Docker failed with exit 1 which propagates through the script's docker buildx invocation).
+  archive: /tmp/raze-meta-sab.log
+  determinism: FULLY_DETERMINISTIC
+  triangulation: |
+    THIRD-CORROBORATION CONFIRMED. Raze's HIGH GAP-1 diagnosis is
+    independently reproduced from a clean third clone:
+    - Sprint 5 latent sabotage-marker injection technique
+    - Now visible because Sprint 6 .git fix lets Docker build proceed past
+      `COPY .git ./.git` step
+    - javac rejects with `unreachable statement` per JLS reachability
+      analysis because `throw new AssertionError(...)` injected as the
+      first statement makes the existing
+      `ETSAssert.assertStatus(this.systemsResponse, 200, ...)` at line 209
+      unreachable
+  source_inspection_systemfeatures_tests_line_210:
+    file: /tmp/raze-meta-fresh-sprint6/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/systemfeatures/SystemFeaturesTests.java
+    method: systemsCollectionReturns200()
+    body_line_209: "ETSAssert.assertStatus(this.systemsResponse, 200, REQ_RESOURCES_ENDPOINT);"
+    sabotage_injection_pattern: |
+      sabotage-test.sh line 232 python script regex matches `public\s+void\s+systemsCollectionReturns200\s*\(\s*\)\s*\{` and inserts the throw statement immediately after the opening brace. Result: `throw new AssertionError("SABOTAGED ...");` becomes line 209's first executable statement; line 210's existing assertStatus call becomes unreachable per JLS §14.21.
+    raze_diagnosis_correct: true
+  bash_unreachability_verification:
+    test_command: 'bash -c "set -eo pipefail; trap \"echo TRAPPED EXIT=\\$?\" EXIT; LATEST_REPORT=\"\$(ls -t /tmp/this-glob-will-not-match-*.xml 2>/dev/null | head -1)\"; echo \"got past assignment\""'
+    result: |
+      TRAPPED EXIT=2
+      (no "got past assignment" echoed — script terminates inside the assignment line under set -eo pipefail when ls returns non-zero exit code)
+    raze_diagnosis_correct: true
+  could_fix_be_simpler:
+    raze_proposed_fixes: |
+      (1) `if (true) throw new AssertionError(...)` (defeats reachability)
+      (2) Replace original method body entirely (drop assertStatus line)
+      (3) Wrap in try { } catch (Throwable t) { throw t; }
+    meta_review_recommendation: |
+      Option (1) `if (true) throw new AssertionError(...)` is the standard
+      Java idiom and the simplest fix (~1 LOC python edit in
+      sabotage-test.sh line 231). javac's reachability analysis treats
+      `if (constant-expression)` as reachable in both branches per JLS
+      §14.21. The assertStatus line at the original line 210 becomes
+      reachable-but-unreachable-at-runtime; javac's static analysis is
+      satisfied. This is a smaller fix than option (2) or (3).
+    alternative_robust_fix: |
+      Option (2) — replace the method body — is more invasive but more
+      robust. The python sed script could match the entire method body
+      `public void systemsCollectionReturns200() {\n\t\tETSAssert.assertStatus(...);\n\t}` and replace with `public void systemsCollectionReturns200() {\n\t\tthrow new AssertionError(...);\n\t}`. ~5-10 LOC python.
+    recommended_for_sprint_7: option_1 (if-true-throw idiom)
+
+# ---------------------------------------------------------------------------
+# Gates collectively missed gaps
+# ---------------------------------------------------------------------------
+gates_collectively_missed_gaps:
+  meta_gap_m1_design_md_wrap_pattern_doc_lag:
+    description: |
+      design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap
+      pattern (S-ETS-03-02)" lines 533-603 IS NOT UPDATED for Sprint 6
+      approach (i). Specific stale claims:
+      - Line 533: "Architect ratifies: subclass-based wrap (Pat's option (a))"
+        — Sprint 6 approach (i) BYPASSES super.filter() entirely; the
+        "subclass-based wrap" framing is now misleading.
+      - Line 586: example code shows `return super.filter(requestSpec, responseSpec, ctx);`
+        — this is the OLD code; under approach (i) we call
+        `ctx.next(requestSpec, responseSpec)` directly without super.filter().
+      - Line 603: "Header swap (vs payload mutation) is restorable. The
+        try/finally pattern guarantees the IUT receives the real credential
+        header even if super.filter() throws" — this is the FALSE Sprint 3
+        claim that Sprint 5 GAP-1' diagnosed. Under approach (i) the claim
+        becomes vacuously true (no header swap; no try/finally; no
+        super.filter()) but the prose still describes the OLD pattern.
+      - Line 634: "(d) IUT-side header restoration verified via
+        requestSpec.getHeaders().getValue() after filter() returns,
+        (e) try/finally restoration even when super.filter() throws" —
+        these unit-test descriptions correspond to the 2 try/finally
+        tests Sprint 6 DELETED. Stale.
+    severity: medium
+    why_both_gates_missed_it: |
+      Plan-Raze flagged this as DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION
+      risk and recommended Generator self-audit during S-ETS-06-01. The
+      Generator's deviations_from_pat_contract block does NOT mention
+      design.md updates. Quinn's evaluation focused on spec.md
+      Implementation Notes (which were updated correctly); Quinn did NOT
+      audit design.md prose. Raze's evaluation focused on adversarial
+      live-execs + structural inspection of source code; Raze did NOT
+      audit design.md prose.
+    sprint_7_action: |
+      Pat or Generator updates design.md §"Sprint 3 hardening" with a new
+      "Sprint 6 redesign: approach (i) — wire-side correctness via no-spec-
+      mutation + ctx.next(unmutated) bypass" subsection. Mark old prose as
+      "Historical (Sprint 3 baseline; superseded by Sprint 6 approach (i))".
+      ~30-50 LOC design.md text edit.
+  meta_gap_m2_adr_010_v3_3_class_cascade_live_unverified:
+    description: |
+      ADR-010 v3 amendment (lines 259-303) claims TestNG 7.9.0 transitive
+      cascade is VERIFIED LIVE (2026-04-29) via Sprint 4 Raze sabotage
+      exec. That evidence was a 2-class chain (Subsystems →
+      SystemFeatures → Core). Sprint 5 added Procedures + Deployments
+      creating a 3-class chain (Procedures → SystemFeatures → Core +
+      Deployments → SystemFeatures → Core). Sprint 6 was supposed to
+      live-verify the 3-class cascade via REQ-017 / cascade_three_class_
+      verified — but the sabotage javac defect prevented live execution.
+      ADR-010 v3 is still TECHNICALLY accurate (it claims 2-class verified
+      live + forward-extends to 3-class as mechanical pattern extension)
+      but the absence of a v4 amendment noting "3-class cascade live-
+      verification attempt failed at javac compile in Sprint 6;
+      mechanical-pattern inference holds but is unverified live" is a
+      doc-lag issue.
+    severity: low-medium
+    why_both_gates_missed_it: |
+      Both gates focused on whether the cascade XML showed three-class
+      SKIP (the success criterion) — not on whether ADR-010 needed a v4
+      amendment. The amendment-needed question requires reasoning at the
+      ADR-vs-evidence level, which is outside the typical Quinn/Raze
+      attack surface. Plan-Raze did not flag this.
+    sprint_7_action: |
+      Either (a) close GAP-1 (sabotage javac fix) and produce the 3-class
+      cascade XML in Sprint 7, validating ADR-010 v3 retroactively; OR
+      (b) add ADR-010 v4 amendment noting the live-verification gap. (a)
+      is the cleaner action.
+  meta_gap_m3_closure_proof_reproducibility_not_tested:
+    description: |
+      Quinn's manual three-fold PASS used artifacts at /tmp/quinn-fresh-
+      sprint6/test-results-quinn/s-ets-01-03-teamengine-container-2026-
+      04-30.log (12 masked-form hits). These were captured at a single
+      timestamp in a single environment (Quinn's clone). Raze's option_a
+      wire-tap captured a single literal hit at /tmp/raze-stub-iut.log.
+      Reproducibility of the closure-proof itself was not tested by either
+      gate. Could a future smoke run in different environment conditions
+      (e.g. timezone, locale, log-rotation, container start delay)
+      produce different log content?
+    severity: low
+    why_both_gates_missed_it: |
+      Reproducibility is typically asserted at the JAR/build layer (where
+      Sprint 6 has the byte-identical-jar invariant). Reproducibility of
+      LOG CONTENT is a different invariant; not in the contract.
+    sprint_7_action: |
+      Optional: add a `closure_proof_reproducible` invariant to Sprint 7
+      contract — run credential-leak-e2e-test.sh twice and verify the
+      counts (12 masked, 0 unmasked, 12 wire-original) are identical
+      across runs. Probably not needed; the closure proof's primary
+      purpose is to prove a single-instance correctness, not multi-
+      instance reproducibility.
+
+# ---------------------------------------------------------------------------
+# Internal consistency check — score arithmetic
+# ---------------------------------------------------------------------------
+internal_consistency_check:
+  quinn_score: 0.86
+  quinn_severity_distribution: "1 MEDIUM (GAP-Q1) + 1 LOW (GAP-Q2) + 3 CONCERNs"
+  raze_score: 0.78
+  raze_severity_distribution: "1 HIGH (GAP-1) + 2 MEDIUM (GAP-2 + GAP-3) + 1 LOW (GAP-4) + 3 CONCERNs"
+  score_gap: 0.08
+  sprint_5_score_gap: 0.08 (Quinn 0.82 - Raze 0.74)
+  is_0_08_gap_meaningful: PARTIALLY |
+    Both Sprint 5 and Sprint 6 score gaps are 0.08. Sprint 5 meta-Raze
+    flagged this as "project-largest" gap. Sprint 6 ties it. Some of this
+    is structural: Quinn's role is "did the work meet the checklist?" and
+    Raze's role is "is this the right checklist + are there gaps the
+    Generator silently dropped?" — Raze's role inherently produces lower
+    scores when GAPs exist. The 0.08 gap could indicate either (a) the
+    rubrics are calibrated such that Quinn-Raze gap ≈ 0.08 when both find
+    legitimate medium-severity gaps, or (b) Raze finds gaps Quinn misses
+    by design. I lean (b) given the script-defect divergence (Quinn found
+    GAP-Q1 in cred-leak script; Raze found GAP-3 in sabotage script).
+  arithmetic_check_quinn:
+    score: 0.86
+    deduction: "1.00 - 0.05 (GAP-Q1 MEDIUM) - 0.02 (GAP-Q2 LOW) - 0.07 (CONCERNs + 3 deferred-to-Raze live-execs which Quinn explicitly notes is dependency on Raze) = 0.86. Internally consistent."
+  arithmetic_check_raze:
+    score: 0.78
+    deduction: "1.00 - 0.10 (GAP-1 HIGH) - 0.05 (GAP-2 MEDIUM) - 0.05 (GAP-3 MEDIUM) - 0.02 (GAP-4 LOW) = 0.78. Score derivation block in Raze YAML matches; internally consistent."
+  consistency_verdict: |
+    Both verdicts are internally arithmetically consistent. The 0.08 gap
+    between Quinn and Raze is meaningful but not anomalous — it reflects
+    Raze's stronger finding (1 HIGH vs 0 HIGH for Quinn). The 0.86 + 0.78
+    averaged at 0.82 is similar to Sprint 5's average (0.78), reflecting
+    Sprint 6's partial rebound (+0.04 on each gate; +0.04 on the average).
+
+# ---------------------------------------------------------------------------
+# Orchestrator meta-process check (turn 88)
+# ---------------------------------------------------------------------------
+orchestrator_meta_process_check:
+  metrics_turn_88_framing_review:
+    direct_quotes_audited:
+      - "credential_leak_e2e_full_pass CLOSED at wire layer (Quinn three-fold)"
+      - "PARTIAL REBOUND from Sprint 5's 0.82/0.74"
+      - "1 NEW HIGH GAP from Raze (sabotage javac unreachable-statement, Sprint 5 latent unmasked by Sprint 6 .git fix)"
+      - "SPRINT-COMPLETE with Sprint 7 wedges identified"
+    framing_accuracy_assessment:
+      claim_credential_leak_closed_at_wire_layer: HONEST |
+        Quinn three-fold PASS at semantic layer; Raze option_a wire-tap
+        independently corroborates; meta-review reproducer doesn't
+        re-verify wire layer but confirms via source inspection that
+        the structural pattern guarantees wire-side correctness.
+      claim_partial_rebound_from_sprint_5: HONEST_BUT_UNDERWEIGHT |
+        Score-wise it's a partial rebound (+0.04 on each gate). But the
+        QUALITATIVE rebound is stronger — Sprint 5's PARTIAL-CLOSE was
+        because the primary objective (close credential_leak_e2e_full_
+        pass) was OPEN. Sprint 6 closes it. The framing "PARTIAL REBOUND"
+        risks underweighting this structural milestone. A more
+        proportionate framing might be "STRUCTURAL CLOSURE EVENT WITH
+        PARTIAL SCORE REBOUND" — distinguishes the score trajectory
+        (gradual recovery) from the structural achievement (closure of
+        a 2-sprint-old gap).
+      claim_new_high_gap: HONEST |
+        Sprint 5 latent + Sprint 6 .git fix unmasking is correctly
+        attributed. Third-corroboration confirms.
+      claim_sprint_complete_with_wedges: HONEST_AND_CORRECT |
+        This is the right framing per the adjudication above. The
+        orchestrator did not defer the framing decision to the user
+        gratuitously; the framing was used in the metrics row but the
+        user_summary text said "deferred" — this is a minor inconsistency
+        (the framing IS used in turn 88 row; the user_summary's "deferred"
+        wording is overcautious).
+    user_summary_audit:
+      orchestrator_user_summary_text_quoted: "**partial rebound from Sprint 5's 0.82/0.74**"
+      assessment: |
+        Score-wise accurate; structurally underweighted as noted above.
+        The user_summary should highlight the closure-event headline
+        more prominently. The headline closure of a 2-sprint-old gap is
+        a project-significant event; the score arithmetic is incidental
+        to that.
+    overall_orchestrator_process_verdict: ACCURATE_WITH_MINOR_FRAMING_NUANCE
+  recommendations_for_orchestrator:
+    - "Headline framing: emphasize the structural closure event (GAP-1' closed at wire layer for first time after 3 sprint attempts) more prominently than score arithmetic. The closure is the headline; the partial rebound is the quantitative footnote."
+    - "Sprint 6 status framing: SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES is correct. No need to defer to user."
+    - "Sprint 7 carryover wedges should be enumerated explicitly in Sprint 7 contract: (a) sabotage javac fix; (b) sabotage pipefail fix; (c) credential-leak prong-b retarget; (d) REQ-017 spec.md status-honesty correction; (e) design.md wrap-pattern doc-lag fix; total ~25-50 LOC."
+
+# ---------------------------------------------------------------------------
+# Meta-gaps surfaced
+# ---------------------------------------------------------------------------
+meta_gaps:
+  - id: META-GAP-M1
+    severity: medium
+    title: "design.md MaskingRequestLoggingFilter wrap pattern lines 533-603 stale post-Sprint 6"
+    description: |
+      Plan-Raze flagged DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION risk;
+      neither Generator self-audit nor Quinn nor Raze updated design.md.
+      Lines 533, 586, 603, 634 still describe the OLD subclass-based wrap
+      pattern. Future readers cross-referencing design.md and code will
+      see a contradiction.
+    fix_surface: |
+      design.md §"Sprint 3 hardening" — add subsection "Sprint 6 redesign:
+      approach (i)"; mark old prose as historical. ~30-50 LOC text edit.
+    blocks_sprint_close: false
+  - id: META-GAP-M2
+    severity: high
+    title: "spec.md REQ-ETS-CLEANUP-017 IMPLEMENTED status with live-exec UNVERIFIED is status-honesty issue"
+    description: |
+      Same shape as Sprint 5 PARTIAL-CLOSE framing flattening that
+      meta-Raze M-3 flagged. spec.md line 345 declares REQ-017
+      IMPLEMENTED; Raze HIGH GAP-1 falsifies the live-acceptance.
+      Future agents reading the close cannot tell live-acceptance is
+      open. Recalibrate Raze GAP-2 from MEDIUM to HIGH because of this
+      meta-implication.
+    fix_surface: |
+      spec.md line 345 — change "IMPLEMENTED" to "STRUCTURAL-IMPLEMENTED-
+      LIVE-EXEC-FAILED" with cross-reference to Raze HIGH GAP-1 + meta-
+      review meta_gap_M2. ~5 LOC text edit.
+    blocks_sprint_close: false
+  - id: META-GAP-M3
+    severity: low-medium
+    title: "ADR-010 v3 3-class cascade live-verification gap not flagged by either gate"
+    description: |
+      ADR-010 v3 claims TestNG 7.9.0 transitive cascade VERIFIED LIVE
+      via Sprint 4 Raze evidence (2-class chain). Sprint 5 extended to
+      3-class chain; Sprint 6 was supposed to live-verify but javac
+      defect prevented. ADR-010 v3 is still technically accurate but a
+      v4 amendment noting the gap would be more honest.
+    fix_surface: |
+      Either (a) close Sprint 7 GAP-1 (sabotage javac fix) and produce
+      3-class cascade XML, validating ADR-010 v3 retroactively; OR
+      (b) add ADR-010 v4 amendment noting "3-class cascade live-
+      verification attempt failed in Sprint 6 due to sabotage-marker
+      compile error; live verification deferred to Sprint 7+."
+    blocks_sprint_close: false
+  - id: META-GAP-M4
+    severity: low
+    title: "Closure-proof reproducibility (multiple runs) not tested at gate"
+    description: |
+      Quinn three-fold PASS captured at single timestamp/environment.
+      Raze option_a wire-tap captured single literal hit. Multi-run
+      reproducibility of log content not exercised.
+    fix_surface: "Optional Sprint 7 invariant: run closure-proof twice; verify counts identical."
+    blocks_sprint_close: false
+  - id: META-GAP-M5
+    severity: low
+    title: "bash -x trace verification missing from Sprint 6 contract"
+    description: |
+      Both GAP-Q1 (Quinn) and GAP-3 (Raze) are bash defects in Sprint 6's
+      own scripts that bash -n syntax check + visual inspection did not
+      catch. Plan-Raze recommended diff-script-between-sprint-closes for
+      gameability; bash -x trace of expected failure paths would have
+      caught both.
+    fix_surface: |
+      Sprint 7 contract: add evaluation_artifact "bash -x trace of
+      sabotage-test.sh and credential-leak-e2e-test.sh under expected-
+      failure conditions; verify all conditional branches reachable."
+    blocks_sprint_close: false
+
+# ---------------------------------------------------------------------------
+# Recommendations for orchestrator
+# ---------------------------------------------------------------------------
+recommendations_for_orchestrator:
+  sprint_6_framing:
+    decision: SPRINT-COMPLETE-WITH-SPRINT-7-WEDGES (NOT PARTIAL-CLOSE)
+    rationale: |
+      Headline objective achieved (GAP-1' closed at wire layer for first
+      time after 3 sprint attempts). 4 secondary GAPs are NEW work
+      surfaces, not regressions. Sprint 5 PARTIAL-CLOSE precedent does
+      not apply because Sprint 5's primary objective was OPEN whereas
+      Sprint 6's IS closed.
+    user_message_recommendation: |
+      Lead with the structural closure event ("credential_leak_e2e_full_
+      pass closed at wire layer for the first time after 3 sprint
+      attempts; semantic three-fold PASS triangulated 3 ways"). Footnote
+      the score arithmetic (Quinn 0.86 / Raze 0.78 partial rebound from
+      Sprint 5's 0.82/0.74). Enumerate the 4 Sprint 7 wedges
+      transparently as small follow-up items, not as blockers.
+  sprint_7_carryover_wedges:
+    1: "Sabotage javac fix: sabotage-test.sh line 231 python — replace bare `throw new AssertionError(...)` with `if (true) throw new AssertionError(...)` (defeats javac reachability analysis). ~1-3 LOC python."
+    2: "Sabotage pipefail fix: sabotage-test.sh line 288 — wrap LATEST_REPORT assignment with `set +o pipefail` / `set -o pipefail` pair OR use `compgen -G`. ~3 LOC bash."
+    3: "Credential-leak prong-b retarget: credential-leak-e2e-test.sh line 127 — try smoke-test.sh's archived container log first, fall back to docker logs. ~3-5 LOC bash."
+    4: "REQ-017 spec.md status-honesty correction: change IMPLEMENTED to STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED with cross-reference. ~5 LOC text edit."
+    5: "design.md wrap-pattern doc-lag fix: add Sprint 6 approach (i) subsection; mark Sprint 3 baseline prose as historical. ~30-50 LOC text edit."
+    6: "ADR-010 v4 amendment OR Sprint 7 GAP-1 close + retroactive validation. Choose based on Sprint 7 carryover capacity."
+    total_loc: "~50-80 LOC bash + java + text. Trivial Sprint 7 wedge or fast-follow patch."
+  process_improvements:
+    - "Sprint 7 contract: add bash -x trace verification for sabotage-test.sh and credential-leak-e2e-test.sh under expected-failure conditions. Catches GAP-Q1 + GAP-3 class of defects."
+    - "Sprint 7 contract: Generator self-audit checklist must include 'audit design.md + ADRs for any references to patterns this sprint replaces; update or mark historical.' Plan-Raze flagged DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION but no enforcement mechanism in contract."
+    - "Sprint 7 contract: add status-honesty principle for spec.md — when a REQ is IMPLEMENTED structurally but live-exec fails, status MUST be STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED (or similar) NOT IMPLEMENTED."
+
+# ---------------------------------------------------------------------------
+# Recommendations for Sprint 7 carryover
+# ---------------------------------------------------------------------------
+recommendations_for_sprint_7:
+  primary_objective: |
+    Sprint 7 should be the natural Sampling + Properties feature sprint
+    (deferred from Sprint 6 wedge per contract directive). The 4-6 Sprint
+    7 wedge follow-ups (above) should be bundled as a single "Sprint 7
+    carryover wedges" S-ETS-07-XX story (~50-80 LOC total) at the START
+    of the sprint, NOT after Sampling + Properties. Reason: the wedges
+    unblock REQ-017 live-verification and ADR-010 v3 retroactive validation;
+    those should be clean before the next feature sprint adds new conformance
+    classes.
+  story_breakdown:
+    s_ets_07_carryover_wedges:
+      title: "Sprint 6 carryover wedges: sabotage javac fix + sabotage pipefail fix + credential-leak prong-b retarget + REQ-017 status-honesty + design.md wrap-pattern doc-lag fix"
+      priority: P1
+      complexity: S
+      estimated_loc: 50-80
+      first_story_in_sprint_7: true
+    s_ets_07_sampling:
+      title: "Sampling conformance class implementation"
+      priority: P0
+      complexity: M
+      depends_on: ["s_ets_07_carryover_wedges (live cascade verification cleanup)"]
+    s_ets_07_properties:
+      title: "Properties conformance class implementation"
+      priority: P0
+      complexity: M
+      depends_on: ["s_ets_07_carryover_wedges"]
+
+  contract_amendments:
+    - "Add 'bash -x trace verification' to evaluation_artifacts_required."
+    - "Add 'Generator self-audit design.md + ADRs for replaced-pattern references' to evaluation_questions_for_quinn AND evaluation_questions_for_raze."
+    - "Add 'spec.md status-honesty principle' to success_criteria: any REQ with status IMPLEMENTED but live-exec FAILED MUST use STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED status."
+
+# ---------------------------------------------------------------------------
+# Self-confidence + budget
+# ---------------------------------------------------------------------------
+confidence: 0.88
+self_confidence_rationale: |
+  (+) Third-corroborated HIGH GAP-1 via independent fresh clone reproducer
+      (sabotage --target=systemfeatures FAILS at exact javac error message
+      Raze cited; deterministic; archive at /tmp/raze-meta-sab.log).
+  (+) Independently verified GAP-3 unreachability claim via bash -c test
+      under set -eo pipefail; LATEST_REPORT pipeline assignment kills
+      script with exit 2 when ls returns no match. Raze diagnosis
+      structurally correct.
+  (+) Independently verified design.md staleness (META-GAP-M1) via grep
+      across design.md lines 533-603 — confirms wrap-pattern prose +
+      example code + javadoc unit-test descriptions all describe the
+      OLD pattern, not Sprint 6 approach (i).
+  (+) Independently verified ADR-010 v3 + Sprint 4 evidence (2-class
+      cascade) vs Sprint 6 attempted 3-class cascade gap (META-GAP-M3).
+  (+) Independence assessment grounded in concrete script differentiation
+      (Quinn ran credential-leak-e2e-test.sh; Raze ran sabotage-test.sh);
+      not speculation.
+  (+) Severity recalibration recommendation (Raze GAP-2 MEDIUM → HIGH)
+      grounded in Sprint 5 meta-Raze M-3 framing-flattening precedent.
+  (-) Did NOT independently re-run credential-leak-e2e-test.sh to verify
+      Quinn's GAP-Q1 diagnosis end-to-end (relied on Quinn's report +
+      source inspection of credential-leak-e2e-test.sh line 127).
+  (-) Did NOT run mvn test in /tmp/raze-meta-fresh-sprint6/ to re-verify
+      80/0/0/3 surefire baseline (relied on Quinn + Raze independent
+      reproductions).
+  (-) Did NOT live-verify the design.md update would actually be picked
+      up by future readers (this is a process recommendation, not a code
+      change).
+  (-) Sprint complete vs partial close adjudication is a judgment call;
+      the Sprint 5 META-RAZE 0.80 framing line is partially-superseded
+      by Sprint 6's structural-closure shape but reasonable observers
+      could disagree.
+
+budget_used:
+  wall_clock_minutes: ~22
+  tokens: under 150K target
+  forbid_list_compliance:
+    user_worktree_modifications: 0
+    docker_pull: 0 (sabotage-test.sh did docker build but did not pull new images)
+    gh_auth_refresh: 0
+    /tmp_clones: 1 (/tmp/raze-meta-fresh-sprint6/ only)
+    bash_-x_traces: 1 (under set -eo pipefail isolated test)
+    mvn_test_in_clone: 0 (relied on Quinn + Raze independent reproductions)
+    git_commit_push: 1 (this file only — sprint-ets-06-meta-review.yaml)
+
+# ---------------------------------------------------------------------------
+# Files written
+# ---------------------------------------------------------------------------
+files_written:
+  - ".harness/evaluations/sprint-ets-06-meta-review.yaml (this file)"
+
+artifacts_archived:
+  - "/tmp/raze-meta-sab.log (sabotage --target=systemfeatures live-exec reproducer; Docker build failed at builder 8/8 with javac unreachable statement at SystemFeaturesTests.java:[210,17])"
+  - "/tmp/raze-meta-fresh-sprint6/ (clean third-clone of sister repo at HEAD c17a534; used for source inspection + live reproducer)"
+
+# ---------------------------------------------------------------------------
+# Final
+# ---------------------------------------------------------------------------
+verdict_final: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score_final: 0.81
