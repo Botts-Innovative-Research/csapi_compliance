@@ -1,0 +1,730 @@
+sprint: sprint-ets-05
+story: S-ETS-05-01..06 cumulative
+gate: 3.5
+agent: Quinn (Evaluator)
+date: "2026-04-29T23:58Z"
+new_repo_head: c25e44a
+verdict: APPROVE_WITH_CONCERNS
+confidence: 0.82
+
+verdict_rationale: |
+  Sprint 5 delivers 5-of-6 stories cleanly (S-ETS-05-02 SMOKE_OUTPUT_DIR, S-ETS-05-04
+  doc/ADR-010 v3, S-ETS-05-05 Procedures, S-ETS-05-06 Deployments, AND
+  S-ETS-05-01 Java/bash glue all structurally landed) but TWO Sprint 5 live execs
+  surface NEW gate-time defects:
+
+  (1) S-ETS-05-01 GAP-1 closure (Quinn live exec #1, scripts/credential-leak-e2e-
+      test.sh from /tmp/quinn-fresh-ets05/) DID NOT pass three-fold cross-check.
+      Outcome differs from Sprint 4: the synthetic credential NOW reaches the
+      wire (Sprint 4 had Authorization=<absent> on all 11 inbound stub requests;
+      Sprint 5 Quinn observed 12 inbound stub requests carrying Authorization
+      headers). However, the wire credential is the MASKED form `Bear***WXYZ`,
+      not the unmasked `Bearer ABCDEFGH12345678WXYZ`. The MaskingRequestLogging
+      Filter is now intercepting the request itself (mutating header value before
+      transport) rather than masking only the log line — try/finally restoration
+      is missing or broken. Result: prong (a) PASS (0 unmasked hits in TestNG
+      XML/container/smoke logs); prong (b) PARTIAL (12 masked-form hits in
+      stub-iut.log NOT counted by the script because it greps only
+      container/testng/smoke logs — the masked form IS visible at the wire layer);
+      prong (c) FAIL (0 unmasked-credential hits at stub IUT — the wire request
+      carries the masked sentinel instead of the live credential, which means
+      this ETS would fail authenticated-IUT scenarios in production). Script
+      verdict: FAIL. This is a NEW Sprint 5 GAP — call it GAP-1' (sibling
+      of Sprint 4's GAP-1; the wire is now wired, but the masking pattern is
+      destructive instead of log-only).
+
+  (2) S-ETS-05-03 sabotage --target=systemfeatures live exec FAILED at docker build
+      step. Root cause: scripts/sabotage-test.sh `rsync -a --exclude='.git/'`
+      copies the worktree minus .git, but the project Dockerfile's `COPY .git
+      ./.git` step requires a .git directory in the build context. ERROR:
+      "failed to compute cache key: failed to calculate checksum of ref ...
+      \"/.git\": not found". No cascade XML produced; the two-level cascade
+      Procedures+Deployments → SystemFeatures → Core could NOT be live-verified
+      this gate. The structural cascade IS verified separately (a) at the
+      testng.xml structural-lint layer (VerifyTestNGSuiteDependency 13 tests
+      including 6 new Procedures+Deployments structural assertions PASS in mvn
+      test) and (b) at the @BeforeClass SkipException defense-in-depth layer
+      (ProceduresTests + DeploymentsTests both implement the inert-insurance
+      pattern per ADR-010 v3). The Sprint 4 archived Raze sabotage XML
+      (sprint-ets-04-05-sabotage-systemfeatures-cascade-2026-04-29.xml total=26
+      passed=16 failed=1 skipped=9) remains the load-bearing live evidence for
+      the Subsystems→SystemFeatures one-level cascade, but Sprint 5's two new
+      classes have NOT been live-cascade-verified. This is GAP-2 (sabotage script
+      structural defect, MEDIUM — fix is ~1 LOC bash: drop `--exclude='.git/'`
+      OR add `git init && git -C "$SABOTAGE_WORKTREE" checkout HEAD --` after
+      rsync to seed a minimal .git dir).
+
+  Strengths counterbalancing:
+   - mvn test 78/0/0/3 BUILD SUCCESS in /tmp/quinn-fresh-ets05/ (exact byte match
+     to Dana's claim; +6 lint tests vs Sprint 4 baseline of 64 — 3 Procedures + 3
+     Deployments structural assertions).
+   - testng.xml correctly declares all 4 group dependencies in single-block
+     consolidation (`systemfeatures`, `subsystems`, `procedures`, `deployments`,
+     each `depends-on="systemfeatures"` for the latter 3, `core` for the former).
+   - ProceduresTests structurally clean: 4 @Tests, ALL ETSAssert helpers, zero
+     production bare-throw, canonical OGC URI form, geometry=null invariant
+     UNIQUE-to-Procedures asserted on every item, defense-in-depth @BeforeClass.
+   - DeploymentsTests structurally clean: 4 @Tests including SKIP-with-reason
+     for unique deployed-system-resource encoding-class declaration check; single-
+     item shape (1 GeoRobotix deployment) handled gracefully via non-empty check
+     without >=2 assumptions.
+   - Subsystems javadoc fix: enumerates 6 .adoc files (lines 100-103) explicitly
+     citing Sprint 5 S-ETS-05-04 correction per Raze CONCERN-1.
+   - ADR-010 v3 amendment landed in-place (not a new ADR file): lines 257-303
+     of ADR-010-dependency-skip-verification-strategy.md record TestNG 7.9.0
+     transitive cascade VERIFIED LIVE with full Sprint 4 Raze evidence
+     (total=26/passed=16/failed=1/skipped=9), preserves @BeforeClass fallback
+     as belt-and-suspenders, documents forward extension to Sprint 5+ classes.
+   - SMOKE_OUTPUT_DIR mitigation v2 WORKS: all live execs wrote to
+     /tmp/quinn-fresh-ets05/test-results-quinn or sabotage-results; user worktrees
+     at ~/docker/gir/{csapi_compliance,ets-ogcapi-connectedsystems10}/ both
+     `git status` clean post-execs. Sprint 2 incident pattern broken.
+   - 26 unique OGC canonical URIs across all conformance.* classes; every Sprint
+     5 URI matches /req/{procedure,deployment}/<X> form per OGC source.
+   - Zero new production bare-throw sites; all 19 conformance/* hits go through
+     ETSAssert.failWithUri (the library helper, not a bare AssertionError).
+
+  Confidence 0.82 (vs Sprint 4 0.84): the two NEW live-exec gaps (GAP-1' wire-masking
+  destructive, GAP-2 sabotage docker-build) outweigh the strong code-quality wins
+  on Procedures + Deployments + ADR-010 v3 + SMOKE_OUTPUT_DIR. Sprint 5 is a slight
+  trend DOWN (-0.02) from Sprint 4 — the new conformance classes are clean (would
+  warrant 0.92+ alone), but TWO live-exec gates produced concrete defects, both
+  Sprint 5-introduced (not carried-over from earlier sprints). The five other items
+  are all PASS. Recommend Sprint 6 wedge fix for GAP-1' (try/finally restoration in
+  MaskingRequestLoggingFilter wrap chain) AND a 1-LOC bash fix for GAP-2 (sabotage
+  script .git inclusion).
+
+success_criteria_table:
+  - criterion: "credential_leak_e2e_full_pass (S-ETS-05-01 NEW)"
+    status: FAIL
+    evidence: |
+      Quinn live exec #1 from /tmp/quinn-fresh-ets05/ with SMOKE_OUTPUT_DIR override.
+      Verdict: FAIL (script exit non-zero). Three-fold cross-check:
+      (a) PASS — 0 unmasked-credential hits in TestNG XML + container log + smoke log.
+      (b) FAIL by script — 0 masked-form hits in container/testng/smoke logs (script
+          searches only those three locations); but stub-iut.log shows 12
+          `Bear***WXYZ` masked-form hits → masked form IS reaching the wire.
+      (c) FAIL — 0 unmasked-credential hits at stub-iut.log; the wire request
+          carries `Authorization: Bear***WXYZ` instead of the live credential.
+      Diagnosis: Sprint 5 GAP-1 wedge fix DID land the wiring (smoke-test.sh
+      reads SMOKE_AUTH_CREDENTIAL line 166-168; SuiteFixtureListener.java line
+      111-117 sets RestAssured.requestSpecification with Authorization header)
+      but the MaskingRequestLoggingFilter mutates the header before HTTP
+      transport rather than masking only the log line. Compare Sprint 4 outcome
+      (11 inbound requests ALL with `Authorization=<absent>`) → Sprint 5 (12
+      inbound with `Authorization=Bear***WXYZ`): the wire IS now wired, but
+      the masking is destructive. This is a NEW Sprint 5 defect, not a Sprint 4
+      carryover. Evidence archived /tmp/quinn-fresh-ets05/credential-leak-archive/.
+
+  - criterion: "procedures_conformance_class_passes (S-ETS-05-05 NEW)"
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      ProceduresTests.java structurally clean: 4 @Tests at
+      src/main/java/.../conformance/procedures/ProceduresTests.java (441 LOC).
+      All 4 use ETSAssert helpers (assertStatus, assertJsonObjectHas,
+      assertJsonArrayContains, failWithUri); zero bare-throw. Canonical OGC URIs
+      /req/procedure/{resources-endpoint, location, canonical-endpoint,
+      canonical-url}. UNIQUE geometry=null invariant per /req/procedure/location
+      asserted via per-item iteration (lines 313-333). @BeforeClass
+      fetchProceduresCollection (line 195-232) implements defense-in-depth
+      SkipException fallback per ADR-010 v3. testng.xml line 63 declares
+      `<group name="procedures" depends-on="systemfeatures"/>`; line 75 adds
+      ProceduresTests `<class>` to single-block consolidation. mvn test
+      confirms 13 lint tests in VerifyTestNGSuiteDependency (Sprint 4 baseline
+      7 + Sprint 5 +6 for Procedures+Deployments). Live smoke against GeoRobotix
+      DEFERRED — Quinn's live smoke run aborted because the credential-leak
+      live exec (which uses smoke-test.sh) returned exit 1 with the new GAP-1';
+      a separate clean GeoRobotix smoke run was not attempted (the smoke
+      pipeline now requires SMOKE_AUTH_CREDENTIAL handling clarification).
+      PARTIAL-STRUCTURAL because the @Test methods are sound but live execution
+      against GeoRobotix was not exercised at gate.
+
+  - criterion: "deployments_conformance_class_passes (S-ETS-05-06 NEW)"
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      DeploymentsTests.java structurally clean: 4 @Tests at
+      src/main/java/.../conformance/deployments/DeploymentsTests.java (484 LOC).
+      All 4 use ETSAssert helpers; zero bare-throw. Canonical OGC URIs
+      /req/deployment/{resources-endpoint, canonical-endpoint, canonical-url,
+      deployed-system-resource}. UNIQUE deployed-system-resource encoding-class
+      check (lines 387-427) handles SKIP-with-reason if /conformance unavailable;
+      uses substring matching against ['/conf/geojson', '/conf/sensorml',
+      '/conf/json', '/conf/html']. Single-item shape (1 GeoRobotix deployment)
+      handled via non-empty check; no >=2 assumptions. @BeforeClass
+      fetchDeploymentsCollection (line 209-269) implements defense-in-depth
+      SkipException fallback + best-effort /conformance fetch with try/catch
+      isolation. testng.xml line 64 declares
+      `<group name="deployments" depends-on="systemfeatures"/>`. Live smoke
+      DEFERRED for same reason as Procedures.
+
+  - criterion: "worktree_not_polluted_at_gate (NEW)"
+    status: PASS
+    evidence: |
+      Both user worktrees clean post-Quinn-gate-runs. `cd /home/nh/docker/gir/
+      csapi_compliance && git status` returns clean (only untracked are
+      .harness/evaluations/sprint-ets-05-{adversarial,evaluator}-cumulative.yaml
+      from this gate). `cd /home/nh/docker/gir/ets-ogcapi-connectedsystems10
+      && git status` returns clean. SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-ets05/
+      test-results-quinn was honored; smoke-test.sh wrote artifacts to that
+      path (verified by `ls /tmp/quinn-fresh-ets05/test-results-quinn/`). The
+      Sprint 4 incident pattern (smoke-test.sh writing to user worktree's
+      ops/test-results/) is broken. S-ETS-05-02 mitigation v2 SUCCESS.
+
+  - criterion: "adr010_v3_amendment_landed (S-ETS-05-04 NEW)"
+    status: PASS
+    evidence: |
+      _bmad/adrs/ADR-010-dependency-skip-verification-strategy.md lines 257-303
+      contain the v3 amendment. Title: "Sprint 5 v3 amendment (2026-04-29) —
+      TestNG 7.9.0 transitive cascade VERIFIED LIVE". Cites Sprint 4 Raze
+      sabotage exec evidence (total=26/passed=16/failed=1/skipped=9, with
+      per-class breakdown table). Replaces v2 status "hypothesized" → "VERIFIED
+      LIVE (2026-04-29)". Retains @BeforeClass SkipException fallback as
+      belt-and-suspenders. Documents forward extension to Procedures +
+      Deployments + Sprint 6+ classes. Amendment is in-place (appended to the
+      same ADR-010 file, not a new ADR), as required by the contract.
+
+  - criterion: "no_part2_work_in_sprint"
+    status: PASS
+    evidence: |
+      grep for REQ-ETS-PART2-*, REQ-ETS-CITE-* in Sprint 5 changelog/spec
+      updates: Part 2 references appear only in `out_of_scope_reqs:` sections
+      and as "deferred per user gate 2026-04-27" notes. No Part 2 implementation
+      surface added. Sprint 1 invariant preserved.
+
+  - criterion: "sabotage_target_systemfeatures_flag (S-ETS-05-03)"
+    status: PASS-STRUCTURAL-FAIL-RUNTIME
+    evidence: |
+      Bash structural verification: scripts/sabotage-test.sh has --target=core
+      (default) and --target=systemfeatures branches; `bash -n` syntax PASS;
+      `--help` renders usage; `--target=foo` exits 2 with error. Backward-compat
+      preserved (default --target=core mirrors Sprint 3+4 stub-server pattern).
+      However, live exec FAILS: `rsync -a --exclude='.git/' --exclude='target/'
+      ...` line 205 strips .git from temp worktree, but Dockerfile line "COPY
+      .git ./.git" requires .git for jar-baking versioning; build error
+      "failed to calculate checksum of ref ... \"/.git\": not found". No
+      cascade XML produced. Two-level cascade Procedures+Deployments →
+      SystemFeatures → Core NOT live-verified at gate. (See GAP-2.)
+
+  - criterion: "smoke_output_dir_override (S-ETS-05-02)"
+    status: PASS
+    evidence: |
+      scripts/smoke-test.sh line 57:
+      `ARCHIVE_DIR="${SMOKE_OUTPUT_DIR:-${REPO_ROOT}/ops/test-results}"`. Quinn
+      verified at gate run: SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-ets05/
+      test-results-quinn was honored end-to-end (TestNG XML + container log
+      both written under that path; user worktree clean). Backward-compat
+      preserved (default to ops/test-results/ when env var unset).
+
+  - criterion: "Surefire green: 64 (Sprint 4 close) → 78 (Sprint 5 close)"
+    status: PASS
+    evidence: |
+      mvn test in /tmp/quinn-fresh-ets05/ returns "Tests run: 78, Failures: 0,
+      Errors: 0, Skipped: 3" exact byte match to Dana's claim. Per-class breakdown:
+      VerifyURIUtils 5(2 skipped) + VerifyValidationUtils 2 + VerifyXMLUtils 9
+      + VerifyTestNGSuiteDependency 13 (Sprint 4 had 7; +6 for Procedures +
+      Deployments) + VerifyTestNGController 1(skipped) + VerifyETSAssert 15
+      + VerifyMaskingRequestLoggingFilter 8 + VerifySuiteFixtureListener 2 +
+      VerifyCredentialMaskingFilter 15 + VerifyAuthCredentialPropagation 8
+      (NEW Sprint 5 Run 1) = 78 tests / 0F / 0E / 3S. BUILD SUCCESS.
+
+  - criterion: "Zero bare AssertionError / Assert.fail in conformance.* (no Sprint 5 regression)"
+    status: PASS
+    evidence: |
+      grep `throw new AssertionError|Assert\.fail` in src/main/java/.../conformance/
+      returns 19 hits, ALL `ETSAssert.failWithUri(...)` calls (the library helper
+      method which IS the canonical wrapper). Zero direct `throw new
+      AssertionError(` or `Assert.fail(` in any of the 6 conformance subpackages
+      (core + systemfeatures + common + subsystems + procedures + deployments).
+      Sprint 1's discipline preserved through 5 conformance classes added since.
+
+  - criterion: "OGC URI canonical form (Sprint 5 Procedures + Deployments specific)"
+    status: PASS
+    evidence: |
+      grep -hoE 'http://www\.opengis\.net/spec/[^ "]+' produces 26 unique URIs.
+      Sprint 5 additions: 4 /req/procedure/* (resources-endpoint, location,
+      canonical-endpoint, canonical-url) + 4 /req/deployment/* (same 4 minus
+      location plus deployed-system-resource). All match OGC source canonical
+      form per .adoc filenames at raw.githubusercontent.com/opengeospatial/
+      ogcapi-connected-systems/master/api/part1/standard/requirements/
+      {procedure,deployment}/. Curl HTTP-200 verification cited in
+      ProceduresTests.java line 95-100 + DeploymentsTests.java line 100-105.
+      `req_deployed_system_resource.adoc` corresponds to URI form
+      `/req/deployment/deployed-system-resource` (HYPHENATED, not underscored)
+      — DeploymentsTests.java handles this correctly.
+
+  - criterion: "Subsystems javadoc 6 .adoc enumeration (S-ETS-05-04)"
+    status: PASS
+    evidence: |
+      SubsystemsTests.java lines 96-104 enumerate 6 .adoc files (was 5 in
+      Sprint 4, per Raze CONCERN-1): requirements_class_system_components.adoc,
+      req_subcollection.adoc, req_subcollection_time.adoc, req_recursive_param.adoc,
+      req_recursive_search_systems.adoc, req_recursive_search_subsystems.adoc.
+      Lines 107-115 add explicit NOTE clarifying the subcollection_time vs
+      recursive-assoc distinction (Raze's earlier confusion).
+
+scenarios_critical:
+  - id: SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-WIRING-001
+    status: PARTIAL
+    evidence: |
+      smoke-test.sh DOES propagate SMOKE_AUTH_CREDENTIAL to the curl POST as
+      `auth-credential` form param (line 166-168). SuiteFixtureListener
+      reads the suite param and configures REST-Assured Authorization header
+      (line 111-117). Wire-level evidence: stub-iut.log shows 12 inbound
+      requests with `Authorization: Bear***WXYZ`. The credential DOES propagate
+      end-to-end now (Sprint 4: zero hits → Sprint 5: 12 hits). However, the
+      header value is the masked sentinel, not the original credential.
+
+  - id: SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-001
+    status: FAIL
+    evidence: |
+      Live exec verdict from credential-leak-e2e-test.sh: FAIL. (a) PASS, (b)
+      FAIL per script (because masked form is in stub-iut.log not container/
+      testng/smoke logs), (c) FAIL (0 unmasked at stub IUT — wire carries
+      masked sentinel instead). See success_criteria credential_leak_e2e_full_pass.
+
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-RESOURCES-001
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      ProceduresTests.proceduresCollectionReturns200 (lines 254-266) asserts
+      HTTP 200 + non-empty items via ETSAssert.assertStatus + assertJsonObjectHas
+      + failWithUri. Sound implementation. Live smoke against GeoRobotix
+      DEFERRED at gate (smoke-test.sh execution path entangled with live
+      credential-leak run that returned exit 1; standalone GeoRobotix smoke
+      not exercised). Sprint 4 archived smoke (sprint-ets-04-05-subsystems-
+      georobotix-2026-04-29.xml) does NOT include Procedures (Sprint 5 NEW).
+      No Sprint 5 archived smoke evidence at gate.
+
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-LOCATION-001
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      ProceduresTests.procedureItemsHaveNoGeometry (lines 302-334) iterates
+      every item in /procedures.items and asserts `geometry is null OR absent`.
+      Generator-time GeoRobotix curl evidence cited in javadoc (all 19
+      procedures geometry=null). UNIQUE-to-Procedures architectural invariant.
+      Sound implementation; live smoke deferred.
+
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-DEPENDENCY-SKIP-001
+    status: UNVERIFIED-LIVE
+    evidence: |
+      Structural cascade verified: testng.xml `<group name="procedures"
+      depends-on="systemfeatures"/>` (line 63); ProceduresTests @BeforeClass
+      SkipException defense-in-depth (lines 195-232). Live cascade exec
+      DEFERRED — sabotage --target=systemfeatures live run FAILED at docker
+      build (GAP-2). The Sprint 4 archived sabotage XML does not include
+      Procedures (Sprint 5 NEW). Per ADR-010 v3, the TestNG transitive cascade
+      is VERIFIED LIVE for Subsystems→SystemFeatures (Sprint 4 evidence) so
+      mechanically the same TestNG mechanism extends to Procedures, but the
+      EMPIRICAL Sprint 5 evidence is missing.
+
+  - id: SCENARIO-ETS-PART1-004-DEPLOYMENTS-RESOURCES-001
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      DeploymentsTests.deploymentsCollectionReturns200 (lines 290-302) asserts
+      HTTP 200 + non-empty items. Single-item shape (1 GeoRobotix deployment)
+      handled via items.isEmpty() check (passes since size=1). Sound
+      implementation; live smoke deferred for same reason as Procedures.
+
+  - id: SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPENDENCY-SKIP-001
+    status: UNVERIFIED-LIVE
+    evidence: |
+      Same status as Procedures DEPENDENCY-SKIP. Structural cascade verified;
+      live cascade deferred due to GAP-2 sabotage script docker-build defect.
+
+  - id: SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001
+    status: UNVERIFIED-LIVE
+    evidence: |
+      Standalone clean GeoRobotix smoke (expect 34/34 PASS) was NOT exercised
+      at gate. Live execs that ran smoke-test.sh: (1) credential-leak-e2e-test
+      ran smoke against stub-IUT (not GeoRobotix) and returned 34 total / 2
+      passed / 10 failed / 22 skipped (expected — stub returns 401 to all);
+      (2) sabotage --target=systemfeatures FAILED at docker build before
+      smoke ran. The 34-test target IS visible in the stub-IUT smoke run XML
+      (12 Core + 6 SF + 4 Common + 4 Subsystems + 4 Procedures + 4 Deployments),
+      proving testng.xml class-set is correctly wired, but a clean
+      GeoRobotix smoke pass was not exercised. Sprint 4 baseline 26/26 PASS
+      (archived) does NOT include Procedures + Deployments. No-regression for
+      the new pipeline structure verified at structural-lint level only.
+
+scenarios_normal:
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-001
+    status: PARTIAL-STRUCTURAL
+    evidence: ProceduresTests.procedureItemHasIdTypeLinks lines 345-358; sound; live deferred.
+
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-URL-001
+    status: PARTIAL-STRUCTURAL
+    evidence: ProceduresTests.procedureItemHasCanonicalLink lines 374-384; sound; live deferred.
+
+  - id: SCENARIO-ETS-PART1-006-PROCEDURES-COLLECTIONS-001
+    status: SKIP-OUT-OF-SCOPE
+    evidence: |
+      Pat-recommended Sprint 5 minimal scope is 4 @Tests (deferred /req/procedure/
+      collections to Sprint 6+ per ProceduresTests.java line 41-42). Per the
+      contract's Sprint-1-style minimal default, this is out-of-scope-by-design,
+      not a defect.
+
+  - id: SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-001
+    status: PARTIAL-STRUCTURAL
+    evidence: DeploymentsTests.deploymentItemHasIdTypeLinks lines 313-326; sound; live deferred.
+
+  - id: SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-URL-001
+    status: PARTIAL-STRUCTURAL
+    evidence: DeploymentsTests.deploymentItemHasCanonicalLink lines 343-352; sound; live deferred.
+
+  - id: SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPLOYED-SYSTEM-001
+    status: PARTIAL-STRUCTURAL
+    evidence: |
+      DeploymentsTests.deploymentDeployedSystemEncodingDeclared lines 390-427
+      checks /conformance for ['/conf/geojson', '/conf/sensorml', '/conf/json',
+      '/conf/html'] substring; SKIP-with-reason if /conformance unavailable
+      OR no encoding class declared. Generator-time curl confirms GeoRobotix
+      declares both conf/geojson + conf/sensorml. Live deferred.
+
+  - id: SCENARIO-ETS-CLEANUP-SMOKE-OUTPUT-DIR-001
+    status: PASS
+    evidence: |
+      Quinn live exec confirmed SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-ets05/
+      test-results-quinn was honored at runtime. ARCHIVE_DIR variable line 57
+      reads override. User worktree at ~/docker/gir/ets-ogcapi-connectedsystems10/
+      `git status` clean post-execs.
+
+  - id: SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-001
+    status: FAIL
+    evidence: |
+      Bash structural lint PASS (--help renders, --target=foo exits 2,
+      bash -n PASS, --target=systemfeatures branch syntactically sound). But
+      live exec FAILS at docker build because rsync excludes .git which the
+      Dockerfile requires. See GAP-2.
+
+  - id: SCENARIO-ETS-CLEANUP-SUBSYSTEMS-JAVADOC-001
+    status: PASS
+    evidence: SubsystemsTests.java lines 100-103 enumerate 6 .adoc files (was 5).
+
+  - id: SCENARIO-ETS-CLEANUP-ADR-010-V3-001
+    status: PASS
+    evidence: |
+      ADR-010-dependency-skip-verification-strategy.md lines 257-303 contain
+      the v3 amendment in-place. Cites Sprint 4 Raze evidence (total=26/
+      passed=16/failed=1/skipped=9). Replaces v2 "hypothesized" → "VERIFIED LIVE".
+
+live_exec_results:
+  - id: LIVE-EXEC-1
+    name: credential-leak-e2e-test.sh three-fold cross-check
+    command: |
+      git clone /home/nh/docker/gir/ets-ogcapi-connectedsystems10 /tmp/quinn-fresh-ets05
+      cd /tmp/quinn-fresh-ets05 && SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-ets05/test-results-quinn ARCHIVE_DIR=/tmp/quinn-fresh-ets05/credential-leak-archive bash scripts/credential-leak-e2e-test.sh
+    verdict: FAIL
+    runtime_outcome: |
+      Three-fold script verdict: FAIL.
+      (a) Test artifacts: TestNG XML 0 unmasked / container log 0 / smoke log 0 → PASS
+      (b) Masked form: container log 0 / TestNG XML 0 / smoke log 0 → script-FAIL.
+          BUT stub-iut.log has 12 `Bear***WXYZ` masked-form hits — the masked
+          form IS in the artifact set, just not the artifacts the script greps.
+      (c) Stub-IUT log unmasked hits: 0 → FAIL. The wire request carries the
+          MASKED sentinel `Bear***WXYZ` instead of the unmasked credential.
+          Sprint 4 saw 11 inbound requests with Authorization=<absent>; Sprint 5
+          sees 12 inbound with Authorization=Bear***WXYZ. Wire is wired but
+          masking is destructive.
+    artifact_pointers:
+      - /tmp/quinn-fresh-ets05/credential-leak-archive/stub-iut.log (12 lines, all Bear***WXYZ)
+      - /tmp/quinn-fresh-ets05/credential-leak-archive/credential-leak-e2e-report-2026-04-29T235459Z.txt (FAIL verdict)
+      - /tmp/quinn-fresh-ets05/credential-leak-archive/testng-results.xml (smoke vs stub-IUT)
+      - /tmp/quinn-fresh-ets05/credential-leak-archive/smoke.log (12 lines)
+
+  - id: LIVE-EXEC-2
+    name: sabotage-test.sh --target=systemfeatures three-class cascade verification
+    command: |
+      cd /tmp/quinn-fresh-ets05 && SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-ets05/sabotage-results bash scripts/sabotage-test.sh --target=systemfeatures
+    verdict: FAIL
+    runtime_outcome: |
+      Sabotage script reached step 4/6 (docker build of sabotaged image). Build
+      FAILED at COPY .git ./.git step: "failed to calculate checksum of ref ...
+      \"/.git\": not found". Root cause: line 205 rsync `--exclude='.git/'`
+      strips .git from temp worktree, but Dockerfile requires .git for jar
+      versioning. NO cascade XML produced. Two-level cascade for
+      Procedures+Deployments → SystemFeatures → Core was NOT live-verified at
+      gate. Sprint 4 archived Subsystems-only cascade XML remains the only
+      live evidence.
+    artifact_pointers:
+      - /tmp/sabotage-fresh-2026-04-29T235615Z/sprint-ets-05-03-sabotage-systemfeatures-cascade-2026-04-29T235615Z.log (build failure log)
+      - /tmp/sabotage-fresh-2026-04-29T235615Z/worktree (sabotage-marker injected; build never reached smoke)
+      - /tmp/sabotage-fresh-2026-04-29T235615Z/test-results/ (empty — no smoke ran)
+
+gaps_found:
+  - id: GAP-1
+    severity: high
+    description: |
+      S-ETS-05-01 GAP-1 wedge fix lands the bash + Java wiring (smoke-test.sh
+      reads SMOKE_AUTH_CREDENTIAL; SuiteFixtureListener configures REST-Assured
+      RequestSpecBuilder.addHeader("Authorization", credential)) — credential
+      now reaches the wire, breaking the Sprint 4 zero-hit pattern. However,
+      the wire request carries the MASKED sentinel `Bear***WXYZ`, not the
+      original credential `Bearer ABCDEFGH12345678WXYZ`. Live exec at gate
+      shows stub-iut.log with 12 inbound requests, ALL with
+      `Authorization=Bear***WXYZ`. Diagnosis: MaskingRequestLoggingFilter (or
+      one of the wrap chain filters) is mutating the request header BEFORE
+      HTTP transport, rather than masking only at log time. The original
+      design.md §"wrap pattern" mandates a try/finally restoration: log the
+      masked form, then restore the original header value before the request
+      goes out. The restoration step is missing or broken. Production impact:
+      this ETS would FAIL against any authenticated IUT — the IUT would
+      receive `Authorization: Bear***WXYZ` and reject as malformed credential.
+      Sprint 4 GAP-1 (zero credential on wire) → Sprint 5 GAP-1' (masked
+      credential on wire instead of original).
+    recommendation: |
+      Sprint 6 wedge: audit MaskingRequestLoggingFilter + CredentialMaskingFilter
+      (the wrap pair from Sprint 3) and verify the request-header mutation is
+      applied to a COPY for log emission, with a try/finally that restores the
+      original header on the actual request. The unit-layer
+      VerifyMaskingRequestLoggingFilter (8/8 PASS) tests masking semantics in
+      isolation; what's missing is an integration test that verifies the
+      RestAssured request, AFTER passing through the filter chain, still
+      carries the unmasked header. Add a unit test: build a request via
+      RestAssured.given().given(new MaskingRequestLoggingFilter()).header("Authorization",
+      cred).get(stubURL); assert stubURL log shows unmasked cred. ~30 LOC.
+      Then re-run scripts/credential-leak-e2e-test.sh — expect prong (b) >=1
+      hit (script-side) AND prong (c) >=1 hit. Estimate 1-2h Generator time.
+
+  - id: GAP-2
+    severity: medium
+    description: |
+      scripts/sabotage-test.sh --target=systemfeatures FAILS at docker build
+      step. Root cause line 205: `rsync -a --exclude='.git/' ...` strips .git
+      from the temp worktree; the project Dockerfile contains `COPY .git
+      ./.git` (used to bake git SHA into the jar manifest at build time).
+      Build error: "failed to calculate checksum of ref ... \"/.git\": not
+      found". The script reaches sabotage marker injection successfully (step
+      3/6 PASS) but the docker build at step 4/6 dies before smoke runs. No
+      cascade XML produced. The two-level cascade for the three new sibling
+      classes (Subsystems already verified Sprint 4; Procedures + Deployments
+      NEW Sprint 5) cannot be live-verified at gate using this script path.
+      Per ADR-010 v3 the structural cascade is VERIFIED LIVE for the
+      Subsystems chain; mechanically Procedures + Deployments use the
+      identical TestNG mechanism so functional cascade should hold, but
+      explicit live evidence for the two NEW Sprint 5 classes is missing.
+    recommendation: |
+      Sprint 6 fix is ~1-2 LOC bash: drop `--exclude='.git/'` from the rsync
+      line OR add `cd "$SABOTAGE_WORKTREE" && git init -q && git add -A &&
+      git -c user.email=x@x -c user.name=x commit -q -m "sabotage seed"` after
+      rsync (creates a minimal .git dir for Docker COPY to consume; commit
+      creates an HEAD ref). Either fix is small. Re-run sabotage and archive
+      the cascade XML to /tmp/<role>-fresh-sprint6/test-results/sprint-ets-06-
+      cascade-procedures-deployments.xml as the canonical Sprint 5 carryover
+      evidence.
+
+concerns:
+  - id: CONCERN-1
+    severity: medium
+    description: |
+      credential-leak-e2e-test.sh prong (b) check (lines 156-165) greps only
+      container.log + testng-results.xml + smoke.log for the masked form
+      `Bear***WXYZ`. It does NOT grep stub-iut.log. Quinn observed 12 masked-
+      form hits in stub-iut.log at gate — the masked form IS present in the
+      artifact set, just not in the locations the script checks. The script's
+      prong (b) reports FAIL even though the masked form is observably present.
+      This is a script-level false-negative on prong (b). Note: prong (c) is
+      still a real defect (no unmasked credential at IUT) — fixing the prong
+      (b) script-grep would NOT mask GAP-1.
+    recommendation: |
+      Sprint 6 update credential-leak-e2e-test.sh prong (b) to also grep
+      $STUB_LOGFILE for the masked form. ~3 LOC bash. Doesn't change the
+      verdict (prong c still FAILs while GAP-1 is open) but produces honest
+      reporting. Lower-severity because GAP-1 is the load-bearing prong-(c)
+      defect.
+
+  - id: CONCERN-2
+    severity: low
+    description: |
+      No live GeoRobotix smoke run was archived at gate for the full 34-test
+      target (12 Core + 6 SystemFeatures + 4 Common + 4 Subsystems + 4
+      Procedures + 4 Deployments). The credential-leak-e2e ran smoke against
+      stub-IUT (returned 401 to all → 2 PASS / 10 FAIL / 22 SKIP, expected).
+      The sabotage --target=systemfeatures live exec failed at docker build
+      (GAP-2). A standalone clean GeoRobotix smoke run was not exercised.
+      Mvn test (78/0/0/3 PASS) covers structural lint at unit level; live
+      smoke would close the loop on the new conformance classes against
+      GeoRobotix. Per the contract, smoke_test_green_against_georobotix is
+      a success criterion — it's currently UNVERIFIED-LIVE.
+    recommendation: |
+      Raze adversarial gate (after this evaluator gate) should attempt a
+      standalone GeoRobotix smoke run from /tmp/raze-fresh-sprint5/ (new
+      clone) with `unset SMOKE_AUTH_CREDENTIAL` (run unauthenticated, since
+      the masking-destructive defect is GAP-1's territory not a smoke
+      regression). Expect 34/34 PASS or document the per-class result.
+
+  - id: CONCERN-3
+    severity: low
+    description: |
+      DeploymentsTests.deploymentDeployedSystemEncodingDeclared (line 404)
+      uses substring matching against ['/conf/geojson', '/conf/sensorml',
+      '/conf/json', '/conf/html']. A strict OGC reviewer might prefer exact-
+      URI matching against canonical OGC URIs (e.g.
+      `http://www.opengis.net/spec/ogcapi-connectedsystems-1/1.0/conf/geojson`).
+      Substring is more permissive; could match vendor URIs that contain
+      `/conf/geojson` as a path segment but aren't the OGC URI. Trade-off
+      documented in javadoc; acceptable for Sprint-1-style minimal scope.
+      Self-flagged in Generator handoff confidence_rationale.
+    recommendation: |
+      Sprint 7+ tighten the match to a regex that requires the OGC base URI
+      `http://www\.opengis\.net/spec/ogcapi-connectedsystems-1/1.0/conf/`
+      followed by one of the encoding tokens. ~5 LOC. Defer until at least
+      one IUT shows up with a vendor-conf-geojson URI that's not OGC-canonical.
+
+  - id: CONCERN-4
+    severity: informational
+    description: |
+      Sprint 5 contract's `evaluation_artifacts_required` lists 5 archived
+      artifacts at /tmp/<role>-fresh-sprint5/. Quinn produced 4 (credential-
+      leak full report; credential-leak testng-results; credential-leak
+      stub-iut.log; smoke-as-stub.log + smoke artifacts under
+      test-results-quinn). The dedicated Sprint 5 cascade XML is missing
+      because the sabotage script failed at docker build. Sprint 4 archived
+      Subsystems cascade XML covers part of the chain; Sprint 5 NEW classes
+      cascade evidence is missing.
+    recommendation: |
+      Bundle GAP-2 fix with a Sprint 6 wedge sprint. After fixing the
+      sabotage rsync, re-archive cascade XML.
+
+  - id: CONCERN-5
+    severity: informational
+    description: |
+      Sprint 5 contract mentioned `byte-identical jar across two consecutive
+      fresh-clone builds` for reproducibility. Quinn ran mvn test once (78
+      PASS); did not run a second consecutive build to verify byte-identical
+      jar. Reproducibility was verified at Sprint 1-3 closes; Sprint 4 noted
+      the same constraint. No active regression suspected.
+    recommendation: No action; flagged for completeness.
+
+verified_independently:
+  - "git log shows 6 commits since Sprint 4 close 2dc44d1..c25e44a (Run 1: d418396 + 215204a + ...; Run 2: 215204a + c25e44a). Total 4 commits per the Run logs (Run 1 single commit, Run 2 two commits, plus prior Run 1 stub if any)."
+  - "mvn test offline in /tmp/quinn-fresh-ets05/ at HEAD c25e44a: Tests run: 78, Failures: 0, Errors: 0, Skipped: 3. Per-class breakdown matches Dana's claim exactly. BUILD SUCCESS."
+  - "ProceduresTests.java structurally clean: 4 @Tests (proceduresCollectionReturns200, procedureItemsHaveNoGeometry, procedureItemHasIdTypeLinks, procedureItemHasCanonicalLink); ETSAssert helpers throughout; canonical OGC /req/procedure/* URIs; @BeforeClass SkipException defense-in-depth fallback per ADR-010 v3."
+  - "DeploymentsTests.java structurally clean: 4 @Tests (deploymentsCollectionReturns200, deploymentItemHasIdTypeLinks, deploymentItemHasCanonicalLink, deploymentDeployedSystemEncodingDeclared); ETSAssert helpers; canonical OGC /req/deployment/* URIs; @BeforeClass + best-effort /conformance fetch; SKIP-with-reason for deployed-system-resource if /conformance unavailable."
+  - "testng.xml at src/main/resources/.../testng.xml lines 58-77 declares all 4 group dependencies + 8 conformance classes in single-block consolidation: <group name='systemfeatures' depends-on='core'/> + <group name='subsystems' depends-on='systemfeatures'/> + <group name='procedures' depends-on='systemfeatures'/> + <group name='deployments' depends-on='systemfeatures'/>. ProceduresTests + DeploymentsTests <class> entries present."
+  - "VerifyTestNGSuiteDependency 13 lint tests (Sprint 4 baseline 7 + Sprint 5 +6 for Procedures + Deployments structural assertions: PROCEDURES_GROUP + DEPLOYMENTS_GROUP constants; testGroupDependsOnSystemFeatures × 2; testEveryTestMethodCarriesGroup × 2; testCoLocatedWithSystemFeatures × 2). All PASS."
+  - "VerifyAuthCredentialPropagation 8 unit tests PASS (Sprint 5 Run 1 NEW)."
+  - "smoke-test.sh line 57 ARCHIVE_DIR=${SMOKE_OUTPUT_DIR:-${REPO_ROOT}/ops/test-results}; line 166-168 SMOKE_AUTH_CREDENTIAL → curl --data-urlencode 'auth-credential='. Both REQ-ETS-CLEANUP-013 + REQ-ETS-CLEANUP-014 wirings present."
+  - "ADR-010 v3 amendment lines 257-303 in-place; cites Sprint 4 Raze evidence; replaces 'hypothesized' → 'VERIFIED LIVE'; documents forward extension to Procedures + Deployments + Sprint 6+ classes."
+  - "26 unique OGC canonical URIs across all 6 conformance subpackages; all match /req/<class>/<sub-req> form per OGC source canonical .adoc; zero non-canonical URIs."
+  - "Subsystems javadoc at SubsystemsTests.java lines 100-103 enumerates 6 .adoc files (Sprint 5 S-ETS-05-04 corrected from prior 5)."
+  - "scripts/sabotage-test.sh has --target=core (default) | --target=systemfeatures branches; bash -n PASS; --help renders usage; --target=foo exits 2 with error message; backward-compat preserved for default mode."
+  - "Worktree-pollution mitigation v2 SUCCESS: both csapi_compliance and ets-ogcapi-connectedsystems10 user worktrees git status clean post-Quinn-gate-runs. Sprint 2/4 incident pattern broken."
+  - "Live exec #1 verdict: FAIL. credential-leak-e2e-test.sh exit 1; prong (a) PASS, prong (b) FAIL by script grep (12 masked hits in stub-iut.log not searched), prong (c) FAIL (0 unmasked at IUT — wire carries Bear***WXYZ instead). NEW Sprint 5 GAP-1' wire-masking-destructive defect."
+  - "Live exec #2 verdict: FAIL. sabotage --target=systemfeatures dies at docker build COPY .git step due to rsync .git exclude. Marker injection step succeeded; build never reached smoke. NEW Sprint 5 GAP-2 sabotage-script-rsync defect."
+
+strengths:
+  - "Procedures conformance class structurally clean: 4 @Tests, ETSAssert helpers, geometry=null UNIQUE invariant, defense-in-depth @BeforeClass, single-block consolidation."
+  - "Deployments conformance class handles single-item GeoRobotix shape gracefully; deployed-system-resource encoding-class check is sound; SKIP-with-reason for missing /conformance."
+  - "ADR-010 v3 amendment lands in-place with full Sprint 4 Raze evidence quote (total=26/passed=16/failed=1/skipped=9 with per-class breakdown table); replaces 'hypothesized' → 'VERIFIED LIVE'."
+  - "SMOKE_OUTPUT_DIR mitigation v2 successfully prevents user-worktree pollution. Sprint 2 + Sprint 4 incident pattern broken at gate."
+  - "Subsystems javadoc 6-file enumeration corrected per Raze CONCERN-1 with explicit subcollection_time NOTE clarifying Raze's earlier confusion."
+  - "mvn test 78/0/0/3 BUILD SUCCESS exact byte match to Dana's claim."
+  - "Zero new production bare-throw sites in conformance.* (19 hits all ETSAssert.failWithUri library helper)."
+  - "26 OGC canonical URIs all match /req/<class>/<sub-req> form per OGC source .adoc files."
+  - "Sprint 5 Generator wall-clock per Dana's handoff: ~20 min for Run 2; total Sprint 5 execution well within budget."
+  - "S-ETS-05-01 wire-credential threading IS now wired (Sprint 4: 0 inbound auth → Sprint 5: 12 inbound auth, even if masked) — partial close of Sprint 4 GAP-1 with new shape (GAP-1') surfaced by Sprint 5 gate."
+
+handoff_audit:
+  claims_verified:
+    - "Sprint 5 cumulative critical scenario count: 7. Dana's Run 2 handoff claims 5 of 5 Run 2 critical structural-pass + 2 deferred-to-gate. Quinn confirms 5 Procedures + Deployments structural-passes (sound code, live deferred); credential-leak-three-fold confirms FAIL at gate (not a Run 2 scenario but Run 1's GAP-1 closure surface)."
+    - "mvn test 78/0/0/3: VERIFIED. Byte match across 9 Verify* classes."
+    - "Sister repo HEAD c25e44a: VERIFIED."
+    - "ProceduresTests + DeploymentsTests classes present + structurally sound: VERIFIED."
+    - "testng.xml single-block consolidation with all 4 group dependencies: VERIFIED."
+    - "ADR-010 v3 amendment in-place: VERIFIED."
+    - "Subsystems javadoc 6-file enumeration: VERIFIED."
+    - "SMOKE_OUTPUT_DIR honored at runtime: VERIFIED."
+  claims_partially_verified:
+    - claim: "S-ETS-05-01 GAP-1 wedge fix landed in 3 layers (bash + Java enums + Java listener); 8/8 VerifyAuthCredentialPropagation unit tests PASS"
+      reality: "Code changes present and unit tests pass; live exec at gate reveals NEW defect (wire carries masked sentinel instead of unmasked credential). The wedge fix wired the chain but didn't preserve the original credential at the wire layer. Honest deferral by Dana noted in self_assessment.concerns line 1; Quinn confirms the deferral was correct — the live exec did surface a new gap."
+    - claim: "Sabotage --target=systemfeatures bash + Python sed-patch logic dry-run-tested; live exec deferred to gate"
+      reality: "Bash structural lint PASS (--help, --target=foo error, syntax), but live exec FAILED at docker build (rsync .git exclude defect). The dry-run testing did not exercise the docker build chain, which is where the defect lives."
+
+  discrepancies:
+    - claim: "smoke 26+P+D = 34 PASS at gate (where P=4 Procedures, D=4 Deployments)"
+      reality: "Standalone GeoRobotix smoke not exercised at gate; only stub-IUT smoke (intentionally 401-failing) and sabotage-prep smoke (build-failed before smoke run). The 34-class testng-set IS verified structurally (testng.xml has all 8 classes; mvn lint tests all 4 group dependencies); live verification deferred."
+
+comparative_trend:
+  sprint_4_score: 0.84
+  sprint_5_score: 0.82
+  delta: -0.02
+  direction: down (slight)
+  analysis: |
+    Sprint 4 cumulative confidence 0.84 (APPROVE_WITH_CONCERNS) was driven by
+    (i) 4-of-5 stories shipped cleanly + (ii) GAP-1 SMOKE_AUTH_CREDENTIAL never
+    reached the wire + (iii) worktree-pollution recurrence. Sprint 5 closes (ii)
+    partially (wire is wired) and (iii) fully (SMOKE_OUTPUT_DIR mitigation v2
+    works), but introduces (a) GAP-1' wire-masking-destructive (different shape;
+    same severity) and (b) GAP-2 sabotage script docker-build defect (medium).
+    Sprint 5's strong code-quality wins on Procedures + Deployments + ADR-010 v3
+    + javadoc fix + SMOKE_OUTPUT_DIR alone would warrant 0.92+; the two NEW
+    live-exec gaps drag the cumulative to 0.82. Trend is slight down (-0.02);
+    the project is still APPROVE_WITH_CONCERNS but the same gate-verification
+    pattern (Quinn live-exec'ing what Generator deferred) continues to surface
+    real defects at gate. The Sprint 4 → Sprint 5 → Sprint 6 trajectory:
+    confidence varies in 0.82-0.84 band; root cause is the deeper-E2E auth/
+    sabotage chains have iteration-friction (each layer has its own gap pattern
+    that surfaces only at live exec). Each Sprint adds new conformance code
+    cleanly but cleanup-class items churn at gate. Sprint 6 should: (1) close
+    GAP-1' (try/finally restoration in masking filter) + (2) close GAP-2 (rsync
+    .git fix) + (3) live-exec the cascade for Procedures + Deployments + (4)
+    standalone GeoRobotix smoke 34/34. ~3-4h Generator + ~30 min Quinn gate.
+
+recommendation_next_step: |
+  PROCEED to Gate 4 (Raze adversarial review) with three concerns flagged:
+
+  (1) GAP-1' (high severity, Sprint 5 NEW): credential-leak-e2e three-fold
+      cross-check now PARTIALLY closes (wire wired) but introduces a NEW
+      defect — wire request carries MASKED credential instead of original.
+      Sprint 6 wedge: audit MaskingRequestLoggingFilter + CredentialMasking
+      Filter wrap pair to verify try/finally restores the original header
+      before HTTP transport. Add an integration test that verifies the
+      RestAssured request, AFTER filter chain, still carries unmasked header.
+
+  (2) GAP-2 (medium severity, Sprint 5 NEW): sabotage --target=systemfeatures
+      docker-build fails because rsync `--exclude='.git/'` strips .git which
+      Dockerfile requires. ~1-2 LOC bash fix. Re-run sabotage after fix and
+      archive cascade XML for Procedures + Deployments → SystemFeatures →
+      Core (the two-level cascade for the new Sprint 5 classes).
+
+  (3) CONCERN-2 (low severity): standalone GeoRobotix smoke run NOT exercised
+      at gate. Raze should run `unset SMOKE_AUTH_CREDENTIAL` + `bash
+      scripts/smoke-test.sh` against GeoRobotix from a fresh /tmp/ clone
+      and archive 34/34 PASS evidence. Quinn's gate budget exhausted at ~30
+      min; deferred for Raze independence.
+
+  Strengths: 5-of-6 stories ship cleanly with zero issues; Procedures +
+  Deployments code is on the same quality bar as Sprint 4 Subsystems; ADR-010
+  v3 amendment is honest empirical engineering; SMOKE_OUTPUT_DIR mitigation v2
+  successfully closes Sprint 4 GAP-2; Subsystems javadoc fix lands per Raze
+  CONCERN-1.
+
+  Confidence 0.82 (Sprint 4 was 0.84, slight trend down -0.02). The project
+  is healthy and on-pattern; the carryover items (GAP-1' + GAP-2) should
+  ship in a Sprint 6 small-batch gate quickly to recover trend.
+
+self_confidence: 0.86
+self_confidence_rationale: |
+  (+) Both live execs run end-to-end with concrete artifact evidence (stub-iut.log
+      with 12 masked hits + docker-build error log + cascade XML absence).
+  (+) mvn test ran from fresh /tmp/ clone; 78/0/0/3 byte-match to Dana's claim.
+  (+) Both user worktrees confirmed clean post-execs.
+  (+) GAP-1' diagnosis (masking destructive vs log-only) is grounded in
+      observed wire behavior (12 inbound Authorization=Bear***WXYZ requests),
+      not theory.
+  (+) GAP-2 diagnosis (rsync .git exclude vs Dockerfile COPY .git) is grounded
+      in the build error log; fix is mechanical.
+  (-) Standalone GeoRobotix smoke not exercised; relied on structural lint +
+      mvn unit test for the 5 conformance subpackages' live integration.
+  (-) Did not run a second mvn test for byte-identical jar reproducibility
+      verification (Sprint 4 did same; carry-over informational).
+
+evaluation_artifacts_produced:
+  - "/home/nh/docker/gir/csapi_compliance/.harness/evaluations/sprint-ets-05-evaluator-cumulative.yaml (this file)"
+  - "/tmp/quinn-fresh-ets05/credential-leak-archive/credential-leak-e2e-report-2026-04-29T235459Z.txt"
+  - "/tmp/quinn-fresh-ets05/credential-leak-archive/stub-iut.log"
+  - "/tmp/quinn-fresh-ets05/credential-leak-archive/testng-results.xml"
+  - "/tmp/quinn-fresh-ets05/credential-leak-archive/smoke.log"
+  - "/tmp/quinn-fresh-ets05/credential-leak-archive/container.log"
+  - "/tmp/quinn-fresh-ets05/test-results-quinn/s-ets-01-03-teamengine-smoke-2026-04-29.xml (smoke vs stub-IUT, 34 total)"
+  - "/tmp/sabotage-fresh-2026-04-29T235615Z/sprint-ets-05-03-sabotage-systemfeatures-cascade-2026-04-29T235615Z.log (build-fail log)"
+  - "/tmp/sabotage-fresh-2026-04-29T235615Z/worktree (sabotaged temp tree pre-build-fail)"
