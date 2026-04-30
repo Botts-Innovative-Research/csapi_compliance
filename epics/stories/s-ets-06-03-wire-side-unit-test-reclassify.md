@@ -17,7 +17,7 @@ Additionally, reclassify those 16 existing tests in `spec.md` and relevant story
 ## Acceptance Criteria
 
 - SCENARIO-ETS-CLEANUP-WIRE-SIDE-TEST-001 (CRITICAL): `VerifyWireRestoresOriginalCredential` test class exists and passes in `mvn test`; uses a `CapturingFilterContext` (not `StubFilterContext`) that records the spec passed to `ctx.next()` and asserts it carries the ORIGINAL Authorization value
-- SCENARIO-ETS-CLEANUP-WIRING-TESTS-RECLASSIFIED-001 (NORMAL): spec.md REQ-ETS-CLEANUP-013 + REQ-ETS-CLEANUP-016 implementation notes clarify that VerifyAuthCredentialPropagation (8) + VerifyMaskingRequestLoggingFilter (8) = 16 unit tests are "wiring-only" and do not prove wire-side ordering correctness; the new VerifyWireRestoresOriginalCredential test IS the wire-side proof
+- SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 (NORMAL): spec.md REQ-ETS-CLEANUP-013 + REQ-ETS-CLEANUP-016 implementation notes clarify that VerifyAuthCredentialPropagation (8) + VerifyMaskingRequestLoggingFilter (8) = 16 unit tests are "wiring-only" and do not prove wire-side ordering correctness; the new VerifyWireRestoresOriginalCredential test IS the wire-side proof
 
 ## Spec References
 
@@ -85,7 +85,7 @@ Update `epics/stories/s-ets-05-01-credential-leak-wiring-fix.md` Implementation 
 ## Definition of Done
 
 - [ ] SCENARIO-ETS-CLEANUP-WIRE-SIDE-TEST-001 PASS — `VerifyWireRestoresOriginalCredential` test in `mvn test` suite, green
-- [ ] SCENARIO-ETS-CLEANUP-WIRING-TESTS-RECLASSIFIED-001 — spec.md + story S-ETS-05-01 Implementation Notes amended
+- [ ] SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 — spec.md + story S-ETS-05-01 Implementation Notes amended
 - [ ] No regression: mvn test count increments by at least 1 (VerifyWireRestoresOriginalCredential class)
 - [ ] REQ-ETS-CLEANUP-016 implementation notes updated in spec.md
 - [ ] Generator wall-clock: ≤30 minutes (unit test + spec text edits)

@@ -49,6 +49,11 @@ description: |
   Resist any temptation to batch in Sampling + Properties. Gate-fatigue risk; would
   obscure whether Sprint 6's wedges actually closed the 2-sprint-old credential-leak gap."
 
+  Sprint 6 scenarios (amended by Plan-Raze review 2026-04-30): 7 critical + 3 normal = 10.
+  (Prior description implied 6 critical + 3 normal = 9; correct count is 10 per the scenarios
+  block below, which is authoritative. SMOKE-NO-REGRESSION-001 and ADR-010-V3-001 are
+  the two scenarios that bring the critical count to 7.)
+
 upstream_inputs:
   - ".harness/evaluations/sprint-ets-05-evaluator-cumulative.yaml (Quinn 0.82 APPROVE_WITH_CONCERNS)"
   - ".harness/evaluations/sprint-ets-05-adversarial-cumulative.yaml (Raze 0.74 GAPS_FOUND — first sub-0.80 in project history)"
@@ -225,7 +230,7 @@ evaluation_questions_for_raze:
   # Raze's PRIMARY focus = ADVERSARIAL WIRE-TAP live-exec for sabotage cascade + adversarial credential check
   # (differentiated from Quinn per meta-Raze recommendation: Raze attacks DIFFERENT surfaces)
   - "ADVERSARIAL SABOTAGE exec: Run bash scripts/sabotage-test.sh --target=systemfeatures from /tmp/raze-fresh-sprint6/ with SABOTAGE_TMPDIR=/tmp/raze-sabotage-sprint6/ and SMOKE_OUTPUT_DIR=/tmp/raze-fresh-sprint6/test-results/. Verify: (a) Docker build succeeds (no 'COPY .git ./.git: not found' error at any step); (b) the cascade XML exists in SMOKE_OUTPUT_DIR; (c) parsing the cascade XML shows Core+Common PASS, SystemFeatures 1×FAIL+Nx SKIP, Subsystems+Procedures+Deployments all SKIP. Archive cascade XML to /tmp/raze-fresh-sprint6/test-results/sprint-ets-06-cascade-three-class-<date>.xml. If Docker build still fails, GAP-2 is NOT closed — report FAIL for cascade_three_class_verified."
-  - "ADVERSARIAL WIRE-TAP exec: Rather than running credential-leak-e2e-test.sh (which Quinn already owns as the closure-proof exec), Raze SHALL run an adversarial wire-tap against the stub-IUT directly: (a) start stub-iut.sh manually; (b) run a targeted REST-Assured request via mvn exec or a custom test harness with SMOKE_AUTH_CREDENTIAL set, observing the Authorization header value at the stub-IUT log; (c) verify the header is the ORIGINAL Bearer ABCDEFGH12345678WXYZ (not the masked Bear***WXYZ). If Raze cannot wire-tap independently, fall back to inspecting the stub-IUT log from Quinn's archived closure-proof evidence at /tmp/quinn-fresh-sprint6/ (if accessible) OR run the full credential-leak-e2e-test.sh independently. The goal is evidence from a DIFFERENT attack surface than Quinn's scripts/credential-leak-e2e-test.sh closure-proof exec."
+  - "ADVERSARIAL WIRE-TAP exec: Rather than running credential-leak-e2e-test.sh (which Quinn already owns as the closure-proof exec), Raze SHALL run an adversarial wire-tap against the stub-IUT directly via option_a ONLY: (a) start stub-iut.sh manually; (b) run a targeted REST-Assured request via mvn exec or a custom test harness with SMOKE_AUTH_CREDENTIAL set, observing the Authorization header value at the stub-IUT log; (c) verify the header is the ORIGINAL Bearer ABCDEFGH12345678WXYZ (not the masked Bear***WXYZ). If option_a is impractical for genuine infrastructure reasons (e.g. stub-iut.sh cannot start), Raze SHALL report the wire-tap as DEFERRED/SKIPPED with rationale — NOT fall back to reading Quinn's archived evidence or re-running credential-leak-e2e-test.sh. option_b ('read Quinn's archived stub-IUT log from /tmp/quinn-fresh-sprint6/' or 'rerun credential-leak-e2e-test.sh') is EXPLICITLY DISALLOWED as a fallback: it is cosmetic independence only (re-reading Quinn's evidence under a different role label, or producing deterministically identical outputs from the same script). Only option_a (manual stub-iut + targeted request) constitutes genuine independent attack surface evidence."
   - "Adversarial code inspection: Read MaskingRequestLoggingFilter.java filter() method in the sprint-6 clone. Specifically: does the filter bypass super.filter() entirely? OR does it still call super.filter() in some path? Verify the finally-block is still present for defense-in-depth but is NOT relied upon for wire-correctness. If super.filter() is still called in the hot path, GAP-1' is NOT closed — the wire will still be mangled."
   - "Run mvn test independently from /tmp/raze-fresh-sprint6-bis/ (second fresh clone — separate from primary Raze working dir). Verify surefire 79+/0/0/3. Read CapturingFilterContext.java (or equivalent) and VerifyWireRestoresOriginalCredential.java to confirm: (a) CapturingFilterContext does NOT return null from ctx.next (it records the requestSpec and returns a mock Response); (b) the test asserts the Authorization header on the CAPTURED spec equals the original value. A CapturingFilterContext that returns null or a spec carrying the masked value = the test is still decorative."
   - "Check sabotage log message honesty: Read scripts/sabotage-test.sh lines around the 'smoke exited non-zero' log message. Verify the conditional now distinguishes Docker build failure (separate exit code check) from smoke @Test failure (the sabotage-marker FAIL). bash -n syntax PASS required."
@@ -298,23 +303,28 @@ risks:
         expand if Raze flags it as insufficient. The goal is correctness (wire carries
         original credential), not log aesthetic parity with RequestLoggingFilter.
         Pattern rationale: accept a simpler log format in exchange for structural clarity.
+  medium:
     - id: "CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE"
       description: |
         VerifyWireRestoresOriginalCredential requires a CapturingFilterContext that
         records requestSpec passed to ctx.next() but also returns a mock Response
-        (since the filter's return value is Response). If Generator uses Mockito or
-        similar mocking framework and that dependency is not in pom.xml test scope,
-        the test may fail to compile. Alternatively, if the test class creates a
+        (since the filter's return value is Response). If the test class creates a
         Response object incorrectly (e.g. null), downstream filter logic may NPE.
-      severity: high
+      severity: medium
+      severity_rationale: |
+        Recalibrated from HIGH → MEDIUM by Plan-Raze adversarial review 2026-04-30.
+        Mockito IS present in pom.xml test scope (org.mockito:mockito-core, verified
+        in /home/nh/docker/gir/ets-ogcapi-connectedsystems10/pom.xml lines 152-153).
+        `mock(Response.class)` compiles; the story's example code uses this pattern.
+        Residual concern: if Mockito is too heavy or ResponseBuilder is preferable, an
+        alternative exists (StubFilterContext already shows a working FilterContext
+        implementation without Mockito). Severity is now MEDIUM, not HIGH.
       mitigation: |
-        Generator reads pom.xml test-scope dependencies before writing CapturingFilterContext.
-        If Mockito is not present: implement a minimal stub Response class inline (inner
-        class in the test) that implements io.restassured.response.Response interface
-        by returning fixed values from all methods. REST-Assured's ResponseBuilder
-        or a simple anonymous class may suffice. Generator MUST run mvn test and
-        verify the new test class compiles and passes before claiming S-ETS-06-01 done.
-  medium:
+        Generator uses Mockito (already present in pom.xml test scope) to implement
+        CapturingFilterContext.next() returning mock(Response.class). Generator MUST
+        run mvn test and verify the new test class compiles and passes before claiming
+        S-ETS-06-01 done. If Mockito causes unexpected issues, use REST-Assured's
+        ResponseBuilder or a minimal anonymous Response stub as fallback.
     - id: "SUPER-FILTER-BYPASS-REST-ASSURED-VERSION-DRIFT"
       description: |
         The current filter calls super.filter() which delegates to RequestLoggingFilter.
@@ -334,22 +344,20 @@ risks:
         as a version-pinned trade-off (with the pom.xml version cited). Add a TODO in
         the javadoc noting that if rest-assured is upgraded past 5.x, the bypass should
         be re-evaluated.
+  low:
     - id: "SABOTAGE-GIT-TEMP-TREE-SIZE"
       description: |
         Removing --exclude='.git/' from rsync means the .git directory is copied into
-        the temp sabotage worktree. The .git directory in the sister repo may be large
-        (especially if it has many sprint commits and objects). At ~5-10MB for a repo
-        with ~100 commits, this is acceptable. At >100MB (e.g. if large binaries were
-        committed historically), it could slow down the sabotage temp-tree creation.
-        This is unlikely given the project's clean commit history.
-      severity: medium
+        the temp sabotage worktree. This adds a small overhead proportional to .git size.
+      severity: low
+      severity_rationale: |
+        Recalibrated from MEDIUM → LOW by Plan-Raze adversarial review 2026-04-30.
+        Directly measured: `du -sh /home/nh/docker/gir/ets-ogcapi-connectedsystems10/.git/`
+        = 5.2MB (confirmed by Plan-Raze). Well under Pat's 50MB threshold. Option A
+        (remove --exclude='.git/') is the clear choice with no meaningful performance risk.
       mitigation: |
-        Generator checks sister-repo .git size with `du -sh /home/nh/docker/gir/
-        ets-ogcapi-connectedsystems10/.git/` before removing the exclude. If <50MB:
-        remove --exclude='.git/' (Option A). If >50MB: use Option B (preserve exclude
-        + add explicit `cp -a $REPO_ROOT/.git $SABOTAGE_WORKTREE/.git` step after
-        rsync). Pat prefers Option A; Generator decides based on actual size.
-  low:
+        Generator removes --exclude='.git/' from rsync call (Option A). No size check
+        needed — 5.2MB is negligible. Option B (explicit cp -a) is not required.
     - id: "CONTAINER-LOG-CAPTURE-TIMING-FIX-SIDE-EFFECT"
       description: |
         Changing when container teardown happens in smoke-test.sh (to allow catalina.out

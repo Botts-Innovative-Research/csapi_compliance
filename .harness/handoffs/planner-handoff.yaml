@@ -130,14 +130,19 @@ spec_changes:
     - "REQ-ETS-CLEANUP-015 (PARTIAL-IMPLEMENTED → target FULLY-IMPLEMENTED after rsync fix)"
     - "REQ-ETS-CLEANUP-013 (implementation notes amended: 8 wiring-only tests documented as wiring-only)"
   new_scenarios:
+    # 7 critical scenarios (amended by Plan-Raze review 2026-04-30; prior list had 6 critical + 2 normal = 8)
     - "SCENARIO-ETS-CLEANUP-MASKING-WIRE-FIX-001 (CRITICAL)"
     - "SCENARIO-ETS-CLEANUP-MASKING-WIRE-TEST-001 (CRITICAL)"
     - "SCENARIO-ETS-CLEANUP-CREDENTIAL-LEAK-THREE-FOLD-CLOSE-001 (CRITICAL)"
     - "SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-DOCKER-FIX-001 (CRITICAL)"
     - "SCENARIO-ETS-CLEANUP-SABOTAGE-CASCADE-THREE-CLASS-001 (CRITICAL)"
     - "SCENARIO-ETS-CLEANUP-WIRE-SIDE-TEST-001 (CRITICAL)"
+    - "SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001 (CRITICAL)"   # was omitted from prior list
+    # 3 normal scenarios
     - "SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 (NORMAL)"
     - "SCENARIO-ETS-CLEANUP-SABOTAGE-LOG-HONEST-001 (NORMAL)"
+    - "SCENARIO-ETS-CLEANUP-ADR-010-V3-001 (NORMAL)"              # was omitted from prior list
+    # total: 7 critical + 3 normal = 10 (authoritative count per contract scenarios block)
 
 surfaced_risks:
   - id: "MASKING-FILTER-APPROACH-I-COMPLETENESS"
@@ -209,3 +214,34 @@ orchestrator_handoff_note: |
   (orchestrator handles ops/status.md update; Pat flags for awareness).
 
 blockers: []
+
+sprint_plan_amendments:
+  trigger: "Plan-Raze adversarial review at .harness/evaluations/sprint-ets-06-plan-adversarial-review.yaml (2026-04-30T13:55:00Z; score 0.78 APPROVE_PLAN_WITH_CONCERNS)"
+  amended_by: "Pat (Planner) amendment run 2026-04-30"
+  amendments:
+    - id: "AMEND-1"
+      severity: HIGH
+      file: "epics/stories/s-ets-06-01-masking-filter-wire-fix.md"
+      description: "Promoted shadowed-PrintStream-field pattern to PRIMARY example; demoted getPrintStream() to rejected-alternative note with compile-error explanation. Added S-06-03 finer-granularity DoD bullet."
+    - id: "AMEND-2"
+      severity: MEDIUM
+      file: "epics/stories/s-ets-06-03-wire-side-unit-test-reclassify.md"
+      description: "Reconciled scenario id from plural WIRING-TESTS to singular WIRING-TEST (contract canonical). Two occurrences updated."
+    - id: "AMEND-3"
+      severity: MEDIUM
+      files:
+        - ".harness/contracts/sprint-ets-06.yaml"
+        - ".harness/handoffs/planner-handoff.yaml"
+      description: "Added scenario count summary to contract description (7 critical + 3 normal = 10). Added missing SMOKE-NO-REGRESSION-001 (CRITICAL) and ADR-010-V3-001 (NORMAL) to planner-handoff new_scenarios list."
+    - id: "AMEND-4"
+      severity: MEDIUM
+      file: ".harness/contracts/sprint-ets-06.yaml"
+      description: "Recalibrated SABOTAGE-GIT-TEMP-TREE-SIZE from MEDIUM → LOW (5.2MB measured, well under threshold; Option A is clear). Recalibrated CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE from HIGH → MEDIUM (Mockito IS in pom.xml test scope at lines 152-153; mock(Response.class) compiles)."
+    - id: "AMEND-5"
+      severity: MEDIUM
+      file: ".harness/contracts/sprint-ets-06.yaml"
+      description: "Removed option_b fallback ('read Quinn's archived stub-IUT log' or 'rerun credential-leak-e2e-test.sh') from evaluation_questions_for_raze wire-tap exec. Only option_a (manual stub-iut + targeted request) is allowed. If option_a fails for genuine infrastructure reasons, Raze reports DEFERRED/SKIPPED."
+    - id: "AMEND-BONUS"
+      severity: INFORMATIVE
+      file: "epics/stories/s-ets-06-01-masking-filter-wire-fix.md"
+      description: "Added DoD bullet for S-06-03 finer-granularity disposition: Generator audits 8 VerifyMaskingRequestLoggingFilter tests, deletes try/finally-semantics tests that approach (i) eliminates, keeps+reclassifies mask-format/isMasked/DEFAULT_HEADERS_TO_MASK tests."

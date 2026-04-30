@@ -45,30 +45,56 @@ try {
 }
 ```
 
-**Fixed flow** (approach i per meta-Raze):
+**Fixed flow** (approach i per meta-Raze) — PRIMARY PATTERN (shadowed PrintStream field):
+
+> **Note**: `RequestLoggingFilter` (REST-Assured 5.5.0) declares `private final PrintStream stream;` with NO public or protected accessor (verified by Plan-Raze source inspection of rest-assured-5.5.0 sources jar). Calling `getPrintStream()` WILL NOT COMPILE. The working pattern is to shadow the field with a `private final PrintStream stream;` declared in `MaskingRequestLoggingFilter` itself and captured in each constructor via `super(stream)`.
+
 ```java
-@Override
-public Response filter(FilterableRequestSpecification requestSpec,
-                       FilterableResponseSpecification responseSpec,
-                       FilterContext ctx) {
-    // 1. Snapshot + build masked log string (without mutating requestSpec)
-    StringBuilder logLine = new StringBuilder("Request: ");
-    if (requestSpec != null && requestSpec.getHeaders() != null) {
-        requestSpec.getHeaders().forEach(h -> {
-            String display = isMasked(h.getName())
-                ? h.getName() + "=" + CredentialMaskingFilter.maskValue(h.getValue())
-                : h.getName() + "=" + h.getValue();
-            logLine.append("\n    ").append(display);
-        });
+public class MaskingRequestLoggingFilter extends RequestLoggingFilter {
+    // Shadow parent's private field — no accessor exists in REST-Assured 5.5.0
+    private final PrintStream stream;
+
+    public MaskingRequestLoggingFilter() {
+        super();
+        this.stream = System.out;
     }
-    // 2. Emit masked log line directly to configured stream
-    getPrintStream().println(logLine);
-    // 3. Call ctx.next with ORIGINAL (unmutated) requestSpec — wire carries original credential
-    return ctx.next(requestSpec, responseSpec);
+
+    public MaskingRequestLoggingFilter(Set<String> headersToMask, PrintStream stream) {
+        super(stream);
+        this.stream = stream;  // capture for direct use in filter()
+    }
+
+    @Override
+    public Response filter(FilterableRequestSpecification requestSpec,
+                           FilterableResponseSpecification responseSpec,
+                           FilterContext ctx) {
+        // 1. Snapshot + build masked log string (WITHOUT mutating requestSpec)
+        StringBuilder logLine = new StringBuilder("Request: ");
+        if (requestSpec != null && requestSpec.getHeaders() != null) {
+            requestSpec.getHeaders().forEach(h -> {
+                String display = isMasked(h.getName())
+                    ? h.getName() + "=" + CredentialMaskingFilter.maskValue(h.getValue())
+                    : h.getName() + "=" + h.getValue();
+                logLine.append("\n    ").append(display);
+            });
+        }
+        // 2. Emit masked log line directly via shadowed field (compiles; parent field inaccessible)
+        this.stream.println(logLine);
+        // 3. Call ctx.next with ORIGINAL (unmutated) requestSpec — wire carries original credential
+        return ctx.next(requestSpec, responseSpec);
+    }
 }
 ```
 
-Note: `getPrintStream()` requires a protected accessor or field — read the `RequestLoggingFilter` superclass to confirm. Alternative: store the `PrintStream` as a private field in the constructor and use it directly (already done via `super(stream)` in the existing constructors; the field may need to be shadowed).
+**Rejected alternative — won't compile**:
+
+```java
+// DO NOT USE: getPrintStream() does NOT exist in REST-Assured 5.5.0
+// RequestLoggingFilter.stream is private final with no accessor.
+getPrintStream().println(logLine);   // ← compile error: cannot find symbol
+```
+
+This approach was considered but is REJECTED because `RequestLoggingFilter.stream` is `private final` (line 48 of RequestLoggingFilter.java, 5.5.0 sources) with no `getPrintStream()` accessor. Generator MUST use the shadowed field pattern above.
 
 **VerifyWireRestoresOriginalCredential design**: Create a test-scope `CapturingFilterContext` that implements `FilterContext` and records the `requestSpec` argument passed to `ctx.next(requestSpec, responseSpec)`. Assert that the captured spec's `Authorization` header value equals the original (un-masked) value. This test exercises the wire-side ordering that `StubFilterContext` (returning null from `ctx.next`) cannot.
 
@@ -98,3 +124,4 @@ Note: `getPrintStream()` requires a protected accessor or field — read the `Re
 - [ ] Container-log capture timing fix bundled (smoke-test.sh captures catalina.out before teardown)
 - [ ] Prong (b) grep expanded to include stub-IUT log
 - [ ] design.md §"Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern" updated to reflect the fix (the javadoc claim "IUT receives the real credential header" is now actually true)
+- [ ] S-06-03 finer-granularity disposition — Generator audits the 8 VerifyMaskingRequestLoggingFilter tests; DELETES the ones that verify try/finally semantics that approach (i) eliminates; KEEPS and reclassifies (as "wiring-only") the ones that verify mask format, isMasked(), and DEFAULT_HEADERS_TO_MASK set membership. (Plan-Raze recommendation: partial-delete is healthier than preserving tests for non-existent code.)
