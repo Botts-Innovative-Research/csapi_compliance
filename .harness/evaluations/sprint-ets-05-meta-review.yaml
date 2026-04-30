@@ -1,0 +1,504 @@
+meta_reviewer: raze (meta-scope)
+meta_review_target: sprint-ets-05-cumulative-gate-close
+status: complete
+date: 2026-04-29
+evaluation_timestamp: 2026-04-30T00:25:00Z
+adversarial_meta_reviewer: raze-meta
+new_repo_head: c25e44a
+csapi_compliance_head: e9d3aec
+
+verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score: 0.83
+
+verdict_summary: |
+  Both Quinn 0.82 and primary Raze 0.74 verdicts are SUBSTANTIVELY CORRECT; both
+  cross-corroborated GAPs are real and reproducible from a third independent
+  /tmp/raze-meta-fresh-ets05/ clone. The meta-review APPROVES the gate close
+  but flags 4 META-CONCERNS:
+
+  (M-1) Independence is partially correlated — both gates ran the SAME two
+        scripts (credential-leak-e2e-test.sh + sabotage-test.sh --target=
+        systemfeatures) against the SAME contract `evaluation_questions_for_quinn`
+        + `gate_4_evaluation_question_for_quinn` checklists, so the GAP shapes
+        were structurally co-targeted by the briefing. The "two independent
+        gates" frame overstates independence. Cross-corroboration on GAP-2
+        (sabotage docker-build) is essentially mechanical (the script is
+        deterministic; any clone hits the same defect); cross-corroboration on
+        GAP-1' is more meaningful (the wire-corruption diagnosis required
+        independent reasoning).
+
+  (M-2) Severity calibration on GAP-2 is INCONSISTENT between the two gates
+        (Quinn MEDIUM vs Raze HIGH). My independent assessment: GAP-2 is
+        MEDIUM-leaning, NOT HIGH. Rationale: (a) the sabotage script is
+        test-infrastructure, not production code; (b) the cascade is already
+        VERIFIED LIVE for Subsystems via Sprint 4 Raze evidence, and ADR-010
+        v3 explicitly forward-extends the proof to Procedures + Deployments
+        as MECHANICAL pattern extension; (c) the fix is ~1 LOC bash. Quinn's
+        MEDIUM rating is the calibrated one. Primary Raze upgraded GAP-2 to
+        HIGH because the sabotage flag is "non-functional in the new mode it
+        was specifically built for" — that framing is reasonable but
+        overweights blast radius. Recommend Sprint 6 carries GAP-2 as MEDIUM.
+
+  (M-3) "SPRINT-COMPLETE with wedges carrying forward" framing is HONEST FOR
+        SPRINT 4 BUT DUBIOUS FOR SPRINT 5. Sprint 4 cumulative was 0.84 / 0.84
+        — both gates APPROVE_WITH_CONCERNS / APPROVE_WITH_GAPS. Sprint 5 has
+        primary Raze GAPS_FOUND 0.74 — the FIRST sub-0.80 Raze score in
+        project history. The orchestrator's metrics turn 82 row says "Sprint
+        ets-05 SPRINT-COMPLETE with Sprint 6 wedges identified" mirroring
+        Sprint 4. This frame DROPS the qualitative shift: 0.74 + GAPS_FOUND
+        is NOT the same closure shape as Sprint 4's two APPROVE-class
+        verdicts. A more honest framing is "PARTIAL-CLOSE with mandatory
+        Sprint 6 wedge sprint to close credential-leak-e2e-full-pass" since
+        that success_criterion is FALSE post-Sprint-5 (was FALSE post-Sprint-4
+        too, which is the through-line concern). The 16-consecutive-successes
+        framing also obscures that 2 of those 16 produced GAPS_FOUND or sub-
+        0.80 verdicts — mitigation pattern is succeeding at "no timeouts /
+        budgets honored" but quality trend is diverging from process trend.
+
+  (M-4) One META-GAP both gates missed: NEITHER gate audited whether
+        S-ETS-05-01's claim of 8/8 PASS in VerifyAuthCredentialPropagation
+        is structurally meaningful given the StubFilterContext design that
+        primary Raze flagged. The 8 unit tests ALL run against
+        configureRestAssuredAuthCredential's surface (set / null / empty
+        branches) — they exercise the WIRING but not the FILTER ORDERING.
+        The 8/8 PASS metric appeared in BOTH gate reports as a strength
+        (Quinn handoff_audit + Raze "wedge fix mechanically correct") yet
+        primary Raze separately diagnosed that the unit test pattern is
+        decorative for filter ordering. This is internally inconsistent
+        within Raze's own report. Sprint 6 should add a wire-side unit test
+        AND retroactively reclassify the 8 unit tests as "wiring-only" not
+        "credential-masking-correctness" coverage.
+
+  Net: gate close is APPROVED WITH META-CONCERNS (meta-score 0.83). Sprint 5
+  IS materially complete on the 5 clean stories; the 2 GAPs ARE legitimate
+  carryover; but the framing should be closer to "PARTIAL-CLOSE with
+  mandatory wedge sprint" than "SPRINT-COMPLETE with wedges carrying
+  forward".
+
+independence_assessment:
+  parallel_spawn_preserved_independence: PARTIAL
+  evidence:
+    - "Quinn ran from /tmp/quinn-fresh-ets05/; Raze from /tmp/raze-fresh-ets05/ + /tmp/raze-fresh-ets05-bis/. Different paths verified."
+    - "Raze self-check explicitly: read_quinn_verdict_file: false (independence preserved per directive)."
+    - "Quinn live-exec produced verdict from credential-leak archive at /tmp/quinn-fresh-ets05/credential-leak-archive/; Raze independently produced verdict from /tmp/raze-fresh-ets05/test-results-raze/credleak/. Two distinct evidence sets."
+  evidence_against_full_independence:
+    - "Both gates were briefed with the SAME contract `evaluation_questions_for_quinn` (lines 323-331) which explicitly directs running scripts/credential-leak-e2e-test.sh AND sabotage-test.sh --target=systemfeatures. The attack surface for both gates was effectively co-specified by Pat's planning."
+    - "Both gates produced GAP-1' wire-masking-destructive diagnosis with overlapping wording (Quinn: 'masking pattern is destructive instead of log-only'; Raze: 'masking-filter wire-corruption' / 'finally-block restore runs AFTER the wire send'). Same root-cause diagnosis, expressed differently. Cross-corroboration is REAL but co-targeted."
+    - "Both gates produced GAP-2 sabotage docker-build diagnosis with IDENTICAL root cause attribution (rsync `--exclude='.git/'` vs Dockerfile `COPY .git ./.git`). Cross-corroboration is mechanical — script is deterministic; both gates ran the same script and got the same error log."
+    - "Both gates cited identical evidence locations (stub-iut.log 12 hits Bear***WXYZ; docker build error step 6/8 'COPY .git ./.git: not found'). The defect is reproducible by anyone who runs the script — independence here is only at the inference layer, not at the observation layer."
+  meta_finding: |
+    Cross-corroboration is genuinely two independent reports of two real
+    defects. But the framing "two parallel-spawned gates independently
+    surfaced 2 HIGH GAPs" overstates the independence. A more accurate
+    framing: "two parallel-spawned gates BOTH ran the contract-mandated live
+    execs; both observed the same deterministic outcomes; both correctly
+    diagnosed the root causes." The structural design — Pat's contract
+    directing both gates to the same exec set — bounds the independence to
+    inference-layer rather than evidence-layer.
+
+  attack_surface_overlap:
+    - "Quinn ran credential-leak-e2e-test.sh: YES (same script as Raze)"
+    - "Raze ran credential-leak-e2e-test.sh: YES (same script as Quinn)"
+    - "Quinn ran sabotage-test.sh --target=systemfeatures: YES (per contract checklist line 330; verified in Quinn's live_exec_results)"
+    - "Raze ran sabotage-test.sh --target=systemfeatures: YES (per Raze's bash_sabotage_target_systemfeatures_executed: true)"
+    - "Quinn ran mvn test: YES (78/0/0/3)"
+    - "Raze ran mvn test: YES (78/0/0/3 verified per-class)"
+    - "Both gates curl'd OGC adoc URIs: YES"
+    - "Both gates curl'd GeoRobotix endpoints: YES"
+
+  observation_diff_between_gates:
+    - "Quinn observed 12 inbound requests with Authorization=Bear***WXYZ at stub-iut.log; Raze independently observed 12 inbound requests with Authorization=Bear***WXYZ. SAME COUNT (deterministic). Cross-corroboration is mechanical at observation layer."
+    - "Quinn observed docker build error 'failed to calculate checksum of ref ... \"/.git\": not found' at step 4/6; Raze observed 'failed to calculate checksum of ref ...: \"/.git\": not found' at step 6/8 (different step number — Raze counted from BuildKit perspective; same underlying error). Independent observation events; same root cause."
+    - "Quinn diagnosed 'try/finally restoration is missing or broken'; Raze diagnosed 'finally-block restore runs AFTER the wire send'. SAME DIAGNOSIS at different abstraction levels."
+
+gap_corroboration_assessment:
+  GAP-1-PRIME-MASKING-FILTER-WIRE-CORRUPTION:
+    cross_corroboration_status: GENUINE_TWO_REPORTS_SAME_DEFECT
+    evidence_independence: HIGH
+    rationale: |
+      Both gates observed the SAME wire behavior (12 stub-IUT hits with
+      Bear***WXYZ) but arrived at the diagnosis through INDEPENDENT
+      reasoning paths:
+      - Quinn: noted Sprint 4 saw 0 inbound auth → Sprint 5 sees 12 masked;
+        diagnosed wedge fix landed wiring but masking is destructive.
+      - Raze: traced filter order: snapshot → mask → super.filter() →
+        ctx.next() (HTTP send) → finally restore (TOO LATE); diagnosed unit
+        test StubFilterContext doesn't exercise wire-side semantics so the
+        Sprint 3+4+5 unit-level masking tests are decorative for ordering.
+      The diagnoses are at different abstraction levels (Quinn: behavioral;
+      Raze: code-trace) but converge on the same defect. This IS a
+      legitimate cross-corroboration even though both gates ran the same
+      script.
+    meta_review_independent_inspection: |
+      Inspected MaskingRequestLoggingFilter.java directly at /tmp/raze-meta-
+      fresh-ets05/src/main/java/.../listener/MaskingRequestLoggingFilter.java
+      lines 105-139. Confirmed: try-block snapshots originals (line 121),
+      mutates requestSpec to masked form (lines 122-123), calls
+      super.filter() (line 127). super.filter()'s default REST-Assured
+      RequestLoggingFilter implementation logs the spec then calls
+      ctx.next(...) which performs the HTTP send. The HTTP send happens
+      INSIDE super.filter() with the masked spec. The finally block (lines
+      129-138) restores AFTER super.filter() returns — i.e. AFTER the wire
+      send completes. Both gates' diagnoses are CORRECT.
+
+  GAP-2-SABOTAGE-TARGET-DOCKER-BUILD-BROKEN:
+    cross_corroboration_status: MECHANICAL_THIRD_CORROBORATED
+    evidence_independence: LOW (deterministic script defect)
+    rationale: |
+      The sabotage script's docker build is deterministic. Anyone who runs
+      `bash scripts/sabotage-test.sh --target=systemfeatures` from a fresh
+      clone will hit the same error at builder step 6/8 (COPY .git ./.git:
+      "/.git": not found). Quinn + Raze + meta-Raze all hit this defect.
+      Cross-corroboration is real but mechanical — independence is only at
+      the diagnosis layer (rsync .git exclude vs Dockerfile COPY .git).
+    meta_review_independent_inspection: |
+      Reproduced GAP-2 from /tmp/raze-meta-fresh-ets05/. Ran:
+        cd /tmp/raze-meta-fresh-ets05
+        SMOKE_OUTPUT_DIR=/tmp/raze-meta-fresh-ets05/sabotage-results \
+        SABOTAGE_TMPDIR=/tmp/raze-meta-sabotage-ets05 \
+        bash scripts/sabotage-test.sh --target=systemfeatures
+      Result: docker build FAILED at #14 [builder 6/8] COPY .git ./.git
+      with error: "failed to compute cache key: failed to calculate
+      checksum of ref ...: '/.git': not found". Reproduces deterministically.
+      Confirmed scripts/sabotage-test.sh:204-206 has rsync line with
+      `--exclude='.git/'`. Confirmed Dockerfile:59 has `COPY .git ./.git`.
+      Root cause matches both prior gates.
+
+  third_meta_gap_in_union:
+    found: YES
+    description: |
+      Both gates noted the StubFilterContext-based unit test pattern is
+      decorative for filter ordering, but NEITHER explicitly cataloged it as
+      a SEPARATE gap distinct from GAP-1'. It's mentioned as part of GAP-1's
+      diagnosis but doesn't get its own ID. I propose META-GAP-1 (see
+      meta_gaps section): the 8 VerifyAuthCredentialPropagation unit tests +
+      8 VerifyMaskingRequestLoggingFilter unit tests (16 total) are
+      "wiring-only" not "credential-masking-correctness" coverage; this
+      reclassification is a Sprint 6 follow-up that neither gate articulated
+      cleanly.
+
+severity_calibration_check:
+  GAP-1-PRIME:
+    quinn_severity: HIGH
+    raze_severity: HIGH
+    meta_assessment: HIGH
+    calibration_verdict: CORRECTLY_CALIBRATED
+    rationale: |
+      Wire-credential-corruption is a LOAD-BEARING defect: any
+      authenticated-IUT scenario fails because the IUT receives a malformed
+      Authorization header. Both gates correctly tagged as HIGH. Production
+      impact is real (not theoretical) — the ETS would fail conformance
+      testing against any IUT that requires auth. HIGH is correct.
+
+  GAP-2:
+    quinn_severity: MEDIUM
+    raze_severity: HIGH
+    meta_assessment: MEDIUM
+    calibration_verdict: PRIMARY_RAZE_OVERSTATED
+    rationale: |
+      The sabotage script is test-infrastructure that supports gate
+      verification of the dependency-skip cascade. The cascade itself is
+      VERIFIED LIVE for Subsystems via Sprint 4 Raze evidence; ADR-010 v3
+      forward-extends to Procedures + Deployments as mechanical pattern
+      extension via testng.xml `<group ... depends-on="systemfeatures"/>`
+      (the same TestNG mechanism Sprint 4 proved). Procedures + Deployments
+      structural lint (VerifyTestNGSuiteDependency 13 PASS) confirms the
+      group-dependency wiring at the unit layer. The sabotage script
+      breakage prevents fresh-evidence collection but does NOT invalidate
+      the underlying cascade behavior. Fix is ~1 LOC bash. MEDIUM is
+      proportional to the impact (test-infra not production; fix cheap;
+      cascade behavior already proven). Quinn's MEDIUM is calibrated;
+      primary Raze's HIGH is overweighted.
+
+  CONCERN-1-CONTAINER-LOG-CAPTURE (primary Raze):
+    raze_severity: MEDIUM
+    meta_assessment: MEDIUM
+    calibration_verdict: CORRECTLY_CALIBRATED
+    rationale: |
+      The container.log capture timing issue is real (capture after
+      teardown produces an empty log, making prong (a) PASS vacuously).
+      MEDIUM is correct — it's a prong-level reliability defect not a
+      load-bearing production defect.
+
+  CONCERN-2-DEPLOYED-SYSTEM-SUBSTRING-MATCH (Quinn + Raze):
+    quinn_severity: LOW
+    raze_severity: LOW
+    meta_assessment: LOW
+    calibration_verdict: CORRECTLY_CALIBRATED
+    rationale: |
+      Substring vs exact-URI match for deployed-system-resource encoding
+      check is a graceful-degradation-by-design trade-off. Documented in
+      class javadoc. LOW is proportional.
+
+  recommended_reclassifications:
+    - "GAP-2: HIGH (primary Raze) → MEDIUM (Quinn calibration). Reasoning:
+       fix is ~1 LOC bash; cascade behavior independently proven; sabotage
+       script is test-infra not production. Sprint 6 carryover stays P1."
+
+framing_honesty_check:
+  orchestrator_framing: "SPRINT-COMPLETE with Sprint 6 wedges identified"
+  meta_assessment: PARTIALLY_HONEST
+  honest_components:
+    - "5 of 6 stories DID ship cleanly with adversarial integrity (Procedures + Deployments mirror Subsystems pattern; ADR-010 v3 amendment landed; SMOKE_OUTPUT_DIR works; javadoc fix; sabotage flag IS structurally complete except for the docker-build defect)."
+    - "Both gates ran from /tmp/ clones; user worktree clean — worktree-pollution mitigation v2 verifiably worked."
+    - "26 unique OGC canonical URIs across all conformance.* classes; mvn test 78/0/0/3 BUILD SUCCESS exact byte match."
+    - "Sprint 6 wedges (REC-1 masking filter redesign + REC-2 sabotage rsync .git fix) are clearly bounded and scopable."
+  dishonest_or_overstated_components:
+    - "Primary Raze score 0.74 + GAPS_FOUND verdict is the FIRST sub-0.80 score in project history. Calling Sprint 5 'SPRINT-COMPLETE' mirrors Sprint 4's 0.84/0.84 close (which was APPROVE-class on both gates) but Sprint 5 has GAPS_FOUND on Raze — that's qualitatively different. The orchestrator's pattern-fidelity framing flattens the qualitative shift."
+    - "The metric '16 consecutive sub-agent successes' obscures that 2 of those 16 produced sub-0.85 verdicts (Sprint 4 Quinn 0.84 / Raze 0.84) and 1 produced sub-0.80 (Sprint 5 Raze 0.74). 'No timeouts' is a process-level success; 'verdicts trending down for two consecutive sprints' is a quality-level concern. Conflating the two is misleading."
+    - "Sprint 5 success_criterion `credential_leak_e2e_full_pass` was Sprint 4's GAP-1 — was open at Sprint 4 close, was the P0 of Sprint 5, and is STILL open at Sprint 5 close. Two consecutive sprints have failed to close this criterion. The carryover-to-Sprint-6 frame is the THIRD attempt. This pattern warrants explicit acknowledgement, not just 'wedge carrying forward'."
+  recommended_framing: |
+    Replace 'Sprint ets-05 SPRINT-COMPLETE with Sprint 6 wedges' with:
+    'Sprint ets-05 PARTIAL-CLOSE: 5/6 stories ship clean; credential-leak-
+    e2e-full-pass remains OPEN (Sprint 4 + Sprint 5 carryover); Sprint 6
+    designated WEDGE-SPRINT to close 2 HIGH gaps before next batch
+    expansion'. This honors the trend (0.84/0.84 → 0.82/0.74 — first sub-
+    0.80 score) without erasing the genuine wins.
+
+orchestrator_meta_process_check:
+  CLAUDE_md_compliance:
+    spec_first: "PASS — Pat updated REQ-ETS-PART1-004 + -006 + REQ-ETS-CLEANUP-013..015 in spec.md before Generator started."
+    write_tests: "PASS — VerifyAuthCredentialPropagation 8 unit tests; VerifyTestNGSuiteDependency +6 lint tests for Procedures + Deployments. Tests reference REQ-* in javadoc."
+    implement: "PASS — code shipped per spec."
+    verify: "PASS — mvn test 78/0/0/3 verified at gate."
+    e2e_verify: "PARTIAL — 2 deferred-to-gate live execs both surfaced defects. Live exec discipline is being applied (hence the gaps were caught) but the PROBLEM the live execs revealed means the e2e step is failing more than passing."
+    reconcile_specs: "PASS — Implementation Status updated per Generator handoff."
+    update_ops: "PASS — ops/changelog.md and ops/status.md updated by Generator + orchestrator."
+    update_bmad: "PASS — ADR-010 v3 amendment in-place; traceability.md updated."
+    spawn_raze: "PASS — Raze + Quinn parallel-spawned per CLAUDE.md adversarial-reviewer mandate."
+
+  mitigation_pattern_status:
+    write_result_first: "VERIFIED — both Quinn and Raze stubbed evaluation YAMLs as Task 0; finalized incrementally."
+    tight_budget: "VERIFIED — Quinn 165K tokens / 9m17s; Raze 215K tokens / 10m35s. Both well under cap."
+    worktree_pollution_constraint: "VERIFIED — both gates ran from /tmp/ clones; user worktrees clean; SMOKE_OUTPUT_DIR mitigation v2 worked."
+
+  worktree_pollution_incident_check:
+    user_worktree_at_csapi_compliance_clean_at_gate: TRUE
+    user_worktree_at_ets_repo_clean_at_gate: TRUE
+    sprint_2_incident_pattern_repeated: NO
+    sprint_4_incident_pattern_repeated: NO
+    s_ets_05_02_smoke_output_dir_mitigation_efficacy: VERIFIED_ENDTOEND
+
+  meta_process_violations: []
+
+live_exec_reproduction:
+  reproducer_target: GAP-2 (sabotage --target=systemfeatures docker build)
+  reproducer_path: /tmp/raze-meta-fresh-ets05
+  reproducer_commands: |
+    git clone /home/nh/docker/gir/ets-ogcapi-connectedsystems10 /tmp/raze-meta-fresh-ets05
+    cd /tmp/raze-meta-fresh-ets05
+    SMOKE_OUTPUT_DIR=/tmp/raze-meta-fresh-ets05/sabotage-results \
+    SABOTAGE_TMPDIR=/tmp/raze-meta-sabotage-ets05 \
+    bash scripts/sabotage-test.sh --target=systemfeatures
+  reproducer_outcome: |
+    Reproduced EXACTLY the failure both prior gates documented. Build failed
+    at "#14 [builder 6/8] COPY .git ./.git" with error:
+      "failed to compute cache key: failed to calculate checksum of ref
+       b2iyoz1ee8i5kjs0c0gc0ozkg::jlpvavecrf4rsfn9llfvid167: '/.git': not
+       found"
+    Steps 1-13 succeeded (image pulls cached; pom.xml + dependency:go-offline
+    cached); step 14 (COPY .git) is the deterministic failure. Misleading log
+    line "smoke exited non-zero (EXPECTED — SystemFeatures FAIL on first
+    @Test)" appeared as primary Raze flagged — the script doesn't distinguish
+    docker build failure from smoke @Test failure.
+  third_corroboration_status: CONFIRMED
+  matching_root_cause: TRUE
+  build_step_offset: |
+    My reproducer hit error at builder step 6/8; primary Raze reported
+    builder step 6/8; Quinn reported builder step 4/6. Step counting differs
+    between reports (BuildKit step numbering varies based on cache state +
+    perspective) but the failing instruction (COPY .git ./.git) is identical.
+
+  GAP-1_prime_source_inspection:
+    inspected: TRUE
+    file: /tmp/raze-meta-fresh-ets05/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/listener/MaskingRequestLoggingFilter.java
+    lines_inspected: 105-139
+    findings: |
+      The filter() method's structure is:
+        Line 109: try {
+        Line 110-117: collect sensitiveNames from requestSpec.getHeaders()
+        Line 118-125: for each sensitive name: snapshot value into originals
+                      map, removeHeader, set masked value (header mutation)
+        Line 127: return super.filter(requestSpec, responseSpec, ctx);
+        Line 129: } finally {
+        Line 132-137: restore originals from snapshot map
+        Line 138: }
+      super.filter() is REST-Assured RequestLoggingFilter.filter() which:
+        (a) uses requestSpec to format and emit the log line
+        (b) calls ctx.next(requestSpec, responseSpec) — which performs the
+            HTTP transmission
+      Therefore: HTTP send happens INSIDE super.filter() BEFORE the finally
+      block runs. The wire receives the masked spec. Original is restored
+      after the wire send completes — too late. Diagnosis confirmed.
+    diagnosis_match_with_prior_gates: |
+      Quinn: "MaskingRequestLoggingFilter (or one of the wrap chain filters)
+      is mutating the request header BEFORE HTTP transport, rather than
+      masking only at log time. The original design.md §'wrap pattern'
+      mandates a try/finally restoration: log the masked form, then restore
+      the original header value before the request goes out. The restoration
+      step is missing or broken." — partially correct (try/finally exists,
+      but finally runs AFTER super.filter() not BEFORE wire send within it).
+      Raze: "MaskingRequestLoggingFilter.filter() at line 106 does (1)
+      snapshot original Authorization, (2) requestSpec.removeHeader +
+      requestSpec.header(masked), (3) super.filter(...) → REST-Assured's
+      RequestLoggingFilter.filter() invokes ctx.next() which performs the
+      HTTP send with the now-masked spec, (4) finally: restore — TOO LATE,
+      wire already sent." — exact code-trace match with my inspection.
+      Both diagnoses correct; Raze's is more precise at the call-stack
+      level. Sprint 6 fix should follow Raze's recommendation (i): masking
+      filter logs masked form directly without delegating to super.filter()
+      for log emission, then calls ctx.next(originalSpec).
+
+meta_gaps:
+  - id: META-GAP-1
+    severity: medium
+    title: "Unit-test pattern decorative for filter wire-side semantics"
+    description: |
+      Both VerifyAuthCredentialPropagation (8 PASS) and
+      VerifyMaskingRequestLoggingFilter (8 PASS) — 16 unit tests total —
+      use a StubFilterContext that returns null from ctx.next(...) and
+      doesn't perform actual HTTP transmission. They verify wiring, header
+      mutation behavior, and snapshot/restore roundtrip in ISOLATION but
+      they CANNOT exercise the wire-side ordering semantics of
+      super.filter() → ctx.next() → HTTP send. The 16 PASS metric
+      structurally cannot detect the GAP-1' defect.
+
+      Primary Raze identified this within GAP-1' as an inline observation
+      ("StubFilterContext returns null from ctx.next so wire-send semantics
+      are never exercised") but did NOT call out that Sprint 5's "8/8 PASS"
+      strength claim and Sprint 3+4 cumulative masking-test confidence are
+      partially decorative. Quinn's gate report listed the 8 unit tests as
+      a strength without flagging the StubFilterContext limitation. This is
+      an UNFLAGGED gap.
+    sprint_6_recommended_inclusion: |
+      Add a NEW E2E unit test VerifyWireRestoresOriginalCredential using a
+      non-stub FilterContext that records the spec passed to ctx.next();
+      assert spec carries the ORIGINAL credential not the masked form.
+      Retroactively reclassify the 16 existing unit tests as "wiring-only"
+      coverage in spec.md / traceability.md.
+    sprint_6_priority: P1
+    estimated_effort: ~30 LOC Java + spec.md cleanup
+
+  - id: META-GAP-2
+    severity: low
+    title: "credential-leak-e2e-test.sh prong (b) script-grep scope is mis-targeted relative to filter design"
+    description: |
+      Quinn's CONCERN-1 and primary Raze's CONCERN-2 both flag that prong
+      (b) doesn't grep stub-IUT log for masked-form hits. Both tagged
+      MEDIUM/LOW. But the deeper issue is: prong (b) was designed to verify
+      "masked form appears in test artifacts" — which presumes the masking
+      filter logs to System.out or a configured stream that ends up in
+      container.log or smoke.log. With CONCERN-1 (container.log empty due
+      to teardown timing), the masking filter's output stream is never
+      captured. Prong (b) is essentially decorative until the container.log
+      capture is fixed AND the masking filter is re-architected.
+    sprint_6_recommended_inclusion: |
+      Bundle with REC-3 (container.log capture timing) + REC-4 (expand
+      prong b grep to stub-IUT log). After GAP-1' fix, prong (b) should be
+      verifiable by capturing the masking filter's PrintStream during smoke
+      run.
+    sprint_6_priority: P3
+    estimated_effort: ~10 LOC bash
+
+internal_consistency_check:
+  quinn_score_arithmetic:
+    score: 0.82
+    composition: 1 HIGH (GAP-1') + 1 MEDIUM (GAP-2) + 5 CONCERNs (1 MEDIUM + 2 LOW + 2 INFORMATIONAL)
+    arithmetic_check: |
+      0.82 vs Sprint 4's 0.84 = -0.02 trend down. Quinn's stated rationale:
+      'two NEW live-exec gaps (GAP-1' wire-masking destructive, GAP-2
+      sabotage docker-build) outweigh the strong code-quality wins on
+      Procedures + Deployments + ADR-010 v3 + SMOKE_OUTPUT_DIR'. Score
+      derivation is qualitative not formulaic. -0.02 for one HIGH +
+      one MEDIUM newly introduced (GAP-1 partial close + 4 strong PASSes)
+      is plausible. CONSISTENT.
+  raze_score_arithmetic:
+    score: 0.74
+    composition: 2 HIGH (GAP-1' + GAP-2) + 4 CONCERNs (2 MEDIUM + 2 LOW)
+    arithmetic_check: |
+      0.74 vs Sprint 4's 0.84 = -0.10 trend down. Primary Raze's rationale:
+      '4 of 6 Sprint 5 success_criteria materially fail live verification
+      despite all mvn-level structural lint passing'. The drop is
+      attributed to 2 HIGH gaps where Sprint 4 had 1 HIGH gap. The score
+      arithmetic is reasonable IF GAP-2 is actually HIGH; if GAP-2 is
+      MEDIUM (per my severity calibration), the score should be ~0.78-0.80
+      not 0.74. The 0.74 is internally consistent with Raze's own severity
+      assignments but Raze's GAP-2 HIGH assignment is itself overweighted
+      per my analysis. INTERNALLY CONSISTENT but predicated on
+      overweighted severity.
+  cross_gate_score_gap:
+    quinn_score: 0.82
+    raze_score: 0.74
+    gap: 0.08
+    historical_gap_in_sprints_1_4:
+      sprint_1: "Quinn 0.91 / Raze 0.88 (gap 0.03)"
+      sprint_2: "Quinn 0.96 / Raze 0.92 (gap 0.04)"
+      sprint_3: "Quinn 0.95 / Raze 0.93 (gap 0.02)"
+      sprint_4: "Quinn 0.84 / Raze 0.84 (gap 0.00)"
+      sprint_5: "Quinn 0.82 / Raze 0.74 (gap 0.08)"
+    gap_widening_observation: |
+      Sprint 5 has the LARGEST Quinn-Raze gap in project history (0.08).
+      Two interpretations: (a) Raze is calibrating more strictly (real
+      adversarial value), or (b) Raze overweighted GAP-2 (per my analysis).
+      Most plausible: BOTH — GAP-2 HIGH-vs-MEDIUM disagreement explains
+      ~half the gap; the other half is genuinely sharper Raze inspection
+      (e.g. StubFilterContext decorative-coverage observation).
+
+recommendations_for_sprint_6:
+  primary_recommendations:
+    - "Sprint 6 P0: REC-1 fix MaskingRequestLoggingFilter wire-corruption. ~30-50 LOC Java + ~30 LOC new wire-side unit test. Approach (i) per primary Raze (filter logs masked form directly; ctx.next(originalSpec))."
+    - "Sprint 6 P1: REC-2 fix sabotage --target=systemfeatures docker build. ~1-2 LOC bash (drop --exclude='.git/' from rsync OR add explicit .git copy step). Re-archive cascade XML for Procedures + Deployments after fix."
+    - "Sprint 6 P1: META-GAP-1 add VerifyWireRestoresOriginalCredential and reclassify the 16 existing unit tests as 'wiring-only' in spec.md."
+
+  framing_recommendations:
+    - "Update orchestrator's metrics turn 82 row + status.md header to reframe Sprint 5 as 'PARTIAL-CLOSE — wedge sprint mandatory' rather than 'SPRINT-COMPLETE with wedges'. Acknowledge the credential-leak-e2e-full-pass through-line: Sprint 4 GAP-1 unclosed → Sprint 5 GAP-1' open → Sprint 6 must close before next batch expansion."
+    - "Reclassify GAP-2 severity as MEDIUM (per Quinn calibration) in Sprint 6 contract."
+    - "When framing mitigation pattern: separate 'process success' (16 consecutive no-timeout sub-agent runs) from 'quality trend' (verdicts trending 0.95/0.93 → 0.84/0.84 → 0.82/0.74). Both are real; conflating misleads."
+
+  process_recommendations:
+    - "For Sprint 6 cumulative gate, brief Quinn + Raze to attempt at least ONE different live exec each (e.g. Quinn runs only credential-leak; Raze runs only sabotage; meta-Raze or one of them runs full GeoRobotix smoke standalone). This would reduce the briefing-induced attack surface overlap and produce evidence at MORE points in the test pyramid."
+    - "Capture the Sprint 4-5 quality trend in a dedicated section of _bmad/traceability.md or ops/known-issues.md so future planning sessions don't lose the through-line."
+
+confidence: 0.86
+
+self_assessment:
+  meta_review_self_confidence: 0.86
+  rationale: |
+    (+) GAP-2 reproduced independently from /tmp/raze-meta-fresh-ets05/
+        with identical root cause — third corroboration certain.
+    (+) GAP-1' source-code inspection at MaskingRequestLoggingFilter.java
+        confirmed both prior gates' diagnoses with code-line evidence.
+    (+) Internal consistency check on Quinn 0.82 + Raze 0.74 score
+        arithmetic shows both are plausible given their severity
+        assignments; the 0.08 cross-gate gap is meaningful and analyzed.
+    (+) Independence assessment is grounded in observable contract
+        directives (Pat's evaluation_questions) — not speculation.
+    (-) Did NOT attempt to reproduce GAP-1' via full Docker rebuild
+        (would have required ~10 min Docker build cycle; out of scope for
+        ~25 min meta-review budget); relied on source code inspection
+        which is sufficient since the defect is structural.
+    (-) Severity reclassification of GAP-2 (HIGH → MEDIUM) is a judgement
+        call; Pat or user could reasonably argue HIGH stays. My MEDIUM
+        argument rests on test-infra vs production framing + cascade
+        already proven elsewhere.
+    (-) Did not independently inspect Quinn's nor Raze's full handoff
+        files for token usage / tool counts; relied on orchestrator's
+        metrics turn 82 reporting (165K + 215K). Not load-bearing for
+        meta-review verdict.
+
+  budget_used:
+    wall_clock_minutes: ~22
+    tokens: under cap (~70K input/output combined)
+  bash_sabotage_executed: true
+  source_inspection_executed: true
+  user_worktree_modifications: 0  # /tmp/raze-meta-fresh-ets05/ + /tmp/raze-meta-sabotage-ets05/ only
+  read_quinn_verdict_file: true  # required for meta-review (different from primary Raze independence)
+  read_raze_verdict_file: true   # required for meta-review
+
+evaluation_artifacts_produced:
+  - "/home/nh/docker/gir/csapi_compliance/.harness/evaluations/sprint-ets-05-meta-review.yaml (this file)"
+  - "/tmp/raze-meta-fresh-ets05/ (third independent clone of sister repo at HEAD c25e44a)"
+  - "/tmp/raze-meta-sabotage-ets05/ (sabotage temp tree from reproducer; build-failed at COPY .git step 6/8 — confirms GAP-2 deterministic)"
+
+verdict: APPROVE_GATE_CLOSE_WITH_META_CONCERNS
+meta_score: 0.83
