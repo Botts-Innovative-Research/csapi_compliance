@@ -1,233 +1,37 @@
 agent: generator
-status: complete
-timestamp: "2026-04-29T22:15:00Z"
-sprint_number: "ets-05"
-sprint_run: "2 of 2"
-sprint_run_scope: ["S-ETS-05-05", "S-ETS-05-06", "S-ETS-05-03"]
-supersedes: ".harness/handoffs/generator-handoff.yaml (Run 1 close 2026-04-29T21:55:00Z)"
+status: in-progress
+timestamp: "2026-04-30T14:48:00Z"
+sprint_number: "ets-06"
+sprint_run: "1 of 1"
+sprint_run_scope: ["S-ETS-06-01", "S-ETS-06-02", "S-ETS-06-03"]
+supersedes: ".harness/handoffs/generator-handoff.yaml (Sprint 5 Run 2 close 2026-04-29T22:15:00Z)"
 sprint_complete_after_run: true
 
-# Sprint 5 Run 2 of 2 — conformance + sabotage batch (3 of 6 stories landed).
-# Combined with Run 1 (3 cleanup/wedge stories), Sprint 5 is now Implementation
-# COMPLETE. Cumulative Quinn + Raze gates close the sprint.
+# Sprint 6 (wedge sprint) — Generator Run 1 of 1
+# 3 stories sequenced per Pat: -01 (load-bearing P0 masking-filter wire-fix) →
+# -02 (mechanical sabotage rsync .git fix) → -03 (spec/doc reclassification).
 
-run_1_summary:
-  status: complete
-  stories: ["S-ETS-05-01 (GAP-1 wedge fix)", "S-ETS-05-02 (SMOKE_OUTPUT_DIR)", "S-ETS-05-04 (javadoc + ADR-010 v3)"]
-  sister_repo_head_at_run_1_close: "d418396"
-  test_results: "mvn 72/0/0/3 BUILD SUCCESS; smoke baseline 26/0 (live exec deferred to gate)"
+# This is the WRITE-FIRST stub per Task 0 mitigation. It will be overwritten
+# with the final close handoff at end of run.
 
-run_2_summary:
-  status: complete
+run_summary:
+  status: in-progress
   stories:
-    - id: "S-ETS-05-05"
-      title: "Procedures conformance class"
-      status: "Implemented"
-      lines_of_code: "~330 LOC new Java + ~10 LOC testng.xml + 3 lint tests"
-      tests_added: 4  # @Test methods in ProceduresTests + 3 unit lint tests
-    - id: "S-ETS-05-06"
-      title: "Deployments conformance class"
-      status: "Implemented"
-      lines_of_code: "~430 LOC new Java + testng.xml + 3 lint tests"
-      tests_added: 4  # @Test methods in DeploymentsTests + 3 unit lint tests
-    - id: "S-ETS-05-03"
-      title: "sabotage-test.sh --target=systemfeatures flag"
-      status: "Implemented (live exec deferred to gate)"
-      lines_of_code: "~302 LOC bash addition (existing default-mode preserved)"
-      tests_added: 0  # bash script; live verification at gate
+    - id: "S-ETS-06-01"
+      title: "MaskingRequestLoggingFilter wire-fix (approach i: shadowed-PrintStream-field; ctx.next(originalSpec))"
+      status: "in-progress"
+    - id: "S-ETS-06-02"
+      title: "sabotage-test.sh rsync .git include fix + honest log message"
+      status: "pending"
+    - id: "S-ETS-06-03"
+      title: "Wire-side unit test spec reclassification (16 tests → wiring-only)"
+      status: "pending"
 
-implementation:
-  files_created:
-    - path: "src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/procedures/ProceduresTests.java"
-      repo: "ets-ogcapi-connectedsystems10"
-      purpose: "Sprint 5 Run 2 S-ETS-05-05 — Procedures conformance class; 4 @Tests covering /req/procedure/{resources-endpoint, location (UNIQUE: geometry=null invariant), canonical-endpoint, canonical-url}; @BeforeClass SkipException defense-in-depth fallback per ADR-010 v3"
-    - path: "src/main/java/org/opengis/cite/ogcapiconnectedsystems10/conformance/deployments/DeploymentsTests.java"
-      repo: "ets-ogcapi-connectedsystems10"
-      purpose: "Sprint 5 Run 2 S-ETS-05-06 — Deployments conformance class; 4 @Tests covering /req/deployment/{resources-endpoint, canonical-endpoint, canonical-url, deployed-system-resource (UNIQUE: encoding-class declaration check)}; SKIP-with-reason if /conformance unavailable"
-  files_modified:
-    - path: "src/main/resources/org/opengis/cite/ogcapiconnectedsystems10/testng.xml"
-      repo: "ets-ogcapi-connectedsystems10"
-      changes: "Added <group name=\"procedures\" depends-on=\"systemfeatures\"/> + <group name=\"deployments\" depends-on=\"systemfeatures\"/> to <dependencies>; added ProceduresTests + DeploymentsTests classes to single-block consolidation; updated <test name=...> label to enumerate /conf/procedure + /conf/deployment alongside existing /conf/{core,system,subsystem,common}"
-    - path: "src/test/java/org/opengis/cite/ogcapiconnectedsystems10/VerifyTestNGSuiteDependency.java"
-      repo: "ets-ogcapi-connectedsystems10"
-      changes: "Added PROCEDURES_GROUP + DEPLOYMENTS_GROUP constants; PROCEDURES_CLASSES + DEPLOYMENTS_CLASSES class-set lists; 6 new @org.junit.Test methods (3 each for Procedures + Deployments mirroring Subsystems pattern: testGroupDependsOnSystemFeatures + testEveryTestMethodCarriesGroup + testCoLocatedWithSystemFeatures). Surefire 7 → 13 lint tests in this class."
-    - path: "scripts/sabotage-test.sh"
-      repo: "ets-ogcapi-connectedsystems10"
-      changes: "Sprint 5 S-ETS-05-03 — added --target=core (default; backward-compat) | --target=systemfeatures | --help argument parser; new systemfeatures-target branch (~270 LOC) does rsync-copy + Python-based sed-patch + temp-dir smoke + cascade parser; worktree-pollution guard greps user worktree for marker leak post-patch and dies if found; SMOKE_OUTPUT_DIR override per S-ETS-05-02; IMAGE_TAG defaults differ between modes to avoid clobbering dev cache"
-    - path: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
-      repo: "csapi_compliance"
-      changes: "Implementation Status updates: REQ-ETS-PART1-004 SPECIFIED → IMPLEMENTED with full Sprint 5 Run 2 detail; REQ-ETS-PART1-006 SPECIFIED → IMPLEMENTED; REQ-ETS-CLEANUP-015 SPECIFIED → IMPLEMENTED"
-    - path: "_bmad/traceability.md"
-      repo: "csapi_compliance"
-      changes: "Updated REQ-ETS-PART1-004 + REQ-ETS-PART1-006 + REQ-ETS-CLEANUP-015 rows from Active → Implemented with full Sprint 5 Run 2 evidence + spec-vs-impl notes"
-    - path: "epics/stories/s-ets-05-05-procedures-conformance-class.md"
-      repo: "csapi_compliance"
-      changes: "Implementation Notes section appended documenting Generator-time GeoRobotix curl re-verification (geometry=null verified for ALL 19 procedures), 4 @Test method enumeration, OGC .adoc HTTP-200 re-verification, acceptance-criteria checklist (live smoke deferred to gate)"
-    - path: "epics/stories/s-ets-05-06-deployments-conformance-class.md"
-      repo: "csapi_compliance"
-      changes: "Implementation Notes section appended documenting curl re-verification (single-item shape; geometry=Polygon — Saildrone Arctic Mission), /conformance declares conf/geojson + conf/sensorml (deployed-system-resource PASSES), 4 @Test method enumeration, single-item-shape rationale, acceptance-criteria checklist"
-    - path: "epics/stories/s-ets-05-03-sabotage-target-flag.md"
-      repo: "csapi_compliance"
-      changes: "Implementation Notes section appended documenting argument parser, temp-worktree rsync, Python sed-patch, worktree-pollution guard, cascade parser, in-session verification (bash -n + --help + dry-run sed test), live exec deferred to Quinn/Raze gate"
-    - path: "ops/changelog.md"
-      repo: "csapi_compliance"
-      changes: "Added Sprint 5 Run 2 IMPLEMENTED entry at top with full 3-story detail; Sprint 5 declared Implementation COMPLETE pending cumulative gates"
-
-test_results:
-  pre_run_2:
-    smoke_pass: 26
-    smoke_fail: 0
-    mvn_pass: 72
-    mvn_fail: 0
-    mvn_errors: 0
-    mvn_skipped: 3
-  post_run_2:
-    smoke_pass: "34 (target; 26 + 4 Procedures + 4 Deployments — live exec deferred to gate)"
-    smoke_fail: 0
-    mvn_pass: 78
-    mvn_fail: 0
-    mvn_errors: 0
-    mvn_skipped: 3
-    delta_explanation: "+6 mvn tests vs Run 1: 3 new Procedures structural lint + 3 new Deployments structural lint in VerifyTestNGSuiteDependency. ProceduresTests + DeploymentsTests @Tests run only via smoke against the IUT — not in mvn unit test scope."
-  critical_scenarios:
-    - id: "SCENARIO-ETS-PART1-006-PROCEDURES-RESOURCES-001"
-      status: "structural-pass-live-deferred"
-      test_file: "ProceduresTests.proceduresCollectionReturns200"
-      note: "@Test method covers acceptance; live smoke deferred to gate."
-    - id: "SCENARIO-ETS-PART1-006-PROCEDURES-LOCATION-001"
-      status: "structural-pass-live-deferred"
-      test_file: "ProceduresTests.procedureItemsHaveNoGeometry"
-      note: "UNIQUE-to-Procedures geometry=null invariant; Generator curl-verified all 19 GeoRobotix procedures have geometry: null — assertion will PASS at gate."
-    - id: "SCENARIO-ETS-PART1-006-PROCEDURES-DEPENDENCY-SKIP-001"
-      status: "deferred-to-gate"
-      test_file: "scripts/sabotage-test.sh --target=systemfeatures (Procedures bucket assertion)"
-      note: "Cascade-SKIP verification deferred to live sabotage exec at gate."
-    - id: "SCENARIO-ETS-PART1-004-DEPLOYMENTS-RESOURCES-001"
-      status: "structural-pass-live-deferred"
-      test_file: "DeploymentsTests.deploymentsCollectionReturns200"
-      note: "Single-item shape (1 GeoRobotix deployment) handled gracefully; non-empty check passes."
-    - id: "SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPENDENCY-SKIP-001"
-      status: "deferred-to-gate"
-      test_file: "scripts/sabotage-test.sh --target=systemfeatures (Deployments bucket assertion)"
-      note: "Cascade-SKIP verification deferred to live sabotage exec at gate."
-  normal_scenarios:
-    - id: "SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-001"
-      status: "structural-pass-live-deferred"
-      test_file: "ProceduresTests.procedureItemHasIdTypeLinks"
-    - id: "SCENARIO-ETS-PART1-006-PROCEDURES-CANONICAL-URL-001"
-      status: "structural-pass-live-deferred"
-      test_file: "ProceduresTests.procedureItemHasCanonicalLink"
-    - id: "SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-001"
-      status: "structural-pass-live-deferred"
-      test_file: "DeploymentsTests.deploymentItemHasIdTypeLinks"
-    - id: "SCENARIO-ETS-PART1-004-DEPLOYMENTS-CANONICAL-URL-001"
-      status: "structural-pass-live-deferred"
-      test_file: "DeploymentsTests.deploymentItemHasCanonicalLink"
-    - id: "SCENARIO-ETS-PART1-004-DEPLOYMENTS-DEPLOYED-SYSTEM-001"
-      status: "structural-pass-live-deferred"
-      test_file: "DeploymentsTests.deploymentDeployedSystemEncodingDeclared"
-      note: "GeoRobotix /conformance Generator-time-verified to declare conf/geojson + conf/sensorml; assertion PASSES at gate."
-    - id: "SCENARIO-ETS-CLEANUP-SABOTAGE-TARGET-001"
-      status: "structural-pass-live-deferred"
-      test_file: "scripts/sabotage-test.sh --target=systemfeatures"
-      note: "Bash + Python sed-patch logic dry-run tested in Generator session; bash syntax + --help + --target=foo error-path verified. Live exec deferred to gate."
-
-spec_updates:
-  - file: "openspec/capabilities/ets-ogcapi-connectedsystems/spec.md"
-    reqs_implemented: ["REQ-ETS-PART1-004 (Deployments)", "REQ-ETS-PART1-006 (Procedures)", "REQ-ETS-CLEANUP-015 (sabotage --target flag)"]
-  - file: "_bmad/traceability.md"
-    rows_updated: ["REQ-ETS-PART1-004 → Implemented", "REQ-ETS-PART1-006 → Implemented", "REQ-ETS-CLEANUP-015 → Implemented"]
-
-deviations: []
-# No deviations from story acceptance criteria. Pat's risks (GEOROBOTIX-PROCEDURES-LOCATION-INVARIANT and GEOROBOTIX-DEPLOYMENTS-SINGLE-ITEM) both resolved without scope adaptation:
-#  - Procedures geometry=null verified at sprint time → assertion implemented as-written.
-#  - Deployments single-item shape → non-empty check passes; no >=2 assumptions written.
-
-self_assessment:
-  critical_pass_rate: 0.5
-  # 3 of 5 Run 2 critical SCENARIOs structural-pass at mvn level; the other 2
-  # (DEPENDENCY-SKIP × 2) require live sabotage exec at gate per the established
-  # mitigation pattern. Sprint 5 cumulative critical scenarios (Run 1 + Run 2
-  # combined): 3 of 5 structural-pass + 2 deferred-to-gate. Per Sprint 4 Run 2
-  # precedent, deferral is NOT a quality drop — it's the established pattern.
-  normal_pass_rate: 1.0
-  regression: false
-  confidence: 0.86
-  confidence_rationale: |
-    (+) Procedures + Deployments mirror the Sprint 4 Subsystems pattern mechanically;
-        no novel architectural surface — Sprint 4 Architect's "Sprint-1-style auto-applies
-        to all SystemFeatures-tier siblings" precedent is honored.
-    (+) Generator-time GeoRobotix curl re-verification CLOSED both Pat-noted MEDIUM risks
-        (geometry=null verified for all 19 procedures; single-item deployments handled
-        gracefully; /conformance declares conf/geojson + conf/sensorml so deployed-
-        system-resource passes at encoding-class layer).
-    (+) ADR-010 v3 cascade VERIFIED LIVE (Run 1 amendment) — extending the dependency
-        pattern to Procedures + Deployments is mechanical, not a new bet.
-    (+) mvn 72 → 78 / 0 / 0 / 3 BUILD SUCCESS; spring-javaformat:apply ran cleanly;
-        zero new bare-throw sites in conformance.* per grep discipline.
-    (+) Sprint 5 Run 2 turn completed within ~20 minutes wall-clock — write-handoff-
-        FIRST mitigation in effect; stub written as Task 0 then incrementally finalized.
-    (+) Sabotage --target flag bash syntax verified + Python sed-patch logic dry-run-tested.
-    (-) Live three-fold credential-leak (Run 1 GAP-1 closure verification) + live smoke
-        regression + live sabotage cascade exec ALL deferred to Quinn/Raze gate. If any
-        live exec at gate reveals a hidden integration gap, Sprint 5 confidence may drop.
-    (-) Two-class batch (Procedures + Deployments simultaneously) is the FIRST two-class
-        batch in this project; gate verification of 2 new classes simultaneously is
-        untested at gate cadence.
-    (-) DeployedSystem encoding-class assertion uses substring matching on conformsTo URIs
-        — a strict OGC reviewer might prefer exact-URI matching against a canonical
-        whitelist. Trade-off documented in DeploymentsTests javadoc; acceptable for
-        Sprint-1-style minimal scope.
-  concerns:
-    - "Live three-fold credential-leak cross-check (Run 1 GAP-1 closure verification — scripts/credential-leak-e2e-test.sh) DEFERRED to Quinn/Raze gate. If the live exec at gate time reveals a hidden chain gap, Run 1's S-ETS-05-01 closure may slip back to PARTIAL. Mitigation already in place: 8 unit tests cover all 4 structural layers (Run 1)."
-    - "Live smoke regression of the new conformance classes (Procedures + Deployments @Tests against GeoRobotix) DEFERRED to gate. Generator's curl-evidence at sprint time confirms IUT shapes match assertions, but the full TestNG-via-TeamEngine-via-Docker stack is not exercised in the Generator session. Quinn/Raze should observe smoke 26 + P + D = 34 PASS at gate (where P=4 Procedures, D=4 Deployments)."
-    - "Live --target=systemfeatures sabotage exec DEFERRED to gate. Bash + Python sed-patch logic verified in dry-run; full Docker rebuild + cascade parse exercised end-to-end at Quinn/Raze gate. The script is structurally complete and self-tested (bash -n; --help; --target=foo error path)."
-    - "DeployedSystem encoding-class assertion uses substring match for `/conf/geojson` etc. on conformsTo URIs. If GeoRobotix changes the URI form (unlikely), assertion may produce a SKIP instead of PASS — graceful degradation by design (SKIP-with-reason rather than FAIL)."
+sister_repo_head_at_run_start: "c25e44a"
+csapi_compliance_head_at_run_start: "642b5c7"
 
 next_agent: "evaluator"
-next_agent_run: "Quinn cumulative Sprint 5 evaluator (after Run 2 — Sprint 5 close)"
 next_agent_inputs:
-  - ".harness/contracts/sprint-ets-05.yaml — primary directive"
-  - ".harness/handoffs/generator-handoff.yaml (this file — Run 2 close state)"
-  - ".harness/handoffs/planner-handoff.yaml — Pat Sprint 5 directive"
-  - "Sister repo HEAD now c25e44a (was d418396 at Run 2 start)"
-  - "csapi_compliance HEAD pending — Run 2 doc commit will land momentarily"
-  - "Run 1 + Run 2 cumulative deliverables: 6 of 6 Sprint 5 stories Implemented"
-  - "Sprint 5 success_criteria checklist for Quinn cumulative gate at the bottom of sprint-ets-05.yaml"
-
-notes_for_orchestrator:
-  - "Run 2 close state: 3 stories Implemented (S-05-05, -06, -03). Sister repo HEAD c25e44a pushed to origin/main."
-  - "Sprint 5 is now Implementation COMPLETE (Run 1 + Run 2 = 6 of 6 stories Implemented)."
-  - "Spawn Quinn evaluator next for cumulative Sprint 5 gate. Quinn must run from /tmp/quinn-fresh-sprint5/ clone (NOT user worktree) with SMOKE_OUTPUT_DIR=/tmp/quinn-fresh-sprint5/test-results/."
-  - "Quinn live-exec checklist:"
-  - "  (1) bash scripts/credential-leak-e2e-test.sh — three-fold (a) 0 unmasked + (b) >=1 masked + (c) >=1 unmasked at stub IUT (Run 1 GAP-1 verification)"
-  - "  (2) bash scripts/smoke-test.sh against GeoRobotix — expect 34/34 PASS"
-  - "  (3) bash scripts/sabotage-test.sh --target=systemfeatures — expect VERDICT PASS (Core+Common PASS, SF 1×FAIL + 5×SKIP, Subs+Procs+Deps all SKIP)"
-  - "  (4) mvn clean install — expect 78/0/0/3 + reproducible jar"
-  - "  (5) Worktree pollution check: git status in user worktree post-gate-runs — must be clean"
-  - "After Quinn closes APPROVE/APPROVE_WITH_CONCERNS, Raze adversarial gate runs same artifacts independently."
-  - "Sprint 5 close target: cumulative confidence >=0.85 (Sprint 4 dropped to 0.84/0.84; Sprint 5 risk targets recovery)."
-
-commands_to_verify:
-  mvn_test: "cd /home/nh/docker/gir/ets-ogcapi-connectedsystems10 && PATH=/home/nh/.local/apache-maven-3.9.9/bin:$PATH mvn -B test -DfailIfNoTests=false  # expect 78/0/0/3"
-  spring_javaformat_validate: "cd /home/nh/docker/gir/ets-ogcapi-connectedsystems10 && PATH=/home/nh/.local/apache-maven-3.9.9/bin:$PATH mvn -B spring-javaformat:validate"
-  bash_sabotage_test_syntax: "bash -n /home/nh/docker/gir/ets-ogcapi-connectedsystems10/scripts/sabotage-test.sh"
-  bash_sabotage_test_help: "bash /home/nh/docker/gir/ets-ogcapi-connectedsystems10/scripts/sabotage-test.sh --help  # expect usage rendered"
-  bash_sabotage_test_unsupported: "bash /home/nh/docker/gir/ets-ogcapi-connectedsystems10/scripts/sabotage-test.sh --target=foo; echo exit=$?  # expect exit=2"
-  curl_georobotix_procedures: "curl -sf https://api.georobotix.io/ogc/t18/api/procedures | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d[\"items\"]), \"items;\", sum(1 for i in d[\"items\"] if i.get(\"geometry\") is None), \"with geometry=null\")'  # expect 19 19"
-  smoke_test_three_class_verification: "cd /tmp/<role>-fresh-sprint5/ets-ogcapi-connectedsystems10 && SMOKE_OUTPUT_DIR=/tmp/<role>-fresh-sprint5/test-results bash scripts/smoke-test.sh  # expect 34/34 PASS"
-  sabotage_target_systemfeatures: "cd /tmp/<role>-fresh-sprint5/ets-ogcapi-connectedsystems10 && SABOTAGE_TMPDIR=/tmp/<role>-fresh-sprint5/sabotage bash scripts/sabotage-test.sh --target=systemfeatures  # expect VERDICT PASS"
-
-artifact_locations:
-  sister_repo_head: "c25e44a (pushed to origin/main 2026-04-29T22:12Z; was d418396)"
-  sister_repo_url: "https://github.com/Botts-Innovative-Research/ets-ogcapi-connectedsystems10"
-  csapi_compliance_head: "pending Run 2 doc commit"
-  sister_repo_run_2_commits:
-    - sha: "215204a"
-      title: "Sprint 5 Run 2: S-ETS-05-05 Procedures + S-ETS-05-06 Deployments conformance classes"
-      stories: ["S-ETS-05-05", "S-ETS-05-06"]
-    - sha: "c25e44a"
-      title: "Sprint 5 Run 2: S-ETS-05-03 sabotage-test.sh --target=systemfeatures flag"
-      stories: ["S-ETS-05-03"]
-
-blockers: []
+  - ".harness/contracts/sprint-ets-06.yaml"
+  - ".harness/handoffs/generator-handoff.yaml (this — to be finalized)"
+  - "Sister repo HEAD post-run (TBD)"
