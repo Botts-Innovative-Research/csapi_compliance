@@ -2,6 +2,60 @@
 
 Rolling 2-week work log. Remove entries older than 2 weeks.
 
+## 2026-04-30T17:00Z — Sprint ets-07 Generator Run 1 of 1 IMPLEMENTED (Dana) — ALL 3 stories landed; mvn 80→86/0/0/3; smoke 34→42; sister HEAD `c17a534 → 38b1f8a`; live cascade XML produced + REQ-017 promoted IMPLEMENTED
+
+**Sprint 7 ALL 3 STORIES IMPLEMENTED** in a single Generator run. 6 Sprint 6 carryover wedges closed + 2 new Part 1 conformance classes added (Sampling Features + Property Definitions — twice-deferred from Sprints 5+6). Sprint complete pending Quinn evaluator + Raze adversarial cumulative gates.
+
+**Process improvements baked into Sprint 7 contract — ALL MET**:
+
+- `bash_x_trace_evidence_for_bash_changes`: bash -x traces archived for both modified bash scripts (sabotage + cred-leak)
+- `generator_design_md_adr_self_audit`: design.md §Sprint 3 hardening doc-lag closed (Wedge 5); ADR-010 v3 retroval note added (Wedge 6)
+- `spec_status_honesty_principle`: REQ-ETS-CLEANUP-017 promoted IMPLEMENTED ONLY AFTER live cascade XML produced (Wedge 2)
+
+**S-ETS-07-01 Sprint 6 carryover wedge bundle IMPLEMENTED** (sister commits `a17c6ec → 94a4971 → c68b803 → bd6fa9b`; ~80 LOC bash + python + design.md + ADR-010 + spec.md):
+
+- Wedge 1 (HIGH P0): sabotage-test.sh javac unreachable-statement fix — two-line `if (true)\n\t\t\tthrow new AssertionError(...)` injection (defeats javac reachability per JLS §14.21 AND complies with spring-javaformat-maven-plugin:0.0.43:validate). First attempt single-line shape FAILed Dockerfile builder stage 8/8 spring-javaformat; second attempt two-line shape PASSed both checks. Live exec from /tmp clone produced 3-class cascade XML at sister `ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml` (53KB) — Core 8 PASS, Common 4 PASS, SystemFeatures 1 FAIL + 5 SKIP, Subsystems 4 SKIP, Procedures 4 SKIP, Deployments 4 SKIP. Step 5/6 verdict "PASS — two-level cascade verified end-to-end". Closes 2-sprint-old latent javac defect (Sprint 5 GAP-2 .git-exclude masked it; Sprint 6 .git-include exposed it).
+- Wedge 2 (HIGH P0): spec.md REQ-ETS-CLEANUP-017 status promoted from STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED → IMPLEMENTED with cascade XML evidence pointer. Status flipped ONLY AFTER cascade XML produced (status-honesty principle).
+- Wedge 3 (MEDIUM P1): credential-leak-e2e-test.sh prong-b retarget — try `${SMOKE_OUTPUT_DIR}/s-ets-01-03-teamengine-container-*.log` archive first (Sprint 6 timing fix output) with fallback to `docker logs`. bash -x trace archived at sister `ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log` shows the for-loop sets SMOKE_CONTAINER_LOG_HIT to the archive path, cp -f copies the archive, and prong-b grep finds 1 hit on synthetic input.
+- Wedge 4 (MEDIUM P1): sabotage-test.sh pipefail-unreachable fix — replaced `ls -t ... | head -1` pipeline with glob-safe `for _f in ...; do [[ -e "$_f" ]] && ...` idiom. Verified live at first sabotage attempt (Wedge 1 v1 single-line shape FAILed Docker build): the disambiguation log line "smoke exited non-zero with NO TestNG report — Docker build FAILED (not a sabotage-marker hit)" fired correctly. Pre-Wedge-4 the script would have died silently before the disambiguation block.
+- Wedge 5 (MEDIUM P1): design.md §Sprint 3 hardening wrap-pattern doc-lag fix — added `Sprint 6 redesign: approach (i) — wire-side correctness via no-spec-mutation (S-ETS-06-01) — CANONICAL` subsection BEFORE the old wrap-pattern code (~50 LOC of new prose). Marked old block "Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)". Explicitly invalidated the false try/finally claim per Sprint 5 GAP-1' diagnosis. Implements the Sprint 7 contract `generator_design_md_adr_self_audit` success criterion. Closes meta-Raze META-GAP-M1.
+- Wedge 6 (LOW): ADR-010 v3 retroval note — Sprint 7 v3 retroval section appended recording the live 3-class cascade verdict (with class/PASS/FAIL/SKIP table), citing sister cascade XML + bash -x trace as evidence, noting that the v3 amendment's "forward-extends to Procedures + Deployments" claim is now empirically VERIFIED LIVE (was empirical inference at Sprint 5 close).
+
+**S-ETS-07-02 Sampling Features `/conf/sf` conformance class IMPLEMENTED** (sister commit `06acd1b`; ~280 LOC Java):
+
+- New `src/main/java/.../conformance/samplingfeatures/SamplingFeaturesTests.java` — 4 @Tests all PASS smoke 42/42 against GeoRobotix: samplingFeaturesCollectionReturns200 (HTTP 200 + non-empty items, 100 items), samplingFeatureItemHasIdType (canonical-endpoint shape — id+type), samplingFeatureCanonicalUrlReturns200 (path-based dereferenceability), samplingFeaturesDependencyCascadeRuntime (runtime tracer).
+- **SF-unique observation**: GeoRobotix per-item shape lacks the `links` array that Procedures + Deployments items carry. Adapted via path-based canonical-URL dereferenceability assertion rather than rel=canonical link search. If a future GeoRobotix release adds item-level links the assertion can be tightened in lockstep.
+- testng.xml: added `<group name="samplingfeatures" depends-on="systemfeatures"/>` + class entry. VerifyTestNGSuiteDependency: 3 new lint tests.
+- OGC adoc URIs verified HTTP 200: /req/sf/{resources-endpoint, canonical-endpoint, canonical-url}. NOTE: OGC repo folder is `sf/` (NOT `sampling/`).
+
+**S-ETS-07-03 Property Definitions `/conf/property` conformance class IMPLEMENTED** (sister commit `06acd1b`; ~270 LOC Java):
+
+- New `src/main/java/.../conformance/propertydefinitions/PropertyDefinitionsTests.java` — 4 @Tests: 2 PASS (collection 200 + cascade tracer) + 2 SKIP-with-reason (per-item @Tests against current empty `/properties` IUT state per Pat MEDIUM risk PROPERTY-DEFINITIONS-RESPONSE-SHAPE mitigation).
+- **Risk MATERIALIZED**: GeoRobotix `/properties` returns HTTP 200 + `items: []` (empty). The endpoint is declared but no derived properties are populated. SKIP-with-reason mitigation pattern (already coded into the @BeforeClass + per-item @Test fallback) accommodates gracefully.
+- testng.xml + VerifyTestNGSuiteDependency extended with 3 new lint tests.
+
+**Verification**:
+- mvn clean test: 80 → 86 / 0 / 0 / 3 BUILD SUCCESS (added 6 lint tests for SF + Property)
+- bash scripts/sabotage-test.sh --target=systemfeatures from /tmp clone: exit 0; cascade XML produced
+- bash scripts/smoke-test.sh from /tmp clone: 42/42 PASS (40 PASS + 2 SKIP-with-reason for empty PropertyDefinitions per-item)
+- Per-class breakdown: Core 12 / SystemFeatures 6 / Common 4 / Subsystems 4 / Procedures 4 / Deployments 4 / SamplingFeatures 4 / PropertyDefinitions 2+2 = 42
+
+**Files modified — csapi_compliance** (this commit): spec.md (REQ-017 promoted IMPLEMENTED + REQ-018, REQ-007, REQ-008 IMPLEMENTED status with detailed Implementation Notes), design.md (Wedge 5 doc-lag fix), _bmad/adrs/ADR-010-dependency-skip-verification-strategy.md (Wedge 6 retroval note), _bmad/traceability.md (REQ-007 + REQ-008 + REQ-017 + REQ-018 rows updated), epics/stories/s-ets-07-{01,02,03}-*.md (Implementation Notes appended), .harness/handoffs/generator-handoff.yaml (status: complete), ops/changelog.md (this entry).
+
+**Files modified — sister repo** (`/home/nh/docker/gir/ets-ogcapi-connectedsystems10/`):
+- `scripts/sabotage-test.sh` (Wedges 1 + 4)
+- `scripts/credential-leak-e2e-test.sh` (Wedge 3)
+- `src/main/java/.../conformance/samplingfeatures/SamplingFeaturesTests.java` (NEW)
+- `src/main/java/.../conformance/propertydefinitions/PropertyDefinitionsTests.java` (NEW)
+- `src/main/resources/.../testng.xml` (2 new groups + 2 class entries)
+- `src/test/java/.../VerifyTestNGSuiteDependency.java` (6 new lint tests)
+- `ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml` (NEW evidence)
+- `ops/test-results/sprint-ets-07-01-wedge1-bash-x-trace.log` (NEW evidence)
+- `ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log` (NEW evidence)
+- `ops/test-results/sprint-ets-07-smoke-42-tests-2026-04-30.xml` (NEW evidence)
+
+Sister repo HEAD: `c17a534 → 38b1f8a` (6 commits forward); pushed to origin/main.
+
 ## 2026-04-30T15:30Z — Sprint ets-06 Generator Run 1 of 1 IMPLEMENTED (Dana) — All 3 wedge stories landed; mvn 80/0/0/3; sister HEAD `c17a534`; live-execs gate-deferred
 
 **Sprint 6 ALL 3 STORIES IMPLEMENTED** in a single Generator run. Sprint complete pending Quinn evaluator (closure-proof three-fold live-exec) + Raze adversarial (cascade live-exec + adversarial wire-tap option_a) cumulative gates.

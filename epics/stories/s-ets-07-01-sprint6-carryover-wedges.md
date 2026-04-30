@@ -138,4 +138,41 @@ None (this is the first story in Sprint 7; all subsequent stories depend on this
 
 ## Implementation Notes
 
-(To be filled by Generator at run time.)
+### Generator Run 1 (Dana, 2026-04-30, status: Implemented)
+
+All 6 wedges CLOSED. Sister repo HEAD `c17a534 → 38b1f8a` after 6 commits.
+
+**Wedge 1 (HIGH P0) — sabotage-test.sh javac unreachable-statement fix**: Closed in 2 attempts.
+
+- **First attempt** (sister `a17c6ec`): single-line `if (true) throw new AssertionError(...)`. javac PASSes (defeats reachability analysis per JLS §14.21) but Dockerfile builder stage 8/8 FAILed at `mvn clean package` because spring-javaformat-maven-plugin:0.0.43:validate rejected the formatting: spring-javaformat mandates that an `if`-without-block construct's body lives on its own line indented one tab deeper than the `if`.
+- **Second attempt** (sister `94a4971`): two-line `if (true)\n\t\t\tthrow new AssertionError(...);` shape. PASSes javac AND spring-javaformat:validate.
+- **Verification**: ran `bash scripts/sabotage-test.sh --target=systemfeatures` from `/tmp/dana-fresh-sprint7/` (clean clone of sister at `94a4971`). Cascade XML produced at `/tmp/dana-sabotage-sprint7/sprint-ets-05-03-sabotage-systemfeatures-cascade-2026-04-30T163634Z.xml`. Cascade verdict: Core 8 PASS, Common 4 PASS, SystemFeatures 1 FAIL + 5 SKIP, Subsystems 4 SKIP, Procedures 4 SKIP, Deployments 4 SKIP. Step 5/6 verdict: "PASS — two-level cascade verified end-to-end".
+- Cascade XML archived at sister `ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml` (commit `c68b803`).
+
+**Wedge 2 (HIGH P0) — REQ-ETS-CLEANUP-017 status honesty**: Pat completed status correction at planning time. Generator promoted to IMPLEMENTED in this commit after Wedge 1 cascade XML produced. spec.md REQ-017 now reads `IMPLEMENTED (Sprint 7 S-ETS-07-01 Wedge 1 close 2026-04-30 ... cascade verdict: Core 8 PASS, Common 4 PASS, SystemFeatures 1 FAIL + 5 SKIP, ...)` with cascade XML evidence path.
+
+**Wedge 3 (MEDIUM P1) — credential-leak-e2e-test.sh prong-b retarget**: Replaced `docker logs $CONTAINER_NAME > $CONTAINER_LOG` with glob-safe lookup of `${SMOKE_OUTPUT_DIR}/s-ets-01-03-teamengine-container-*.log` archive (Sprint 6 timing fix output) with fallback to `docker logs`. bash -x trace at sister `ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log` (commit `bd6fa9b`) shows the for-loop sets `SMOKE_CONTAINER_LOG_HIT` to the archive path, `cp -f` copies the archive (NOT the docker logs fallback), and prong-b grep `Bear***WXYZ` finds 1 hit.
+
+**Wedge 4 (MEDIUM P1) — sabotage-test.sh pipefail-unreachable fix**: Replaced `LATEST_REPORT="$(ls -t ... | head -1)"` pipeline with glob-safe `for _f in ...; do [[ -e "$_f" ]] && LATEST_REPORT="$_f"; done` idiom. Verified live at first sabotage attempt (Wedge 1 v1 single-line shape FAILed Dockerfile builder stage 8/8): the disambiguation log line "smoke exited non-zero with NO TestNG report — Docker build FAILED (not a sabotage-marker hit)" fired correctly. Pre-Wedge-4 the script would have died silently before reaching the disambiguation block.
+
+**Wedge 5 (MEDIUM P1) — design.md §Sprint 3 hardening doc-lag fix**: Added `Sprint 6 redesign: approach (i) — wire-side correctness via no-spec-mutation (S-ETS-06-01) — CANONICAL` subsection BEFORE the old wrap-pattern code (~50 LOC of new prose explaining why super.filter() invocation was DEFECTIVE under Sprint 3 design and how approach (i) fixes it). Marked the old block "Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)". Explicitly invalidated the false try/finally claim by referencing the Sprint 5 GAP-1' diagnosis. Implements the Sprint 7 contract `generator_design_md_adr_self_audit` success criterion.
+
+**Wedge 6 (LOW) — ADR-010 v3 retroval**: Natural fall-through. Added `Sprint 7 v3 retroval note (2026-04-30)` to ADR-010 v3 section recording the live 3-class cascade verdict (with table of class/PASS/FAIL/SKIP counts), citing sister cascade XML + bash -x trace as evidence, and noting that the v3 amendment's "forward-extends to Procedures + Deployments" claim is now empirically VERIFIED LIVE (was empirical inference at Sprint 5 close).
+
+### Verification
+
+- `mvn clean test` 86/0/0/3 BUILD SUCCESS (was 80; +6 lint tests for SF + Property in S-07-02 + S-07-03)
+- `bash scripts/sabotage-test.sh --target=systemfeatures` from /tmp clone: exit 0, cascade XML produced
+- `bash scripts/smoke-test.sh` from /tmp clone: 42/42 PASS (40 PASS + 2 SKIP-with-reason for empty PropertyDefinitions per-item @Tests)
+- bash -x traces archived for both modified scripts (sabotage-test.sh + credential-leak-e2e-test.sh)
+
+### Sprint 7 contract success criteria met
+
+- `sabotage_cascade_xml_produced: true` ✓ (Wedge 1)
+- `credential_leak_e2e_full_pass: true` ✓ (Wedge 3 — prong-b targeting verified via bash -x trace)
+- `sabotage_disambiguation_block_fires: true` ✓ (Wedge 4 — verified live at Wedge 1 v1 attempt)
+- `req017_status_honesty_corrected: true` ✓ (Wedge 2 — promoted IMPLEMENTED after live-exec)
+- `design_md_approach_i_documented: true` ✓ (Wedge 5)
+- `bash_x_trace_evidence_for_bash_changes: true` ✓ (sister `ops/test-results/sprint-ets-07-01-wedge1-bash-x-trace.log` + `sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log`)
+- `generator_design_md_adr_self_audit: true` ✓ (Wedge 5 + Wedge 6)
+- `spec_status_honesty_principle: true` ✓ (Wedge 2 promotion only AFTER cascade XML produced)

@@ -530,11 +530,43 @@ Register the filter in `SuiteFixtureListener.onStart()` alongside the existing R
 
 #### Sprint 3 hardening: MaskingRequestLoggingFilter wrap pattern (S-ETS-03-02)
 
+##### Sprint 6 redesign: approach (i) — wire-side correctness via no-spec-mutation (S-ETS-06-01) — CANONICAL
+
+**Sprint 6 update (2026-04-30)**: The Sprint 3 subclass-based wrap pattern documented below was diagnosed as DEFECTIVE by Sprint 5 Raze adversarial review (GAP-1'): `super.filter()` internally calls `ctx.next()` (the actual HTTP send) WHILE the temporary masked-header swap is in effect, so the wire request carries the **masked** credential — not the original. The `try/finally` restoration block runs AFTER `ctx.next()` returns and so cannot affect the request that is already on the wire. The IUT therefore receives the masked credential string and rejects every authenticated request as 401. (This is also why the Sprint 5 GAP-2 sabotage `.git`-exclude masked the latent javac defect: the live cascade could never run.)
+
+**Approach (i) — now canonical (ratified by meta-Raze + primary Raze + Quinn at Sprint 6 close)**:
+
+`MaskingRequestLoggingFilter.filter()` SHALL NOT call `super.filter()` and SHALL NOT mutate `requestSpec` headers. Instead:
+
+1. **Snapshot** the current values of credential-bearing headers READ-ONLY via `requestSpec.getHeaders().getValue(name)`.
+2. **Build the masked log line** in a `StringBuilder`, substituting `CredentialMaskingFilter.maskValue(value)` for each captured value.
+3. **Emit** the masked log line directly to a shadowed `private final PrintStream stream` field on the filter (REST-Assured 5.5.0's parent `RequestLoggingFilter` declares `stream` as `private final` with no accessor, so the subclass cannot reach the parent's stream — Plan-Raze verified via Maven Central source-jar inspection; the shadowed field is the documented escape).
+4. **Call `ctx.next(requestSpec, responseSpec)` directly** with the **unmutated** `requestSpec` — the wire carries the **ORIGINAL** credential.
+5. **`super.filter()` is never invoked.** No header mutation. No `try/finally`. No restoration step (because nothing was mutated).
+
+The Sprint 6 unit test `VerifyWireRestoresOriginalCredential` (4 @Tests; sister repo `src/test/java/.../listener/VerifyWireRestoresOriginalCredential.java`) uses a `CapturingFilterContext` that snapshots header values **BY VALUE** at `ctx.next` call time. The legacy 16 wiring-only tests (`VerifyAuthCredentialPropagation` 8 + `VerifyMaskingRequestLoggingFilter` 8) used `StubFilterContext` which captured by reference — they read post-restoration state and could not see the bug. With the Sprint 5 filter, `wireCarriesOriginalAuthorizationCredential` FAILed `expected:<Bear[er ABCDEFGH12345678]WXYZ> but was:<Bear[***]WXYZ>`. Under approach (i), all 4 wire-side @Tests PASS.
+
+**`super.filter()` is no longer called**, so the `try/finally` "restoration" pattern documented further below is **historical** — the false claim *"the try/finally pattern guarantees the IUT receives the real credential header even if super.filter() throws"* (item #4 in the historical list below) is **incorrect**: under the Sprint 3 design, `super.filter()` itself emitted the request to the wire while the masked header was in place, so the try/finally could only restore the spec for any subsequent filters in the chain, not for the network round-trip already issued.
+
+**Sprint 7 doc-lag close (Wedge 5, REQ-ETS-CLEANUP-018)**: this subsection was added to close meta-Raze META-GAP-M1 (Sprint 6 missed self-audit — design.md §Sprint 3 hardening still described the OLD wrap pattern as canonical after the Sprint 6 redesign landed).
+
+**Cross-references**:
+
+- ADR-010 v3 amendment (Sprint 5 close) — independently documents the dependency-skip cascade strategy under approach (i).
+- REQ-ETS-CLEANUP-016 (spec.md) — the Sprint 6 wire-side correctness REQ; status IMPLEMENTED at Sprint 6 close + closure-proof verified at Sprint 6 gate.
+- REQ-ETS-CLEANUP-011 (spec.md) — the Sprint 4 credential-leak E2E REQ; auto-PASS for the script three-fold under approach (i) once Wedge 3 closes (Sprint 7 S-ETS-07-01).
+
+##### Historical (Sprint 3 baseline — superseded by Sprint 6 approach (i) above)
+
+> The remainder of this subsection (architect ratification, code listing, "why subclass" rationale, and the original integration-test rules) describes the Sprint 3 baseline pattern. It is RETAINED as historical context for the v1.0 → v1.1 evolution. **DO NOT use the code listing below as the canonical implementation reference** — the canonical filter is the Sprint 6 approach (i) variant in the sister repo at `src/main/java/.../listener/MaskingRequestLoggingFilter.java` (HEAD `c17a534+` post Sprint 7).
+
 **Architect ratifies: subclass-based wrap (Pat's option (a)) — NO separate ADR (precedent: CredentialMaskingFilter NO-ADR ruling).** Justification: the wrap pattern uses REST-Assured 5.5.0's public Filter SPI (well-trodden); the reusable masking semantics already live in `CredentialMaskingFilter.maskValue(...)` (Sprint 2 verbatim port from v1.0); the wrap is a 30-50 LOC subclass override. Decision surface is too small for a standalone ADR. The audit weight is carried by (a) NFR-ETS-08 + SCENARIO-ETS-CLEANUP-LOGBACK-MASKING-001 (already in spec), (b) the credential-leak integration test now mandated by S-ETS-03-02 acceptance criteria (no longer deferred), (c) ADR-010 §"Notes / references" (which cross-references this design.md section as the canonical wrap pattern reference).
 
-**Class location and pattern**:
+> **Sprint 5 GAP-1' supersession**: this Sprint 3 ratification was retroactively invalidated by Sprint 5 Raze adversarial review — see "Sprint 6 redesign: approach (i)" subsection above. The historical ratification is preserved here for archaeological accuracy; the canonical pattern is approach (i).
 
-`org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter` — sibling of `CredentialMaskingFilter` in the same `listener/` subpackage. Extends REST-Assured's `io.restassured.filter.log.RequestLoggingFilter`:
+**Class location and pattern (Sprint 3 baseline — historical; superseded)**:
+
+`org.opengis.cite.ogcapiconnectedsystems10.listener.MaskingRequestLoggingFilter` — sibling of `CredentialMaskingFilter` in the same `listener/` subpackage. Sprint 3 baseline: Extends REST-Assured's `io.restassured.filter.log.RequestLoggingFilter`. **Sprint 6 reality**: the class still extends `RequestLoggingFilter` (for the constructor signature and any consumer code that does `instanceof`), but `filter()` no longer calls `super.filter()` — see approach (i) above for the canonical implementation.
 
 ```java
 package org.opengis.cite.ogcapiconnectedsystems10.listener;

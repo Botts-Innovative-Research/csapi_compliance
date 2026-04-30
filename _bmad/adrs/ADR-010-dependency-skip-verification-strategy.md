@@ -301,3 +301,33 @@ The v2 amendment's hedge ("TestNG transitive cascade may not work; @BeforeClass 
 - Sprint 5 contract reference: `.harness/contracts/sprint-ets-05.yaml` `evaluation_focus` (point on ADR-010 v3 amendment) + `success_criteria.adr010_v3_amendment_landed`
 - Sprint 5 forward-extension stories: `epics/stories/s-ets-05-05-procedures-conformance-class.md`, `epics/stories/s-ets-05-06-deployments-conformance-class.md` (Run 2 — pending)
 - TestNG 7.9.0 source (group cascade implementation reference): `org.testng.internal.MethodHelper.calculateDependentExpressionMethods`
+
+## Sprint 7 v3 retroval note (2026-04-30) — 3-class cascade LIVE-VERIFIED end-to-end (Wedge 6 fall-through)
+
+The Sprint 5 v3 amendment recorded "VERIFIED LIVE" based on the Sprint 4 Raze sabotage exec; the empirical evidence at that time covered the **2-class** cascade (SystemFeatures → Subsystems via the `<group depends-on>` directive) plus the inferred forward-extension to Procedures + Deployments. The v3 amendment's "forward-extends to Procedures + Deployments" claim was an **empirical inference** at Sprint 5 close — the live exec had not yet observed Procedures + Deployments cascade-SKIPping in a single run (Procedures + Deployments classes did not yet exist when the Sprint 4 Raze sabotage XML was captured).
+
+**Sprint 7 S-ETS-07-01 Wedge 1 closes the inference gap**: a fresh sabotage exec from `/tmp/dana-fresh-sprint7/` at 2026-04-30T16:36-37Z produced a cascade XML now archived at sister `ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml` (53KB). The cascade XML demonstrates **3-class cascade** (Subsystems + Procedures + Deployments all SKIP via the `<group depends-on="systemfeatures"/>` directive) plus Core + Common PASS (independent) plus SystemFeatures 1 FAIL + 5 SKIP (intra-class `dependsOnMethods` cascade from the sabotaged first @Test):
+
+| Conformance class | Sprint 7 cascade verdict | total | PASS | FAIL | SKIP |
+|---|---|---|---|---|---|
+| Core (independent) | Independent | 8 | 8 | 0 | 0 |
+| Common (independent) | Independent | 4 | 4 | 0 | 0 |
+| SystemFeatures (depends on Core) | Sabotage marker fired | 6 | 0 | 1 | 5 |
+| Subsystems (depends on SystemFeatures) | TRANSITIVE cascade-SKIP | 4 | 0 | 0 | 4 |
+| **Procedures (depends on SystemFeatures)** | **TRANSITIVE cascade-SKIP — newly verified Sprint 7** | 4 | 0 | 0 | 4 |
+| **Deployments (depends on SystemFeatures)** | **TRANSITIVE cascade-SKIP — newly verified Sprint 7** | 4 | 0 | 0 | 4 |
+
+The inference made at Sprint 5 v3 amendment is now empirically verified — the v3 forward-extension claim is **VERIFIED LIVE at Sprint 7 close**.
+
+The 2-sprint latent defect that blocked this verification was a **javac unreachable-statement compile error** in the sabotage marker injection: `throw new AssertionError(...)` as the first statement of `systemsCollectionReturns200()` made the existing `ETSAssert.assertStatus(...)` line unreachable per JLS §14.21. Sprint 5 GAP-2 `.git`-rsync-exclude masked the latent bug (Docker build never ran the .git-aware multi-stage path); Sprint 6 S-ETS-06-02 `.git` include exposed it; Sprint 7 S-ETS-07-01 Wedge 1 closed it via `if (true) throw` constant-boolean idiom (two-line shape for spring-javaformat compliance — sister commits `a17c6ec` initial single-line + `94a4971` formatter-aware fix).
+
+**Sprint 7 Sampling Features + Property Definitions extension**: Sprint 7 S-ETS-07-02 + S-ETS-07-03 add 2 more sibling classes to the SystemFeatures level (5 sibling classes total: Subsystems, Procedures, Deployments, SamplingFeatures, PropertyDefinitions). The cascade DAG is now wider but the v3 amendment's "mechanical pattern extension" guidance applies unchanged. A Sprint 8+ sabotage exec will further verify the 5-class cascade variant; the 3-class verification at Sprint 7 close is sufficient for the v3 amendment's "VERIFIED LIVE" status.
+
+### Notes / references (Sprint 7 retroval)
+
+- Sprint 7 cascade XML evidence: sister `ops/test-results/sprint-ets-07-01-wedge1-sabotage-cascade-2026-04-30.xml`
+- Sprint 7 cascade bash -x trace: sister `ops/test-results/sprint-ets-07-01-wedge1-bash-x-trace.log`
+- Sprint 7 credential-leak prong-b bash -x trace: sister `ops/test-results/sprint-ets-07-01-wedge3-cred-leak-prong-b-bash-x-trace.log`
+- Sprint 7 contract reference: `.harness/contracts/sprint-ets-07.yaml` `success_criteria.sabotage_cascade_xml_produced`
+- Sprint 7 generator-handoff (Run 1 close): `.harness/handoffs/generator-handoff.yaml`
+- spec.md REQ-ETS-CLEANUP-017 status promoted from STRUCTURAL-IMPLEMENTED-LIVE-EXEC-FAILED (Sprint 6 close) → IMPLEMENTED (Sprint 7 close) with cascade XML evidence pointer.

@@ -86,4 +86,47 @@ After both S-ETS-07-02 and S-ETS-07-03, a sabotage --target=systemfeatures exec 
 
 ## Implementation Notes
 
-(To be filled by Generator at run time.)
+### Generator Run 1 (Dana, 2026-04-30, status: Implemented)
+
+Sister commit `06acd1b` (S-07-02 + S-07-03 bundled). Mechanical pattern extension per S-07-02 SamplingFeatures + ADR-010 v3.
+
+**New class**: `src/main/java/.../conformance/propertydefinitions/PropertyDefinitionsTests.java` — 4 @Tests:
+
+1. `propertiesCollectionReturns200` (CRITICAL, group=propertydefinitions): GET /properties returns HTTP 200 + `items` array present (may be empty per IUT state). PASSes against GeoRobotix.
+2. `propertyItemHasIdType` (CRITICAL, dependsOnMethods=propertiesCollectionReturns200): GET /properties/{firstId} returns item with `id` + `type`. **SKIP-with-reason** when collection empty (Pat MEDIUM risk PROPERTY-DEFINITIONS-RESPONSE-SHAPE mitigation).
+3. `propertyCanonicalUrlReturns200` (CRITICAL, dependsOnMethods=propertyItemHasIdType): canonical URL `/properties/{id}` returns HTTP 200. **SKIP-with-reason** when collection empty.
+4. `propertyDefinitionsDependencyCascadeRuntime` (CRITICAL, dependsOnMethods=propertiesCollectionReturns200): runtime cascade tracer.
+
+`@BeforeClass fetchPropertiesCollection` reads IUT, fetches /properties + /properties/{first-id-if-present} once. Tolerates empty `items` array (firstPropertyId stays null; per-item @Tests SKIP-with-reason).
+
+**testng.xml updated**: added `<group name="propertydefinitions" depends-on="systemfeatures"/>` + `PropertyDefinitionsTests` class entry.
+
+**VerifyTestNGSuiteDependency extended** with 3 new lint tests:
+- `testPropertyDefinitionsGroupDependsOnSystemFeatures`
+- `testEveryPropertyDefinitionsTestMethodCarriesPropertyDefinitionsGroup`
+- `testPropertyDefinitionsCoLocatedWithSystemFeatures`
+
+**OGC adoc URI verification (2026-04-30)**: `/req/property/resources-endpoint`, `/req/property/canonical-endpoint`, `/req/property/canonical-url` all HTTP 200.
+
+**GeoRobotix shape verification (2026-04-30)**: `GET /properties` returns HTTP 200 + `items: []` (empty array, no `links`). The endpoint is declared but no derived properties are currently populated. Per Pat's MEDIUM risk PROPERTY-DEFINITIONS-RESPONSE-SHAPE mitigation, the implementation adapts: collection-endpoint @Test PASSes (HTTP 200 + items array present is the load-bearing assertion); per-item @Tests SKIP-with-reason rather than FAIL when items empty (the OGC requirement is at endpoint-existence + response-shape layer; population is IUT-state-dependent).
+
+**Risk materialized: PROPERTY-DEFINITIONS-RESPONSE-SHAPE (Pat MEDIUM)** — MATERIALIZED IN PARTIAL FORM. The shape DID differ from system/subsystem/procedure resources (empty array), and the planned `id`+`type`+`links` per-item assertions WOULD have FAILed against an empty collection. The SKIP-with-reason mitigation pattern (already coded into the @BeforeClass + per-item @Test fallback) accommodates this gracefully without requiring a Sprint 7 escalation. If GeoRobotix populates `/properties` in the future, no code changes required — the same @Tests will exercise the cached single-property body.
+
+### Verification
+
+- `mvn clean test` PASSes — VerifyTestNGSuiteDependency 19 tests including 3 new Property lint tests
+- `bash scripts/smoke-test.sh` from /tmp clone: PropertyDefinitions 4 / 4 (2 PASS + 2 SKIP-with-reason)
+- Sister smoke evidence at `ops/test-results/sprint-ets-07-smoke-42-tests-2026-04-30.xml`
+
+### Definition of Done
+
+- [x] `PropertyDefinitionsTests.java` exists with ≥4 @Tests; mvn surefire structure tests PASS; smoke @Tests 2 PASS + 2 SKIP-with-reason (per design)
+- [x] All @Tests carry `groups = {"propertydefinitions"}` (verified by lint test)
+- [x] testng.xml updated
+- [x] VerifyTestNGSuiteDependency extended with 3 new lint tests
+- [x] Smoke total ≥42 (achieved 42)
+- [x] At least one OGC requirement URI for /req/property/* curl-verified HTTP 200 (3 verified)
+- [x] REQ-ETS-PART1-008 status updated to IMPLEMENTED in spec.md
+- [x] _bmad/traceability.md row updated
+- [x] No regression in existing smoke @Tests
+- [x] Generator self-audit: no stale "propertydefinitions" references found in design.md or ADRs
