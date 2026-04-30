@@ -1,0 +1,812 @@
+adversarial_plan_reviewer: raze (plan-scope)
+review_target: sprint-ets-06-plan-pre-generator
+contract_under_review: .harness/contracts/sprint-ets-06.yaml
+contract_commit: f013988
+status: complete
+started_utc: 2026-04-30T13:30:23Z
+completed_utc: 2026-04-30T13:55:00Z
+csapi_compliance_head: f013988
+sister_repo_head_at_review: c25e44a
+rest_assured_version_pinned: 5.5.0
+rest_assured_sources_inspected_from: /tmp/raze-plan-fresh-sprint6/rest-assured-5.5.0-sources.jar
+sister_repo_git_size: 5.2MB
+
+verdict: APPROVE_PLAN_WITH_CONCERNS
+score: 0.78
+
+verdict_summary: |
+  The Sprint 6 plan is FUNDAMENTALLY SOUND. Approach (i) is structurally correct
+  for REST-Assured 5.5.0: RequestLoggingFilter.filter() in 5.5.0 (sources jar
+  inspected at io/restassured/filter/log/RequestLoggingFilter.java lines 137-149)
+  is exactly two operations — `RequestPrinter.print(...)` then
+  `return ctx.next(requestSpec, responseSpec)`. There is NO hidden coupling
+  between super.filter()'s log emission and ctx.next()'s transport.
+  Bypassing super.filter() and calling ctx.next(requestSpec) directly is
+  equivalent at the wire-transport layer. The filter chain wired in
+  SuiteFixtureListener.registerRestAssuredFilters() at line 78
+  (MaskingRequestLoggingFilter, then CredentialMaskingFilter — which logs
+  at FINE but does NOT mutate the spec, line 169 of CredentialMaskingFilter:
+  `return ctx.next(requestSpec, responseSpec);`) means ctx.next() forwards
+  the unmodified spec through CredentialMaskingFilter to SendRequestFilter,
+  which performs the HTTP send with the original credential. Approach (i)
+  WILL WORK.
+
+  However, FIVE non-trivial concerns surface that the Generator should pre-
+  handle in Run 1 before hitting Quinn/Raze gates:
+
+  (C-1, HIGH) The S-ETS-06-01 story example code uses `getPrintStream()` on
+  the RequestLoggingFilter superclass. Source inspection of
+  rest-assured 5.5.0 RequestLoggingFilter shows the `stream` field is
+  `private final PrintStream stream;` (line 48) with NO public/protected
+  accessor. The example code WILL NOT COMPILE. The story acknowledges this
+  in line 71 as an "Alternative" (shadow with a private field) but the
+  primary example given to Generator is broken. Generator must shadow with
+  a private PrintStream field captured in the existing constructors
+  (MaskingRequestLoggingFilter() line 64-66 and the parameterized
+  constructor line 74-86). Trivial to fix once Generator notices, but the
+  plan example mis-leads.
+
+  (C-2, MEDIUM) Scenario count is INTERNALLY INCONSISTENT across THREE
+  artifacts:
+    - Contract description block (line 14): "6 critical + 3 normal = 9"
+    - Contract scenarios block (lines 163-179): 7 critical + 3 normal = 10
+    - planner-handoff.yaml new_scenarios (lines 132-141): 6 critical + 2
+      normal = 8 (omits SMOKE-NO-REGRESSION-001 + ADR-010-V3-001)
+  All three counts are different. Contract scenarios block is the
+  authoritative count = 10. Description block and planner-handoff both wrong.
+
+  (C-3, MEDIUM) Scenario id naming is INCONSISTENT between contract and
+  story files. Contract says `SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-
+  001` (singular TEST). Story s-ets-06-03 line 20 says
+  `SCENARIO-ETS-CLEANUP-WIRING-TESTS-RECLASSIFIED-001` (plural TESTS).
+  Generator and gates will hit a string-match mismatch.
+
+  (C-4, MEDIUM) Sprint 5 PARTIAL-CLOSE framing reconciliation is INCOMPLETE.
+  The contract description block (lines 14-17) calls Sprint 5 verdicts by
+  score but never says "Sprint 5 PARTIAL-CLOSE" — meta-Raze recommendation
+  M-3 is acknowledged in planner-handoff (lines 24-28, 207-209) but NOT
+  carried forward into the contract itself.
+
+  (C-5, MEDIUM) Differentiation of Quinn vs Raze live-execs is structural
+  but PARTIALLY-COSMETIC for the wire-tap. Raze's secondary "adversarial
+  wire-tap" is described as either (a) starting stub-iut.sh manually OR
+  (b) "fall back to inspecting the stub-IUT log from Quinn's archived
+  closure-proof evidence at /tmp/quinn-fresh-sprint6/" — the fallback IS
+  cosmetic, just re-reading Quinn's evidence under a different role label.
+  The genuine secondary attack surface is option (a). Contract should make
+  option (a) the primary fallback path.
+
+  Net: Approach (i) is correct; sufficiency of 3 stories is plausible;
+  differentiation is real but soft on the wire-tap side; risk calibration
+  has 3 unsurfaced HIGH/MEDIUM risks (PrintStream-shadow / scenario-count /
+  scenario-id-naming). APPROVE_PLAN_WITH_CONCERNS at 0.78. Generator should
+  pre-handle the broken example code reference and the scenario-id
+  mismatch in Run 1; orchestrator should reconcile the framing in the
+  contract description.
+
+approach_correctness_check:
+  question_under_test: |
+    Does approach (i) (log masked directly + ctx.next(originalSpec))
+    actually work without breaking REST-Assured filter chain semantics?
+  source_inspection_evidence:
+    rest_assured_RequestLoggingFilter_filter_method_5_5_0:
+      file: /tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/filter/log/RequestLoggingFilter.java
+      lines: 137-149
+      verbatim: |
+        public Response filter(FilterableRequestSpecification requestSpec,
+                               FilterableResponseSpecification responseSpec, FilterContext ctx) {
+            String uri = requestSpec.getURI();
+            if (!showUrlEncodedUri) { ... }
+            if (logDetailSet.isEmpty()) {
+                RequestPrinter.print(requestSpec, requestSpec.getMethod(), uri, logDetail, blacklistedHeaders, stream, shouldPrettyPrint);
+            } else {
+                RequestPrinter.print(requestSpec, requestSpec.getMethod(), uri, logDetailSet, blacklistedHeaders, stream, shouldPrettyPrint);
+            }
+            return ctx.next(requestSpec, responseSpec);
+        }
+      finding: |
+        super.filter() is exactly two operations: (1) RequestPrinter.print to
+        the stream; (2) return ctx.next(requestSpec, responseSpec).
+        There is NO retry logic, NO interceptor chaining, NO
+        response-caching, NO state side-effect that bypassing super.filter()
+        would skip. Bypassing super.filter() and calling ctx.next() directly
+        is functionally equivalent at the wire layer minus the formatted log
+        emission.
+    filter_chain_FilterContextImpl_next:
+      file: /tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/internal/filter/FilterContextImpl.groovy
+      lines: 68-74
+      verbatim: |
+        Response next(FilterableRequestSpecification request, FilterableResponseSpecification response) {
+          if (filters.hasNext()) {
+            def next = filters.next();
+            def filterContext = (request as RequestSpecificationImpl).newFilterContext(...)
+            return next.filter(request, response, filterContext)
+          }
+        }
+      finding: |
+        ctx.next() pulls the NEXT filter from the iterator and calls its
+        filter() method. The actual HTTP transmission happens at the
+        SendRequestFilter (last filter; src in
+        /tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/internal/filter/SendRequestFilter.groovy
+        line 30: `requestSpecification.sendRequest(...)`).
+        Important: ctx.next() does NOT itself send HTTP — it traverses
+        the user's registered filter chain. This means there's a key
+        invariant to verify: the next filter in the chain
+        (CredentialMaskingFilter) MUST also forward the unmodified spec.
+    filter_chain_wiring:
+      file: /home/nh/docker/gir/ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/listener/SuiteFixtureListener.java
+      line: 78
+      verbatim: |
+        RestAssured.filters(new MaskingRequestLoggingFilter(), new CredentialMaskingFilter());
+      finding: |
+        Filter chain order is: MaskingRequestLoggingFilter (1st) →
+        CredentialMaskingFilter (2nd) → SendRequestFilter (built-in last).
+    CredentialMaskingFilter_does_not_mutate:
+      file: /home/nh/docker/gir/ets-ogcapi-connectedsystems10/src/main/java/org/opengis/cite/ogcapiconnectedsystems10/listener/CredentialMaskingFilter.java
+      lines: 153-170
+      finding: |
+        CredentialMaskingFilter.filter() reads requestSpec.getHeaders()
+        forEach + LOGR.log(FINE, masked) — but does NOT mutate the spec
+        (no removeHeader / no header()). It returns
+        `ctx.next(requestSpec, responseSpec);` (line 169) with the
+        unmodified spec.
+        Therefore: when MaskingRequestLoggingFilter calls
+        ctx.next(requestSpec) with the ORIGINAL credential, the spec
+        traverses CredentialMaskingFilter unchanged and reaches
+        SendRequestFilter with the original credential → wire correct.
+  approach_i_verdict: STRUCTURALLY_CORRECT
+  approach_i_compilation_concern: |
+    The story's example code uses `getPrintStream()`. The
+    RequestLoggingFilter superclass field `stream` is `private final` with
+    NO accessor (verified in 5.5.0 sources). The example WILL NOT COMPILE
+    as-written. Generator must use the alternative noted in the story
+    (shadow with a private PrintStream field captured in the constructors).
+    This is a HIGH-impact pitfall because the FIRST thing Generator will
+    try is the example code — they'll hit a compile error. ~5min lost
+    troubleshooting; not blocking but mis-leading.
+  hidden_coupling_check: |
+    None found. RequestLoggingFilter.filter() in 5.5.0 has no fields that
+    super.filter() side-effects beyond writing to `stream`. There is no
+    request-correlation-id, no response cache, no subsequent-call state.
+    Bypassing super.filter() does NOT lose any wire-side behavior.
+  blacklisted_headers_alternative_unsurfaced: |
+    REST-Assured's RequestLoggingFilter has a built-in `blacklistedHeaders`
+    parameter (RequestLoggingFilter constructor line 121-135) that REPLACES
+    the value of any blacklisted header with literal "[ BLACKLISTED ]"
+    (RequestPrinter.java line 49 + 192) in the LOG output. The actual
+    requestSpec is NOT mutated — only the log line is rewritten. This
+    achieves wire-safety without any try/finally or super.filter() bypass.
+    The drawback: it does NOT produce the project's "Bear***WXYZ"
+    partial-mask format; it produces "[ BLACKLISTED ]" instead. So this
+    alternative is rejected on format grounds (the prong (b) grep expects
+    Bear***WXYZ; the FilterAcceptance tests expect partial mask). But Pat
+    did NOT mention this alternative anywhere in the contract — Generator
+    or Architect should be aware of it as a fallback if approach (i)
+    encounters unforeseen issues.
+
+sufficiency_check:
+  question_under_test: |
+    Are 3 stories enough to close the credential-leak GAP? Are there
+    layers Pat missed (CTL/TestNG suite, SuiteFixtureListener,
+    other filters that mutate)?
+  ctl_layer_check: |
+    Read SuiteFixtureListener.onStart (lines 40-53) and
+    configureRestAssuredAuthCredential. The CTL → bash → Java chain
+    sets the credential into RestAssured.requestSpecification's
+    Authorization header. NO mutation of the credential at the CTL or
+    listener layer. Sprint 5 S-ETS-05-01 closed the wiring gap; the
+    Sprint 6 fix is at the filter layer only.
+  filter_chain_layer_check: |
+    Only TWO filters in the chain (MaskingRequestLoggingFilter +
+    CredentialMaskingFilter). MaskingRequestLoggingFilter is the only
+    one that mutates the spec (which is the bug). CredentialMaskingFilter
+    does NOT mutate (verified above). No other filters added by
+    SuiteFixtureListener. Built-in filters (SendRequestFilter,
+    SendRequestFilter.send) handle transport and do not mutate beyond
+    that. NO additional layer Pat missed.
+  hidden_default_filters_check: |
+    REST-Assured 5.x adds default filters when the user calls methods
+    like .log().all(). The ETS does NOT call .log().all() on the
+    requestSpecification; only the registered filters fire. Verified via
+    the build at SuiteFixtureListener line 78. No silent default
+    RequestLoggingFilter would corrupt the wire.
+  sufficiency_verdict: SUFFICIENT_THREE_STORIES
+  caveat: |
+    Sufficiency assumes the bundled items in S-ETS-06-01
+    (container-log capture timing fix + prong (b) grep expansion) are NOT
+    treated as scope creep that crowds out the primary filter fix.
+    Recommend Generator implement the filter fix FIRST (Java change),
+    then bundle the bash items SECOND. If Generator runs out of budget,
+    the bash items can defer to a Run 2 without blocking Sprint 6 close.
+
+differentiation_check:
+  question_under_test: |
+    Are Quinn's and Raze's live-execs genuinely independent attack
+    surfaces, or does Raze's wire-tap secondary collapse back into
+    Quinn's evidence?
+  quinn_primary_exec: scripts/credential-leak-e2e-test.sh (full three-fold cross-check)
+  raze_primary_exec: scripts/sabotage-test.sh --target=systemfeatures (cascade XML)
+  raze_secondary_exec_options:
+    option_a: |
+      Start stub-iut.sh manually; run a targeted REST-Assured request
+      via mvn exec or custom test harness with SMOKE_AUTH_CREDENTIAL set;
+      observe Authorization header value at stub-IUT log. GENUINELY
+      INDEPENDENT — different orchestration path than Quinn's
+      credential-leak-e2e-test.sh script.
+    option_b_fallback: |
+      "Fall back to inspecting the stub-IUT log from Quinn's archived
+      closure-proof evidence at /tmp/quinn-fresh-sprint6/ (if accessible)
+      OR run the full credential-leak-e2e-test.sh independently."
+      This fallback IS COSMETIC — re-reading Quinn's evidence with a
+      different role label is not an independent observation. Running
+      the same script independently (the OR clause) is independent at
+      the orchestration layer but produces deterministic outputs (same
+      grep results) — also cosmetically independent.
+  differentiation_verdict: |
+    PARTIALLY_HONEST. The PRIMARY exec differentiation
+    (credential-leak-e2e-test.sh vs sabotage-test.sh) is GENUINE — these
+    are different scripts attacking different artifacts. The SECONDARY
+    "wire-tap" fallback path option_b is COSMETIC; only option_a is a
+    genuine independent attack surface. Recommend the contract require
+    option_a as the primary path with option_b explicitly disallowed
+    as a fallback (or labeled "process-only check, not independent
+    evidence").
+  meta_raze_concern_addressed: PARTIALLY |
+    Meta-Raze M-1 noted that Sprint 5 cross-corroboration was
+    "structurally co-targeted by the briefing." Sprint 6 contract
+    addresses this by giving Quinn + Raze DIFFERENT primary execs,
+    which is a genuine improvement. But the wire-tap secondary
+    re-introduces the co-targeting risk if Raze takes the option_b
+    fallback path.
+
+risk_calibration_check:
+  surfaced_risks_review:
+    MASKING-FILTER-APPROACH-I-COMPLETENESS:
+      severity_assigned: high
+      severity_assessment: CORRECTLY_CALIBRATED
+      note: |
+        Pat's mitigation guidance is sound (minimal log format first;
+        expand only if gate flags). This is the right risk to flag HIGH.
+    CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE:
+      severity_assigned: high
+      severity_assessment: PARTIALLY_OVERSTATED
+      rationale: |
+        Pom.xml line 'org.mockito mockito-core scope test' is PRESENT
+        (verified). Mockito-based Response stub is straightforward; the
+        story's example code uses `mock(Response.class)` which compiles.
+        The actual concern is more the ResponseBuilder fallback if
+        Mockito is too heavy for what's needed — but Mockito IS
+        available. Severity: MEDIUM-leaning, not HIGH. Pat's HIGH is
+        defensible if you anchor on "things that could go wrong"; my
+        MEDIUM is anchored on "what's actually hard given pom.xml has
+        Mockito available and an existing test pattern (StubFilterContext)
+        already implements FilterContext successfully without Mockito".
+    SUPER-FILTER-BYPASS-REST-ASSURED-VERSION-DRIFT:
+      severity_assigned: medium
+      severity_assessment: MEDIUM_LEANING_LOW
+      rationale: |
+        Per source inspection of 5.5.0 RequestLoggingFilter.filter(),
+        bypassing super.filter() loses ONLY the formatted log emission.
+        No retry/cache/intercept logic. Future REST-Assured upgrades
+        could in theory add something, but the current pinned version
+        + the project's pom.xml SHA pin (per
+        openapi_yaml_pinned_by_sha success criterion) means version
+        drift is bounded. The medium tag is fine; LOW would also be
+        defensible.
+    SABOTAGE-GIT-TEMP-TREE-SIZE:
+      severity_assigned: medium
+      severity_assessment: OVERSTATED_TO_LOW
+      rationale: |
+        Verified directly: `du -sh /home/nh/docker/gir/
+        ets-ogcapi-connectedsystems10/.git/` = 5.2MB. Well under the
+        50MB threshold Pat sets in the mitigation. Removing
+        --exclude='.git/' (Option A) is the obvious choice. This risk
+        is essentially LOW given the actual measurement.
+    CONTAINER-LOG-CAPTURE-TIMING-FIX-SIDE-EFFECT:
+      severity_assigned: low
+      severity_assessment: CORRECTLY_CALIBRATED
+  unsurfaced_risks_found:
+    - id: MASKING-FILTER-PRINTSTREAM-FIELD-SHADOWING
+      severity: high
+      description: |
+        The S-ETS-06-01 story example code uses `getPrintStream()` on the
+        RequestLoggingFilter superclass. Source inspection confirms this
+        method does NOT exist in REST-Assured 5.5.0; the parent's
+        `stream` field is private final with no public/protected
+        accessor. Generator MUST shadow with a private PrintStream field
+        captured in MaskingRequestLoggingFilter's constructors. The
+        story acknowledges this in the line 71 "Alternative" note but
+        the PRIMARY example code is broken. Generator hitting this will
+        burn 5-15 min troubleshooting compile errors before reading the
+        Alternative note carefully.
+      recommended_disposition: |
+        Pat should AMEND s-ets-06-01 BEFORE Generator runs: replace the
+        primary example code's `getPrintStream().println(logLine)` with
+        `this.stream.println(logLine)` (assuming a shadowed
+        `private final PrintStream stream;` field added in the
+        constructor) AND add the field to the example. Alternatively,
+        Generator should pre-handle this by reading the rest-assured
+        sources first; but that's an extra step the plan doesn't
+        require.
+    - id: SCENARIO-COUNT-INTERNAL-INCONSISTENCY
+      severity: medium
+      description: |
+        Three different scenario counts across three planning artifacts:
+        contract description "6 critical + 3 normal = 9"; contract
+        scenarios block 7 critical + 3 normal = 10 (authoritative);
+        planner-handoff new_scenarios 6 critical + 2 normal = 8 (omits
+        SMOKE-NO-REGRESSION-001 + ADR-010-V3-001). The contract
+        scenarios block is correct; description is wrong; planner-handoff
+        new_scenarios is wrong. Quinn / Raze gates relying on
+        evaluation_questions or evaluation_artifacts_required may miss
+        the regression baseline scenario or the ADR-010-V3 preservation
+        scenario. The artifact list in evaluation_artifacts_required
+        does not directly cite SCENARIO-ETS-CLEANUP-SMOKE-NO-REGRESSION-001
+        but does cite the smoke 34/34 PASS verification (so it's
+        operationally covered).
+      recommended_disposition: |
+        Orchestrator should fix the contract description block to read
+        "7 critical + 3 normal = 10" before Generator runs (or in a
+        Sprint 6 metrics turn; not blocking Generator). Planner-handoff
+        new_scenarios should also be amended for traceability — though
+        it's secondary documentation.
+    - id: SCENARIO-ID-NAMING-MISMATCH
+      severity: medium
+      description: |
+        Contract scenarios block line 177:
+        SCENARIO-ETS-CLEANUP-WIRING-TEST-RECLASSIFIED-001 (singular TEST).
+        Story s-ets-06-03 line 20:
+        SCENARIO-ETS-CLEANUP-WIRING-TESTS-RECLASSIFIED-001 (plural TESTS).
+        Generator referencing the story for spec.md text will use plural
+        TESTS; gate Quinn / Raze grepping for the contract id will use
+        singular TEST. Both sides will produce mismatched output.
+      recommended_disposition: |
+        Pat should pick one canonical id (singular OR plural) and update
+        BOTH the story and any other references BEFORE Generator runs.
+        Singular TEST is contract-canonical; recommend amending the
+        story to match.
+    - id: DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION
+      severity: medium
+      description: |
+        The Sprint 3 design.md javadoc claim "IUT receives the real
+        credential header" is FALSE per Sprint 5 GAP-1' diagnosis (the
+        wire receives the masked form). Story s-ets-06-01 line 100
+        DOD says "design.md §'Sprint 3 hardening: MaskingRequestLoggingFilter
+        wrap pattern' updated to reflect the fix". But: Generator should
+        ALSO audit any OTHER documentation that references the same
+        pattern. e.g.: MaskingRequestLoggingFilter.java javadoc lines
+        29-32 claims "the IUT receives the real credential header even
+        if super.filter() throws — masked headers exist only during the
+        formatter's read." This is FALSE for the current code (the wire
+        receives the masked spec because the finally block runs AFTER
+        super.filter()). After approach (i) the claim becomes TRUE
+        (because the spec is never mutated) but the javadoc still says
+        "even if super.filter() throws" — but super.filter() is no
+        longer called after approach (i). This javadoc claim becomes
+        IRRELEVANT (correct in the sense that it can't fail because the
+        scenario doesn't exist anymore) but technically misleading.
+        Recommend Generator audit the javadoc + any ADR / design.md
+        claims that reference super.filter() and update them all.
+      recommended_disposition: |
+        Generator self-audits during S-ETS-06-01: grep for
+        "super.filter\\|wrap pattern\\|wrap chain" across design.md +
+        javadoc + ADRs, update all references to the new approach (i).
+    - id: REST-ASSURED-BLACKLISTED-HEADERS-ALTERNATIVE-NOT-SURFACED
+      severity: low
+      description: |
+        REST-Assured's built-in RequestLoggingFilter accepts a
+        blacklistedHeaders Set parameter (5.5.0 RequestLoggingFilter
+        constructor line 121-135) that auto-replaces blacklisted header
+        values with "[ BLACKLISTED ]" in the log output WITHOUT
+        mutating the actual requestSpec. This is a structurally
+        cleaner pattern than approach (i) — no super.filter() bypass,
+        no PrintStream shadowing — but it produces "[ BLACKLISTED ]"
+        instead of the project's "Bear***WXYZ" partial mask. The
+        format mismatch is the only reason approach (i) wins; otherwise
+        the built-in is the cleaner solution.
+      recommended_disposition: |
+        Document in MaskingRequestLoggingFilter javadoc that the
+        built-in blacklistedHeaders alternative was considered + rejected
+        on log-format-fidelity grounds. This is a "rationale captured"
+        item, not a code change. Pat could optionally add this to
+        design.md §"Sprint 6 hardening" rationale section.
+
+reclassification_disposition:
+  question_under_test: |
+    Should the 16 reclassified-as-wiring-only tests be DELETED, KEPT
+    reclassified, or BOTH?
+  recommendation: KEEP_RECLASSIFIED
+  rationale: |
+    Reclassification preserves regression detection at the wiring layer.
+    The 16 tests verify that:
+    - VerifyAuthCredentialPropagation: configureRestAssuredAuthCredential
+      correctly sets the Authorization header on RestAssured.
+      requestSpecification given various credential values (null, empty,
+      typical Bearer, edge cases). This is genuine wiring coverage that
+      catches future regressions in the bash → CTL → Java chain.
+    - VerifyMaskingRequestLoggingFilter: header mutation behavior +
+      snapshot/restore roundtrip. After approach (i) lands, the
+      snapshot/restore path is REMOVED (no try/finally). Some of the 8
+      tests will be RENDERED MEANINGLESS by the fix (they'll test code
+      paths that no longer exist). Others (header masking semantics +
+      isMasked() set membership) remain valuable.
+  finer_grained_recommendation: |
+    Generator should audit the 8 VerifyMaskingRequestLoggingFilter tests
+    individually as part of S-ETS-06-01 implementation. Tests that
+    verify try/finally semantics (which approach (i) eliminates) should
+    be DELETED — keeping them means keeping tests for non-existent code.
+    Tests that verify mask semantics (isMasked, DEFAULT_HEADERS_TO_MASK
+    set membership, mask format) should be KEPT and reclassified.
+    Net: the "16 tests" count is a planning oversimplification. Some
+    will be deleted (try/finally tests), some kept-and-reclassified
+    (semantics tests), and the new VerifyWireRestoresOriginalCredential
+    becomes the wire-side proof. The S-ETS-06-03 reclassification text
+    should reflect this finer-grained outcome rather than treating all
+    16 as monolithic-wiring-only.
+  cosmetic-decoration_risk_assessment: |
+    Pat's reclassification preserves a "16/16 PASS" metric in surefire
+    output. After approach (i) the actual count may DROP because some
+    tests test removed code. This is HEALTHIER honesty than preserving
+    a misleading metric. Generator should track the actual count after
+    fix; gate verifies surefire shows the expected count (which may be
+    less than 16 + 1 = 17; could be 12 + 1 = 13 if 4 try/finally tests
+    are deleted). Pat's success criterion `wiring_tests_reclassified_in_spec:
+    true` is checking the spec text, not the count. Compatible.
+  add_deletion_as_4th_story: NO
+  add_deletion_as_4th_story_rationale: |
+    The audit-and-delete-where-meaningless work is naturally part of
+    S-ETS-06-01's filter-redesign work — the same Generator who
+    rewrites filter() will see which existing tests no longer apply.
+    Adding a 4th story creates handoff overhead for what's essentially
+    a code-cleanup substep. Recommend Generator handle inline; Pat
+    adds a sentence to S-ETS-06-01's DoD: "Delete or update unit tests
+    that verify try/finally semantics that no longer exist after the
+    fix."
+
+scope_discipline_check:
+  question_under_test: |
+    Any scope creep in the wedge sprint? Bundled items (container-log
+    capture timing + prong (b) grep expansion) — do they exceed wedge
+    discipline?
+  bundled_items_analysis:
+    container_log_capture_timing_fix:
+      classification: TIGHTLY_BOUND_TO_GAP-1_PRIME
+      rationale: |
+        CONCERN-1 from primary Raze: prong (a) currently passes
+        vacuously because container.log is empty (captured AFTER
+        teardown). Without this fix, GAP-1' prong (a) cannot verify
+        non-vacuous PASS even after the filter fix. This is NOT scope
+        creep; it's required for the gate's three-fold cross-check
+        to be meaningful.
+      verdict: KEEP_BUNDLED
+    prong_b_grep_expansion:
+      classification: TIGHTLY_BOUND_TO_GAP-1_PRIME
+      rationale: |
+        CONCERN-2 from primary Raze: prong (b) doesn't grep stub-IUT log,
+        only TestNG XML. The masked form Bear***WXYZ does appear in
+        stub-IUT log (12 hits per Sprint 5 evidence). After the filter
+        fix, the masked form will appear in the FILTER'S log output
+        (PrintStream / System.out / catalina.out) — prong (b) needs to
+        grep there too. Trivial bash addition.
+      verdict: KEEP_BUNDLED
+    sabotage_log_message_honest_failure_conditional:
+      classification: PARTIAL_SCOPE_CREEP_BUT_DEFENSIBLE
+      rationale: |
+        S-ETS-06-02 includes "improve log message conditional ... ~5-10
+        LOC bash conditional" to distinguish Docker build failure from
+        smoke @Test failure. This is honest log messaging, NOT a fix
+        for the underlying defect. It's a P2-level improvement bundled
+        with a P1 fix. Defensible (~5-10 LOC) but pushes the wedge a
+        bit. Could be deferred to Sprint 7 without blocking; Pat
+        chose to bundle for batch efficiency.
+      verdict: KEEP_BUNDLED_BUT_OPTIONAL
+  no_new_conformance_class_check: VERIFIED |
+    Contract success criterion `no_new_conformance_class_in_sprint:
+    true`. evaluation_questions_for_quinn line 222 explicitly: "grep
+    -rn 'class SamplingTests\\|class PropertiesTests\\|class
+    SubdeploymentsTests' src/ — must return ZERO hits". Wedge
+    discipline enforced.
+  scope_discipline_verdict: COMPLIANT_WITH_MINOR_BUNDLING
+
+framing_reconciliation_check:
+  question_under_test: |
+    Does the contract correctly reference Sprint 5 PARTIAL-CLOSE
+    (per meta-Raze framing recommendation)?
+  contract_search_for_partial_close: |
+    grep -n "PARTIAL-CLOSE" sprint-ets-06.yaml → 0 hits.
+    Contract uses term "carryover" but never "PARTIAL-CLOSE".
+    Description block (lines 14-17) calls Sprint 5 by score
+    (Quinn 0.82 + primary Raze 0.74 + meta-Raze 0.83) but doesn't
+    name the verdict shape.
+  planner_handoff_search_for_partial_close: |
+    planner-handoff.yaml lines 24-28 + 207-209 DO acknowledge
+    "Sprint 5 should be reframed as PARTIAL-CLOSE" — Pat is aware
+    of meta-Raze M-3 but did NOT carry it forward into the contract
+    description block. The handoff says "orchestrator handles
+    ops/status.md update; Pat flags for awareness."
+  framing_reconciliation_verdict: INCOMPLETE_BUT_SOFT_REQUIREMENT |
+    Pat's choice to defer the framing reconciliation to the
+    orchestrator (ops/status.md + metrics) rather than embedding it in
+    the contract description is defensible. The contract is the
+    "what work to do" artifact; status.md is the "how to frame
+    Sprint 5 retrospectively" artifact. Sprint 5's framing is
+    technically out of scope for the Sprint 6 contract. But the
+    contract description's pattern of naming Sprint 5 verdicts by
+    score WITHOUT naming the shape (PARTIAL-CLOSE) preserves the
+    same flattening meta-Raze flagged — it could read more honestly
+    if it added one phrase: "Sprint 5 closed as PARTIAL-CLOSE
+    (5/6 stories ship clean; credential-leak-e2e-full-pass remains
+    open for the third sprint attempt)."
+  recommended_orchestrator_action: |
+    Orchestrator updates ops/status.md and metrics.md to use
+    PARTIAL-CLOSE framing for Sprint 5 BEFORE Generator runs (so
+    Generator's session reads the corrected framing). Optionally
+    amend Sprint 6 contract description block to add one sentence
+    on PARTIAL-CLOSE — but not blocking.
+
+falsifiability_check:
+  question_under_test: |
+    Per success criterion: is it independently falsifiable? Could a
+    Generator that passes the technical check still produce a false
+    pass?
+  per_criterion_assessment:
+    all_critical_scenarios_pass:
+      falsifiable: PASS
+      note: Each scenario has a concrete check (grep / mvn / source inspection).
+    normal_scenario_pass_rate_0.90:
+      falsifiable: PASS
+      note: 0.90 of 3 normal scenarios = at least 2.7 → 3 must pass; each is concrete.
+    spec_updated:
+      falsifiable: PASS
+      note: spec.md REQ status flag is text grep.
+    no_regression:
+      falsifiable: PASS
+      note: mvn test 78+/0/0/3 baseline preserved.
+    build_green_jdk17:
+      falsifiable: PASS
+      note: mvn clean install exit 0 verifiable.
+    reproducible_build:
+      falsifiable: PASS
+      note: byte-identical jar across builds.
+    smoke_test_green_against_georobotix:
+      falsifiable: PASS
+      note: 34/34 PASS.
+    no_new_conformance_class_in_sprint:
+      falsifiable: PASS
+      note: grep for SamplingTests / PropertiesTests / SubdeploymentsTests in src/ → 0.
+    no_part2_work_in_sprint:
+      falsifiable: PASS
+      note: REQ-ETS-PART2-* state must remain Specified, not IMPLEMENTED.
+    openapi_yaml_pinned_by_sha:
+      falsifiable: PASS
+      note: pom.xml inspection for sha pin.
+    zero_bare_assertionerror_in_conformance:
+      falsifiable: PASS
+      note: grep -rE 'throw new AssertionError' src/main/.../conformance → 0.
+    credential_leak_e2e_full_pass:
+      falsifiable: PASS_BUT_GAMEABLE
+      note: |
+        Three-fold (a)+(b)+(c) all PASS. Could be gamed if Generator
+        modifies credential-leak-e2e-test.sh to weaken the grep patterns
+        (e.g. broaden the regex so any output triggers PASS). Quinn must
+        verify the script's grep patterns are unchanged or strengthened,
+        not weakened. Not a high probability but a real attack surface.
+        Recommend Quinn explicitly diff scripts/credential-leak-e2e-test.sh
+        between sprint-5-close and sprint-6-close.
+    wire_carries_original_credential:
+      falsifiable: PASS
+      note: stub-IUT log grep for unmasked literal.
+    masked_form_in_log_not_wire:
+      falsifiable: PASS
+      note: filter log + stub-IUT log grep cross-check.
+    sabotage_target_flag_works_fully:
+      falsifiable: PASS
+      note: docker build + cascade XML produced.
+    cascade_three_class_verified:
+      falsifiable: PASS_BUT_GAMEABLE
+      note: |
+        Cascade XML showing three-class SKIP. Could be gamed if
+        Generator modifies sabotage-test.sh's cascade-parsing logic to
+        accept lenient SKIP counts. Recommend Raze diff
+        scripts/sabotage-test.sh's cascade verification block.
+    wire_side_unit_test_present:
+      falsifiable: PASS_BUT_PARTIALLY_GAMEABLE
+      note: |
+        VerifyWireRestoresOriginalCredential present + uses
+        CapturingFilterContext. Could be gamed if Generator implements
+        CapturingFilterContext that returns the masked spec from
+        ctx.next() recording but the test ASSERTS the captured value
+        equals "Bear***WXYZ" (i.e. asserts the BUG, not the FIX). Quinn
+        + Raze must verify the assertion checks the ORIGINAL credential
+        not the masked form. Pat's evaluation_questions for both gates
+        explicitly cover this; mitigation is in place.
+    wiring_tests_reclassified_in_spec:
+      falsifiable: PASS
+      note: spec.md text grep for "wiring-only".
+    container_log_capture_non_vacuous:
+      falsifiable: PASS
+      note: container.log non-empty AND filter output present.
+    worktree_not_polluted_at_gate:
+      falsifiable: PASS
+      note: git status of user worktree at end of gate run.
+  overall_falsifiability: 17_OF_17_FALSIFIABLE_3_PASS_BUT_GAMEABLE
+  gameability_summary: |
+    3 of 17 criteria (credential_leak_e2e_full_pass + cascade_three_class_
+    verified + wire_side_unit_test_present) are falsifiable but partially
+    gameable through script/test modifications. Mitigations:
+    - Pat's evaluation_questions cover the wire_side_unit_test gameability.
+    - Recommend Quinn + Raze diff scripts/credential-leak-e2e-test.sh +
+      scripts/sabotage-test.sh between sprint-5-close (HEAD c25e44a) and
+      sprint-6-close to verify grep / cascade patterns aren't weakened.
+      This is a one-line `git diff c25e44a..HEAD scripts/` check.
+
+unsurfaced_risks:
+  - id: MASKING-FILTER-PRINTSTREAM-FIELD-SHADOWING
+    severity: high
+    description: See risk_calibration_check.unsurfaced_risks_found above.
+    sprint_6_inclusion: |
+      Pat AMEND s-ets-06-01 example code BEFORE Generator runs.
+      OR Generator pre-handle by reading rest-assured-5.5.0 sources.
+    generator_self_escalation_trigger: |
+      If Generator compiles getPrintStream() reference and gets
+      "cannot find symbol" error, IMMEDIATELY shadow with private
+      PrintStream field rather than chase getter accessors.
+  - id: SCENARIO-COUNT-INTERNAL-INCONSISTENCY
+    severity: medium
+    description: See risk_calibration_check.unsurfaced_risks_found above.
+    sprint_6_inclusion: |
+      Orchestrator amend contract description "6+3=9" → "7+3=10" in
+      a metrics turn. Not blocking Generator; cosmetic-but-misleading.
+    generator_self_escalation_trigger: NONE (cosmetic)
+  - id: SCENARIO-ID-NAMING-MISMATCH
+    severity: medium
+    description: See risk_calibration_check.unsurfaced_risks_found above.
+    sprint_6_inclusion: |
+      Pat or Generator pick canonical id (singular TEST). Update
+      story s-ets-06-03 line 20 + DoD.
+    generator_self_escalation_trigger: |
+      Generator uses contract scenario ids (singular TEST) when
+      writing spec.md text; updates story file as part of S-ETS-06-03.
+  - id: DESIGN_MD_JAVADOC_FALSE_CLAIM_PROPAGATION
+    severity: medium
+    description: See risk_calibration_check.unsurfaced_risks_found above.
+    sprint_6_inclusion: |
+      Generator self-audit during S-ETS-06-01 fix.
+    generator_self_escalation_trigger: NONE
+  - id: REST-ASSURED-BLACKLISTED-HEADERS-ALTERNATIVE-NOT-SURFACED
+    severity: low
+    description: See risk_calibration_check.unsurfaced_risks_found above.
+    sprint_6_inclusion: |
+      Document rejection rationale in javadoc (low priority).
+
+plan_gaps:
+  - rank: 1
+    severity: high
+    id: STORY-EXAMPLE-CODE-WONT-COMPILE
+    description: |
+      s-ets-06-01.md lines 49-69 primary example code uses
+      `getPrintStream()` which does not exist in REST-Assured 5.5.0.
+      Generator running this verbatim hits compile error.
+    fix_action: |
+      Pat AMEND story s-ets-06-01 BEFORE Generator: replace example with
+      a constructor + private PrintStream field shadow, demonstrate
+      `this.stream.println(logLine)`. ~5 LOC story edit.
+  - rank: 2
+    severity: medium
+    id: SCENARIO-COUNT-INTERNAL-INCONSISTENCY
+    description: |
+      Three different scenario counts (9 / 10 / 8) across contract
+      description, contract scenarios block, and planner-handoff.
+    fix_action: Reconcile to 7 critical + 3 normal = 10.
+  - rank: 3
+    severity: medium
+    id: SCENARIO-ID-NAMING-MISMATCH
+    description: |
+      WIRING-TEST vs WIRING-TESTS singular/plural between contract and
+      story s-ets-06-03.
+    fix_action: |
+      Pick singular TEST (matches contract); fix story s-ets-06-03 +
+      cross-references.
+  - rank: 4
+    severity: medium
+    id: SECONDARY-WIRE-TAP-FALLBACK-COSMETIC-INDEPENDENCE
+    description: |
+      Raze secondary wire-tap option_b ("read Quinn's archived stub-IUT
+      log" or "rerun credential-leak-e2e-test.sh") is not an
+      independent attack surface. Only option_a (manual stub-iut.sh +
+      targeted REST-Assured request) is genuine.
+    fix_action: |
+      Pat AMEND contract evaluation_questions_for_raze line 228
+      (Raze secondary exec) — make option_a primary; mark option_b
+      as "process-only check, NOT independent evidence; only use if
+      option_a impractical and disclose the limitation".
+  - rank: 5
+    severity: low
+    id: SPRINT-5-PARTIAL-CLOSE-FRAMING-NOT-IN-CONTRACT
+    description: |
+      Contract description block uses scores but doesn't name
+      Sprint 5 as PARTIAL-CLOSE. Meta-Raze M-3 framing recommendation
+      not propagated into contract.
+    fix_action: |
+      Optional: add one sentence to contract description block. Or
+      handle exclusively in ops/status.md + metrics turn (current
+      Pat plan).
+
+recommendations:
+  pre_generator_amendments:
+    - "Pat AMEND s-ets-06-01 example code (lines 49-69): replace `getPrintStream().println(logLine)` with `this.stream.println(logLine)` after declaring `private final PrintStream stream;` field shadowed in both constructors. Add note: 'Parent's stream field is private; subclass shadows for direct access.'"
+    - "Pat (or orchestrator) reconcile scenario count to 7 critical + 3 normal = 10 across contract description, planner-handoff, and any cross-references."
+    - "Pat (or Generator during S-ETS-06-03) reconcile WIRING-TEST vs WIRING-TESTS scenario id — recommend singular TEST (matches contract canonical)."
+    - "Pat AMEND evaluation_questions_for_raze line 228: make manual-stub-iut wire-tap (option_a) the primary fallback; mark Quinn-archive-read (option_b) as 'process-only check, not independent evidence'."
+  generator_pre_handle_in_run_1:
+    - "Read RequestLoggingFilter source from /tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/filter/log/RequestLoggingFilter.java BEFORE writing the new filter() method. Confirm `stream` field is private final; plan PrintStream shadow."
+    - "Audit existing 8 VerifyMaskingRequestLoggingFilter tests during fix work — DELETE tests that verify try/finally semantics (no longer exist after approach (i)); KEEP tests that verify mask format / isMasked() / DEFAULT_HEADERS_TO_MASK set membership; reclassify the kept ones."
+    - "Self-audit javadoc + design.md + ADRs for any reference to 'super.filter()' or 'wrap pattern' or 'try/finally restoration' — update all to reflect the new approach. ~5 references at most."
+    - "Self-escalate to Architect ONLY if: (a) Mockito-based mock(Response.class) does NOT compile (it should — pom.xml has mockito-core test scope); (b) the bypass requires reimplementing >50 LOC of RequestPrinter formatting (it should not — minimal masked-header log line is sufficient)."
+  orchestrator_pre_generator_actions:
+    - "Update ops/status.md to use 'Sprint 5 PARTIAL-CLOSE' framing per meta-Raze M-3 recommendation BEFORE Generator's session — so Generator's prompt context references the corrected framing."
+    - "Update _bmad/traceability.md or ops/known-issues.md with Sprint 4-5 quality trend section per meta-Raze process recommendation."
+  gate_time_recommendations:
+    - "Quinn diff scripts/credential-leak-e2e-test.sh between c25e44a (Sprint 5 close) and Sprint 6 close — verify grep patterns are unchanged or strengthened, not weakened. Mitigates falsifiability gameability of credential_leak_e2e_full_pass."
+    - "Raze diff scripts/sabotage-test.sh between c25e44a and Sprint 6 close — verify cascade verification logic unchanged. Mitigates falsifiability gameability of cascade_three_class_verified."
+    - "Raze take option_a (manual stub-iut wire-tap) for the secondary exec; document why option_b is rejected as cosmetic if option_a is impractical."
+
+confidence: 0.84
+
+self_assessment:
+  rationale: |
+    (+) Source inspection of REST-Assured 5.5.0 sources jar (downloaded
+        from Maven Central via curl; extracted to /tmp/raze-plan-fresh-
+        sprint6/) confirms approach (i) is structurally correct —
+        RequestLoggingFilter.filter() is exactly two operations with no
+        hidden coupling; FilterContextImpl.next() delegates to the next
+        filter; CredentialMaskingFilter does not mutate the spec.
+    (+) Source inspection of MaskingRequestLoggingFilter.java + its
+        constructors confirms the PrintStream shadowing concern (no
+        accessor exists in superclass; example code won't compile).
+    (+) Scenario count inconsistency verified across three artifacts via
+        grep counts (10 vs 9 vs 8) — internally inconsistent, not a
+        judgment call.
+    (+) Sister repo .git size measured directly (5.2MB) — well under
+        threshold; SABOTAGE-GIT-TEMP-TREE-SIZE risk overstated by Pat.
+    (+) Mockito presence verified directly in pom.xml (test scope) —
+        CAPTURING-FILTER-CONTEXT-MOCK-RESPONSE risk overstated by Pat.
+    (+) Differentiation analysis grounded in the contract's actual text
+        for Raze's option_b fallback (not speculation).
+    (-) Did NOT run mvn test or any code-level verification (forbidden
+        per scope; plan-review only). Compile concerns are based on
+        source inspection alone.
+    (-) Did not exhaustively search for ALL references to
+        super.filter() / wrap pattern in design.md + ADRs; reasoned
+        from the javadoc inspection of MaskingRequestLoggingFilter.java
+        only.
+    (-) Generator's actual implementation may surface concerns I haven't
+        anticipated (e.g. some specific FilterableRequestSpecification
+        method that approach (i) needs but which RequestSpecBuilder
+        doesn't expose). Source inspection is necessarily incomplete
+        relative to running code.
+    (-) Did not independently inspect Sprint 4 Raze sabotage XML
+        evidence to verify cascade-verification baseline; relied on
+        meta-Raze evaluation.
+
+  budget_used:
+    wall_clock_minutes: ~25
+    tokens: under cap (~150K target; actual ~95K input combined with output)
+  forbid_list_compliance:
+    user_worktree_modifications: 0
+    mvn_test_run: false
+    bash_scripts_run: false
+    /tmp_clones_used: 1 (rest-assured sources jar download only — not a sister repo clone)
+  source_inspection_artifacts:
+    - "/tmp/raze-plan-fresh-sprint6/rest-assured-5.5.0-sources.jar (downloaded from Maven Central)"
+    - "/tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/filter/log/RequestLoggingFilter.java (extracted)"
+    - "/tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/internal/filter/FilterContextImpl.groovy (extracted)"
+    - "/tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/internal/filter/SendRequestFilter.groovy (extracted)"
+    - "/tmp/raze-plan-fresh-sprint6/ra-src/io/restassured/internal/print/RequestPrinter.java (extracted)"
+
+evaluation_artifacts_produced:
+  - "/home/nh/docker/gir/csapi_compliance/.harness/evaluations/sprint-ets-06-plan-adversarial-review.yaml (this file)"
+  - "/tmp/raze-plan-fresh-sprint6/ — rest-assured 5.5.0 sources extraction (read-only inspection; not a sister-repo clone)"
+
+verdict_final: APPROVE_PLAN_WITH_CONCERNS
+score_final: 0.78
